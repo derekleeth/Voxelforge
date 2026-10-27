@@ -1,0 +1,1 @@
+"Read @ROADMAP.md. Summarize what we accomplished last time in 2 excited sentences, tell us the very next unchecked [ ] task for both the Engine Room and the Creative Director, and ask which one we want to tackle today!"
