@@ -3,7 +3,7 @@
     "rootNamespace": "Voxelforge.Tests",
     "references": [
         "Voxelforge.Core",
-        "Voxelforge.Voxel",
+        "Voxelforge.Voxels",
         "Unity.Burst",
         "Unity.Collections",
         "Unity.Mathematics",

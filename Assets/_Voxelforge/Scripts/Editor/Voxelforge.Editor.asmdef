@@ -3,7 +3,7 @@
     "rootNamespace": "Voxelforge.Editor",
     "references": [
         "Voxelforge.Core",
-        "Voxelforge.Voxel"
+        "Voxelforge.Voxels"
     ],
     "includePlatforms": [
         "Editor"

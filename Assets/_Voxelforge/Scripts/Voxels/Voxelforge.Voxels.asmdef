@@ -1,6 +1,6 @@
 {
-    "name": "Voxelforge.Voxel",
-    "rootNamespace": "Voxelforge.Voxel",
+    "name": "Voxelforge.Voxels",
+    "rootNamespace": "Voxelforge.Voxels",
     "references": [
         "Voxelforge.Core",
         "Unity.Burst",

@@ -10,7 +10,7 @@
 ## Phase 1: The Voxel Foundation ("Hello, World of Blocks")
 **Goal:** Generate a high-performance, 3D blocky terrain with modern lighting and PBR textures.
 - [x] **1.1 Engine & MCP Setup:** Initialize repository, configure `.gitignore`, and verify Engine MCP + Blender MCP connections.
-- [ ] **1.2 Chunk Data Architecture:** Create `VoxelChunk` data structures (`16x16x16` or `32x32x32`) storing Block ID, Durability, and Light/State bytes.
+- [x] **1.2 Chunk Data Architecture:** Create `VoxelChunk` data structures (`16x16x16` or `32x32x32`) storing Block ID, Durability, and Light/State bytes. *(Built as 32³ with 4-byte voxels; max durability lives on the block type and damage is stored sparsely. See DECISIONS.md D-003.)*
 - [ ] **1.3 Greedy Meshing & Culling:** Implement background-threaded Greedy Meshing and hidden-face culling so chunks render at 120+ FPS.
 - [ ] **1.4 Procedural Noise Terrain:** Generate rolling hills, caves, and biomes from a deterministic `WorldSeed` integer.
 - [ ] **1.5 Art & Shaders (Creative):** Create PBR Triplanar/Block materials (Grass, Dirt, Stone, Mana Crystal Ore) with Normal/Height maps and dynamic lighting.
@@ -26,7 +26,7 @@
 ## Phase 3: "Forge & Carve" (Digging, Building & Saving)
 **Goal:** Let players mine tunnels, build castles, and save their world in a network-ready format.
 - [ ] **3.1 Message-Driven Voxel Edits:** Implement `RequestModifyVoxel(Coord, BlockID, InstigatorID)`. Never mutate chunk arrays directly from client input.
-- [ ] **3.2 Block Durability & Mining:** Add raycast/spherecast targeting, block cracking decals, and block item drops.
+- [ ] **3.2 Block Durability & Mining:** Add raycast/spherecast targeting, block cracking decals, and block item drops. Store in-progress mining damage in a sparse map (see D-003).
 - [ ] **3.3 Grid Snap Placement:** Add ghost-block preview and placement validation (prevent placing blocks inside characters).
 - [ ] **3.4 Seed + Delta Save System:** Save world using only `WorldSeed` + a compressed dictionary of modified chunk deltas and `PlayerUUID` profiles.
 - [ ] **3.5 Props & Tools (Creative):** Model 3D pickaxes, torches (with real point lights), and interactive workbenches.
