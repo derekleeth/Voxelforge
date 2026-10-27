@@ -9,7 +9,7 @@
 
 ## Phase 1: The Voxel Foundation ("Hello, World of Blocks")
 **Goal:** Generate a high-performance, 3D blocky terrain with modern lighting and PBR textures.
-- [ ] **1.1 Engine & MCP Setup:** Initialize repository, configure `.gitignore`, and verify Engine MCP + Blender MCP connections.
+- [x] **1.1 Engine & MCP Setup:** Initialize repository, configure `.gitignore`, and verify Engine MCP + Blender MCP connections.
 - [ ] **1.2 Chunk Data Architecture:** Create `VoxelChunk` data structures (`16x16x16` or `32x32x32`) storing Block ID, Durability, and Light/State bytes.
 - [ ] **1.3 Greedy Meshing & Culling:** Implement background-threaded Greedy Meshing and hidden-face culling so chunks render at 120+ FPS.
 - [ ] **1.4 Procedural Noise Terrain:** Generate rolling hills, caves, and biomes from a deterministic `WorldSeed` integer.
