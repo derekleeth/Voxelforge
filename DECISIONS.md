@@ -5,6 +5,46 @@
 
 ---
 
+## D-005: How the World Grows From a Seed
+- **Date:** 2026-10-27
+- **Status:** Accepted
+
+### Decisions
+- **One `WorldSeed` integer builds the whole world.** `VoxelWorldManager` owns it (Inspector: `worldSeed`, or "randomize every Play"), so saves (3.4) and joining players (6.2) need only the seed + the blocks players changed.
+- **Terrain is a pure function of seed + settings + position** (`TerrainSampler`). Any chunk can be generated alone, in any order, on any thread, and comes out the same. A test generates chunks in two orders and compares them.
+- **Seeding noise:** `noise.snoise` has no seed, so each noise layer (temperature, ruggedness, each biome, tunnels, caverns, ore) is shifted by its own offset made from `hash(seed, salt)` using integer math only.
+- **4 biomes on a climate map** (temperature × ruggedness), styled after vanilla WoW zones:
+
+  | Biome | Inspired by | Shape | Surface / under |
+  |---|---|---|---|
+  | Meadows | Elwynn Forest | gentle rolling hills | Grass / Dirt |
+  | Desert | Tanaris | ridged dunes | Sand / Sandstone |
+  | Red Crags | Redridge Mountains | stepped (terraced) cliffs | Grass / Red Rock |
+  | Snowy Peaks | Dun Morogh | tall ridged mountains | Snow / Stone |
+
+  Any ground above the **snowline (y = 165)** gets snow, whatever the biome.
+- **Smooth borders:** the nearest biome always has full weight; others fade in as they get within `biomeBlend` of being nearest. Heights are blended by weight, so biomes meet without cliffs. Surface blocks use the nearest biome with a little per-column jitter, so borders look ragged instead of ruler-straight.
+- **Caves:** "spaghetti" tunnels where two 3D noises both cross zero, which narrow near the surface so only some break through as entrances, plus big "cheese" caverns below y = 56. Nothing is carved below `caveFloorY` (1), so the world always has a floor.
+- **Mana Crystal Ore** grows in 3D-noise clusters below y = 80, and is richer under mountains (`oreRichness` per biome).
+- **All tuning lives in `Data/Terrain/TerrainSettings.asset`**, built like the block registry: Inspector-friendly ScriptableObject → blittable `TerrainParams` + `NativeArray<BiomeInfo>` for jobs.
+- **Generation never blocks the main thread.** `ChunkGenerationScheduler` works like the mesh scheduler: `Request(coord)`, then each frame it collects finished `GenerateChunkJob`s and schedules more (32 in flight). Roadmap 2.4's streaming loader will just call `Request` around each player. Chunks wait to mesh until their neighbours that are still generating arrive, so nothing is meshed twice.
+- **Determinism safeguards:**
+  - Burst `FloatMode.Strict` + `FloatPrecision.High` + synchronous compilation.
+  - No sin/cos/exp/pow in terrain code (only +, ×, floor, sqrt and simplex noise).
+  - A **golden-hash test** fingerprints one chunk. If it fails, terrain output changed: on purpose → update the hash and bump `TerrainSampler.GeneratorVersion`; otherwise it's a bug.
+- **Editing `TerrainSettings` changes every world made from it.** Fine for now. Once saves exist (3.4), bump `GeneratorVersion` when you do.
+- **Run In Background is on** (Player Settings), so Play Mode keeps running when Unity isn't the focused window. That's needed for testing via MCP, and it suits couch co-op too.
+
+### Honest caveat
+Every x64 PC should build identical worlds from the same seed. Bit-identical floats across *different CPU families* (e.g. ARM consoles/phones) aren't guaranteed. If that matters in Phase 6, the host can compare chunk hashes and send any chunk that differs.
+
+### Deferred on purpose
+- **Trees, grass tufts, water/lakes:** need transparent block rendering (see D-004).
+- **Bedrock / world bottom and height limits:** the test area is 16×8×16 chunks (512×256×512 blocks), fixed until 2.4's streaming loader.
+- **Dungeon stamps:** Roadmap 5.3.
+
+---
+
 ## D-004: How Chunks Become Meshes
 - **Date:** 2026-10-27
 - **Status:** Accepted

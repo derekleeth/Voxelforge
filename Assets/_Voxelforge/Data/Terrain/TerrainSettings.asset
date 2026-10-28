@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ef639b0f8347ed8b5a69045b8269a5, type: 3}
+  m_Name: TerrainSettings
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.TerrainSettings
+  climateFrequency: 0.0025
+  biomeBlend: 0.35
+  surfaceJitter: 0.06
+  biomes:
+  - name: Meadows (Elwynn style)
+    climate: {x: 0, y: -0.45}
+    baseHeight: 70
+    heightAmplitude: 10
+    frequency: 0.008
+    octaves: 4
+    roughness: 0.45
+    ridged: 0
+    terraceStep: 0
+    surfaceBlock: {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+    subsurfaceBlock: {fileID: 11400000, guid: 066e83003c770404f8a010fd3112da42, type: 2}
+    subsurfaceDepth: 3
+    oreRichness: 1
+  - name: Desert (Tanaris style)
+    climate: {x: 0.65, y: -0.45}
+    baseHeight: 66
+    heightAmplitude: 7
+    frequency: 0.018
+    octaves: 2
+    roughness: 0.35
+    ridged: 1
+    terraceStep: 0
+    surfaceBlock: {fileID: 11400000, guid: ebe0a5b9d8b7441bb0aa25c966d5390f, type: 2}
+    subsurfaceBlock: {fileID: 11400000, guid: be585eaf58a743d1b402b9c66d7671a2, type: 2}
+    subsurfaceDepth: 5
+    oreRichness: 0.8
+  - name: Red Crags (Redridge style)
+    climate: {x: 0.45, y: 0.5}
+    baseHeight: 100
+    heightAmplitude: 36
+    frequency: 0.006
+    octaves: 4
+    roughness: 0.5
+    ridged: 0
+    terraceStep: 9
+    surfaceBlock: {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+    subsurfaceBlock: {fileID: 11400000, guid: 9538f14b5fd04a9a8230698957ea7107, type: 2}
+    subsurfaceDepth: 12
+    oreRichness: 1.3
+  - name: Snowy Peaks (Dun Morogh style)
+    climate: {x: -0.55, y: 0.5}
+    baseHeight: 118
+    heightAmplitude: 48
+    frequency: 0.0045
+    octaves: 4
+    roughness: 0.45
+    ridged: 1
+    terraceStep: 0
+    surfaceBlock: {fileID: 11400000, guid: 3913d90098544448a2e4e719ebb0382a, type: 2}
+    subsurfaceBlock: {fileID: 11400000, guid: 6116e2a7ba94e434e92c053406baad32, type: 2}
+    subsurfaceDepth: 2
+    oreRichness: 1.3
+  stoneBlock: {fileID: 11400000, guid: 6116e2a7ba94e434e92c053406baad32, type: 2}
+  snowBlock: {fileID: 11400000, guid: 3913d90098544448a2e4e719ebb0382a, type: 2}
+  snowLine: 165
+  tunnelFrequency: 0.012
+  tunnelWidth: 0.06
+  cavernFrequency: 0.02
+  cavernThreshold: 0.62
+  cavernMaxY: 56
+  caveEntranceDepth: 8
+  caveFloorY: 1
+  oreBlock: {fileID: 11400000, guid: 4453419398101434290095d64f9ce111, type: 2}
+  oreFrequency: 0.14
+  oreThreshold: 0.78
+  oreMaxY: 80

@@ -12,5 +12,9 @@ namespace Voxelforge.Voxels
         public const ushort Dirt = 2;
         public const ushort Stone = 3;
         public const ushort ManaCrystalOre = 4;
+        public const ushort Sand = 5;
+        public const ushort Snow = 6;
+        public const ushort Sandstone = 7;
+        public const ushort RedRock = 8;
     }
 }

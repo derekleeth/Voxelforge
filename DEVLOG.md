@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 5): A Real World Grows From a Seed ✅ Roadmap 1.4
+**Phase:** 1 - The Voxel Foundation
+
+### What we did
+- **Real terrain** replaced the test pattern. Details in DECISIONS.md **D-005**.
+- **4 biomes, each like a classic WoW zone:**
+  - 🌾 **Meadows** (Elwynn Forest): green rolling hills
+  - 🏜️ **Desert** (Tanaris): sand dunes over sandstone
+  - 🪨 **Red Crags** (Redridge): stepped red-rock cliffs with grassy tops
+  - 🏔️ **Snowy Peaks** (Dun Morogh): tall snowy mountains
+
+  Biomes blend into each other smoothly, and anything above y = 165 gets a snow cap.
+- **Caves!** Winding tunnels (some open up to the surface as cave entrances) and big caverns deep down. The bottom layer is never dug out.
+- **Mana Crystal Ore** now grows in glowing clusters, with more under the mountains.
+- **4 new blocks:** Sand (5), Snow (6), Sandstone (7) and Red Rock (8).
+- **The `WorldSeed`:** one number grows the whole world. Same seed = the exact same world, every time. Turn on "Randomize Seed On Play" to explore new worlds; the seed it picked shows in the Inspector, so you can keep one you like.
+- **Everything is tweakable** in `Data/Terrain/TerrainSettings.asset`: biome heights, hill sizes, blocks, cave sizes, ore amounts.
+- **No freezing:** chunks are built on worker threads and appear as they finish, middle first.
+
+### Results 🎉
+- A 512 × 256 × 512-block world (2,048 chunks) **generates in about 1 second**, and meshing finishes at the same time.
+- **About 122 FPS** with about 628,000 block faces in view.
+- 0 meshes thrown away, because chunks wait for their neighbours before meshing.
+
+### Tests: 64 / 64 passing ✅
+- Same seed → identical chunk; different seed → different chunk.
+- Chunks come out the same whatever order they're built in.
+- A "fingerprint" of one chunk catches anyone changing the terrain by accident.
+- Biome weights always add up to 1, and all 4 biomes show up.
+- Sky chunks are pure air, the floor never has holes, and there are caves and ore underground.
+
+### Things we learned
+- Our first mountains were **needle-thin spikes**! Tall height + narrow hills = needles. Making the peaks wider and a bit lower turned them into real mountains, and fewer faces raised FPS from 91 to 122.
+- Small biome "blobs" didn't feel like zones, so we made biomes about 60% bigger.
+- Turning on **Run In Background** means Unity keeps playing even when you're not clicking on it, so no more "click the Game view" while Claude tests.
+
+### Next up
+- [ ] Roadmap **1.5 Art & Shaders (Creative)**: real block textures and materials replace the placeholder colors
+
+---
+
 ## 2026-10-27 - Session 1 (part 4): We Can SEE the World! ✅ Roadmap 1.3
 **Phase:** 1 - The Voxel Foundation
 

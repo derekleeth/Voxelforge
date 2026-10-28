@@ -68,6 +68,12 @@ namespace Voxelforge.Voxels
         /// <summary>Meshes thrown away because their chunk changed while they were being built.</summary>
         public int DiscardedCount { get; private set; }
 
+        /// <summary>
+        /// Optional: returns true for a chunk that isn't loaded yet but will be soon (e.g. it's generating).
+        /// Chunks next to one wait for it, instead of meshing now and again when it arrives.
+        /// </summary>
+        public Func<ChunkCoord, bool> IsChunkIncoming { get; set; }
+
         public bool TryGetRenderer(ChunkCoord coord, out ChunkRenderer chunkRenderer) => _renderers.TryGetValue(coord, out chunkRenderer);
 
         /// <summary>Call once per frame: applies finished meshes, then schedules more dirty chunks.</summary>
@@ -107,7 +113,8 @@ namespace Voxelforge.Voxels
             while (toCheck-- > 0 && _pending.Count < _maxJobsInFlight && _world.TryTakeDirty(out ChunkCoord coord))
             {
                 // Already meshing: try again once that job is done, since its result may now be stale.
-                if (_pendingCoords.Contains(coord))
+                // Waiting on a neighbour: arriving would make this mesh stale straight away.
+                if (_pendingCoords.Contains(coord) || IsWaitingOnNeighbour(coord))
                     _deferred.Add(coord);
                 else
                     Schedule(coord);
@@ -118,6 +125,18 @@ namespace Voxelforge.Voxels
             _deferred.Clear();
 
             JobHandle.ScheduleBatchedJobs();
+        }
+
+        bool IsWaitingOnNeighbour(ChunkCoord coord)
+        {
+            if (IsChunkIncoming == null)
+                return false;
+            foreach (int3 offset in VoxelWorld.NeighbourOffsets)
+            {
+                if (IsChunkIncoming(new ChunkCoord(coord.Value + offset)))
+                    return true;
+            }
+            return false;
         }
 
         void Schedule(ChunkCoord coord)

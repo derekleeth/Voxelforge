@@ -178,7 +178,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 1500
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -205,8 +205,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.09773575, y: 0.38053608, z: -0.04048347, w: 0.91869533}
-  m_LocalPosition: {x: -30, y: 120, z: -30}
+  m_LocalRotation: {x: 0.23911761, y: 0.36964384, z: -0.09904577, w: 0.8923991}
+  m_LocalPosition: {x: -60, y: 230, z: -60}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -442,7 +442,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1325734896}
   - component: {fileID: 1325734895}
-  - component: {fileID: 1325734894}
+  - component: {fileID: 1325734897}
   m_Layer: 0
   m_Name: VoxelWorld
   m_TagString: Untagged
@@ -450,21 +450,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1325734894
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1325734893}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1271cb0887431f447bb7d5835cd16e7f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.SandboxTestPattern
-  worldManager: {fileID: 1325734895}
-  sizeInChunks: {x: 16, y: 4, z: 16}
-  batchSize: 64
 --- !u!114 &1325734895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -478,7 +463,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.VoxelWorldManager
   blockRegistry: {fileID: 11400000, guid: b8e1140c51dd2b149bb196ce79c82e4b, type: 2}
+  terrainSettings: {fileID: 11400000, guid: 4f0cf8fed6974367a54bcc927e4fe5b2, type: 2}
+  worldSeed: 20261027
+  randomizeSeedOnPlay: 0
   chunkMaterial: {fileID: 2100000, guid: c82a5a353dd60d34fac1e104131a3046, type: 2}
+  maxGenerationJobsInFlight: 32
   maxJobsInFlight: 32
   logMeshingTime: 1
 --- !u!4 &1325734896
@@ -496,6 +485,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1325734897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1325734893}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ec70ecf4e369c94f93c4e7148af60eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.WorldAreaGenerator
+  worldManager: {fileID: 1325734895}
+  sizeInChunks: {x: 16, y: 8, z: 16}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

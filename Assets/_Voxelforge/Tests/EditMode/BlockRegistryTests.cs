@@ -32,7 +32,8 @@ namespace Voxelforge.Tests
             CollectionAssert.IsEmpty(registry.Validate());
 
             using NativeArray<BlockInfo> lookup = registry.CreateLookup(Allocator.Temp);
-            foreach (ushort id in new[] { BlockIds.Air, BlockIds.Grass, BlockIds.Dirt, BlockIds.Stone, BlockIds.ManaCrystalOre })
+            foreach (ushort id in new[] { BlockIds.Air, BlockIds.Grass, BlockIds.Dirt, BlockIds.Stone, BlockIds.ManaCrystalOre,
+                         BlockIds.Sand, BlockIds.Snow, BlockIds.Sandstone, BlockIds.RedRock })
                 Assert.IsTrue(lookup[id].IsRegistered, $"Block ID {id} has no definition in the registry.");
 
             Assert.IsFalse(lookup[BlockIds.Air].IsSolid);
