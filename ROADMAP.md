@@ -33,13 +33,14 @@
 - [ ] **3.4 Seed + Delta Save System:** Save world using only `WorldSeed` + a compressed dictionary of modified chunk deltas and `PlayerUUID` profiles.
 - [ ] **3.5 Props & Tools (Creative):** Model 3D pickaxes, torches (with real point lights), and interactive workbenches.
 
-## Phase 4: The Warcraft Injection (Classes, Spells & RPG UI)
+## Phase 4: The Warcraft Injection (Classes, Races, Spells & RPG UI)
 **Goal:** Layer *World of Warcraft* combat, mana, cooldowns, and talent trees onto the voxel world.
 - [ ] **4.1 Data-Driven Ability Framework:** Build ScriptableObject/DataAsset spell templates (Mana Cost, Cooldown, Cast Time, Element, Range, AoE Radius).
 - [ ] **4.2 Spell Logic vs. Visual Cue Split:** Separate authoritative damage/terrain destruction math from client-side particle VFX and audio.
 - [ ] **4.3 Destructive Spell Mechanics:** Allow explosive spells (e.g., *Pyroblast*, *EarthShatter*) to batch-modify voxel chunks and carve real craters.
 - [ ] **4.4 Per-Player Split-Screen HUD:** Build independent Action Bars (1-9 hotkeys/d-pad), cast bars, floating combat text, and inventory windows confined to each player's viewport.
-- [ ] **4.5 Class & Spell Design (Creative):** Design first 2 playable classes (e.g., *Runeforged Paladin*, *Geomancer Mage*) with 3 signature abilities each.
+- [ ] **4.5 Class & Spell Design (Creative):** Design first 3 playable classes (*Runeforged Paladin*, *Geomancer Mage*, *Shaman*) with 3 signature abilities each. The Shaman plants elemental totems on blocks (server-owned entities that buff, heal or attack nearby) and has at least one earth spell that changes terrain through `RequestModifyVoxel` (e.g. *Earthen Wall* raises a real block wall).
+- [ ] **4.6 Playable Races & the Thunderhoof (Creative):** Add a data-driven `RaceDefinition` (model, stats, racial passive, racial ability) and a race choice on character creation. First races: the *Thunderhoof*, our own big, gentle bull-folk of the plains with a deep shaman tradition (original name, look and lore, no Blizzard IP), plus one more race. Thunderhoof racials: *Hoofquake* (short AoE stun around you) and *Herb-Sense* (bonus Herbalism yield, 5.5). Add a *Thunderhoof Plains* homeland biome (windswept grassland, mesas, tall grass) to the seeded terrain. Model the Thunderhoof in Blender with a larger humanoid rig so it can share the 2.5 Mixamo animations.
 
 ## Phase 5: Monsters, Dungeons & Bosses
 **Goal:** Populate the world with intelligent RPG creatures that can navigate dynamic blocky terrain, and close the gather → craft → gear-up loop (ores, herbs, mob drops → potions, armor, weapons).
