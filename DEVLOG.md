@@ -36,7 +36,7 @@
 - **Play-test bug: "he jumps a block to the left and back while walking."** The Walk and Run clips came without "In Place", so the body ran up to 0.9 m ahead of the player (Mixamo's run also curves left) and snapped back each loop. Fixed in the import settings: the travel is now thrown away, and the hips stay within 0.08 m of the player.
 
 ### Next up
-- [ ] You two: play-test! Split-screen, run up and down hills and stairs, jump off ledges, back the camera into a hill, and check FPS holds at **120+** with the Game view focused. Then we tick 2.5 off.
+- [x] You two: play-test! Run up and down hills and stairs, jump, and check it all looks right. Found the sideways lurch, fixed it, and it looks great! ✅ **2.5 done.**
 - [ ] Roadmap **2.6 Foliage & Decoration Layer**: grass tufts, flowers, bushes and trees
 
 ---

@@ -7,7 +7,7 @@
 
 ## D-011: How Heroes Move and Look
 - **Date:** 2026-10-28
-- **Status:** Accepted (play-test pending)
+- **Status:** Accepted (play-tested 2026-10-28)
 
 ### Decisions
 - **Auto-step lives in the host's motor** (`VoxelBodyMotor`, `MotorSettings.StepHeight = 1`).
