@@ -13,21 +13,21 @@ MonoBehaviour:
   m_Name: GrassTuft
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
   kind: 0
-  mesh: {fileID: 4300000, guid: 19823ac243f794b4a955b3aff2e0bba9, type: 2}
-  lodMesh: {fileID: 0}
-  material: {fileID: 2100000, guid: e88eb86eb5f4bb6479e56754a1c13a9b, type: 2}
+  mesh: {fileID: -6628008571771503358, guid: 054e77df7bbeaef4a8239caa8e623ae9, type: 3}
+  lodMesh: {fileID: 442829142447054919, guid: 054e77df7bbeaef4a8239caa8e623ae9, type: 3}
+  material: {fileID: 2100000, guid: 8e06409d07d667746abc92904d12ca18, type: 2}
   tint: 1
   castShadows: 0
-  lodDistance: 60
+  lodDistance: 30
   maxDistance: 70
   surfaces:
   - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
-  density: 0.35
+  density: 0.4
   biomes:
   - biome: Meadows (Elwynn style)
     weight: 1
   - biome: Red Crags (Redridge style)
     weight: 0.6
-  minScale: 0.8
-  maxScale: 1.3
+  minScale: 1.1
+  maxScale: 1.6
   modelTrunkHeight: 5

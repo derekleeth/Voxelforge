@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: PineTree
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
   kind: 1
-  mesh: {fileID: 4300000, guid: ba4dd8575bffcfd4a8ae693e99eed5ed, type: 2}
-  lodMesh: {fileID: 0}
-  material: {fileID: 2100000, guid: 97de9eb203979194f8333b9dd1ab9166, type: 2}
+  mesh: {fileID: -7882389204462438233, guid: a29e711afccbf854ba89019d780ff037, type: 3}
+  lodMesh: {fileID: -5367619333497253021, guid: a29e711afccbf854ba89019d780ff037, type: 3}
+  material: {fileID: 2100000, guid: 7774206e12e9433468a028afd1a4b100, type: 2}
   tint: 2
   castShadows: 1
-  lodDistance: 120
+  lodDistance: 90
   maxDistance: 240
   surfaces: []
   density: 0

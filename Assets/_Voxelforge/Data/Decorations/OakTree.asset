@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: OakTree
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
   kind: 1
-  mesh: {fileID: 4300000, guid: 4dcd42f10ea5b06419320dae794f0cd2, type: 2}
-  lodMesh: {fileID: 0}
-  material: {fileID: 2100000, guid: c53e2e08985e1da4685bee1ecd47d44f, type: 2}
+  mesh: {fileID: 777161562587615776, guid: bf3d7870288e67245800c5805ad10b9d, type: 3}
+  lodMesh: {fileID: -2809653880422652014, guid: bf3d7870288e67245800c5805ad10b9d, type: 3}
+  material: {fileID: 2100000, guid: 7774206e12e9433468a028afd1a4b100, type: 2}
   tint: 2
   castShadows: 1
-  lodDistance: 120
+  lodDistance: 90
   maxDistance: 240
   surfaces: []
   density: 0
@@ -26,9 +26,7 @@ MonoBehaviour:
   - biome: Meadows (Elwynn style)
     weight: 1
   - biome: Red Crags (Redridge style)
-    weight: 1
-  - biome: Desert (Tanaris style)
-    weight: 1
+    weight: 0.6
   minScale: 1
   maxScale: 1
   modelTrunkHeight: 5

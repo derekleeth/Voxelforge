@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 13): Real Plants! 🌼 Roadmap 2.6, part B
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **The stand-in boxes are gone.** A new Blender script, `Tools/Blender/build_foliage.py`, paints all our plant art by code and builds the models. It's our own art, with no photos, and running the script again rebuilds everything. Details in DECISIONS.md **D-012**.
+- **10 plants**, each with a cheaper version for far away:
+  - Short grass, and tall grass with seed heads
+  - Yellow buttercups, blue cornflowers and red poppies
+  - A leafy bush, and a twiggy dry shrub for the desert
+  - **Oak trees** with chunky trunks and lumpy, leafy crowns (meadows)
+  - **Pine trees** with droopy layered skirts (snowy peaks)
+  - **Scrub trees:** new! Wind-bent and flat-topped, for the desert and red crags
+- **All the plants share one painted texture**, laid out like a sticker sheet.
+- **Tree crowns are shaded like one soft ball**, so a tree looks round and leafy instead of like a pile of flat cards.
+- ***Voxelforge → Build Foliage Decorations*** makes the Unity materials and plant settings from the Blender files. Unity imports the models and texture with the right settings automatically.
+- Grass and flowers were made bigger after the first look, so they don't get lost next to 1-block steps.
+
+### Results 🎉
+- About 27,000 plants around spawn, with all 10 kinds in the right biomes.
+- Trees cost 470-800 triangles up close and about 200 far away. A grass tuft is just 12.
+- **Play-test passed:** plants, grass and trees look great! ✅
+
+### Tests: 157 / 157 passing ✅
+
+### Things we learned
+- **Bug: bright white orbs in the sky!** They weren't the sun. On the back of the desert shrub's leaf cards, the shader blended "facing away" and "facing toward you" exactly 50/50, which made a zero-length direction. Turning that into a proper direction gave an invalid number (NaN), and the **bloom** glow effect spread every bad pixel into a big white ball. Fixed: the back of a card now only flips its sideways direction, so it can never become zero.
+- Unity treats a model part named `_LOD1` as a level of detail and wants a matching `_LOD0`, so our models are named `Name_LOD0` (close) and `Name_LOD1` (far).
+- Recompiling scripts while the game is running breaks the play session. Claude now checks for Play Mode first.
+
+### Next up
+- [x] You two: play-test part B. Looks great, orbs gone! ✅
+- [ ] Roadmap **2.6 part C**: biome colours, soft shadows in block corners (corner AO), and the split-screen 120 FPS check
+
+---
+
 ## 2026-10-28 - Session 1 (part 12): Trees and Grass 🌳 Roadmap 2.6, part A
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

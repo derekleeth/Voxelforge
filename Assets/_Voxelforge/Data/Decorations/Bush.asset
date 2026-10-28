@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Bush
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
   kind: 0
-  mesh: {fileID: 4300000, guid: 9cc0c71b27c486b4a8c01b9fab7b75a3, type: 2}
-  lodMesh: {fileID: 0}
-  material: {fileID: 2100000, guid: 186d092b4cf505c42842a3482aeb8e15, type: 2}
+  mesh: {fileID: 7538923576742910218, guid: 61130ac38b73b014da2f116e8a65a530, type: 3}
+  lodMesh: {fileID: -2133559501275986802, guid: 61130ac38b73b014da2f116e8a65a530, type: 3}
+  material: {fileID: 2100000, guid: 57c52f0a91cef6b45bdef1abaa375e53, type: 2}
   tint: 2
   castShadows: 1
-  lodDistance: 80
+  lodDistance: 60
   maxDistance: 120
   surfaces:
   - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}

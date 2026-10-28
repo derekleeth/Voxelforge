@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: FlowerBlue
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 0
+  mesh: {fileID: -5370760608325826706, guid: 9c17143d096b5d341813dcf2a547a67e, type: 3}
+  lodMesh: {fileID: -1631545144428559079, guid: 9c17143d096b5d341813dcf2a547a67e, type: 3}
+  material: {fileID: 2100000, guid: 5337a66e9fe35bb40a4917fe23954568, type: 2}
+  tint: 0
+  castShadows: 0
+  lodDistance: 30
+  maxDistance: 60
+  surfaces:
+  - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+  density: 0.015
+  biomes:
+  - biome: Meadows (Elwynn style)
+    weight: 1
+  - biome: Red Crags (Redridge style)
+    weight: 0.3
+  minScale: 1.1
+  maxScale: 1.5
+  modelTrunkHeight: 5

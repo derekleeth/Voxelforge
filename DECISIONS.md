@@ -7,7 +7,7 @@
 
 ## D-012: Foliage, Trees and the Decoration Layer
 - **Date:** 2026-10-28
-- **Status:** Accepted for part A (engine + placeholder art, play-tested 2026-10-28). Parts B (art) and C (tint, corner AO, FPS) follow.
+- **Status:** Accepted for parts A (engine) and B (art), both play-tested 2026-10-28. Part C (tint, corner AO, FPS) follows.
 
 ### Decisions
 - **Trees live in the terrain; everything else lives in the mesh job.**
@@ -38,7 +38,15 @@
   - **Wind:** global `_VF_Wind` (direction, strength, speed, set on `VoxelWorldManager`). Each vertex bends by its sway weight from vertex colour alpha (0 at the root, 1 at the tips), with a per-plant phase so fields ripple. Presentation only.
   - **Distance fade:** a dithered screen-door fade from 80% to 100% of the type's max distance, which also works in shadows. It only drops pixels while actually fading.
   - Passes: ForwardLit, ShadowCaster, DepthOnly (SSAO reads depth, D-009).
-- **Placeholder art** comes from ***Voxelforge -> Build Placeholder Decorations*** (`PlaceholderDecorationBuilder`), which writes meshes, materials and decoration assets. Part B replaces the meshes and materials with Blender-built art.
+- **Placeholder art** (part A only) came from a placeholder builder; part B replaced it.
+- **Foliage art (part B)** is built by `Tools/Blender/build_foliage.py` (`build_all()`) into `Tools/Blender/Foliage.blend`:
+  - **One 2048² atlas** (`Art/Textures/Foliage/Foliage_Atlas.png`), painted by code with numpy brush strokes: grass and flower cards, leaf/needle/dry-leaf clumps with alpha, opaque leaf "mass" areas, and two barks that wrap round a trunk. Every plant uses one material and one texture, because the renderer draws one submesh per type.
+  - **10 models**, one FBX each in `Art/Models/Foliage/`, holding `<Name>_LOD0` and `<Name>_LOD1` (Unity's LOD naming needs both): GrassShort, GrassTall, FlowerYellow/Blue/Red, Bush, DryShrub, OakTree, PineTree, and **ScrubTree** (new, for Desert 1 / Crags 0.6, replacing oaks in the desert).
+  - **Crowns** are noise-bumped ellipsoid blobs plus leaf cards tilted every which way. Blob UVs project the direction onto a disc, so they have no seam. **Custom normals point out of the whole crown**, so each tree lights like one soft ball. Pine tiers are ragged cones mapped from above with radial needles, plus hanging needle cards.
+  - The export bakes Unity's Y-up into the vertices (`bake_space_transform`), because the renderer uses raw meshes with no GameObject transform. Vertex colours are exported linear: RGB = shading, A = sway.
+- **`FoliageImportSettings`** (AssetPostprocessor) keeps the imported normals and colours, imports no materials or animation, and gives the atlas alpha-is-transparency plus **mip maps that preserve alpha coverage**, so far leaves don't thin out.
+- **`FoliageDecorationBuilder`** (*Voxelforge -> Build Foliage Decorations*, renamed from the part A placeholder builder) makes 5 materials (Grass, Flowers, Shrub, Bush, Tree) on the atlas, the 10 decoration assets and the set. Ground densities add up per block top (0.4 short grass, 0.07 tall grass, 0.045 flowers, 0.02 bushes).
+- **Back-face normals:** new `_BackFaceFlip` (0 for crowns, which keep their outward normals on both sides). A card's back face mirrors only the sideways part of its normal. **Never blend a normal toward its own opposite:** at 50% it is zero, `normalize` gives NaN, and bloom turns each NaN pixel into a white orb. That happened with the dry shrub (`_NormalUp` 0.5) in the play-test. Normals now use `SafeNormalize`.
 
 ### Measured (part A, editor)
 - ~25k decorations in 193 chunks around spawn, 766 trees. Overview camera ~181 FPS. 157/157 EditMode tests pass.

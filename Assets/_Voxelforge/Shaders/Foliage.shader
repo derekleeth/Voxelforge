@@ -14,6 +14,7 @@ Shader "Voxelforge/Foliage"
         _Cutoff ("Alpha Cut-off", Range(0, 1)) = 0.5
         _Smoothness ("Smoothness", Range(0, 1)) = 0.1
         _NormalUp ("Normals Point Up", Range(0, 1)) = 0.5
+        _BackFaceFlip ("Flip Back-Face Normals", Range(0, 1)) = 1
         _WindScale ("Wind Scale", Range(0, 2)) = 1
     }
 
@@ -33,6 +34,7 @@ Shader "Voxelforge/Foliage"
             half _Cutoff;
             half _Smoothness;
             half _NormalUp;
+            half _BackFaceFlip;
             half _WindScale;
         CBUFFER_END
 
@@ -90,7 +92,7 @@ Shader "Voxelforge/Foliage"
                 output.positionWS = DecorationToWorld(input.positionOS, input.color.a, d, _WindScale);
                 output.positionCS = TransformWorldToHClip(output.positionWS);
                 float3 normalWS = DecorationRotateY(input.normalOS, d.yaw);
-                output.normalWS = normalize(lerp(normalWS, float3(0, 1, 0), _NormalUp));
+                output.normalWS = SafeNormalize(lerp(normalWS, float3(0, 1, 0), _NormalUp));
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 output.color = half4(input.color.rgb * DecorationUnpackTint(d.tint), DecorationFade(d));
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
@@ -103,10 +105,14 @@ Shader "Voxelforge/Foliage"
                 clip(albedo.a - _Cutoff);
                 DecorationDitherClip(input.color.a, input.positionCS);
 
-                float3 normalWS = normalize(input.normalWS);
-                // The back of a card is lit as if it faced the viewer, but only for the part not already pointing up.
+                // The back of a card is lit as if it faced the viewer: its sideways part is mirrored, its upward part
+                // kept. Canopies set _BackFaceFlip to 0: their normals point out of the whole crown on both sides.
+                // Never blend a normal toward its own opposite: halfway is a zero vector, normalize() gives NaN,
+                // and bloom spreads every NaN pixel into a bright white orb.
+                float3 normalWS = input.normalWS;
                 if (!isFrontFace)
-                    normalWS = normalize(lerp(-normalWS, normalWS, _NormalUp));
+                    normalWS.xz = lerp(normalWS.xz, -normalWS.xz, _BackFaceFlip);
+                normalWS = SafeNormalize(normalWS);
 
                 SurfaceData surface = (SurfaceData)0;
                 surface.albedo = albedo.rgb * input.color.rgb;
