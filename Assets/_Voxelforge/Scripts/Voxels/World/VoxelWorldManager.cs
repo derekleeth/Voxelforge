@@ -69,6 +69,8 @@ namespace Voxelforge.Voxels
         DecorationRenderer _decorationRenderer;
         VoxelWorldEditor _editor;
         BlockCrackRenderer _crackRenderer;
+        VoxelDeltaLog _savedDeltas;
+        bool _hasSavedWorld;
         float _meshingStartTime = -1f;
 
         /// <summary>The block data. Only this assembly can edit it.</summary>
@@ -89,6 +91,26 @@ namespace Voxelforge.Voxels
 
         /// <summary>Host only: how far blocks have been mined (Roadmap 3.2).</summary>
         public BlockDamageMap Damage => _editor?.Damage;
+
+        /// <summary>True when this world was loaded from a save rather than started fresh.</summary>
+        public bool IsFromSave => _hasSavedWorld;
+
+        /// <summary>
+        /// Builds this world from a save (Roadmap 3.4) instead of the inspector seed. Must be called before this
+        /// component's <c>Awake</c>, which is why the save manager runs earlier. Chunks get their saved edits back as
+        /// they generate.
+        /// </summary>
+        public void UseSavedWorld(WorldSeed seed, VoxelDeltaLog deltas)
+        {
+            if (_world != null)
+            {
+                Debug.LogError("A saved world must be given to the world manager before it starts.", this);
+                return;
+            }
+            worldSeed = seed.Value;
+            _savedDeltas = deltas ?? new VoxelDeltaLog();
+            _hasSavedWorld = true;
+        }
 
         /// <summary>The block types this world was built from, e.g. for a block's name or its drop's look.</summary>
         public BlockRegistry Blocks => blockRegistry;
@@ -113,7 +135,7 @@ namespace Voxelforge.Voxels
                 return;
             }
 
-            if (randomizeSeedOnPlay)
+            if (randomizeSeedOnPlay && !_hasSavedWorld)
                 worldSeed = WorldSeed.CreateRandom().Value;
 
             _world = new VoxelWorld(blockRegistry.CreateLookup(Unity.Collections.Allocator.Persistent));
@@ -124,7 +146,8 @@ namespace Voxelforge.Voxels
                 IsChunkIncoming = _generator.IsRequested,
             };
             _scheduler.SetBiomeTint(_generator.Seed, _generator.Terrain, _generator.Biomes);
-            _editor = new VoxelWorldEditor(_world, new VoxelDeltaLog(), _scheduler);
+            _editor = new VoxelWorldEditor(_world, _savedDeltas ?? new VoxelDeltaLog(), _scheduler);
+            _savedDeltas = null;
             _editor.EditApplied += edit => EditApplied?.Invoke(edit);
             _generator.DeltaLog = _editor.DeltaLog;
             if (crackMaterial != null)

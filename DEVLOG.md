@@ -5,6 +5,49 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 19): The World Remembers 💾 Roadmap 3.4
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **Worlds save now!** Everything you dig and build, and where each player stood with their block bag, comes back next time. Details in DECISIONS.md **D-017**.
+- A save is tiny: just the world's **seed** (the number the whole world grows from) plus **only the blocks players changed**. The rest grows back from the seed.
+- **When it saves:**
+  - Every 2 minutes, by itself
+  - When you quit
+  - When you press **F5** (a message pops up to say it's done)
+- **Each player is remembered.** Your PC gives Player 1 and Player 2 their own secret ID, so you each get your **own** spot and bag back, even if you join in a different order or one of you skips a session.
+- If someone built a block where you were standing, you come back on top of it instead of stuck inside.
+- **Starting over:** run the game with `-newworld`, or in the editor use *Voxelforge > Saves > Delete Editor Saves*. Editor saves and build saves are kept apart.
+
+### Tests: 233 / 233 passing ✅
+- The changed-blocks list saves and loads exactly, even with negative coordinates.
+- Seed, both player spots, facing and bags (in the same order) come back.
+- Broken files, files cut short and saves from a **newer** version are all caught safely, with no crash.
+- Saving again keeps the last save as a backup.
+- Each slot on this PC keeps the same player ID after a restart.
+
+### Editor test by Claude
+- Two players joined, built a 3-Log pillar and dug a trench. Player 1 stood on top of the pillar facing east, with Dirt 12 and Log 4 in the bag.
+- Pressed save (176 bytes!), then added one more Stone to Player 2 and stopped Play: **the quit-save caught that too**.
+- Played again: pillar there, Player 1 back on top facing east, both bags right. Loading took **about 1 ms**.
+- Session with only Player 2: Player 1's profile was still kept. Walled over Player 1's spot, and next time they landed on top of the wall.
+- **10,000 changed blocks save in under 1 KB** (865 bytes).
+
+### Play-test results 🎉
+- **Saved in split-screen, quit and came back: both players were in the exact spots we left them** ✅
+
+### Fixed after the play-test: aim up!
+- You could only mine and build **at or below eye level**, so building tall pillars was hard. (We forgot to mention it during 3.3.)
+- Why: the camera could only tilt from a little bit down to a lot down, so the aim never went more than 15° up.
+- Now **move the mouse or stick up** and the camera swings low behind your hero to look up. The aim follows, nearly straight up.
+- Everything you could aim at before works exactly the same.
+- Claude's check, against a wall one block ahead: the old limit reached the block at **eye level**, and now it reaches **3 blocks higher**, plus the blocks straight above your head.
+
+### Next up
+- [ ] Roadmap **3.5 Props & Tools (Creative)**: pickaxes, torches with real lights, and workbenches
+
+---
+
 ## 2026-10-28 - Session 1 (part 18): Build It Block by Block 🧱 Roadmap 3.3
 **Phase:** 3 - "Forge & Carve"
 

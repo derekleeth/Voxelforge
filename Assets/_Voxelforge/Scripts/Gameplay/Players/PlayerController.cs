@@ -52,6 +52,10 @@ namespace Voxelforge.Gameplay
         // Host-only state.
         PlayerId _assignedId;
         byte _assignedSlot;
+        PlayerUuid _uuid;
+        bool _hasSavedSpot;
+        float3 _savedFeet;
+        float _savedYaw;
         VoxelWorldManager _worldManager;
         PlayerRegistry _registry;
         int2 _spawnColumn;
@@ -68,6 +72,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Who this player is. Record this as the instigator of anything they do.</summary>
         public PlayerId PlayerId => new PlayerId(_playerId.Value);
+
+        /// <summary>Host only: who this player is across sessions. Their saved profile is kept under it (Roadmap 3.4).</summary>
+        public PlayerUuid Uuid => _uuid;
 
         /// <summary>Which player on the owning PC this is: 0 = Player 1, 1 = Player 2.</summary>
         public byte LocalSlot => _localSlot.Value;
@@ -121,16 +128,39 @@ namespace Voxelforge.Gameplay
         /// Host only, called by <see cref="PlayerRegistry"/> just before spawning. The ID and slot are written to
         /// the network in <see cref="OnNetworkSpawn"/>, so clients receive them with the spawn itself.
         /// </summary>
-        internal void ServerInitialize(PlayerId playerId, byte localSlot, VoxelWorldManager worldManager, PlayerRegistry registry,
-            int2 spawnColumn, int spawnTopY)
+        /// <param name="profile">
+        /// Optional: where this player stood last time (Roadmap 3.4). They land on that exact spot if it's still clear,
+        /// otherwise on the ground of that column.
+        /// </param>
+        internal void ServerInitialize(PlayerId playerId, byte localSlot, PlayerUuid uuid, VoxelWorldManager worldManager,
+            PlayerRegistry registry, int2 spawnColumn, int spawnTopY, PlayerProfile profile)
         {
             _assignedId = playerId;
             _assignedSlot = localSlot;
+            _uuid = uuid;
             _worldManager = worldManager;
             _registry = registry;
             _spawnColumn = spawnColumn;
             _spawnTopY = spawnTopY;
+            _hasSavedSpot = profile != null;
+            if (_hasSavedSpot)
+            {
+                _savedFeet = profile.Feet;
+                _savedYaw = profile.Yaw;
+                _spawnColumn = (int2)math.floor(profile.Feet.xz);
+            }
             name = $"Player {playerId}";
+        }
+
+        /// <summary>
+        /// Host only: where this player stands and faces, for their saved profile. False until they've landed,
+        /// so a player still waiting for terrain keeps the spot they were saved at.
+        /// </summary>
+        public bool TryGetSaveState(out float3 feet, out float yaw)
+        {
+            feet = _placed ? _body.FeetPosition(motor) : default;
+            yaw = _yaw;
+            return IsServer && _placed;
         }
 
         /// <summary>
@@ -277,18 +307,43 @@ namespace Voxelforge.Gameplay
 
         bool TryPlaceOnGround()
         {
-            if (!SpawnPointFinder.TryFindSurface(_worldManager.World, _spawnColumn.x, _spawnColumn.y, _spawnTopY,
-                    spawnClearance, out float3 feet))
-                return false;
+            float3 feet;
+            float yaw = transform.eulerAngles.y;
+            if (_hasSavedSpot)
+            {
+                // Wait for the terrain around the saved spot, then use it unless someone has built into it.
+                float3 center = _savedFeet + new float3(0f, motor.HalfExtents.y + 0.001f, 0f);
+                if (!IsGenerated(center - motor.HalfExtents) || !IsGenerated(center + motor.HalfExtents))
+                    return false;
+                _hasSavedSpot = false;
+                if (!VoxelBodyMotor.Overlaps(center, motor.HalfExtents, _worldManager.World))
+                {
+                    PlaceAt(_savedFeet, _savedYaw);
+                    return true;
+                }
+                Debug.Log($"[Voxelforge] {PlayerId}'s saved spot {_savedFeet} is blocked; landing on top of that column instead.", this);
+                yaw = _savedYaw;
+            }
 
+            if (!SpawnPointFinder.TryFindSurface(_worldManager.World, _spawnColumn.x, _spawnColumn.y, _spawnTopY,
+                    spawnClearance, out feet))
+                return false;
+            PlaceAt(feet, yaw);
+            return true;
+        }
+
+        bool IsGenerated(float3 position) =>
+            _worldManager.World.TryGetChunk(VoxelMath.WorldToChunk(VoxelMath.WorldPositionToBlock(position)), out _);
+
+        void PlaceAt(float3 feet, float yaw)
+        {
             _body = new VoxelBody { Position = feet + new float3(0f, motor.HalfExtents.y + 0.001f, 0f) };
             _previousPosition = feet;
-            _yaw = _previousYaw = transform.eulerAngles.y;
-            transform.position = feet;
+            _yaw = _previousYaw = yaw;
+            transform.SetPositionAndRotation(feet, Quaternion.Euler(0f, yaw, 0f));
             _placed = true;
             _landed.Value = true;
             Debug.Log($"[Voxelforge] {PlayerId} (slot {LocalSlot}) landed at {feet}.", this);
-            return true;
         }
     }
 }

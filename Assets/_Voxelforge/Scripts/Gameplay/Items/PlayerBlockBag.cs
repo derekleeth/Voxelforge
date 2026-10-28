@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// The blocks one player has picked up (Roadmap 3.2, D-015). Only the host changes it (CLAUDE.md Law #2); every PC
     /// sees it through a <see cref="NetworkList{T}"/>, so a player's HUD can show it. <see cref="PlayerBuilder"/> places from it (3.3),
-    /// saving it with the player's profile is 3.4, and real inventory windows are 4.4.
+    /// it's saved with the player's <see cref="PlayerProfile"/> (3.4), and real inventory windows are 4.4.
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
     public sealed class PlayerBlockBag : NetworkBehaviour
@@ -54,6 +55,23 @@ namespace Voxelforge.Gameplay
             Sync(index);
             return taken;
         }
+
+        /// <summary>Host only: refills the bag from a saved profile (Roadmap 3.4), keeping its slot order.</summary>
+        public void ServerRestore(IEnumerable<BlockStack> stacks)
+        {
+            if (!IsServer)
+            {
+                Debug.LogError("Only the host can fill a block bag.", this);
+                return;
+            }
+            _server.Restore(stacks);
+            _synced.Clear();
+            foreach (BlockStack stack in _server.Stacks)
+                _synced.Add(stack);
+        }
+
+        /// <summary>Host only: a copy of every slot in order, for saving.</summary>
+        public List<BlockStack> ServerSnapshot() => new List<BlockStack>(_server.Stacks);
 
         void Sync(int index)
         {

@@ -12,12 +12,15 @@ namespace Voxelforge.Gameplay
     {
         public readonly ulong OwnerClientId;
         public readonly byte LocalSlot;
+        /// <summary>Who they are across sessions; their saved profile is kept under it (Roadmap 3.4).</summary>
+        public readonly PlayerUuid Uuid;
         public readonly PlayerController Controller;
 
-        public PlayerRecord(ulong ownerClientId, byte localSlot, PlayerController controller)
+        public PlayerRecord(ulong ownerClientId, byte localSlot, PlayerUuid uuid, PlayerController controller)
         {
             OwnerClientId = ownerClientId;
             LocalSlot = localSlot;
+            Uuid = uuid;
             Controller = controller;
         }
     }
@@ -61,12 +64,27 @@ namespace Voxelforge.Gameplay
             return false;
         }
 
+        /// <summary>Host only: true if a player with this identity is already in the session.</summary>
+        public bool IsInSession(PlayerUuid uuid)
+        {
+            foreach (PlayerRecord record in _records.Values)
+            {
+                if (record.Uuid == uuid)
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// Host only: creates a player owned by <paramref name="ownerClientId"/> in <paramref name="localSlot"/>, who
         /// will appear on the ground of the given block column once its terrain is generated.
         /// </summary>
-        public PlayerController SpawnLocalPlayer(ulong ownerClientId, byte localSlot, VoxelWorldManager worldManager,
-            int2 spawnColumn, int spawnTopY)
+        /// <param name="profile">
+        /// Optional: this player's saved profile (Roadmap 3.4). They come back where they stood, with their block bag,
+        /// and <paramref name="spawnColumn"/> is ignored.
+        /// </param>
+        public PlayerController SpawnLocalPlayer(ulong ownerClientId, byte localSlot, PlayerUuid uuid,
+            VoxelWorldManager worldManager, int2 spawnColumn, int spawnTopY, PlayerProfile profile = null)
         {
             if (!networkManager.IsServer)
             {
@@ -76,14 +94,17 @@ namespace Voxelforge.Gameplay
 
             var playerId = new PlayerId(_nextId++);
             PlayerController player = Instantiate(playerPrefab);
-            player.ServerInitialize(playerId, localSlot, worldManager, this, spawnColumn, spawnTopY);
+            player.ServerInitialize(playerId, localSlot, uuid, worldManager, this, spawnColumn, spawnTopY, profile);
             player.NetworkObject.SpawnWithOwnership(ownerClientId, destroyWithScene: true);
+            if (profile != null && player.TryGetComponent(out PlayerBlockBag bag))
+                bag.ServerRestore(profile.Bag); // After spawning: the bag's list only syncs once it's on the network.
             if (chunkLoader != null)
                 chunkLoader.Register(player);
 
-            _records.Add(playerId, new PlayerRecord(ownerClientId, localSlot, player));
+            _records.Add(playerId, new PlayerRecord(ownerClientId, localSlot, uuid, player));
             _players.Add(player);
-            Debug.Log($"[Voxelforge] Spawned {playerId} (client {ownerClientId}, slot {localSlot}).", this);
+            Debug.Log($"[Voxelforge] Spawned {playerId} (client {ownerClientId}, slot {localSlot}, " +
+                      $"{(profile != null ? "returning" : "new")} player {uuid}).", this);
             return player;
         }
 

@@ -136,10 +136,22 @@ namespace Voxelforge.Voxels
         /// Puts a freshly generated chunk's logged edits back. Called by the <see cref="ChunkGenerationScheduler"/>
         /// before anyone can see the chunk, so it isn't an edit: nothing is logged or raised.
         /// </summary>
-        internal static void ReapplyDeltas(VoxelChunk chunk, VoxelDeltaLog deltaLog)
+        /// <returns>
+        /// How many deltas expected a different generated block than the one there. Above 0 means the terrain
+        /// generator changed since the save was made (Roadmap 3.4); the edits are put back anyway.
+        /// </returns>
+        internal static int ReapplyDeltas(VoxelChunk chunk, VoxelDeltaLog deltaLog)
         {
+            int mismatches = 0;
             foreach (var pair in deltaLog.GetChunkDeltas(chunk.Coord))
+            {
+                Voxel there = chunk.GetVoxel(pair.Key);
+                Voxel generated = pair.Value.Generated;
+                if (there.BlockId != generated.BlockId || there.State != generated.State)
+                    mismatches++;
                 chunk.SetVoxel(pair.Key, pair.Value.Current);
+            }
+            return mismatches;
         }
     }
 }

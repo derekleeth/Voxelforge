@@ -95,6 +95,26 @@ namespace Voxelforge.Voxels
 
         public bool HasDeltas(ChunkCoord coord) => _chunks.ContainsKey(coord);
 
+        /// <summary>
+        /// Puts back one delta read from a save (Roadmap 3.4). Unlike <see cref="Record"/> it takes the generated block
+        /// as given, since the chunk usually isn't generated yet. A delta that changes nothing is skipped.
+        /// </summary>
+        /// <param name="index">The block's local index in the chunk (<see cref="VoxelMath.ToIndex(int3)"/>).</param>
+        public void Restore(ChunkCoord coord, int index, Voxel current, Voxel generated)
+        {
+            if (current == generated || (uint)index >= VoxelConstants.ChunkVolume)
+                return;
+
+            if (!_chunks.TryGetValue(coord, out Dictionary<int, VoxelDelta> deltas))
+            {
+                deltas = new Dictionary<int, VoxelDelta>();
+                _chunks.Add(coord, deltas);
+            }
+            if (!deltas.ContainsKey(index))
+                BlockCount++;
+            deltas[index] = new VoxelDelta(current, generated, PlayerId.None);
+        }
+
         public void Clear()
         {
             _chunks.Clear();

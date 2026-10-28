@@ -70,7 +70,9 @@ namespace Voxelforge.Gameplay
         [SerializeField] float lookHeight = 1.2f;
 
         [SerializeField, Range(-80f, 85f)] float startPitch = 35f;
-        [SerializeField, Range(-80f, 85f)] float minPitch = 10f;
+        [Tooltip("Lowest camera pitch. Below 0 the camera swings under the hero to look up, so players can aim at " +
+                 "blocks above their head (see PlayerAim).")]
+        [SerializeField, Range(-80f, 85f)] float minPitch = -35f;
         [SerializeField, Range(-80f, 85f)] float maxPitch = 70f;
 
         [SerializeField, Min(0f)] float mouseDegreesPerPixel = 0.15f;

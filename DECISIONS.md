@@ -5,6 +5,42 @@
 
 ---
 
+## D-017: Saving the World (Seed + Deltas + Player Profiles)
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **A save is only what can't grow back:** the `WorldSeed`, `TerrainSampler.GeneratorVersion`, the `VoxelDeltaLog` (D-014) and a `PlayerProfile` per player. Everything else regenerates from the seed.
+- **One binary file per world:** `persistentDataPath/Saves/<world>/world.vfsave`. The editor uses `Saves-Editor/`, so play-testing in the editor never touches a build's save.
+  - Layout: `VFSV`, an `int` format version (1), then a **GZip** body: generator version, seed, save time, deltas, profiles and an `END!` marker that catches files cut short. The version sits outside the compressed part, so a newer save is refused before decoding.
+  - **Safe writes:** into `world.vfsave.tmp`, then `File.Replace` swaps it in and keeps the old save as `world.vfsave.bak`. A damaged save falls back to the `.bak`; if that fails too, the bad file is moved aside (`.damaged-<time>`) and a new world starts. A save from a **newer** version is never overwritten: the game plays without saving.
+- **Deltas (`DeltaLogCodec`, Voxels assembly, so 7.2 can send it to joining players):** per chunk, its coord and its blocks sorted by local index, each as a varint index gap + `Current` (id, state) + `Generated` (id, state).
+  - Saving `Generated` too means the log is rebuilt exactly at load (`VoxelDeltaLog.Restore`) without generating anything, and net-change logic keeps working (digging a loaded block back to what was generated removes it).
+  - When a chunk generates, `ReapplyDeltas` compares the generated block with the saved `Generated`. A mismatch means the generator changed: one warning, `ChunkGenerationScheduler.MismatchedDeltaCount` counts them, and the edits go back anyway.
+  - Light isn't saved (it'll be recomputed when lighting lands). The instigator isn't saved: `PlayerId` is per-session and nothing reads it yet.
+  - **Size:** 10,000 edited blocks (a 1,100-block tunnel and a wall) = **865 bytes** compressed, 1.2 ms to encode.
+- **Persistent identity: `PlayerUuid`** (Core, a GUID as two `ulong`s). `PlayerId` stays the 1-byte session ID handed out in join order.
+  - Each PC keeps one UUID per local slot in `persistentDataPath/local-players.json` (`LocalPlayerIdentities`). Player 1 on this couch is always the same player, in every world.
+  - `PlayerJoinService.RequestJoinRpc` carries it, so a Phase 7 remote PC brings its own UUIDs through the same request. The host refuses a missing UUID or one already playing. (The host trusts the UUID; fine for friends' co-op, and Steam/EOS IDs can replace it in 7.1.)
+- **Profiles:** UUID, name, feet position, yaw and the bag's slots in order (empty slots too, so the block picker order stays). Phase 4 adds class, race and stats.
+  - A returning player's spawn column is their saved spot. Once its terrain generates they land **exactly** there, facing the same way, unless something now fills that space; then they land on top of that column.
+  - `PlayerBlockBag.ServerRestore` fills the bag after the player spawns (a `NetworkList` only syncs once spawned).
+  - Profiles of players who aren't playing are kept, so Player 2 skipping a session doesn't lose their stuff.
+- **`WorldSaveManager`** (scene, host only, not a singleton) runs at execution order **-200**, before `VoxelWorldManager` (-100), and hands it the saved seed and deltas with `UseSavedWorld`. A saved seed beats the inspector seed and `randomizeSeedOnPlay`.
+  - **When it saves:** every 2 minutes, on quit (including leaving Play in the editor), and **F5**. The overlay shows the save state and a toast when it's done.
+  - Encoding happens on the main thread, where the world can't change underneath it (about 1 ms); compressing and writing happen on a worker `Task`. Quitting waits for writes to finish.
+  - Live players' positions and bags are copied into their profiles every second, so the save on quit has them even if the session is already shutting down.
+  - `-newworld` (or the inspector toggle) starts fresh; the old save is replaced, and kept as `.bak`, at the first save. `-world <name>` picks another save.
+  - *Voxelforge > Saves > Open Save Folder* and *Delete Editor Saves*.
+
+### Deferred on purpose
+- Save slots and a menu to pick or delete worlds: the 6.1 world picker. A pause-menu save button is 6.5; until then, F5.
+- Mining damage and drops lying on the ground aren't saved: they're short-lived by design (D-015).
+- Who changed each block across sessions (would map `PlayerId` → `PlayerUuid` in the deltas).
+- Sending the save to remote players (7.2 reuses `DeltaLogCodec`).
+
+---
+
 ## D-016: Building With the Block Bag (Ghost Block and Placement Checks)
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)
@@ -23,6 +59,7 @@
   - The selection lives on the owner's PC. The host only checks that the bag has the block.
   - Controls: mouse wheel, LB / RB, split keyboard Z / C (left player) and `.` / `/` (right player).
   - `DevPlace` became **`Place`** (same bindings: right mouse, left trigger, E, Enter). New `PlayerButtons.SelectNext` / `SelectPrevious`.
+- **Aiming above the head (added 2026-10-28, after the 3.4 play-test):** the orbit camera's `minPitch` went from **10° to −35°**, so the camera can swing under the hero and look up. The `PlayerAim` mapping (`× 1.5 − 30`) is unchanged, so aim now runs from **82.5° up** to 75° down, where it used to stop at 15° up (eye level). Everything reachable before is reached exactly the same way. Camera collision already pulls the camera in when it would dip into the ground.
 - **Ghost block:** `BlockGhost` draws the selected block's `BlockItemMesh` in the snapped cell with the new `Voxelforge/Block Ghost` shader (`Materials/BlockGhost.mat`).
   - The shader is unlit and see-through, uses the real block textures, pulses gently and has a team-coloured rim.
   - It turns **red** where a block would go inside a character. Nothing to build on, or an empty bag, hides it.

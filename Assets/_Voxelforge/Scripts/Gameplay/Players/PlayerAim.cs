@@ -20,8 +20,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Height of the hero's eyes above their feet, where the aim ray starts.")]
         [SerializeField, Range(0.5f, 2f)] float eyeHeight = 1.5f;
 
-        [Tooltip("Aim pitch = camera pitch x this + offset. The orbit camera only looks 10-70 degrees down, so this " +
-                 "stretches it to reach walls and ceilings as well as the floor.")]
+        [Tooltip("Aim pitch = camera pitch x this + offset. The orbit camera pitches from -35 (looking up) to 70 degrees " +
+                 "(looking down), which this stretches to about 82 degrees up through 75 down: the floor, walls and the " +
+                 "blocks above the hero's head.")]
         [SerializeField, Range(0.5f, 3f)] float pitchScale = 1.5f;
 
         [Tooltip("Degrees added to the scaled camera pitch. Negative aims higher.")]

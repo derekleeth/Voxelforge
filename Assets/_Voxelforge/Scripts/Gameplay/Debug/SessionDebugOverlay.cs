@@ -8,8 +8,8 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// A corner readout of the host and every player, for play-testing. F3 hides it, F4 records frame stats, F12 saves
-    /// a screenshot and Shift+Esc quits a build. Starting a build with <c>-smoketest &lt;seconds&gt;</c> logs stats and a
+    /// A corner readout of the host and every player, for play-testing. F3 hides it, F4 records frame stats, F5 saves
+    /// the world, F12 saves a screenshot and Shift+Esc quits a build. Starting a build with <c>-smoketest &lt;seconds&gt;</c> logs stats and a
     /// screenshot after that long, then quits.
     /// </summary>
     public sealed class SessionDebugOverlay : MonoBehaviour
@@ -27,6 +27,9 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Optional: shows how many block drops are lying around.")]
         [SerializeField] BlockDropSpawner drops;
+
+        [Tooltip("Optional: F5 saves the world, and the overlay shows the save.")]
+        [SerializeField] WorldSaveManager saves;
 
         [SerializeField] bool visible = true;
 
@@ -53,6 +56,20 @@ namespace Voxelforge.Gameplay
             if (index >= 0)
                 _smokeTestSeconds = index + 1 < args.Length && float.TryParse(args[index + 1], out float seconds) ? seconds : 20f;
         }
+
+        void OnEnable()
+        {
+            if (saves != null)
+                saves.SaveFinished += HandleSaveFinished;
+        }
+
+        void OnDisable()
+        {
+            if (saves != null)
+                saves.SaveFinished -= HandleSaveFinished;
+        }
+
+        void HandleSaveFinished(string message) => ShowToast(message, delayFrames: 0);
 
         void Update()
         {
@@ -81,6 +98,8 @@ namespace Voxelforge.Gameplay
                 visible = !visible;
             if (keyboard.f4Key.wasPressedThisFrame)
                 LogFrameStats("F4");
+            if (keyboard.f5Key.wasPressedThisFrame && saves != null)
+                saves.SaveNow();
             if (keyboard.f12Key.wasPressedThisFrame)
                 SaveScreenshot("screenshot");
             if (keyboard.escapeKey.wasPressedThisFrame && keyboard.shiftKey.isPressed && !Application.isEditor)
@@ -208,6 +227,8 @@ namespace Voxelforge.Gameplay
                 _text.Append($"   being mined: {world.Damage.Count}");
             if (drops != null)
                 _text.Append($"   drops: {drops.DropCount}");
+            if (saves != null)
+                _text.Append($"\n{saves.Describe()}");
         }
 
         /// <summary>One line per joined slot on this PC, plus a join prompt for the next free one.</summary>

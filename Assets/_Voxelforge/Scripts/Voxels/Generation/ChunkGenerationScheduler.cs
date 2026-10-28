@@ -73,6 +73,12 @@ namespace Voxelforge.Voxels
         /// </summary>
         public VoxelDeltaLog DeltaLog { get; set; }
 
+        /// <summary>
+        /// Saved edits whose generated block didn't match what generated this time: the terrain generator changed
+        /// since the save was made (Roadmap 3.4). The edits are still put back.
+        /// </summary>
+        public int MismatchedDeltaCount { get; private set; }
+
         /// <summary>True while a chunk is queued or generating, so it will appear in the world soon.</summary>
         public bool IsRequested(ChunkCoord coord) => _requested.Contains(coord);
 
@@ -159,7 +165,13 @@ namespace Voxelforge.Voxels
                     else
                         (chunk = _world.CreateChunk(pending.Coord)).CopyFrom(pending.Voxels);
                     if (DeltaLog != null)
-                        VoxelWorldEditor.ReapplyDeltas(chunk, DeltaLog);
+                    {
+                        int mismatches = VoxelWorldEditor.ReapplyDeltas(chunk, DeltaLog);
+                        if (mismatches > 0 && MismatchedDeltaCount == 0)
+                            UnityEngine.Debug.LogWarning($"[Voxelforge] Saved edits in chunk {pending.Coord} were made on " +
+                                "different terrain. The terrain generator changed since this world was saved; edits are put back anyway.");
+                        MismatchedDeltaCount += mismatches;
+                    }
                     GeneratedCount++;
                 }
                 _pool.Push(pending);

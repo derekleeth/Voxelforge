@@ -83,6 +83,25 @@ namespace Voxelforge.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Replaces everything with saved slots (Roadmap 3.4), in the same order. A block listed twice is merged into
+        /// its first slot, and counts stop at <see cref="MaxPerBlock"/>.
+        /// </summary>
+        public void Restore(IEnumerable<BlockStack> stacks)
+        {
+            _stacks.Clear();
+            if (stacks == null)
+                return;
+            foreach (BlockStack stack in stacks)
+            {
+                int slot = IndexOf(stack.BlockId);
+                if (slot < 0)
+                    _stacks.Add(new BlockStack(stack.BlockId, (ushort)Math.Min((int)stack.Count, MaxPerBlock)));
+                else
+                    _stacks[slot] = new BlockStack(stack.BlockId, (ushort)Math.Min(_stacks[slot].Count + stack.Count, MaxPerBlock));
+            }
+        }
+
         int IndexOf(ushort blockId)
         {
             for (int i = 0; i < _stacks.Count; i++)
