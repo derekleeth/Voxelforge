@@ -33,6 +33,7 @@
 - **Mixamo needs one closed body.** Our hero is ~60 overlapping pieces (head inside hood, belt through tunic), so the auto-rigger failed. Fix: melt a copy into one shell, rig *that*, then copy the bones and weights back onto the real hero in Blender.
 - Mixamo's clips are skeleton-only motion, so they work on our hero even though Mixamo never saw it.
 - After restarting Unity, Claude Code needs **`/mcp` → Reconnect** to talk to it again.
+- **Play-test bug: "he jumps a block to the left and back while walking."** The Walk and Run clips came without "In Place", so the body ran up to 0.9 m ahead of the player (Mixamo's run also curves left) and snapped back each loop. Fixed in the import settings: the travel is now thrown away, and the hips stay within 0.08 m of the player.
 
 ### Next up
 - [ ] You two: play-test! Split-screen, run up and down hills and stairs, jump off ledges, back the camera into a hill, and check FPS holds at **120+** with the Game view focused. Then we tick 2.5 off.

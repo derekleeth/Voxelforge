@@ -32,7 +32,8 @@
   - `apply_mixamo_rig()` copies each vertex's weights from the nearest point on the rigged stand-in (4 bones max, normalized) onto the real hero, and `export_hero_fbx()` writes `Art/Models/Hero/Hero.fbx`.
   - Mixamo clips are downloaded as `Animations/Hero@Idle|Walk|Run|Jump|Fall|Land.fbx`, all In Place. Mixamo content is royalty-free for games.
 - ***Voxelforge → Rebuild Hero Animator*** (`HeroAnimatorBuilder`) sets everything up from those files:
-  - **Imports:** Humanoid everywhere. Each animation has its **own** avatar, because copying the hero's fails: Blender's export roots the bones differently. Root motion is baked into the pose, because the motor moves the player, not the clip.
+  - **Imports:** Humanoid everywhere. Each animation has its **own** avatar, because copying the hero's fails: Blender's export roots the bones differently. Turning and height are baked into the pose, but forward travel is **extracted as root motion and ignored** (`applyRootMotion` off), because the motor moves the player, not the clip. Baking XZ into the pose would let a clip that wasn't downloaded In Place carry the body away and snap it back each loop. That happened in the first play-test: Mixamo's Run travels 2.5 m per cycle and drifts left.
+  - The controller asset is emptied and refilled, never deleted, so the prefab's link to it survives a rebuild.
   - **Materials** and their remaps.
   - **`Hero.controller`:** a Locomotion blend tree on `Speed` (Idle 0, Walk 2, Run 5 m/s), plus Jump / Fall / Land.
 

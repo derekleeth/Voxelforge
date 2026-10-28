@@ -87,14 +87,17 @@ namespace Voxelforge.Editor
                 clip.name = name;
                 clip.loopTime = loop;
                 clip.loopPose = loop;
-                // In place: the motor moves the player, the animation only moves the body.
+                // The motor moves the player, so the body must stay over it. Turning and height stay in the pose;
+                // forward travel (Mixamo's walk and run move 1.4 m and 2.5 m per cycle unless downloaded In Place)
+                // is pulled out as root motion, which the Animator then ignores (applyRootMotion is off). Baking XZ
+                // into the pose instead would carry the body away from the player and snap it back every loop.
                 clip.lockRootRotation = true;
-                clip.keepOriginalOrientation = true;
+                clip.keepOriginalOrientation = false;
                 clip.lockRootHeightY = true;
                 clip.keepOriginalPositionY = false;
                 clip.heightFromFeet = true;
-                clip.lockRootPositionXZ = true;
-                clip.keepOriginalPositionXZ = true;
+                clip.lockRootPositionXZ = false;
+                clip.keepOriginalPositionXZ = false;
             }
             importer.clipAnimations = clips;
             importer.SaveAndReimport();
@@ -137,8 +140,7 @@ namespace Voxelforge.Editor
 
         static void BuildController()
         {
-            AssetDatabase.DeleteAsset(ControllerPath);
-            AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
+            AnimatorController controller = LoadEmptiedController();
             controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
             controller.AddParameter("VerticalSpeed", AnimatorControllerParameterType.Float);
             controller.AddParameter("Grounded", AnimatorControllerParameterType.Bool);
@@ -180,6 +182,27 @@ namespace Voxelforge.Editor
             settle.exitTime = 0.5f;
             Transition(land, locomotion, 0.15f, (AnimatorConditionMode.Greater, "Speed", 1f));
             Transition(land, jump, 0.1f, (AnimatorConditionMode.IfNot, "Grounded", 0f), (AnimatorConditionMode.Greater, "VerticalSpeed", 1f));
+        }
+
+        /// <summary>
+        /// The controller asset with everything removed. It's emptied rather than deleted and recreated, so it keeps
+        /// its GUID and the player prefab's Animator stays linked to it.
+        /// </summary>
+        static AnimatorController LoadEmptiedController()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+            if (controller == null)
+                return AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
+
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            foreach (ChildAnimatorState child in machine.states)
+                machine.RemoveState(child.state);
+            foreach (AnimatorStateTransition transition in machine.anyStateTransitions)
+                machine.RemoveAnyStateTransition(transition);
+            foreach (BlendTree tree in AssetDatabase.LoadAllAssetsAtPath(ControllerPath).OfType<BlendTree>())
+                UnityEngine.Object.DestroyImmediate(tree, true);
+            controller.parameters = Array.Empty<AnimatorControllerParameter>();
+            return controller;
         }
 
         static AnimatorState AddState(AnimatorStateMachine machine, string clip, Vector3 position)
