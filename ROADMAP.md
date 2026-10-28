@@ -22,6 +22,7 @@
 - [ ] **2.3 Voronoi Dynamic Split-Screen:** Build midpoint shared camera when players are `< 15m` apart; smoothly split via angled screen-space render targets when `> 15m` apart.
 - [ ] **2.4 Multi-Viewer Chunk Loader:** Update Chunk Manager to stream/unload terrain around a `List<ViewerTransform>` so both players can explore independently.
 - [ ] **2.5 Smooth Character Integration (Creative):** Import stylized 3D characters with Mixamo animations, 1m auto-stepping, and IK foot placement on blocky stairs.
+- [ ] **2.6 Playable Demo Build:** Build a runnable Windows `.exe` (into a git-ignored `Builds/` folder) and play-test it outside the editor: both players exploring the world in split-screen. Check that it starts cleanly, that terrain, textures, lighting and glowing ore look the same as in the editor, and that FPS holds at 120+. Record the results (FPS, build size, issues found) in `DEVLOG.md`.
 
 ## Phase 3: "Forge & Carve" (Digging, Building & Saving)
 **Goal:** Let players mine tunnels, build castles, and save their world in a network-ready format.
