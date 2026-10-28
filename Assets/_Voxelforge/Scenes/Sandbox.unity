@@ -119,6 +119,55 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &83969902
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 83969904}
+  - component: {fileID: 83969903}
+  m_Layer: 0
+  m_Name: Player HUD
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &83969903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 83969902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b92fde6d117a67c4dae1741b2e93b996, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerHud
+  localPlayers: {fileID: 2147055201}
+  cameras: {fileID: 1604232797}
+  world: {fileID: 1325734895}
+  visible: 1
+  reticleSize: {x: 9, y: 2}
+--- !u!4 &83969904
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 83969902}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &122390141
 GameObject:
   m_ObjectHideFlags: 0
@@ -719,6 +768,60 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1604232798}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &974320859
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 974320861}
+  - component: {fileID: 974320860}
+  m_Layer: 0
+  m_Name: Block Drops
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &974320860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 974320859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f53b4547fdbe9a344ac19fb50a0d588f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.BlockDropSpawner
+  networkManager: {fileID: 2147055199}
+  world: {fileID: 1325734895}
+  players: {fileID: 2147055197}
+  dropPrefab: {fileID: 6345666449270026154, guid: 1b3ed0708c9ccb847a4f57e6f3ac35f1, type: 3}
+  pullRadius: 2
+  pickupRadius: 0.6
+  pullSpeed: 8
+  mergeRadius: 1
+  lifetimeSeconds: 300
+  popSpeed: 3
+--- !u!4 &974320861
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 974320859}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1325734893
 GameObject:
   m_ObjectHideFlags: 0
@@ -757,6 +860,8 @@ MonoBehaviour:
   maxGenerationJobsInFlight: 32
   maxJobsInFlight: 32
   logMeshingTime: 1
+  crackMaterial: {fileID: 2100000, guid: 375b0392e02470f4b87d9f1cdadc4f17, type: 2}
+  damageHealSeconds: 3
   decorationSet: {fileID: 11400000, guid: 53272a4472a044d48907df61b8552f9a, type: 2}
   decorationCullShader: {fileID: 7200000, guid: 0c6f4184b73d9b143ac02e27026bf520, type: 3}
   windAngle: 60
@@ -1117,7 +1222,9 @@ MonoBehaviour:
   cameras: {fileID: 1604232797}
   world: {fileID: 1325734895}
   chunkLoader: {fileID: 1325734897}
+  drops: {fileID: 974320860}
   visible: 1
+  statsWindowSeconds: 10
 --- !u!114 &2147055196
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1266,3 +1373,5 @@ SceneRoots:
   - {fileID: 2147055200}
   - {fileID: 2145343288}
   - {fileID: 1604232798}
+  - {fileID: 974320861}
+  - {fileID: 83969904}

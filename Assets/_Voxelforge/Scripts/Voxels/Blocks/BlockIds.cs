@@ -18,5 +18,7 @@ namespace Voxelforge.Voxels
         public const ushort RedRock = 8;
         /// <summary>Invisible but solid: fills a tree's trunk so the tree mesh (Roadmap 2.6) blocks and collides.</summary>
         public const ushort TreeTrunk = 9;
+        /// <summary>Wood from a chopped tree (Roadmap 3.2). Each trunk block drops one.</summary>
+        public const ushort Log = 10;
     }
 }

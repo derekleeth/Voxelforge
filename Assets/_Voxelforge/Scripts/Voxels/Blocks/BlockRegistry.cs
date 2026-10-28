@@ -42,6 +42,12 @@ namespace Voxelforge.Voxels
             else if (air.IsSolid)
                 errors.Add($"'{air.DisplayName}' uses the Air ID ({BlockIds.Air}) but is marked solid.");
 
+            foreach (BlockDefinition block in seen.Values)
+            {
+                if (block.DropCount > 0 && !seen.ContainsKey(block.DropId))
+                    errors.Add($"'{block.DisplayName}' drops block {block.DropId}, which isn't in the registry.");
+            }
+
             return errors;
         }
 

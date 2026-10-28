@@ -15,12 +15,15 @@ MonoBehaviour:
   id: 9
   displayName: Tree Trunk
   maxDurability: 30
+  drop: {fileID: 11400000, guid: 21c324f9c67985641ba27454981e6034, type: 2}
+  dropCount: 1
   isSolid: 1
   isTransparent: 1
   lightEmission: 0
   mapColor:
     serializedVersion: 2
     rgba: 4280695670
+  biomeTint: 0
   topTexture: {fileID: 0}
   sideTexture: {fileID: 0}
   bottomTexture: {fileID: 0}

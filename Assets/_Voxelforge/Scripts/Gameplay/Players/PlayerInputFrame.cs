@@ -9,8 +9,8 @@ namespace Voxelforge.Gameplay
     {
         None = 0,
         Jump = 1 << 0,
-        /// <summary>Temporary (3.1): dig the block in front of the hero. Replaced by real mining in 3.2.</summary>
-        DevDig = 1 << 1,
+        /// <summary>Held: mine the block the hero is aiming at (Roadmap 3.2, <see cref="PlayerMiner"/>).</summary>
+        Mine = 1 << 1,
         /// <summary>Temporary (3.1): place a block in front of the hero. Replaced by ghost-block placement in 3.3.</summary>
         DevPlace = 1 << 2,
     }

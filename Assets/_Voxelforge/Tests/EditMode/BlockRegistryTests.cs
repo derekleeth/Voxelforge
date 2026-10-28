@@ -33,12 +33,40 @@ namespace Voxelforge.Tests
 
             using NativeArray<BlockInfo> lookup = registry.CreateLookup(Allocator.Temp);
             foreach (ushort id in new[] { BlockIds.Air, BlockIds.Grass, BlockIds.Dirt, BlockIds.Stone, BlockIds.ManaCrystalOre,
-                         BlockIds.Sand, BlockIds.Snow, BlockIds.Sandstone, BlockIds.RedRock })
+                         BlockIds.Sand, BlockIds.Snow, BlockIds.Sandstone, BlockIds.RedRock, BlockIds.TreeTrunk, BlockIds.Log })
                 Assert.IsTrue(lookup[id].IsRegistered, $"Block ID {id} has no definition in the registry.");
 
             Assert.IsFalse(lookup[BlockIds.Air].IsSolid);
             Assert.IsTrue(lookup[BlockIds.Stone].IsSolid);
             Assert.Greater(lookup[BlockIds.ManaCrystalOre].LightEmission, 0);
+        }
+
+        [Test]
+        public void ProjectRegistry_Drops_GrassGivesDirt_TrunkGivesLog_AirGivesNothing()
+        {
+            var registry = AssetDatabase.LoadAssetAtPath<BlockRegistry>(RegistryAssetPath);
+            using NativeArray<BlockInfo> lookup = registry.CreateLookup(Allocator.Temp);
+
+            Assert.AreEqual(0, lookup[BlockIds.Air].DropCount);
+            Assert.AreEqual(BlockIds.Dirt, lookup[BlockIds.Grass].DropId);
+            Assert.AreEqual(BlockIds.Log, lookup[BlockIds.TreeTrunk].DropId);
+            Assert.AreEqual(1, lookup[BlockIds.TreeTrunk].DropCount);
+            foreach (ushort id in new[] { BlockIds.Dirt, BlockIds.Stone, BlockIds.ManaCrystalOre, BlockIds.Log })
+            {
+                Assert.AreEqual(id, lookup[id].DropId, $"Block {id} should drop itself.");
+                Assert.AreEqual(1, lookup[id].DropCount, $"Block {id} should drop one.");
+            }
+        }
+
+        [Test]
+        public void Validate_CatchesDropOfUnregisteredBlock()
+        {
+            BlockDefinition log = MakeBlock(BlockIds.Log, "Log");
+            BlockDefinition trunk = BlockDefinition.Create(BlockIds.TreeTrunk, "Trunk", drop: log);
+            _created.Add(trunk);
+
+            Assert.IsNotEmpty(MakeRegistry(MakeBlock(BlockIds.Air, "Air", isSolid: false), trunk).Validate());
+            CollectionAssert.IsEmpty(MakeRegistry(MakeBlock(BlockIds.Air, "Air", isSolid: false), trunk, log).Validate());
         }
 
         [Test]

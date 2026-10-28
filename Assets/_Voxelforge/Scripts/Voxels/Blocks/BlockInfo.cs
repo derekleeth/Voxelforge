@@ -24,6 +24,10 @@ namespace Voxelforge.Voxels
         public ushort Id;
         /// <summary>Total mining damage needed to break this block. 0 means it can't be broken.</summary>
         public ushort MaxDurability;
+        /// <summary>The block that drops when this one is mined or chopped (Roadmap 3.2).</summary>
+        public ushort DropId;
+        /// <summary>How many of <see cref="DropId"/> drop. 0 means nothing drops.</summary>
+        public byte DropCount;
         /// <summary>Light this block gives off, 0-15.</summary>
         public byte LightEmission;
         public BlockFlags Flags;

@@ -385,6 +385,50 @@ def make_mana_crystal_ore(g):
     return g.outputs(color, g.math("ADD", height, 0.0, clamp=True), roughness, emission)
 
 
+def make_log_bark(g):
+    """Chopped-tree bark (Roadmap 3.2): deep vertical furrows that wander a little, rough plates between them."""
+    offset = (4.0, -6.0, 2.0, 7.0)
+    u, _ = g.uv()
+    warp = g.noise(g.torus(1.4, offset), detail=3, roughness=0.5)
+    # 5 furrows across the face; the warp comes from the torus, so the stripes still tile on both axes.
+    phase = g.math("ADD", g.math("MULTIPLY", u, 5.0 * math.tau), g.math("MULTIPLY", warp, 5.0))
+    ridge = g.remap(g.math("ADD", g.math("MULTIPLY", g.math("SINE", phase), 0.5), 0.5), 0.1, 0.8, smooth=True)
+    plates, _ = g.voronoi(g.torus(0.8, offset), "DISTANCE_TO_EDGE", randomness=0.8)
+    plates = g.remap(plates, 0.0, 0.05, 0.75, 1.0, smooth=True)
+    grit = g.noise(g.torus(5.0, offset), detail=6, roughness=0.6)
+    height = g.math("ADD", g.math("MULTIPLY", g.math("MULTIPLY", ridge, plates), 0.8), g.math("MULTIPLY", grit, 0.2),
+                    clamp=True)
+    base = g.ramp(height, [(0.0, (0.16, 0.10, 0.06)), (0.5, (0.36, 0.24, 0.14)), (1.0, (0.52, 0.38, 0.23))])
+    return g.outputs(g.shade(base, height, 0.55, 1.12), height, 0.9)
+
+
+def make_log_top(g):
+    """The cut end of a log: warm growth rings in a rounded square, a dark heart, and a bark rim around the edge."""
+    offset = (-2.0, 8.0, -6.0, 3.0)
+    u, v = g.uv()
+    du = g.math("ABSOLUTE", g.math("SUBTRACT", u, 0.5))
+    dv = g.math("ABSOLUTE", g.math("SUBTRACT", v, 0.5))
+    round_r = g.math("SQRT", g.math("ADD", g.math("MULTIPLY", du, du), g.math("MULTIPLY", dv, dv)))
+    square_r = g.math("MAXIMUM", du, dv)
+    wobble = g.noise(g.torus(1.5, offset), detail=2, roughness=0.5)
+    r = g.math("ADD", g.math("ADD", g.math("MULTIPLY", round_r, 0.4), g.math("MULTIPLY", square_r, 0.6)),
+               g.math("MULTIPLY", wobble, 0.03))
+    # Wide pale growth rings separated by thin dark lines.
+    ring = g.math("ADD", g.math("MULTIPLY", g.math("SINE", g.math("MULTIPLY", r, 14.0 * math.tau)), 0.5), 0.5)
+    ring = g.remap(ring, 0.0, 0.35, smooth=True)
+    grain = g.noise(g.torus(6.0, offset), detail=5, roughness=0.6)
+    wood = g.ramp(ring, [(0.0, (0.50, 0.33, 0.18)), (1.0, (0.82, 0.64, 0.42))])
+    wood = g.mix(wood, (0.70, 0.52, 0.32), g.math("MULTIPLY", grain, 0.35))
+    wood = g.mix(wood, (0.42, 0.27, 0.15), g.remap(r, 0.07, 0.0, smooth=True))  # Dark heart.
+    rim = g.remap(g.math("ADD", square_r, g.math("MULTIPLY", wobble, 0.02)), 0.435, 0.45, smooth=True)
+    bark = g.ramp(grain, [(0.3, (0.18, 0.11, 0.06)), (0.7, (0.36, 0.24, 0.14))])
+    color = g.mix(wood, bark, rim)
+    wood_height = g.math("ADD", g.math("MULTIPLY", ring, 0.12), g.math("MULTIPLY", grain, 0.08))
+    height = g.math("ADD", g.math("ADD", wood_height, 0.35),
+                    g.math("MULTIPLY", rim, g.math("ADD", 0.15, g.math("MULTIPLY", grain, 0.3))), clamp=True)
+    return g.outputs(g.shade(color, height, 0.7, 1.1), height, 0.85)
+
+
 # Layer name -> (recipe, normal strength, AO strength, tiles vertically). Names must match the BlockTexture assets
 # in Unity. Grass Side doesn't tile vertically (grass on top, dirt below), so its edges aren't wrapped into each other.
 LAYERS = {
@@ -397,6 +441,8 @@ LAYERS = {
     "RedRock": (make_red_rock, 5.0, 1.0, True),
     "Snow": (make_snow, 1.5, 0.35, True),
     "ManaCrystalOre": (make_mana_crystal_ore, 5.0, 1.0, True),
+    "LogBark": (make_log_bark, 4.0, 0.9, True),
+    "LogTop": (make_log_top, 2.5, 0.6, False),
 }
 
 

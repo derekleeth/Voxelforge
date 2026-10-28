@@ -25,6 +25,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Optional: shows terrain streaming around the players.")]
         [SerializeField] ChunkLoader chunkLoader;
 
+        [Tooltip("Optional: shows how many block drops are lying around.")]
+        [SerializeField] BlockDropSpawner drops;
+
         [SerializeField] bool visible = true;
 
         [Tooltip("How many seconds of frames the average and 1% low FPS cover.")]
@@ -201,6 +204,10 @@ namespace Voxelforge.Gameplay
                 _text.Append($"\ndecorations: {world.Decorations.InstanceCount} in {world.Decorations.ChunkCount} chunks");
             if (world.DeltaLog != null)
                 _text.Append($"\nedits: {world.DeltaLog.BlockCount} blocks in {world.DeltaLog.ChunkCount} chunks");
+            if (world.Damage != null)
+                _text.Append($"   being mined: {world.Damage.Count}");
+            if (drops != null)
+                _text.Append($"   drops: {drops.DropCount}");
         }
 
         /// <summary>One line per joined slot on this PC, plus a join prompt for the next free one.</summary>

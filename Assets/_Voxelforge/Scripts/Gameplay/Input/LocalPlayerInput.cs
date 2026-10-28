@@ -23,7 +23,7 @@ namespace Voxelforge.Gameplay
         readonly InputAction _move;
         readonly InputAction _jump;
         readonly InputAction _look;
-        readonly InputAction _devDig;
+        readonly InputAction _mine;
         readonly InputAction _devPlace;
         InputUser _user;
 
@@ -35,7 +35,7 @@ namespace Voxelforge.Gameplay
             _move = _actions.FindAction("Player/Move", throwIfNotFound: true);
             _jump = _actions.FindAction("Player/Jump", throwIfNotFound: true);
             _look = _actions.FindAction("Player/Look", throwIfNotFound: true);
-            _devDig = _actions.FindAction("Player/DevDig", throwIfNotFound: true);
+            _mine = _actions.FindAction("Player/Mine", throwIfNotFound: true);
             _devPlace = _actions.FindAction("Player/DevPlace", throwIfNotFound: true);
         }
 
@@ -91,8 +91,8 @@ namespace Voxelforge.Gameplay
             var buttons = PlayerButtons.None;
             if (_jump.IsPressed())
                 buttons |= PlayerButtons.Jump;
-            if (_devDig.IsPressed())
-                buttons |= PlayerButtons.DevDig;
+            if (_mine.IsPressed())
+                buttons |= PlayerButtons.Mine;
             if (_devPlace.IsPressed())
                 buttons |= PlayerButtons.DevPlace;
 

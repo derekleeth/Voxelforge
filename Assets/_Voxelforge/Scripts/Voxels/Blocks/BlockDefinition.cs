@@ -17,6 +17,12 @@ namespace Voxelforge.Voxels
         [Tooltip("Total mining damage needed to break the block. 0 = unbreakable.")]
         [SerializeField, Range(0, ushort.MaxValue)] int maxDurability = 20;
 
+        [Tooltip("The block that drops when this one is mined or chopped. Empty = this block itself.")]
+        [SerializeField] BlockDefinition drop;
+
+        [Tooltip("How many blocks drop. 0 = nothing drops.")]
+        [SerializeField, Range(0, 16)] int dropCount = 1;
+
         [Tooltip("Blocks movement and has collision.")]
         [SerializeField] bool isSolid = true;
 
@@ -45,6 +51,8 @@ namespace Voxelforge.Voxels
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public int MaxDurability => maxDurability;
+        public ushort DropId => drop != null ? drop.Id : id;
+        public int DropCount => dropCount;
         public bool IsSolid => isSolid;
         public bool IsTransparent => isTransparent;
         public int LightEmission => lightEmission;
@@ -66,6 +74,8 @@ namespace Voxelforge.Voxels
             {
                 Id = id,
                 MaxDurability = (ushort)Mathf.Clamp(maxDurability, 0, ushort.MaxValue),
+                DropId = DropId,
+                DropCount = (byte)Mathf.Clamp(dropCount, 0, 16),
                 LightEmission = (byte)Mathf.Clamp(lightEmission, 0, Voxel.MaxLight),
                 Flags = flags,
                 MapColor = mapColor,
@@ -79,13 +89,16 @@ namespace Voxelforge.Voxels
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static BlockDefinition Create(ushort id, string displayName, int maxDurability = 20,
-            bool isSolid = true, bool isTransparent = false, int lightEmission = 0, BiomeTint biomeTint = BiomeTint.None)
+            bool isSolid = true, bool isTransparent = false, int lightEmission = 0, BiomeTint biomeTint = BiomeTint.None,
+            BlockDefinition drop = null, int dropCount = 1)
         {
             var definition = CreateInstance<BlockDefinition>();
             definition.name = displayName;
             definition.id = id;
             definition.displayName = displayName;
             definition.maxDurability = maxDurability;
+            definition.drop = drop;
+            definition.dropCount = dropCount;
             definition.isSolid = isSolid;
             definition.isTransparent = isTransparent;
             definition.lightEmission = lightEmission;

@@ -33,7 +33,7 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "DevDig",
+                    "name": "Mine",
                     "type": "Button",
                     "id": "0784a198-b099-4537-b4ca-c898b4f5a72f",
                     "expectedControlType": "Button",
@@ -235,7 +235,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardMouse",
-                    "action": "DevDig",
+                    "action": "Mine",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -246,7 +246,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
-                    "action": "DevDig",
+                    "action": "Mine",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -257,7 +257,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardLeft",
-                    "action": "DevDig",
+                    "action": "Mine",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -268,7 +268,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardRight",
-                    "action": "DevDig",
+                    "action": "Mine",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

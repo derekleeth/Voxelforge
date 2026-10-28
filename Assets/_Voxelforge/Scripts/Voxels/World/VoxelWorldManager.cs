@@ -39,6 +39,13 @@ namespace Voxelforge.Voxels
         [Tooltip("Log how long the first full meshing pass took.")]
         [SerializeField] bool logMeshingTime = true;
 
+        [Header("Mining (Roadmap 3.2)")]
+        [Tooltip("Materials/BlockCrack.mat: cracks drawn over blocks being mined. Empty = no cracks.")]
+        [SerializeField] Material crackMaterial;
+
+        [Tooltip("A half-mined block nobody has hit for this many seconds heals completely.")]
+        [SerializeField, Range(0.5f, 30f)] float damageHealSeconds = 3f;
+
         [Header("Decorations (Roadmap 2.6)")]
         [Tooltip("Grass, flowers, bushes and trees. Empty = a bare world.")]
         [SerializeField] DecorationSet decorationSet;
@@ -61,6 +68,7 @@ namespace Voxelforge.Voxels
         DecorationLayer _decorations;
         DecorationRenderer _decorationRenderer;
         VoxelWorldEditor _editor;
+        BlockCrackRenderer _crackRenderer;
         float _meshingStartTime = -1f;
 
         /// <summary>The block data. Only this assembly can edit it.</summary>
@@ -78,6 +86,12 @@ namespace Voxelforge.Voxels
 
         /// <summary>Host only: raised for every block that changes, e.g. for drops (3.2) or sending edits to clients (6.3).</summary>
         public event System.Action<VoxelEdit> EditApplied;
+
+        /// <summary>Host only: how far blocks have been mined (Roadmap 3.2).</summary>
+        public BlockDamageMap Damage => _editor?.Damage;
+
+        /// <summary>The block types this world was built from, e.g. for a block's name or its drop's look.</summary>
+        public BlockRegistry Blocks => blockRegistry;
 
         /// <summary>Every loaded chunk's decorations, or null when there is no decoration set.</summary>
         public DecorationLayer Decorations => _decorations;
@@ -113,6 +127,8 @@ namespace Voxelforge.Voxels
             _editor = new VoxelWorldEditor(_world, new VoxelDeltaLog(), _scheduler);
             _editor.EditApplied += edit => EditApplied?.Invoke(edit);
             _generator.DeltaLog = _editor.DeltaLog;
+            if (crackMaterial != null)
+                _crackRenderer = new BlockCrackRenderer(crackMaterial);
             CreateDecorations();
         }
 
@@ -123,6 +139,14 @@ namespace Voxelforge.Voxels
         /// </summary>
         public VoxelEditResult RequestModifyVoxel(int3 coord, ushort blockId, PlayerId instigator) =>
             _editor?.RequestModifyVoxel(coord, blockId, instigator) ?? VoxelEditResult.ChunkNotLoaded;
+
+        /// <summary>
+        /// <b>Host only.</b> Mines the block at <paramref name="coord"/> by <paramref name="amount"/> on behalf of
+        /// <paramref name="instigator"/>. When its damage reaches its durability it breaks, through
+        /// <see cref="RequestModifyVoxel"/>. Players mine with <c>PlayerMiner</c>.
+        /// </summary>
+        public VoxelDamageResult RequestDamageVoxel(int3 coord, float amount, PlayerId instigator) =>
+            _editor?.RequestDamageVoxel(coord, amount, instigator, Time.time) ?? VoxelDamageResult.ChunkNotLoaded;
 
         void CreateDecorations()
         {
@@ -154,6 +178,8 @@ namespace Voxelforge.Voxels
                 _meshingStartTime = Time.realtimeSinceStartup;
 
             _scheduler.Update();
+            _editor.Damage.HealIdle(Time.time, damageHealSeconds);
+            _crackRenderer?.Draw(_editor.Damage, _world);
             if (_decorationRenderer != null)
             {
                 float radians = windAngle * Mathf.Deg2Rad;
@@ -175,6 +201,7 @@ namespace Voxelforge.Voxels
         {
             // Jobs read world memory, so stop them before freeing it.
             _scheduler?.Dispose();
+            _crackRenderer?.Dispose();
             _decorationRenderer?.Dispose();
             _decorations?.Dispose(); // Borrows the generator's biome list, so it goes first.
             _generator?.Dispose();

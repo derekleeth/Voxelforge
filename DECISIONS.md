@@ -5,6 +5,45 @@
 
 ---
 
+## D-015: Mining, Cracks, Block Drops and the Block Bag
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **The host aims for mining.** `PlayerAim` (on `PlayerController.Aim`) holds the aim settings from D-014: a voxel ray from the eyes, 5 m, pitch `× 1.5 − 30`, plus the 8 m host reach check. The owning PC uses it for the outline and reticle. The host runs the same ray with the controls it received (`PlayerController.ServerInput`), so **no block position ever comes from a PC for mining.**
+  - **Spherecast:** the voxel ray is exact for one-block targets, so mining doesn't use a sphere. Spherecast targeting arrives with 4.x combat, where targets are creatures.
+- **`Mine` replaces `DevDig`** (held, same bindings: left mouse, right trigger, Q / Right Shift in split-keyboard). `PlayerMiner` (host, `FixedUpdate`) calls `VoxelWorldManager.RequestDamageVoxel(coord, miningPower × dt, playerId)` while it's held.
+  - `miningPower` = **40/s bare-handed**: Snow 0.25 s, Dirt and Grass 0.5 s, Tree trunk 0.75 s, Stone and Red Rock 1.5 s, Mana Ore 3.75 s. 3.5 tools will multiply it.
+- **Sparse damage (as planned in D-003):** `BlockDamageMap` holds `int3 → { Damage, LastHitTime }`, on the host only, and isn't saved or sent.
+  - A block nobody hits for **3 s** heals completely (`damageHealSeconds`).
+  - Any edit to a block forgets its damage.
+  - Damage from several players adds up, and whoever finishes the block is the instigator of the edit.
+- **`RequestDamageVoxel`** sits beside `RequestModifyVoxel` in `VoxelWorldEditor`, with results instead of exceptions: `Damaged`, `Broken`, `Unbreakable` (durability 0), `NotSolid`, `NoDamage`, `ChunkNotLoaded`, `NoInstigator`.
+  - Breaking calls `RequestModifyVoxel(coord, Air)`, so the delta log, tree felling and remeshing are all the 3.1 code.
+- **Cracks:** `BlockCrackRenderer` (created by `VoxelWorldManager` when `crackMaterial` is set) draws a 1.004-scale cube over each damaged block.
+  - The shader is `Voxelforge/Block Crack`: unlit, multiply blend, depth offset, fades into fog.
+  - **8 stages side by side in one strip** (`Art/Textures/Cracks/BlockCracks.png`), not a texture array. Each stage gets its own material and one `RenderMeshInstanced` call, which keeps the shader tiny. The strip has no mipmaps so stages don't bleed into each other.
+  - *Voxelforge > Rebuild Crack Textures* draws seeded, branching cracks that spread further each stage.
+- **Drops:** `BlockDefinition` has `drop` (empty = itself) and `dropCount`, copied into `BlockInfo.DropId/DropCount`. `BlockRegistry.Validate` checks the dropped block exists.
+  - Air drops nothing, Grass drops Dirt, Tree trunk drops **Log**, and everything else drops itself (ore items come in 5.5).
+  - `BlockDropSpawner` (scene, host) listens to `EditApplied`. Each block that turns into air pops out one `BlockDrop`, so a felled tree drops one Log per trunk block.
+- **`BlockDrop`** is a NetworkObject with a position-only `NetworkTransform`.
+  - **The host moves it:** a small hop, gravity, per-axis voxel collision, and sliding to a stop.
+  - The spinning, bobbing 0.25 m mini block is drawn on every PC. Its mesh comes from `BlockItemMesh`, which runs the real `GreedyMesher` on one block, so it uses the block material and looks exactly like the block.
+  - **The spawner (host)** merges resting same-type drops within 1 m and pulls drops to the nearest hero within 2 m. It puts them in that hero's bag at 0.6 m and clears drops after 5 min. A full stack leaves the drop for someone else.
+- **Block bag:** `PlayerBlockBag` on the player. The host keeps a `BlockStacks` (plain C#, tested) and mirrors only the changed slot into a `NetworkList<BlockStack>`.
+  - Slots never move (an empty slot stays at 0), and each type stops at 999.
+  - `ServerTryTake` is ready for 3.3 placement, and 3.4 saves the bag in the player profile.
+- **HUD (CLAUDE.md Law #5):** `PlayerHud` draws, for each local player, a reticle in their team colour at their aim point (faint when nothing is in reach) and their bag under their hero. Both go through **that player's own camera and view**, so they work merged, split and in the grid. Real HUD windows replace it in 4.4.
+- **Log block (ID 10):** bark sides, ring top and bottom, durability 30. Baked by the 1.5 Blender pipeline (`LogBark` and `LogTop` recipes in `Tools/Blender/bake_block_textures.py`).
+- The F3 overlay adds `being mined: N   drops: M`.
+
+### Deferred on purpose
+- **Remote clients** see drops (NGO spawns and moves them) but not cracks or block meshes, because they have no world yet. Phase 6, same as D-014.
+- Tools and mining speed (3.5), ore items and depth tiers (5.5), a mining swing animation, and placing from the bag (3.3).
+
+---
+
 ## D-014: How Blocks Change (Message-Driven Edits and the Delta Log)
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

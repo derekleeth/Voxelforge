@@ -38,6 +38,9 @@ namespace Voxelforge.Gameplay
 
         [SerializeField] Color[] slotColors = { new Color(0.25f, 0.55f, 1f), new Color(1f, 0.45f, 0.2f), new Color(0.4f, 0.85f, 0.35f), new Color(0.85f, 0.35f, 0.9f) };
 
+        [Tooltip("How this hero aims at blocks, for mining and building. The owner and the host both use it.")]
+        [SerializeField] PlayerAim aim = new PlayerAim();
+
         readonly NetworkVariable<byte> _playerId = new NetworkVariable<byte>();
         readonly NetworkVariable<byte> _localSlot = new NetworkVariable<byte>();
         readonly NetworkVariable<bool> _landed = new NetworkVariable<bool>();
@@ -94,6 +97,12 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Owner only: the frame just sent to the host, for owner-side tools such as aiming at blocks.</summary>
         public PlayerInputFrame OwnerInput { get; private set; }
+
+        /// <summary>Host only: the newest frame received from the owner. Host-side actions such as mining read it.</summary>
+        public PlayerInputFrame ServerInput => _latestInput;
+
+        /// <summary>Which block this hero aims at.</summary>
+        public PlayerAim Aim => aim;
 
         /// <summary>The size of this player's collision box, for checks such as "would this block trap me?".</summary>
         public MotorSettings Motor => motor;

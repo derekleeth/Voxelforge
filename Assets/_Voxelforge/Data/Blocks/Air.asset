@@ -15,9 +15,15 @@ MonoBehaviour:
   id: 0
   displayName: Air
   maxDurability: 0
+  drop: {fileID: 0}
+  dropCount: 0
   isSolid: 0
   isTransparent: 1
   lightEmission: 0
   mapColor:
     serializedVersion: 2
     rgba: 0
+  biomeTint: 0
+  topTexture: {fileID: 0}
+  sideTexture: {fileID: 0}
+  bottomTexture: {fileID: 0}

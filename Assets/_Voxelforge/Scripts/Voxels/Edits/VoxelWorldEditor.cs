@@ -47,8 +47,39 @@ namespace Voxelforge.Voxels
 
         public VoxelDeltaLog DeltaLog { get; }
 
+        /// <summary>How far blocks have been mined (Roadmap 3.2). A block's entry goes when it changes.</summary>
+        public BlockDamageMap Damage { get; } = new BlockDamageMap();
+
         /// <summary>Raised once for every block that changes, including the rest of a chopped tree trunk.</summary>
         public event Action<VoxelEdit> EditApplied;
+
+        /// <summary>
+        /// Mines the block at <paramref name="coord"/> by <paramref name="amount"/> on behalf of
+        /// <paramref name="instigator"/>. Once its damage reaches <see cref="BlockInfo.MaxDurability"/> it breaks:
+        /// it's set to air through <see cref="RequestModifyVoxel"/>, so it's logged and a tree trunk fells its tree.
+        /// </summary>
+        /// <param name="time">Now, in game seconds. Blocks left alone heal (<see cref="BlockDamageMap.HealIdle"/>).</param>
+        public VoxelDamageResult RequestDamageVoxel(int3 coord, float amount, PlayerId instigator, float time)
+        {
+            if (!instigator.IsValid)
+                return VoxelDamageResult.NoInstigator;
+            if (!(amount > 0f))
+                return VoxelDamageResult.NoDamage;
+            if (!_world.TryGetChunk(VoxelMath.WorldToChunk(coord), out _))
+                return VoxelDamageResult.ChunkNotLoaded;
+
+            BlockInfo block = _world.Blocks[_world.GetVoxel(coord).BlockId];
+            if (!block.IsSolid)
+                return VoxelDamageResult.NotSolid;
+            if (block.MaxDurability == 0)
+                return VoxelDamageResult.Unbreakable;
+
+            if (Damage.Add(coord, amount, time) < block.MaxDurability)
+                return VoxelDamageResult.Damaged;
+
+            RequestModifyVoxel(coord, BlockIds.Air, instigator); // Its Apply forgets the damage.
+            return VoxelDamageResult.Broken;
+        }
 
         /// <summary>
         /// Sets the block at <paramref name="coord"/> to <paramref name="blockId"/> on behalf of <paramref name="instigator"/>.
@@ -97,6 +128,7 @@ namespace Voxelforge.Voxels
         {
             _world.SetVoxel(coord, after);
             DeltaLog.Record(coord, before, after, instigator);
+            Damage.Remove(coord);
             EditApplied?.Invoke(new VoxelEdit(coord, before, after, instigator));
         }
 

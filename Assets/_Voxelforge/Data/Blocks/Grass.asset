@@ -15,6 +15,8 @@ MonoBehaviour:
   id: 1
   displayName: Grass
   maxDurability: 20
+  drop: {fileID: 11400000, guid: 066e83003c770404f8a010fd3112da42, type: 2}
+  dropCount: 1
   isSolid: 1
   isTransparent: 0
   lightEmission: 0

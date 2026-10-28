@@ -5,6 +5,67 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 17): Crack, Crumble, Collect 🪨 Roadmap 3.2
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **Real mining!** Hold **Mine** (left mouse or right trigger) and the block you're aiming at wears down until it breaks. Tough blocks take longer. Details in DECISIONS.md **D-015**.
+  - Snow: ¼ second. Dirt and Grass: ½ second. Tree trunk: ¾ second. Stone: 1½ seconds. Mana Crystal Ore: almost 4 seconds!
+- **Blocks crack as you mine.** Cracks grow across the block in 8 steps. Stop mining, and after 3 seconds the block heals.
+- **Mine together:** if you both hit the same block, your mining adds up.
+- **Blocks drop!** A broken block pops out as a little spinning block. Walk close and it flies to you and goes into your **block bag**.
+  - Grass drops Dirt.
+  - Chopping a tree drops a **Log for every trunk block**. Logs are a brand-new block with bark sides and tree rings on the ends, painted in Blender.
+  - Drops lying next to each other join into one pile, and drops nobody collects disappear after 5 minutes.
+- **Each player has a mini HUD:**
+  - A **crosshair in your team colour** shows exactly where you're aiming. It goes faint when nothing is in reach.
+  - Your bag ("Dirt 12 · Stone 5 · Log 4") floats under your hero, in your own part of the screen.
+- **No cheating:** the host works out what you're aiming at from your controls. Your PC never tells it which block to break.
+- Right mouse / left trigger still places Dirt for now. Building with the blocks in your bag comes in 3.3.
+- The F3 overlay shows how many blocks are being mined and how many drops are lying around.
+
+### Tests: 202 / 202 passing ✅
+- A block wears down, breaks exactly at its toughness, and the break is a normal logged edit.
+- Two players mining together break a block faster, and the one who finishes it gets the credit.
+- Mining Stone in small steps (like the game does) takes 1½ seconds.
+- Left alone, a block heals. Building over a cracked block clears its cracks.
+- Breaking one trunk block fells the whole tree and makes one edit (one Log) per trunk block.
+- Air, unloaded chunks, unbreakable blocks, zero damage and "no player" are all refused.
+- Cracks pick the right stage. A drop's mini block is a whole cube with the right textures.
+- Bag: piles up by type, stops at 999, and taking is all or nothing.
+- Drop rules: Grass → Dirt, trunk → Log, Air → nothing, everything else drops itself.
+
+### Editor test by Claude
+- A hero held Mine while looking down and **dug 6 blocks straight down in about 7 seconds**. The bag then had **Dirt 4 and Stone 2**, so Grass really does drop Dirt.
+- Screenshots show the crack stages on grass tops and dirt sides, and the little dirt drops resting in their holes.
+
+### Play-test results 🎉
+- **Walking into drops picks them up** ✅
+- **Crosshair, block names and counts** show on each player's own side in split-screen ✅
+- **Cracks grow** as you mine, and tougher blocks take longer ✅
+- **Chopping a tree** gives you Logs ✅
+- **Blocks heal** when you stop mining them ✅
+- **FPS (F4, in the editor, 2 players, shared camera):**
+
+| Run | Average FPS | 1% low | Worst frame |
+|---|---|---|---|
+| 1 | 179 | 55 | 54.2 ms |
+| 2 | 168 | 61 | 24.8 ms |
+
+- The averages are well above 120. Both runs used the shared camera, so a split-screen FPS run is still to do. The 3.6 demo build will measure it properly.
+- The 1% low is lower than we'd like (55-61). One frame took 54 ms, which you'd feel as a small hitch. The editor is always slower than a real build, but we'll watch for hitches when blocks break in the 3.6 build.
+- **Roadmap 3.2 is complete!** 🪨
+
+### Things we learned
+- Our first screenshot "lost" the drops, but they were just hidden at the bottom of their holes. A view from straight above found them, so look from more than one angle before deciding something is broken.
+
+### Next up
+- [x] You two: split-screen play-test ✅ **3.2 done.**
+- [ ] Watch the 1% low FPS when blocks break; measure it in split-screen in the 3.6 build
+- [ ] Roadmap **3.3 Grid Snap Placement**: build with the blocks in your bag, with a see-through ghost block showing where it'll go
+
+---
+
 ## 2026-10-28 - Session 1 (part 16): Dig, Build, Remember ⛏️ Roadmap 3.1
 **Phase:** 3 - "Forge & Carve"
 
