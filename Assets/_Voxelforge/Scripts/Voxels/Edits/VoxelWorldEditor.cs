@@ -1,0 +1,113 @@
+using System;
+using Unity.Mathematics;
+using Voxelforge.Core;
+
+namespace Voxelforge.Voxels
+{
+    /// <summary>One block that changed, and who changed it.</summary>
+    public readonly struct VoxelEdit
+    {
+        public readonly int3 Coord;
+        public readonly Voxel Before;
+        public readonly Voxel After;
+        public readonly PlayerId Instigator;
+
+        public VoxelEdit(int3 coord, Voxel before, Voxel after, PlayerId instigator)
+        {
+            Coord = coord;
+            Before = before;
+            After = after;
+            Instigator = instigator;
+        }
+    }
+
+    /// <summary>
+    /// The only way blocks change after generation (CLAUDE.md Law #3, Roadmap 3.1, D-014). It checks a request, sets
+    /// the block, records it in the <see cref="VoxelDeltaLog"/> and queues the remeshing. Plain C# so tests can drive
+    /// it; <see cref="VoxelWorldManager.RequestModifyVoxel"/> is the scene's entry point to it.
+    /// <para>
+    /// <b>Host only.</b> Clients ask the host through a server RPC, and the host calls this (CLAUDE.md Law #2).
+    /// </para>
+    /// </summary>
+    public sealed class VoxelWorldEditor
+    {
+        /// <summary>Tallest trunk a chop clears. Trees are 4-6 blocks (D-012); this is just a safety stop.</summary>
+        const int MaxTrunkHeight = 32;
+
+        readonly VoxelWorld _world;
+        readonly ChunkMeshScheduler _meshes;
+
+        /// <param name="meshes">Optional: its gather jobs are finished before a chunk is edited.</param>
+        public VoxelWorldEditor(VoxelWorld world, VoxelDeltaLog deltaLog, ChunkMeshScheduler meshes)
+        {
+            _world = world ?? throw new ArgumentNullException(nameof(world));
+            DeltaLog = deltaLog ?? throw new ArgumentNullException(nameof(deltaLog));
+            _meshes = meshes;
+        }
+
+        public VoxelDeltaLog DeltaLog { get; }
+
+        /// <summary>Raised once for every block that changes, including the rest of a chopped tree trunk.</summary>
+        public event Action<VoxelEdit> EditApplied;
+
+        /// <summary>
+        /// Sets the block at <paramref name="coord"/> to <paramref name="blockId"/> on behalf of <paramref name="instigator"/>.
+        /// Removing a <see cref="BlockIds.TreeTrunk"/> block clears the rest of its trunk too, so the tree falls.
+        /// </summary>
+        public VoxelEditResult RequestModifyVoxel(int3 coord, ushort blockId, PlayerId instigator)
+        {
+            if (!instigator.IsValid)
+                return VoxelEditResult.NoInstigator;
+            if (blockId >= _world.Blocks.Length || !_world.Blocks[blockId].IsRegistered)
+                return VoxelEditResult.UnknownBlock;
+            if (!_world.TryGetChunk(VoxelMath.WorldToChunk(coord), out _))
+                return VoxelEditResult.ChunkNotLoaded;
+
+            Voxel before = _world.GetVoxel(coord);
+            var after = new Voxel(blockId);
+            if (before == after)
+                return VoxelEditResult.Unchanged;
+
+            _meshes?.CompleteGatherJobs(); // A gather job may be reading the chunk we're about to change.
+            Apply(coord, before, after, instigator);
+
+            if (before.BlockId == BlockIds.TreeTrunk && blockId != BlockIds.TreeTrunk)
+            {
+                ClearTrunk(coord, new int3(0, 1, 0), instigator);
+                ClearTrunk(coord, new int3(0, -1, 0), instigator);
+            }
+            return VoxelEditResult.Applied;
+        }
+
+        void ClearTrunk(int3 from, int3 step, PlayerId instigator)
+        {
+            int3 coord = from + step;
+            for (int i = 0; i < MaxTrunkHeight; i++, coord += step)
+            {
+                if (!_world.TryGetChunk(VoxelMath.WorldToChunk(coord), out _))
+                    return;
+                Voxel before = _world.GetVoxel(coord);
+                if (before.BlockId != BlockIds.TreeTrunk)
+                    return;
+                Apply(coord, before, Voxel.Air, instigator);
+            }
+        }
+
+        void Apply(int3 coord, Voxel before, Voxel after, PlayerId instigator)
+        {
+            _world.SetVoxel(coord, after);
+            DeltaLog.Record(coord, before, after, instigator);
+            EditApplied?.Invoke(new VoxelEdit(coord, before, after, instigator));
+        }
+
+        /// <summary>
+        /// Puts a freshly generated chunk's logged edits back. Called by the <see cref="ChunkGenerationScheduler"/>
+        /// before anyone can see the chunk, so it isn't an edit: nothing is logged or raised.
+        /// </summary>
+        internal static void ReapplyDeltas(VoxelChunk chunk, VoxelDeltaLog deltaLog)
+        {
+            foreach (var pair in deltaLog.GetChunkDeltas(chunk.Coord))
+                chunk.SetVoxel(pair.Key, pair.Value.Current);
+        }
+    }
+}

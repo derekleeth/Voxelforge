@@ -5,6 +5,52 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 16): Dig, Build, Remember ⛏️ Roadmap 3.1
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **Phase 3 has a finish line:** a new roadmap step, **3.6 Playable Demo Build**. It's a new .exe where we dig, chop, build and save, then restart the game and check that everything came back.
+- **Every block change now goes through one door:** `RequestModifyVoxel(where, which block, which player)`. Details in DECISIONS.md **D-014**.
+- **The world remembers what you changed.** The new **delta log** writes down every block that's different from what the world generator made, and who changed it. Put a block back the way it was, and the log forgets it, so it stays small.
+- **Digging survives walking away.** When a chunk unloads and loads again, its edits are put back before you can see it.
+- **Chop a tree, and the whole trunk goes**, and the tree model goes with it.
+- **No cheating, even on the couch:** your PC asks the host, and the host checks that the request came from your own player and is within 8 m of you. Only then does it change the block, in your name.
+- **Try it (temporary controls until 3.2):**
+  - **Dig:** left mouse or right trigger digs the block in front of you.
+  - **Place:** right mouse or left trigger puts down Dirt.
+  - Split keyboard: Q / E for the left player, Right Shift / Enter for the right.
+- The F3 overlay shows how many blocks have been edited.
+
+### Tests: 188 / 188 passing ✅
+- Digging sets the block, logs it with the original block and the player, and reports the change.
+- The same block, an unloaded chunk, an unknown block and "no player" are all refused.
+- Changing a block back removes it from the log. Editing twice keeps the original block.
+- Edits on chunk edges and corners redraw every chunk that touches them (8 on a corner).
+- Chopping a trunk clears it across a chunk border, but not the ground under it.
+- With the real terrain generator: edits come back after a chunk unloads and generates again, in both a stony underground chunk and an empty sky chunk.
+
+### Play-test results 🎉
+- Digging tunnels and building walls in **split-screen** ✅
+- Chopping a tree makes the **whole trunk** disappear ✅
+- Walked more than 300 m away and back: **every edit was still there** ✅
+- The `edits:` count in the F3 overlay goes up as you dig ✅
+- **Roadmap 3.1 is complete!** ⛏️
+
+### Added after the play-test
+- It was hard to tell which block Dig would hit, so sometimes the wrong one got dug. Now an **outline in your team colour** shows the exact block. In split-screen you can see your partner's outline too, in their colour.
+- **Aim with the camera:** you no longer have to turn the whole hero. Look around with the mouse or right stick, and the outline follows where your camera points, up to 5 m away. Tilt the camera up to aim at walls and ceilings, or down to aim at the floor.
+- **Place puts the block against the side you're aiming at**, like stacking bricks. It won't place a block inside your own hero.
+
+### Things we learned
+- Claude recompiled the scripts while Unity was still in Play Mode from the play-test, and the game threw errors. Nothing was lost, but always stop Play first.
+
+### Next up
+- [x] You two: play-test ✅ **3.1 done.**
+- [x] You two: try camera aiming ✅ Much more natural for quick digging and building.
+- [ ] Roadmap **3.2 Block Durability & Mining**: aim with a crosshair, blocks crack as you mine, and they drop items
+
+---
+
 ## 2026-10-28 - Session 1 (part 15): Our First Real Game! 🎮 Roadmap 2.7 done, Phase 2 complete!
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

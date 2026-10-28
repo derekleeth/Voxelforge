@@ -5,6 +5,41 @@
 
 ---
 
+## D-014: How Blocks Change (Message-Driven Edits and the Delta Log)
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **One way in:** `VoxelWorldManager.RequestModifyVoxel(int3 coord, ushort blockId, PlayerId instigator)` is the only public way to change a block (CLAUDE.md Law #3). It forwards to `VoxelWorldEditor`, which is plain C# so tests can drive it. `VoxelWorld.SetVoxel` stays `internal`.
+- **Results, not exceptions:** `VoxelEditResult` is `Applied`, `Unchanged`, `ChunkNotLoaded`, `UnknownBlock` or `NoInstigator`.
+  - Every edit needs a valid `PlayerId` (Law #1).
+  - Edits to unloaded chunks are refused, because we can't know what the generator put there. That also covers the space above and below the world.
+- **Edits apply straight away**, after `ChunkMeshScheduler.CompleteGatherJobs` (a gather job may be reading the chunk). One edit costs very little. A batch call for explosive spells (4.3) can come later.
+- **`VoxelDeltaLog`:** for each chunk, a sparse map from local index to `VoxelDelta { Current, Generated, Instigator }`.
+  - It holds the **net change**, not a history. Editing a block twice keeps one entry with the original `Generated` block, and changing a block back to what was generated deletes the entry. The log only grows with blocks that really differ.
+  - The world is `WorldSeed` + this log. Saves (3.4) write it out, and joining players (6.2) receive it.
+- **Regeneration puts edits back:** `ChunkGenerationScheduler.DeltaLog` makes every freshly generated chunk replay its deltas before anyone can see it. Digging survives a chunk streaming out and back in (D-010). This resolves the `TODO(3.1)` in `ChunkStreamer`.
+- **Chopping trees:** replacing a `TreeTrunk` block with anything else also clears the trunk blocks above and below it, across chunk borders, up to 32. Each cleared block is logged and raised as its own edit. The tree model sits on the bottom trunk block (D-012), so it disappears when its chunk remeshes. Wood drops come in 3.2.
+- **`EditApplied` event** on `VoxelWorldManager` (host only), raised once per changed block with before, after and instigator. It's the hook for drops (3.2) and for sending edits to clients (6.3).
+- **Networking: `PlayerVoxelEditor`** is a `NetworkBehaviour` on the player prefab.
+  - The owning PC calls `RequestModifyVoxel(coord, blockId)`, which sends `RequestModifyVoxelRpc(SendTo.Server)` with a `Vector3Int` and the block ID.
+  - The host drops requests from anyone but the owner and anything more than **8 m** (`maxReach`) from the hero's chest, then calls the world with **this player object's** `PlayerId`. The ID never travels in the message, so a PC can't edit in another player's name.
+- **Temporary dev controls (until 3.2 and 3.3):** `DevDig` and `DevPlace` actions.
+  - **Bindings:** left/right mouse, right/left trigger; in split-keyboard mode Q/E for the left player and Right Shift/Enter for the right.
+  - **Aiming (changed after the play-test, so the target follows the camera):** a voxel ray (`VoxelQueries.Raycast`, 5 m) from the hero's eyes (1.5 m) along their camera's yaw and pitch. The orbit camera only looks 10-70° down, so the aim pitch is `camera pitch × 1.5 − 30`: from 15° up (walls and ceilings) to 75° down (the floor at your feet).
+  - `PlayerInputFrame.ViewPitch` carries the pitch next to `ViewYaw`, set by `SplitScreenDirector`. In the merged view both players share one camera, so they aim in the same direction from their own heroes.
+  - **Dig** removes the block the ray hits. **Place** puts Dirt against the face it hit, unless that block would overlap your own hero. Overlap with other players is 3.3.
+  - The owner reads its frame from `PlayerController.OwnerInput`.
+- The F3 overlay shows `edits: N blocks in M chunks`.
+- **Target outline (asked for in the play-test):** `BlockHighlight` draws 12 thin bars around the block the aim ray hits, in the player's `TeamColor`, using the unlit, double-sided `Materials/BlockHighlight.mat`. It's a world object, so in split-screen each player also sees their partner's outline in the partner's colour. It's presentation only, drawn on the owning PC, and hidden on a PC that has no blocks (remote clients until Phase 6). 3.2 keeps it and points it at the crosshair target.
+
+### Deferred on purpose
+- **Sending edits to remote clients** (6.2/6.3). On loopback the host and the couch share one world, so there's nothing to send yet. A client-side handler now would be code nobody runs.
+- **A generator change vs. old deltas:** if `GeneratorVersion` changes, a delta's `Generated` block may no longer match. Saves (3.4) record the generator version and decide what to do.
+- **Placement validation** (inside other players, floating blocks): 3.3.
+
+---
+
 ## D-013: The Playable Demo Build
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

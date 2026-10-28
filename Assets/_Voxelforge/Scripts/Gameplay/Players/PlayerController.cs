@@ -86,6 +86,18 @@ namespace Voxelforge.Gameplay
         /// </summary>
         public VoxelWorld World => _worldManager != null ? _worldManager.World : null;
 
+        /// <summary>Host only: the world this player lives in. Its edits go through here (see <see cref="PlayerVoxelEditor"/>).</summary>
+        internal VoxelWorldManager WorldManager => _worldManager;
+
+        /// <summary>This player's team colour (by local slot), for the cloth and anything else that marks them out.</summary>
+        public Color TeamColor => slotColors.Length > 0 ? slotColors[LocalSlot % slotColors.Length] : Color.white;
+
+        /// <summary>Owner only: the frame just sent to the host, for owner-side tools such as aiming at blocks.</summary>
+        public PlayerInputFrame OwnerInput { get; private set; }
+
+        /// <summary>The size of this player's collision box, for checks such as "would this block trap me?".</summary>
+        public MotorSettings Motor => motor;
+
         /// <summary>
         /// Host only, called by <see cref="PlayerRegistry"/> just before spawning. The ID and slot are written to
         /// the network in <see cref="OnNetworkSpawn"/>, so clients receive them with the spawn itself.
@@ -150,6 +162,7 @@ namespace Voxelforge.Gameplay
             if (IsOwner)
                 OwnerDespawned?.Invoke(this);
             _inputSource = null;
+            OwnerInput = default;
         }
 
         public override void OnDestroy()
@@ -174,7 +187,7 @@ namespace Voxelforge.Gameplay
 
             if (_teamColorMaterial == null)
                 _teamColorMaterial = new Material(materials[teamColorMaterialIndex]) { name = $"{materials[teamColorMaterialIndex].name} ({PlayerId})" };
-            _teamColorMaterial.SetColor("_BaseColor", slotColors[LocalSlot % slotColors.Length]);
+            _teamColorMaterial.SetColor("_BaseColor", TeamColor);
             materials[teamColorMaterialIndex] = _teamColorMaterial;
             teamColorRenderer.sharedMaterials = materials;
         }
@@ -204,6 +217,7 @@ namespace Voxelforge.Gameplay
             {
                 PlayerInputFrame frame = _inputSource.Read();
                 frame.Sequence = _nextSequence++;
+                OwnerInput = frame;
                 SubmitInputRpc(frame);
             }
 

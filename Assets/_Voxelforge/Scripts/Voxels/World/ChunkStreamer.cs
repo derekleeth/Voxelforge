@@ -152,7 +152,7 @@ namespace Voxelforge.Voxels
 
         void RequestColumn(int2 column)
         {
-            // TODO(3.1): chunks with edits in the VoxelDeltaLog must re-apply them when they generate again.
+            // Chunks that generate again get their edits back from the delta log (ChunkGenerationScheduler.DeltaLog).
             for (int y = _heightChunks - 1; y >= 0; y--)
                 _generator.Request(new ChunkCoord(column.x, y, column.y)); // Does nothing for loaded chunks.
         }

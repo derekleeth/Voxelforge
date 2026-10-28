@@ -232,6 +232,7 @@ namespace Voxelforge.Gameplay
             rig.SetPose(focus, rig.OwnYaw, rig.OwnPitch, baseDistance, WorldOf(slot), focus);
             rig.ShowOnScreen(rect);
             _inputs[slot].ViewYaw = rig.OwnYaw;
+            _inputs[slot].ViewPitch = rig.OwnPitch;
             _views[slot] = new PlayerView { LocalSlot = (byte)slot, Camera = rig.Camera, ScreenRect = rect };
         }
 
@@ -275,6 +276,8 @@ namespace Voxelforge.Gameplay
             float distance = SplitScreenMath.ViewDistance(baseDistance, pullBackPerMeter, separation, mergeDistance);
             _inputs[slotA].ViewYaw = yawA;
             _inputs[slotB].ViewYaw = yawB;
+            _inputs[slotA].ViewPitch = pitchA;
+            _inputs[slotB].ViewPitch = pitchB;
 
             var fullScreen = new Rect(0f, 0f, 1f, 1f);
             if (!SplitScreenMath.IsSplit(separation, mergeDistance))

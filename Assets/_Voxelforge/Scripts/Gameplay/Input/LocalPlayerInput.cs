@@ -23,6 +23,8 @@ namespace Voxelforge.Gameplay
         readonly InputAction _move;
         readonly InputAction _jump;
         readonly InputAction _look;
+        readonly InputAction _devDig;
+        readonly InputAction _devPlace;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -33,6 +35,8 @@ namespace Voxelforge.Gameplay
             _move = _actions.FindAction("Player/Move", throwIfNotFound: true);
             _jump = _actions.FindAction("Player/Jump", throwIfNotFound: true);
             _look = _actions.FindAction("Player/Look", throwIfNotFound: true);
+            _devDig = _actions.FindAction("Player/DevDig", throwIfNotFound: true);
+            _devPlace = _actions.FindAction("Player/DevPlace", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -47,6 +51,9 @@ namespace Voxelforge.Gameplay
         /// and it's sent with each input frame so "forward" means "away from my camera".
         /// </summary>
         public float ViewYaw { get; set; }
+
+        /// <summary>How far this player's camera tilts down, in degrees. Their camera rig sets it every frame, for aiming.</summary>
+        public float ViewPitch { get; set; }
 
         /// <summary>True for the keyboard + mouse scheme, where look input is mouse movement rather than a stick.</summary>
         public bool UsesMouse => ControlScheme == "KeyboardMouse";
@@ -81,11 +88,20 @@ namespace Voxelforge.Gameplay
             if (IsDisconnected || !_user.valid)
                 return default;
 
+            var buttons = PlayerButtons.None;
+            if (_jump.IsPressed())
+                buttons |= PlayerButtons.Jump;
+            if (_devDig.IsPressed())
+                buttons |= PlayerButtons.DevDig;
+            if (_devPlace.IsPressed())
+                buttons |= PlayerButtons.DevPlace;
+
             return new PlayerInputFrame
             {
                 Move = (float2)_move.ReadValue<Vector2>(),
                 ViewYaw = ViewYaw,
-                Buttons = _jump.IsPressed() ? PlayerButtons.Jump : PlayerButtons.None,
+                ViewPitch = ViewPitch,
+                Buttons = buttons,
             };
         }
 

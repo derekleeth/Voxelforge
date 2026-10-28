@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
+using Voxelforge.Core;
 
 namespace Voxelforge.Voxels
 {
@@ -9,8 +11,7 @@ namespace Voxelforge.Voxels
     /// <see cref="ChunkMeshScheduler"/> that draws it, and it drives both every frame.
     /// <para>
     /// <b>Not a singleton.</b> Systems that need the world get a reference to this component
-    /// (CLAUDE.md Law #1). Roadmap 3.1 adds <c>RequestModifyVoxel(coord, blockId, instigatorId)</c> here, the only
-    /// way gameplay code may change blocks.
+    /// (CLAUDE.md Law #1). <see cref="RequestModifyVoxel"/> is the only way gameplay code may change blocks (Law #3).
     /// </para>
     /// </summary>
     [DefaultExecutionOrder(-100)] // Create the world before other scripts' Awake/Start use it.
@@ -59,6 +60,7 @@ namespace Voxelforge.Voxels
         ChunkMeshScheduler _scheduler;
         DecorationLayer _decorations;
         DecorationRenderer _decorationRenderer;
+        VoxelWorldEditor _editor;
         float _meshingStartTime = -1f;
 
         /// <summary>The block data. Only this assembly can edit it.</summary>
@@ -70,6 +72,12 @@ namespace Voxelforge.Voxels
         public ChunkGenerationScheduler Generator => _generator;
 
         public ChunkMeshScheduler Scheduler => _scheduler;
+
+        /// <summary>Every block players have changed. Saves (3.4) and joining players (6.2) need it.</summary>
+        public VoxelDeltaLog DeltaLog => _editor?.DeltaLog;
+
+        /// <summary>Host only: raised for every block that changes, e.g. for drops (3.2) or sending edits to clients (6.3).</summary>
+        public event System.Action<VoxelEdit> EditApplied;
 
         /// <summary>Every loaded chunk's decorations, or null when there is no decoration set.</summary>
         public DecorationLayer Decorations => _decorations;
@@ -102,8 +110,19 @@ namespace Voxelforge.Voxels
                 IsChunkIncoming = _generator.IsRequested,
             };
             _scheduler.SetBiomeTint(_generator.Seed, _generator.Terrain, _generator.Biomes);
+            _editor = new VoxelWorldEditor(_world, new VoxelDeltaLog(), _scheduler);
+            _editor.EditApplied += edit => EditApplied?.Invoke(edit);
+            _generator.DeltaLog = _editor.DeltaLog;
             CreateDecorations();
         }
+
+        /// <summary>
+        /// <b>Host only.</b> Sets the block at <paramref name="coord"/> to <paramref name="blockId"/> on behalf of
+        /// <paramref name="instigator"/>, logs it in the <see cref="DeltaLog"/> and remeshes. The only way gameplay code
+        /// may change blocks (CLAUDE.md Law #3). Clients ask the host with a server RPC (<c>PlayerVoxelEditor</c>).
+        /// </summary>
+        public VoxelEditResult RequestModifyVoxel(int3 coord, ushort blockId, PlayerId instigator) =>
+            _editor?.RequestModifyVoxel(coord, blockId, instigator) ?? VoxelEditResult.ChunkNotLoaded;
 
         void CreateDecorations()
         {

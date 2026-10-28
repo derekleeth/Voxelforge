@@ -199,6 +199,8 @@ namespace Voxelforge.Gameplay
             }
             if (world.Decorations != null)
                 _text.Append($"\ndecorations: {world.Decorations.InstanceCount} in {world.Decorations.ChunkCount} chunks");
+            if (world.DeltaLog != null)
+                _text.Append($"\nedits: {world.DeltaLog.BlockCount} blocks in {world.DeltaLog.ChunkCount} chunks");
         }
 
         /// <summary>One line per joined slot on this PC, plus a join prompt for the next free one.</summary>

@@ -27,11 +27,12 @@
 
 ## Phase 3: "Forge & Carve" (Digging, Building & Saving)
 **Goal:** Let players mine tunnels, build castles, and save their world in a network-ready format.
-- [ ] **3.1 Message-Driven Voxel Edits:** Implement `RequestModifyVoxel(Coord, BlockID, InstigatorID)`. Never mutate chunk arrays directly from client input.
+- [x] **3.1 Message-Driven Voxel Edits:** Implement `RequestModifyVoxel(Coord, BlockID, InstigatorID)`. Never mutate chunk arrays directly from client input. *(One public entry point with checked results; a net-change `VoxelDeltaLog` that edits replay from when chunks generate again; owner-checked server RPC with an 8 m reach limit; chopping a trunk fells the whole tree; temporary dig/place controls that aim with the camera and show a team-coloured target outline. Play-tested in split-screen. See DECISIONS.md D-014.)*
 - [ ] **3.2 Block Durability & Mining:** Add raycast/spherecast targeting, block cracking decals, and block item drops. Store in-progress mining damage in a sparse map (see D-003).
 - [ ] **3.3 Grid Snap Placement:** Add ghost-block preview and placement validation (prevent placing blocks inside characters).
 - [ ] **3.4 Seed + Delta Save System:** Save world using only `WorldSeed` + a compressed dictionary of modified chunk deltas and `PlayerUUID` profiles.
 - [ ] **3.5 Props & Tools (Creative):** Model 3D pickaxes, torches (with real point lights), and interactive workbenches.
+- [ ] **3.6 Playable Demo Build:** Build a new Windows `.exe` (version `0.3.x`, same `DemoBuilder` as 2.7) and play-test the whole Forge & Carve loop outside the editor: both players in split-screen mining tunnels, chopping trees, picking up block drops, building with the ghost-block preview, and placing torches and a workbench. Then quit, restart, and check that every edit and both player profiles come back from the save. Check that digging and building remesh without visible hitches (both players editing at once), that torch lights hold up in tunnels, and that FPS holds at 120+ in split-screen. Record the results (FPS and 1% low, save file size, load time, build size, issues found) in `DEVLOG.md`.
 
 ## Phase 4: The Warcraft Injection (Classes, Races, Spells & RPG UI)
 **Goal:** Layer *World of Warcraft* combat, mana, cooldowns, and talent trees onto the voxel world.

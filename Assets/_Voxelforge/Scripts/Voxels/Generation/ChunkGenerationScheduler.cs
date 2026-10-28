@@ -67,6 +67,12 @@ namespace Voxelforge.Voxels
 
         public bool IsIdle => _requests.Count == 0 && _pending.Count == 0;
 
+        /// <summary>
+        /// Optional: blocks players changed. A chunk that generates again gets its edits back before anyone sees it,
+        /// so digging survives a chunk unloading and loading (D-014).
+        /// </summary>
+        public VoxelDeltaLog DeltaLog { get; set; }
+
         /// <summary>True while a chunk is queued or generating, so it will appear in the world soon.</summary>
         public bool IsRequested(ChunkCoord coord) => _requested.Contains(coord);
 
@@ -147,10 +153,13 @@ namespace Voxelforge.Voxels
                 // Adding a new chunk never touches existing chunk arrays, so this is safe while meshing jobs run.
                 if (!_world.TryGetChunk(pending.Coord, out _))
                 {
+                    VoxelChunk chunk;
                     if (pending.IsUniform.Value)
-                        _world.CreateChunk(pending.Coord, pending.Voxels[0]);
+                        chunk = _world.CreateChunk(pending.Coord, pending.Voxels[0]);
                     else
-                        _world.CreateChunk(pending.Coord).CopyFrom(pending.Voxels);
+                        (chunk = _world.CreateChunk(pending.Coord)).CopyFrom(pending.Voxels);
+                    if (DeltaLog != null)
+                        VoxelWorldEditor.ReapplyDeltas(chunk, DeltaLog);
                     GeneratedCount++;
                 }
                 _pool.Push(pending);
