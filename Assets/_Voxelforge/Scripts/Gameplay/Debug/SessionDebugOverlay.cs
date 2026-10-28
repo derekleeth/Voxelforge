@@ -61,15 +61,23 @@ namespace Voxelforge.Gameplay
         {
             if (saves != null)
                 saves.SaveFinished += HandleSaveFinished;
+            if (cameras != null)
+                cameras.StyleChanged += HandleStyleChanged;
         }
 
         void OnDisable()
         {
             if (saves != null)
                 saves.SaveFinished -= HandleSaveFinished;
+            if (cameras != null)
+                cameras.StyleChanged -= HandleStyleChanged;
         }
 
         void HandleSaveFinished(string message) => ShowToast(message, delayFrames: 0);
+
+        void HandleStyleChanged(SplitStyle style) => ShowToast(style == SplitStyle.Classic
+            ? "Split-screen: Classic (each player has their own half)"
+            : "Split-screen: Dynamic (one view when together, split when apart)", delayFrames: 0);
 
         void Update()
         {
@@ -181,7 +189,7 @@ namespace Voxelforge.Gameplay
             {
                 SplitLayout layout = cameras.Layout;
                 _text.Append($"   camera: {layout.Mode}");
-                if (layout.Mode == SplitMode.Merged || layout.Mode == SplitMode.Voronoi)
+                if (layout.Mode == SplitMode.Merged || layout.Mode == SplitMode.Voronoi || layout.Mode == SplitMode.Classic)
                     _text.Append($" ({layout.Separation:F1} m apart)");
             }
 

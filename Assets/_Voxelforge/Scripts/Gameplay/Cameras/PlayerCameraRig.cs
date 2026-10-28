@@ -32,10 +32,18 @@ namespace Voxelforge.Gameplay
         const float NearPlaneMargin = 1.25f;
         /// <summary>How quickly the camera eases back out after the view clears (per second).</summary>
         const float EaseOutRate = 4f;
+        /// <summary>How far over the hero's right shoulder the view moves in tight spots (Roadmap 3.7), in meters.</summary>
+        public const float ShoulderOffset = 0.55f;
+        /// <summary>Squeezed below this clear fraction, the view moves over the shoulder; it moves back above the second.</summary>
+        const float ShoulderIn = 0.55f, ShoulderOut = 0.85f;
+        /// <summary>How quickly the view slides over the shoulder and back (per second).</summary>
+        const float ShoulderRate = 5f;
 
         Camera _camera;
         RenderTexture _texture;
         float _clearFraction = 1f; // How far from the pivot to the wanted spot the camera may go, 0-1.
+        bool _overShoulder;
+        float _shoulder; // 0 = behind the hero, 1 = fully over the shoulder.
 
         public byte LocalSlot { get; private set; }
 
@@ -67,8 +75,25 @@ namespace Voxelforge.Gameplay
         public void SetPose(Vector3 focus, float yaw, float pitch, float distance, VoxelWorld world, Vector3 pivot)
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-            Vector3 wanted = focus + rotation * Vector3.back * distance;
+
+            Vector3 back = rotation * Vector3.back * distance;
+            Vector3 wanted = focus + back;
             float fraction = world != null ? ClearFraction(pivot, wanted, rotation, world) : 1f;
+
+            // Squeezed in a tunnel, slide the view over the right shoulder so the hero doesn't fill it, as far as there's
+            // open air beside their head (the pivot must stay out of blocks). Decided on the view straight behind, so
+            // moving over the shoulder can't flip the decision back.
+            if (_overShoulder ? fraction > ShoulderOut : fraction < ShoulderIn)
+                _overShoulder = !_overShoulder;
+            _shoulder = Mathf.MoveTowards(_shoulder, _overShoulder ? 1f : 0f, ShoulderRate * Time.unscaledDeltaTime);
+            if (_shoulder > 0f && world != null)
+            {
+                Vector3 right = rotation * Vector3.right;
+                Vector3 side = right * ClearSideways(world, pivot, right, ShoulderOffset * _shoulder);
+                pivot += side;
+                wanted = focus + side + back;
+                fraction = ClearFraction(pivot, wanted, rotation, world);
+            }
 
             // Snap in at once so the view never shows the inside of a hill, but ease back out.
             if (fraction < _clearFraction)
@@ -76,6 +101,19 @@ namespace Voxelforge.Gameplay
             else
                 _clearFraction = math.lerp(_clearFraction, fraction, 1f - math.exp(-EaseOutRate * Time.unscaledDeltaTime));
             transform.SetPositionAndRotation(Vector3.Lerp(pivot, wanted, _clearFraction), rotation);
+        }
+
+        /// <summary>
+        /// How far (up to <paramref name="wanted"/> meters) the pivot can move along <paramref name="direction"/> and stay
+        /// <see cref="WallGap"/> clear of every visible block.
+        /// </summary>
+        public static float ClearSideways(VoxelWorld world, float3 pivot, float3 direction, float wanted)
+        {
+            if (world == null || wanted <= 0f)
+                return math.max(wanted, 0f);
+            return VoxelQueries.Raycast(world, pivot, direction, wanted + WallGap, out VoxelHit hit, opaqueOnly: true)
+                ? math.clamp(hit.Distance - WallGap, 0f, wanted)
+                : wanted;
         }
 
         /// <summary>

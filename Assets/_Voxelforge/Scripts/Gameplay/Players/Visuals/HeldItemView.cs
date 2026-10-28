@@ -45,6 +45,8 @@ namespace Voxelforge.Gameplay
         Transform _pivot;
         MeshFilter _filter;
         MeshRenderer _renderer;
+
+        static readonly int ClassicDrawId = Shader.PropertyToID("_VoxelforgeClassicDraw");
         ushort _shown = ushort.MaxValue;
         float _swingTime;
         float _swingWeight;
@@ -76,6 +78,11 @@ namespace Voxelforge.Gameplay
             _filter = model.AddComponent<MeshFilter>();
             _renderer = model.AddComponent<MeshRenderer>();
             _renderer.shadowCastingMode = ShadowCastingMode.On;
+            // A property block keeps it out of the GPU Resident Drawer, which only picks up renderer changes once per
+            // frame for every camera, so HeroCameraFade can hide it from one camera at a time (Roadmap 3.7).
+            var block = new MaterialPropertyBlock();
+            block.SetFloat(ClassicDrawId, 1f);
+            _renderer.SetPropertyBlock(block);
             model.SetActive(false);
         }
 

@@ -29,6 +29,7 @@ namespace Voxelforge.Gameplay
         readonly InputAction _selectPrevious;
         readonly InputAction _toggleGhost;
         readonly InputAction _interact;
+        readonly InputAction _splitStyle;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -45,6 +46,7 @@ namespace Voxelforge.Gameplay
             _selectPrevious = _actions.FindAction("Player/SelectPrevious", throwIfNotFound: true);
             _toggleGhost = _actions.FindAction("Player/ToggleGhost", throwIfNotFound: true);
             _interact = _actions.FindAction("Player/Interact", throwIfNotFound: true);
+            _splitStyle = _actions.FindAction("Player/SplitStyle", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -126,6 +128,12 @@ namespace Voxelforge.Gameplay
         /// host only hears the resulting <see cref="ViewYaw"/>.
         /// </summary>
         public Vector2 ReadLook() => IsDisconnected || !_user.valid ? Vector2.zero : _look.ReadValue<Vector2>();
+
+        /// <summary>
+        /// True on the frame this player asked to switch the split-screen style (Roadmap 3.7). The style is one setting
+        /// for the whole couch and only moves cameras, so it stays on this PC.
+        /// </summary>
+        public bool SplitStyleTriggered => !IsDisconnected && _user.valid && _splitStyle.WasPressedThisFrame();
 
         void Unpair()
         {

@@ -5,6 +5,32 @@
 
 ---
 
+## D-020: Tunnel Camera and Split-Screen Styles
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested 2026-10-28)
+
+### Decisions
+- **Hide the hero from a camera that's on top of them, per camera (`HeroCameraFade`, owned by `SplitScreenDirector`, presentation only).** In a tunnel `PlayerCameraRig` slides up to the hero's head, and the body filled the view.
+  - A hero is hidden from a camera **closer than 1.1 m** to their body (hips to head), **or within 2.6 m with the body less than 0.45 m from the camera's forward ray** (they'd block what you aim at, as in a 1-wide tunnel). Hysteresis: they show again past 1.5 m, or past 3.0 m / 0.6 m when hidden for blocking the view, so there's no flicker.
+  - "Hidden" = `ShadowCastingMode.ShadowsOnly` (or `forceRenderingOff` if it casts no shadow), set in `RenderPipelineManager.beginCameraRendering` and restored in `endCameraRendering`. So only the squeezed view hides that hero; split-screen partners still see them. Renderers are looked up under `VisualRoot` each time, since the held item comes and goes.
+  - **The GPU Resident Drawer catch:** it only picks up renderer changes once per frame for every camera, so the per-camera change didn't hide the held item (the hero is a `SkinnedMeshRenderer`, which the GRD doesn't draw). `HeldItemView` gives its one renderer a `MaterialPropertyBlock`, which keeps it on the classic draw path. (`DisallowGPUDrivenRendering` is internal, so it can't be used.)
+- **Over the shoulder in tight spots.** When the view straight behind is squeezed below 55 % of its wanted distance, the pivot and look-at point slide up to 0.55 m to the camera's right; they slide back above 85 %. The slide stops `WallGap` short of any visible block (`PlayerCameraRig.ClearSideways`), so the pivot stays in open air. The decision uses the unshifted view, so the slide can't switch itself off. In a 2-wide tunnel you look past the shoulder with the hero in view; in a 1-wide tunnel there's no room, and the hide rule does the work.
+- **Split-screen styles.** `SplitStyle.Dynamic` (D-009's merge and Voronoi split) or `SplitStyle.Classic` (2 players always get a fixed half each, side by side, through the same `UpdateOwnView` path as the grid; new `SplitMode.Classic`, `SplitScreenMath.ClassicRect`). 3-4 players use the grid either way.
+  - **One setting per couch, on this PC only** (cameras never go to the host). A new `SplitStyle` action (F6 for the keyboard players, right-stick click on gamepads); `LocalPlayerInput.SplitStyleTriggered`. The overlay shows a toast. Kept in `PlayerPrefs` (`Voxelforge.SplitStyle`) until 6.3's settings screen.
+  - Switching back to Dynamic starts the shared angle between the two players' own angles.
+  - HUDs, the bag line and the crafting window already lay out from `PlayerView.ScreenRect` (Law #5), so they needed no change.
+- The controls asset also gained the **Home** action (H, `[`, gamepad View/Select) for 3.8.
+
+### Measured (editor, 1906×861)
+- Single player in a tunnel: 158-161 FPS avg. Dynamic split: 95 avg / 29 1% low. Classic split: 106 avg / 46 1% low (two half-size views instead of two full-size ones).
+- Editor split-screen has run well under the build before (2.7: ~109 editor vs 153 build), and this window is ~55 % more pixels than earlier today's 116 FPS run. **The 120+ FPS check, especially Dynamic's 1% low, is re-done in the 3.10 build.**
+
+### Deferred on purpose
+- A real dithered fade instead of hiding all at once: needs our own hero shader.
+- Top/bottom Classic halves: side by side suits 16:9; it could be a 6.3 setting.
+
+---
+
 ## D-019: Kian's M.G.R.S. and the Crafting Window
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

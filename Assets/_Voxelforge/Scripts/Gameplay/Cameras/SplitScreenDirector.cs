@@ -1,3 +1,4 @@
+using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,6 +17,8 @@ namespace Voxelforge.Gameplay
     /// angled line at right angles to the direction between them.</item>
     /// <item>3-4 players: a screen quarter each.</item>
     /// </list>
+    /// With <see cref="SplitStyle.Classic"/> (Roadmap 3.7, switched by either player), two players always get a fixed
+    /// half each instead of merging and splitting. Heroes right next to a camera are hidden from it (<see cref="HeroCameraFade"/>).
     /// <b>Not a singleton:</b> HUDs ask this component for their player's view with <see cref="TryGetView"/>
     /// (CLAUDE.md Laws #1 and #5).
     /// </summary>
@@ -59,6 +62,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("While split, how quickly the shared angle drifts toward the middle of the two players' own angles.")]
         [SerializeField, Min(0f)] float sharedAngleCatchUp = 2f;
 
+        [Tooltip("How two players share the screen until someone switches it. A switch is remembered on this PC.")]
+        [SerializeField] SplitStyle defaultStyle = SplitStyle.Dynamic;
+
         [Header("Camera")]
         [Tooltip("Camera distance from one player, or from two players standing together (meters).")]
         [SerializeField, Min(1f)] float baseDistance = 7f;
@@ -77,6 +83,8 @@ namespace Voxelforge.Gameplay
 
         [SerializeField, Min(0f)] float mouseDegreesPerPixel = 0.15f;
         [SerializeField, Min(0f)] float stickDegreesPerSecond = 180f;
+
+        const string StylePrefKey = "Voxelforge.SplitStyle";
 
         static readonly int ViewBId = Shader.PropertyToID("_ViewB");
         static readonly int SplitNormalId = Shader.PropertyToID("_SplitNormal");
@@ -98,9 +106,17 @@ namespace Voxelforge.Gameplay
         Camera _compositeBase;
         int _compositorLayerMask;
         bool _cursorReleased;
+        SplitStyle _style;
+        HeroCameraFade _heroFade;
 
         /// <summary>How the screen is shared out this frame.</summary>
         public SplitLayout Layout => _layout;
+
+        /// <summary>How two players share the screen: <see cref="SplitStyle.Dynamic"/> or <see cref="SplitStyle.Classic"/>.</summary>
+        public SplitStyle Style => _style;
+
+        /// <summary>Raised when a player switches the split-screen style.</summary>
+        public event Action<SplitStyle> StyleChanged;
 
         /// <summary>Where on screen the player in local <paramref name="slot"/> is shown. False if they have no view yet.</summary>
         public bool TryGetView(byte slot, out PlayerView view)
@@ -124,12 +140,43 @@ namespace Voxelforge.Gameplay
             _sharedYaw = overviewCamera.transform.eulerAngles.y;
             compositeCamera.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
             AttachComposite(null);
+            _style = (SplitStyle)PlayerPrefs.GetInt(StylePrefKey, (int)defaultStyle);
+            if (!Enum.IsDefined(typeof(SplitStyle), _style))
+                _style = defaultStyle;
+            _heroFade = new HeroCameraFade(_rigs, _controllers);
+        }
+
+        void OnDestroy() => _heroFade?.Dispose();
+
+        /// <summary>Switches between the dynamic and classic split-screen, and remembers it on this PC.</summary>
+        public void SetStyle(SplitStyle style)
+        {
+            if (style == _style)
+                return;
+            _style = style;
+            PlayerPrefs.SetInt(StylePrefKey, (int)style);
+            PlayerPrefs.Save();
+            // Back to dynamic: start the shared view between where the two players were looking.
+            if (_activeCount == 2)
+            {
+                _sharedYaw = SplitScreenMath.MidAngle(_rigs[_active[0]].OwnYaw, _rigs[_active[1]].OwnYaw);
+                _sharedPitch = (_rigs[_active[0]].OwnPitch + _rigs[_active[1]].OwnPitch) * 0.5f;
+            }
+            StyleChanged?.Invoke(style);
         }
 
         void LateUpdate()
         {
             CollectLocalPlayers();
             UpdateCursor();
+            for (int i = 0; i < _activeCount; i++)
+            {
+                if (_inputs[_active[i]].SplitStyleTriggered)
+                {
+                    SetStyle(_style == SplitStyle.Dynamic ? SplitStyle.Classic : SplitStyle.Dynamic);
+                    break;
+                }
+            }
 
             if (_activeCount != _previousActiveCount)
             {
@@ -149,7 +196,12 @@ namespace Voxelforge.Gameplay
             {
                 case 0: ShowOverview(); break;
                 case 1: UpdateSingle(_active[0]); break;
-                case 2: UpdatePair(_active[0], _active[1]); break;
+                case 2:
+                    if (_style == SplitStyle.Classic)
+                        UpdateClassic(_active[0], _active[1]);
+                    else
+                        UpdatePair(_active[0], _active[1]);
+                    break;
                 default: UpdateGrid(); break;
             }
 
@@ -220,6 +272,16 @@ namespace Voxelforge.Gameplay
             if (overviewCamera.enabled)
                 overviewCamera.rect = SplitScreenMath.GridRect(MaxSlots - 1, MaxSlots);
             _layout = new SplitLayout { Mode = SplitMode.Grid };
+        }
+
+        /// <summary>Classic style: two players side by side, each turning their own camera, however close they are.</summary>
+        void UpdateClassic(int slotA, int slotB)
+        {
+            overviewCamera.enabled = false;
+            AttachComposite(null);
+            UpdateOwnView(slotA, SplitScreenMath.ClassicRect(0, 2));
+            UpdateOwnView(slotB, SplitScreenMath.ClassicRect(1, 2));
+            _layout = new SplitLayout { Mode = SplitMode.Classic, Separation = math.distance(FocusPoint(slotA), FocusPoint(slotB)) };
         }
 
         /// <summary>One player alone in their own rectangle, turning their own camera.</summary>

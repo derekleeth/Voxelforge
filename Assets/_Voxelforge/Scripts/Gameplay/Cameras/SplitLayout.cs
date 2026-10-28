@@ -16,6 +16,17 @@ namespace Voxelforge.Gameplay
         Voronoi,
         /// <summary>Three or four players: a rectangle each.</summary>
         Grid,
+        /// <summary>Two players with <see cref="SplitStyle.Classic"/>: a fixed half of the screen each, near or far (Roadmap 3.7).</summary>
+        Classic,
+    }
+
+    /// <summary>How two players share the screen (Roadmap 3.7). One setting for the couch, switched with the SplitStyle action.</summary>
+    public enum SplitStyle : byte
+    {
+        /// <summary>One shared camera when close, an angled split line when apart (Roadmap 2.3).</summary>
+        Dynamic,
+        /// <summary>Always split down the middle, each player with their own camera.</summary>
+        Classic,
     }
 
     /// <summary>The screen layout <see cref="SplitScreenDirector"/> picked this frame.</summary>
@@ -44,7 +55,7 @@ namespace Voxelforge.Gameplay
         /// <summary>The camera drawing this player's view. Both players share one camera while merged.</summary>
         public Camera Camera;
 
-        /// <summary>The player's rectangle in normalized screen space (0-1, origin bottom-left). Full screen unless in Grid mode.</summary>
+        /// <summary>The player's rectangle in normalized screen space (0-1, origin bottom-left). Full screen unless in Grid or Classic mode.</summary>
         public Rect ScreenRect;
 
         /// <summary>Voronoi only: the split line's normal, the same as <see cref="SplitLayout.SplitNormal"/>.</summary>

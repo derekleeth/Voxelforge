@@ -121,5 +121,12 @@ namespace Voxelforge.Gameplay
             float y = index < 2 ? 0.5f : 0f;
             return new Rect(x, y, 0.5f, 0.5f);
         }
+
+        /// <summary>
+        /// Classic style (Roadmap 3.7): two players side by side, the first on the left. Any other count uses
+        /// <see cref="GridRect"/>.
+        /// </summary>
+        public static Rect ClassicRect(int index, int playerCount) =>
+            playerCount == 2 ? new Rect(index == 0 ? 0f : 0.5f, 0f, 0.5f, 1f) : GridRect(index, playerCount);
     }
 }

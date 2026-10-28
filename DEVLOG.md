@@ -5,6 +5,48 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 22): Seeing in Tunnels 🔦 Roadmap 3.7
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **The camera works in tunnels now!** Details in DECISIONS.md **D-020**.
+  - In a **1-wide tunnel**, when the camera is squeezed up behind your hero, your hero and what they're holding turn invisible (their shadow stays). You see straight down the tunnel, or the wall in front of you to put a torch on.
+  - In a **2-wide tunnel**, the camera slides over your hero's right shoulder instead, so you still see your hero.
+  - In split-screen your hero only disappears in **your** squeezed view. The other player still sees you.
+- **Two kinds of split-screen.** Press **F6** or **click the right stick** to switch:
+  - **Dynamic** (the one we had): one view when you're close, split by an angled line when you're apart.
+  - **Classic**: always split down the middle, each player with their own half. Good when one player's mining and the other's chopping trees.
+  - The game remembers which one you picked.
+- Added two new steps to the roadmap: **3.7** (this one) and **3.8 Home Totem**. Audio is now 3.9 and the demo build 3.10.
+
+### Tests: 255 / 255 passing ✅
+- When a hero hides and shows again (with a gap, so they don't flicker), and a hero in the middle of a close view hides too.
+- The over-the-shoulder slide stops before a tunnel wall.
+- Classic gives two players the left and right halves.
+
+### Editor test by Claude
+- Built a 1-wide and a 2-wide stone tunnel and took screenshots. 2-wide: the view looks over the shoulder. 1-wide: the hero and the held Dirt block disappear and the whole tunnel shows.
+- Found and fixed: the held item stayed floating in the view at first. Unity's fast drawing system can't hide something from just one camera, so the held item is now drawn the normal way.
+- With 2 players: pressed the right stick on Player 2's gamepad. The screen went Classic, then back to Dynamic, with a message each time.
+
+### Play-test results 🎉
+- **The camera in tunnels is fixed and looks great** ✅
+- FPS in the editor (bigger window than before):
+
+| Mode | Avg FPS | 1% low |
+|---|---|---|
+| One player, in a tunnel | 158-161 | 67-71 |
+| Dynamic split | 95 | 29 |
+| Classic split | 106 | 46 |
+
+- Split-screen is under 120 in the editor, but the editor has always been slower than a real build (2.7: ~109 in the editor, 153 in the build). We'll check it in the 3.10 build.
+
+### Next up
+- [x] Play-test 3.7
+- [ ] Roadmap **3.8 Home Totem & Hearth Home**
+
+---
+
 ## 2026-10-28 - Session 1 (part 21): Kian's M.G.R.S. 🪄💥 Roadmap 3.6
 **Phase:** 3 - "Forge & Carve"
 
@@ -34,9 +76,9 @@
 
 ### Next up
 - [x] Play-test 3.6
-- [ ] Better camera in tunnels, and a button to switch to a plain split-screen
-- [ ] A Home Totem you can teleport back to
-- [ ] Roadmap **3.7 Split-Screen Spatial Audio & Voxel Foley**
+- [ ] Roadmap **3.7 Tunnel Camera & Split-Screen Styles** (new: better camera in tunnels, and a button to switch to a plain split-screen)
+- [ ] Roadmap **3.8 Home Totem & Hearth Home** (new: a Home Totem you can teleport back to)
+- Audio is now 3.9 and the demo build 3.10.
 
 ---
 
