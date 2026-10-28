@@ -52,6 +52,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Resolution of each split view compared to the screen. Lower it if split-screen FPS drops.")]
         [SerializeField, Range(0.5f, 1f)] float splitRenderScale = 1f;
 
+        [Tooltip("While split, where each hero sits on their side, from the screen center (0) to the screen edge (1).")]
+        [SerializeField, Range(0f, 0.9f)] float playerOffsetInHalf = 0.5f;
+
         [Tooltip("While split, how quickly the shared angle drifts toward the middle of the two players' own angles.")]
         [SerializeField, Min(0f)] float sharedAngleCatchUp = 2f;
 
@@ -285,18 +288,19 @@ namespace Voxelforge.Gameplay
                 return;
             }
 
+            // The split line is measured from the shared view, so it turns with the camera.
+            Quaternion shared = Quaternion.Euler(_sharedPitch, _sharedYaw, 0f);
+            float2 normal = SplitScreenMath.SplitNormal(focusA, focusB, shared * Vector3.right, shared * Vector3.up);
+
             // The first player draws straight to the screen; the second draws into a texture that the composite
             // camera paints over their side of the line.
-            rigA.SetPose(SplitScreenMath.FocusTarget(focusA, focusB, mergeDistance), yawA, pitchA, distance);
-            rigB.SetPose(SplitScreenMath.FocusTarget(focusB, focusA, mergeDistance), yawB, pitchB, distance);
+            rigA.SetPose(SplitFocus(rigA, focusA, focusB, -normal, yawA, pitchA, distance, freedom), yawA, pitchA, distance);
+            rigB.SetPose(SplitFocus(rigB, focusB, focusA, normal, yawB, pitchB, distance, freedom), yawB, pitchB, distance);
             int width = Mathf.Max(1, Mathf.RoundToInt(Screen.width * splitRenderScale));
             int height = Mathf.Max(1, Mathf.RoundToInt(Screen.height * splitRenderScale));
             rigA.ShowOnScreen(fullScreen);
             rigB.ShowInTexture(width, height);
 
-            // The split line is measured from the shared view, so it turns with the camera.
-            Quaternion shared = Quaternion.Euler(_sharedPitch, _sharedYaw, 0f);
-            float2 normal = SplitScreenMath.SplitNormal(focusA, focusB, shared * Vector3.right, shared * Vector3.up);
             float dividerAlpha = math.saturate((separation - mergeDistance) / dividerFadeDistance);
             ShowComposite(rigA.Camera, rigB.Texture, normal, dividerAlpha);
 
@@ -329,6 +333,20 @@ namespace Voxelforge.Gameplay
             if (baseCamera != null)
                 baseCamera.GetUniversalAdditionalCameraData().cameraStack.Add(compositeCamera);
             compositeCamera.enabled = baseCamera != null;
+        }
+
+        /// <summary>
+        /// Where a split camera looks, so its player stays in the middle of their own side of the line even after
+        /// turning their view (see <see cref="SplitScreenMath.SplitFocus"/>).
+        /// </summary>
+        float3 SplitFocus(PlayerCameraRig rig, float3 self, float3 other, float2 ownSide, float yaw, float pitch, float distance, float freedom)
+        {
+            Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+            float halfHeight = distance * Mathf.Tan(rig.Camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            float halfWidth = halfHeight * Screen.width / Mathf.Max(1f, Screen.height);
+            float edge = SplitScreenMath.ScreenEdgeDistance(ownSide, halfWidth, halfHeight);
+            float screenOffset = math.min(mergeDistance * 0.5f, edge * playerOffsetInHalf);
+            return SplitScreenMath.SplitFocus(self, other, mergeDistance, ownSide, rotation * Vector3.right, rotation * Vector3.up, screenOffset, freedom);
         }
 
         /// <summary>The point a player's camera looks at: a little above their feet.</summary>

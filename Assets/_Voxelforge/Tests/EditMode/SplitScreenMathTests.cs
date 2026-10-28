@@ -55,6 +55,47 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void SplitFocus_WithNoFreeLook_IsTheSeamlessWorldTarget()
+        {
+            float3 a = new float3(0f, 64f, 0f);
+            float3 b = new float3(40f, 64f, 0f);
+            Quaternion turned = Quaternion.Euler(35f, 180f, 0f);
+
+            float3 focus = SplitScreenMath.SplitFocus(a, b, Merge, new float2(-1f, 0f), turned * Vector3.right, turned * Vector3.up, 5f, 0f);
+
+            AssertClose(SplitScreenMath.FocusTarget(a, b, Merge), focus);
+        }
+
+        [Test]
+        public void SplitFocus_WithFullFreeLook_KeepsTheHeroOnTheirOwnSide_EvenWhenTurnedAround()
+        {
+            // The bug from play-testing: the player turned their camera right round, and their hero ended up on the
+            // other player's side of the line (or off screen). Their own side is screen-left.
+            float3 a = new float3(0f, 64f, 0f);
+            float3 b = new float3(40f, 64f, 0f);
+            float2 ownSide = new float2(-1f, 0f);
+            Quaternion turnedAround = Quaternion.Euler(35f, 180f, 0f);
+            float3 right = turnedAround * Vector3.right;
+            float3 up = turnedAround * Vector3.up;
+
+            float3 focus = SplitScreenMath.SplitFocus(a, b, Merge, ownSide, right, up, 5f, 1f);
+
+            // Where the hero appears relative to the screen center, in that camera's own screen axes.
+            float3 offset = a - focus;
+            float2 onScreen = new float2(math.dot(offset, right), math.dot(offset, up));
+            AssertClose(new float3(-5f, 0f, 0f), new float3(onScreen, 0f));
+        }
+
+        [Test]
+        public void ScreenEdgeDistance_StopsAtWhicheverEdgeComesFirst()
+        {
+            Assert.AreEqual(16f, SplitScreenMath.ScreenEdgeDistance(new float2(1f, 0f), 16f, 9f), Tolerance);
+            Assert.AreEqual(9f, SplitScreenMath.ScreenEdgeDistance(new float2(0f, -1f), 16f, 9f), Tolerance);
+            float2 diagonal = math.normalize(new float2(1f, 1f));
+            Assert.AreEqual(9f / diagonal.y, SplitScreenMath.ScreenEdgeDistance(diagonal, 16f, 9f), Tolerance);
+        }
+
+        [Test]
         public void ViewDistance_PullsBackUntilTheSplit_ThenHolds()
         {
             Assert.AreEqual(7f, SplitScreenMath.ViewDistance(7f, 0.6f, 0f, Merge), Tolerance);

@@ -28,6 +28,35 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Where a split camera looks so its player shows up in the middle of their own side of the line, whichever way
+        /// that camera has been turned. <paramref name="ownSide"/> is the on-screen direction (length 1) from the line
+        /// toward this player's side. <paramref name="cameraRight"/> / <paramref name="cameraUp"/> are this camera's axes.
+        /// <paramref name="screenOffset"/> is how far (meters, at the focus) the player sits from the screen center.
+        /// <para>
+        /// At <paramref name="freedom"/> 0 this is <see cref="FocusTarget"/>, so the split stays seamless. At 1 it's
+        /// purely on-screen, so a player who turns their camera right round still sees their hero on their own side.
+        /// </para>
+        /// </summary>
+        public static float3 SplitFocus(float3 self, float3 other, float mergeDistance, float2 ownSide,
+            float3 cameraRight, float3 cameraUp, float screenOffset, float freedom)
+        {
+            float3 world = FocusTarget(self, other, mergeDistance);
+            float3 onScreen = self - (ownSide.x * cameraRight + ownSide.y * cameraUp) * screenOffset;
+            return math.lerp(world, onScreen, math.saturate(freedom));
+        }
+
+        /// <summary>
+        /// How far (meters, at the focus) from the screen center to its edge, going in on-screen direction
+        /// <paramref name="direction"/> (length 1). <paramref name="halfWidth"/> / <paramref name="halfHeight"/> are half
+        /// the view's size at the focus distance.
+        /// </summary>
+        public static float ScreenEdgeDistance(float2 direction, float halfWidth, float halfHeight)
+        {
+            float2 reach = math.abs(direction) / new float2(halfWidth, halfHeight);
+            return 1f / math.max(math.cmax(reach), 1e-6f);
+        }
+
+        /// <summary>
         /// How far the camera sits from its focus point. The shared camera pulls back as the players spread out, so both
         /// stay in frame; once split, every camera keeps the distance it had at the merge point.
         /// </summary>

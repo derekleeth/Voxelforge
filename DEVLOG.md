@@ -37,9 +37,21 @@
 - Making the split invisible at the moment it happens is all about both cameras seeing *the same thing* at that instant.
 - Two cameras cost twice the *work*, not twice the *pixels*. Making the pictures smaller didn't help at all, which told us where the cost really is.
 
+### Play-test round 1: two problems found 🔍
+- **Your hero could disappear** after turning sharply while split. Each camera aimed at a spot in the *world* between you, so turning around could swing your hero over to your friend's half. Now, the more you're allowed to turn your own view, the more your camera aims to keep your hero **in the middle of your own side of the screen**. Tested by turning P1's camera right round: both heroes stayed on their own sides. 3 new tests (112 / 112 passing).
+- **Split-screen ran at 72–81 FPS.** We measured it properly by clicking into Unity while it ran an automatic test that switched effects off one at a time:
+  - The split costs **exactly twice** the single view: 183 FPS merged vs 102 split. Each camera draws all ~900 chunks and their shadows again.
+  - **Ambient occlusion** (the soft shading in corners) was drawing every chunk an *extra* time per camera. We switched it to a cheaper mode that looks the same: **102 → 109 FPS**.
+  - We also turned off a full-screen copy that nothing was using.
+  - The big fix (letting the GPU keep the chunk list itself and skip chunks hidden behind hills) is now part of **2.4**.
+
+### Things we learned (round 1)
+- Unity only runs at full speed while its window is focused, so measuring FPS needs a human clicking in!
+- To find what's slow, switch one thing off at a time and measure. Our guess (pixels) was wrong: a bigger window didn't change the time at all.
+
 ### Next up
-- [ ] You two: play-test 2.3 with the **Game view clicked** (so Unity runs at full speed). Walk apart and back together, turn the cameras, and read the FPS in the corner while split. Then we tick it off.
-- [ ] Roadmap **2.4 Multi-Viewer Chunk Loader**: load terrain around *both* players so you can really explore apart
+- [ ] You two: play-test the hero-on-screen fix, then we tick 2.3 off.
+- [ ] Roadmap **2.4 Multi-Viewer Chunk Loader**: load terrain around *both* players so you can really explore apart, and make extra cameras cheap (GPU Resident Drawer) so split-screen reaches 120+ FPS
 
 ---
 

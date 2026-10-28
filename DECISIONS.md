@@ -34,10 +34,16 @@
 - **Mouse lock:** the cursor locks while a keyboard + mouse player is in. Esc frees it, and a click takes it back.
 - **One `AudioListener`** follows the middle of the players.
 
-### Performance (editor, 1304×548 Game view, measured while the editor wasn't focused)
-- Merged: about 143 FPS. Split: about 100–111 FPS (both-textures version, before the overlay change).
-- The cost is per-camera CPU and render-thread work (culling, draw submission, shadows: about 2 ms per player camera), not pixels. Half-resolution split views made no difference, but `splitRenderScale` is kept as a knob. Turning shadows off for the second camera saved about 1.3 ms.
-- **The real number comes from the 2.7 Windows build.** If split-screen is under 120 FPS there, the next steps are fewer, larger chunk renderers (fewer draw calls per camera), and sharing or reducing shadow cascades for split cameras.
+- **Keeping your hero on your side while free-looking** (fixed after play-testing). Aiming at a fixed world point only keeps a hero on the correct side while the camera faces the shared angle. After a sharp turn, a hero could end up under the other player's half or off screen. Split cameras now blend, by look freedom, from that world point to an **on-screen** point that keeps the hero halfway between the screen center and the edge of their own side (`SplitScreenMath.SplitFocus`). It's still the world point at 15 m, so the split stays seamless.
+
+### Performance (play-tested in the editor with the Game view focused)
+- Before tuning, you saw **72–81 FPS** split.
+- Measured (650×839 Game view): **merged 183 FPS** (GPU 3.9 ms), **split 102 FPS** (GPU 7.8 ms). **The split costs almost exactly twice the merged view.** Every camera pays full price to cull and draw ~900 chunk renderers, 4 shadow cascades and the post effects. Doubling the pixels (1304×847) didn't change GPU time, so pixels aren't the bottleneck.
+- **Free wins we kept (same look):**
+  - SSAO uses **Source = Depth + After Opaque** instead of Depth Normals. That removes a whole extra geometry pass (the depth-normals prepass) per camera: 102 → 109 FPS split. Normals rebuilt from depth are exact on flat block faces, and screenshots before and after looked the same.
+  - **Camera opaque texture off.** Nothing samples `_CameraOpaqueTexture`, and it was a full-screen copy per camera per frame.
+- **Small wins we did *not* take:** half-resolution SSAO (+5%) and 2 shadow cascades (+3%) cost a little softness for little gain.
+- **The real fix goes in Roadmap 2.4:** Unity 6's **GPU Resident Drawer** with **GPU occlusion culling**, so a second camera doesn't re-submit every chunk and chunks behind hills are skipped. It needs the block shader to support DOTS instancing. Then we confirm 120+ split in the 2.7 build.
 
 ### Deferred on purpose
 - Voronoi for 3–4 players (merging in groups).
