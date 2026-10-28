@@ -16,7 +16,7 @@ MonoBehaviour:
   mesh: {fileID: 8098339978664251912, guid: 65d98f0a2993fef4c93b7be0b709aa22, type: 3}
   lodMesh: {fileID: -86127273191856051, guid: 65d98f0a2993fef4c93b7be0b709aa22, type: 3}
   material: {fileID: 2100000, guid: 5337a66e9fe35bb40a4917fe23954568, type: 2}
-  tint: 0
+  tint: 1
   castShadows: 0
   lodDistance: 30
   maxDistance: 60

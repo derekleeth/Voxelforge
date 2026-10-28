@@ -120,6 +120,21 @@ namespace Voxelforge.Voxels
                 weights[i] /= total;
         }
 
+        /// <summary>
+        /// The biome colour for <paramref name="tint"/> at a spot (Roadmap 2.6), blended with the same weights that
+        /// blend the ground's shape, so colours fade smoothly across biome borders. White for <see cref="BiomeTint.None"/>.
+        /// </summary>
+        public float3 TintAt(float2 position, BiomeTint tint)
+        {
+            if (tint == BiomeTint.None)
+                return 1f;
+            BiomeWeights(Climate(position), _weights);
+            float3 colour = 0f;
+            for (int i = 0; i < _biomes.Length; i++)
+                colour += _weights[i] * (tint == BiomeTint.Grass ? _biomes[i].GrassTint : _biomes[i].FoliageTint);
+            return colour;
+        }
+
         /// <summary>The biome whose climate point is closest.</summary>
         public int NearestBiome(float2 climate)
         {

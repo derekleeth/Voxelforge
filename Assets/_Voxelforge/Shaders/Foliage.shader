@@ -27,6 +27,7 @@ Shader "Voxelforge/Foliage"
         #pragma target 4.5
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Decoration.hlsl"
+        #include "BiomeTint.hlsl"
 
         CBUFFER_START(UnityPerMaterial)
             float4 _BaseMap_ST;
@@ -81,7 +82,8 @@ Shader "Voxelforge/Foliage"
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS   : TEXCOORD1;
                 float2 uv         : TEXCOORD2;
-                half4  color      : TEXCOORD3; // rgb = painted shading x instance tint, a = distance fade.
+                half4  color      : TEXCOORD3; // rgb = painted shading, a = distance fade.
+                half3  tint       : TEXCOORD5; // Biome colour for the green parts.
                 half   fogFactor  : TEXCOORD4;
             };
 
@@ -94,7 +96,8 @@ Shader "Voxelforge/Foliage"
                 float3 normalWS = DecorationRotateY(input.normalOS, d.yaw);
                 output.normalWS = SafeNormalize(lerp(normalWS, float3(0, 1, 0), _NormalUp));
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                output.color = half4(input.color.rgb * DecorationUnpackTint(d.tint), DecorationFade(d));
+                output.color = half4(input.color.rgb, DecorationFade(d));
+                output.tint = DecorationUnpackTint(d.tint);
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
                 return output;
             }
@@ -115,7 +118,7 @@ Shader "Voxelforge/Foliage"
                 normalWS = SafeNormalize(normalWS);
 
                 SurfaceData surface = (SurfaceData)0;
-                surface.albedo = albedo.rgb * input.color.rgb;
+                surface.albedo = ApplyBiomeTint(albedo.rgb, input.tint) * input.color.rgb;
                 surface.alpha = 1.0;
                 surface.smoothness = _Smoothness;
                 surface.occlusion = 1.0;

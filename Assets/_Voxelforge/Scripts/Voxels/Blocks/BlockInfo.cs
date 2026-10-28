@@ -27,6 +27,8 @@ namespace Voxelforge.Voxels
         /// <summary>Light this block gives off, 0-15.</summary>
         public byte LightEmission;
         public BlockFlags Flags;
+        /// <summary>Biome colour for the green parts of this block's faces (Roadmap 2.6).</summary>
+        public BiomeTint Tint;
         /// <summary>Flat color, shown on faces with no texture.</summary>
         public Color32 MapColor;
 

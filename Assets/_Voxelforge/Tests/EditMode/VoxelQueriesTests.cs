@@ -13,9 +13,13 @@ namespace Voxelforge.Tests
         [SetUp]
         public void SetUp()
         {
-            var blocks = new NativeArray<BlockInfo>(4, Allocator.Persistent);
+            var blocks = new NativeArray<BlockInfo>(BlockIds.TreeTrunk + 1, Allocator.Persistent);
             blocks[BlockIds.Air] = new BlockInfo { Id = BlockIds.Air, Flags = BlockFlags.Registered | BlockFlags.Transparent };
             blocks[BlockIds.Stone] = new BlockInfo { Id = BlockIds.Stone, Flags = BlockFlags.Registered | BlockFlags.Solid };
+            blocks[BlockIds.TreeTrunk] = new BlockInfo
+            {
+                Id = BlockIds.TreeTrunk, Flags = BlockFlags.Registered | BlockFlags.Solid | BlockFlags.Transparent,
+            };
             _world = new VoxelWorld(blocks);
             // An air room from -32 to 31 on x and z, with a stone floor along y = 0 and a 1-block step at x >= 4.
             for (int cx = -1; cx <= 0; cx++)
@@ -101,6 +105,19 @@ namespace Voxelforge.Tests
         public void Raycast_MissesBeyondMaxDistance()
         {
             Assert.IsFalse(VoxelQueries.Raycast(_world, new float3(0.5f, 10f, 0.5f), new float3(0f, -1f, 0f), 8f, out _));
+        }
+
+        [Test]
+        public void Raycast_OpaqueOnly_PassesThroughInvisibleTreeTrunks()
+        {
+            // Cameras look through the invisible trunk inside a tree, but bodies (and mining) still hit it.
+            _world.SetVoxel(new int3(-2, 1, 0), new Voxel(BlockIds.TreeTrunk));
+            var origin = new float3(-5f, 1.5f, 0.5f);
+
+            Assert.IsTrue(VoxelQueries.Raycast(_world, origin, new float3(1, 0, 0), 20f, out VoxelHit solid));
+            Assert.AreEqual(new int3(-2, 1, 0), solid.Block);
+            Assert.IsTrue(VoxelQueries.Raycast(_world, origin, new float3(1, 0, 0), 20f, out VoxelHit visible, opaqueOnly: true));
+            Assert.AreEqual(new int3(4, 1, 0), visible.Block, "Should stop at the stone step instead.");
         }
 
         [Test]

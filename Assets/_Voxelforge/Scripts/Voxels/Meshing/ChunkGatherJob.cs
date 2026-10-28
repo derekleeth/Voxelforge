@@ -1,6 +1,8 @@
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using Unity.Mathematics;
 using static Voxelforge.Voxels.VoxelConstants;
 
 namespace Voxelforge.Voxels
@@ -9,20 +11,31 @@ namespace Voxelforge.Voxels
     /// Where the gather job reads one chunk from. A chunk either has a voxel array, or is uniform
     /// (one block everywhere, no array). A chunk that isn't loaded counts as uniform Air.
     /// </summary>
-    public struct GatherSource
+    public unsafe struct GatherSource
     {
-        public bool HasArray;
+        /// <summary>The chunk's voxels, or null when the chunk is uniform or not loaded.</summary>
+        [NativeDisableUnsafePtrRestriction] public Voxel* Voxels;
         public ushort UniformId;
+
+        public static GatherSource Uniform(ushort id) => new GatherSource { UniformId = id };
+
+        public static GatherSource Of(NativeArray<Voxel>.ReadOnly voxels) =>
+            new GatherSource { Voxels = (Voxel*)voxels.GetUnsafeReadOnlyPtr() };
     }
 
     /// <summary>
-    /// Copies the block IDs of a chunk, plus a one-block border taken from its 6 face neighbours,
-    /// into a padded 34x34x34 buffer. The mesher then reads only this buffer, so it never touches
+    /// Copies the block IDs of a chunk, plus a one-block border taken from all 26 neighbours (faces, edges and
+    /// corners), into a padded 34x34x34 buffer. The mesher then reads only this buffer, so it never touches
     /// <see cref="VoxelChunk"/> memory. That means chunks can be edited again as soon as this
     /// short job finishes, even if meshing is still running.
     /// <para>
-    /// Only the center and the 6 face slabs are written. The padding edges and corners stay zero,
-    /// because face culling never looks at them.
+    /// Face culling only needs the 6 face neighbours; corner ambient occlusion (Roadmap 2.6) also looks diagonally,
+    /// so the edges and corners of the padding come from the diagonal chunks.
+    /// </para>
+    /// <para>
+    /// The sources are read through pointers, because a job can't hold 27 NativeArrays. The scheduler keeps the
+    /// usual promise instead: no chunk is edited or freed while a gather job may read it
+    /// (<see cref="ChunkMeshScheduler.CompleteGatherJobs"/>).
     /// </para>
     /// </summary>
     [BurstCompile]
@@ -32,21 +45,12 @@ namespace Voxelforge.Voxels
         public const int PaddedSize = ChunkSize + 2;
         public const int PaddedVolume = PaddedSize * PaddedSize * PaddedSize;
 
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly Center;
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly NegX;
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly PosX;
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly NegY;
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly PosY;
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly NegZ;
-        [ReadOnly] public NativeArray<Voxel>.ReadOnly PosZ;
+        /// <summary>The chunk and its neighbours, see <see cref="SourceIndex"/>. The chunk itself is <see cref="CenterSource"/>.</summary>
+        public const int SourceCount = 27;
+        public const int CenterSource = 13;
 
-        public GatherSource CenterSource;
-        public GatherSource NegXSource;
-        public GatherSource PosXSource;
-        public GatherSource NegYSource;
-        public GatherSource PosYSource;
-        public GatherSource NegZSource;
-        public GatherSource PosZSource;
+        /// <summary>27 sources, indexed by <see cref="SourceIndex"/>.</summary>
+        [ReadOnly] public NativeArray<GatherSource> Sources;
 
         /// <summary>Output: <see cref="PaddedVolume"/> block IDs, indexed with <see cref="PaddedIndex"/>.</summary>
         [WriteOnly] public NativeArray<ushort> Padded;
@@ -57,36 +61,56 @@ namespace Voxelforge.Voxels
         /// </summary>
         public static int PaddedIndex(int x, int y, int z) => x + z * PaddedSize + y * PaddedSize * PaddedSize;
 
+        /// <summary>The source slot for the chunk at <paramref name="offset"/> (each axis -1, 0 or +1) from the centre.</summary>
+        public static int SourceIndex(int3 offset) => (offset.x + 1) + (offset.y + 1) * 3 + (offset.z + 1) * 9;
+
+        /// <summary>The chunk offset of a source slot. The inverse of <see cref="SourceIndex"/>.</summary>
+        public static int3 SourceOffset(int index) => new int3(index % 3, index / 3 % 3, index / 9) - 1;
+
         public void Execute()
         {
-            for (int y = 0; y < ChunkSize; y++)
-            for (int z = 0; z < ChunkSize; z++)
+            for (int py = 0; py < PaddedSize; py++)
+            for (int pz = 0; pz < PaddedSize; pz++)
             {
-                int dst = PaddedIndex(1, y + 1, z + 1);
-                int src = VoxelMath.ToIndex(0, y, z);
-                for (int x = 0; x < ChunkSize; x++)
-                    Padded[dst + x] = Read(Center, CenterSource, src + x);
-            }
+                Split(py, out int sy, out int ly);
+                Split(pz, out int sz, out int lz);
+                int row = PaddedIndex(0, py, pz);
+                int sourceRow = sy * 3 + sz * 9;
 
-            const int last = PaddedSize - 1;
-            for (int a = 0; a < ChunkSize; a++)
-            for (int b = 0; b < ChunkSize; b++)
-            {
-                // X neighbours: a = y, b = z.
-                Padded[PaddedIndex(0, a + 1, b + 1)] = Read(NegX, NegXSource, VoxelMath.ToIndex(ChunkMask, a, b));
-                Padded[PaddedIndex(last, a + 1, b + 1)] = Read(PosX, PosXSource, VoxelMath.ToIndex(0, a, b));
-                // Y neighbours: a = x, b = z.
-                Padded[PaddedIndex(a + 1, 0, b + 1)] = Read(NegY, NegYSource, VoxelMath.ToIndex(a, ChunkMask, b));
-                Padded[PaddedIndex(a + 1, last, b + 1)] = Read(PosY, PosYSource, VoxelMath.ToIndex(a, 0, b));
-                // Z neighbours: a = x, b = y.
-                Padded[PaddedIndex(a + 1, b + 1, 0)] = Read(NegZ, NegZSource, VoxelMath.ToIndex(a, b, ChunkMask));
-                Padded[PaddedIndex(a + 1, b + 1, last)] = Read(PosZ, PosZSource, VoxelMath.ToIndex(a, b, 0));
+                // The two border blocks of this row, then the 32 in between.
+                Padded[row] = Read(Sources[sourceRow], VoxelMath.ToIndex(ChunkMask, ly, lz));
+                Padded[row + PaddedSize - 1] = Read(Sources[sourceRow + 2], VoxelMath.ToIndex(0, ly, lz));
+
+                GatherSource middle = Sources[sourceRow + 1];
+                int src = VoxelMath.ToIndex(0, ly, lz);
+                for (int x = 0; x < ChunkSize; x++)
+                    Padded[row + 1 + x] = Read(middle, src + x);
             }
         }
 
-        static ushort Read(in NativeArray<Voxel>.ReadOnly voxels, in GatherSource source, int index)
+        /// <summary>Which source along one axis (0, 1, 2) and which local coordinate a padded coordinate reads.</summary>
+        static void Split(int padded, out int source, out int local)
         {
-            return source.HasArray ? voxels[index].BlockId : source.UniformId;
+            if (padded == 0)
+            {
+                source = 0;
+                local = ChunkMask;
+            }
+            else if (padded == PaddedSize - 1)
+            {
+                source = 2;
+                local = 0;
+            }
+            else
+            {
+                source = 1;
+                local = padded - 1;
+            }
+        }
+
+        static unsafe ushort Read(in GatherSource source, int index)
+        {
+            return source.Voxels != null ? source.Voxels[index].BlockId : source.UniformId;
         }
     }
 }

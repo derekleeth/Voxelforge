@@ -29,6 +29,9 @@ namespace Voxelforge.Voxels
         [Tooltip("Flat color for maps, and shown on faces that have no texture.")]
         [SerializeField] Color32 mapColor = new Color32(255, 0, 255, 255);
 
+        [Tooltip("Biome colour multiplied into the green parts of this block's textures (grass), or None.")]
+        [SerializeField] BiomeTint biomeTint;
+
         [Header("Textures")]
         [Tooltip("Texture on the top face, and on every face unless Side/Bottom are set.")]
         [SerializeField] BlockTexture topTexture;
@@ -46,6 +49,7 @@ namespace Voxelforge.Voxels
         public bool IsTransparent => isTransparent;
         public int LightEmission => lightEmission;
         public Color32 MapColor => mapColor;
+        public BiomeTint BiomeTint => biomeTint;
         public BlockTexture TopTexture => topTexture;
         public BlockTexture SideTexture => sideTexture != null ? sideTexture : topTexture;
         public BlockTexture BottomTexture => bottomTexture != null ? bottomTexture : SideTexture;
@@ -65,6 +69,7 @@ namespace Voxelforge.Voxels
                 LightEmission = (byte)Mathf.Clamp(lightEmission, 0, Voxel.MaxLight),
                 Flags = flags,
                 MapColor = mapColor,
+                Tint = biomeTint,
                 // BlockRegistry.CreateLookup fills in real layers; a definition alone doesn't know the array order.
                 TopLayer = BlockInfo.NoTexture,
                 SideLayer = BlockInfo.NoTexture,
@@ -74,7 +79,7 @@ namespace Voxelforge.Voxels
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static BlockDefinition Create(ushort id, string displayName, int maxDurability = 20,
-            bool isSolid = true, bool isTransparent = false, int lightEmission = 0)
+            bool isSolid = true, bool isTransparent = false, int lightEmission = 0, BiomeTint biomeTint = BiomeTint.None)
         {
             var definition = CreateInstance<BlockDefinition>();
             definition.name = displayName;
@@ -84,6 +89,7 @@ namespace Voxelforge.Voxels
             definition.isSolid = isSolid;
             definition.isTransparent = isTransparent;
             definition.lightEmission = lightEmission;
+            definition.biomeTint = biomeTint;
             return definition;
         }
     }

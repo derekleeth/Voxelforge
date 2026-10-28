@@ -18,6 +18,7 @@ namespace Voxelforge.Voxels
     /// tree. The tree look is picked by the biome's tree weights and scaled to the trunk height.</item>
     /// </list>
     /// A decoration belongs to the chunk holding the block it stands on, so it disappears when that block changes.
+    /// Each one is tinted with its biome's grass or foliage colour where it stands (Roadmap 2.6).
     /// </summary>
     public static class Decorator
     {
@@ -52,7 +53,7 @@ namespace Voxelforge.Voxels
                             continue; // Not the bottom of the trunk.
                         if (biome < 0)
                             biome = sampler.SurfaceBiome(wx, wz);
-                        AddTree(new int3(wx, wy, wz), biome, biomeCount, treeHash, terrain, decorations, biomeWeights, output);
+                        AddTree(new int3(wx, wy, wz), biome, biomeCount, treeHash, sampler, terrain, decorations, biomeWeights, output);
                         continue;
                     }
 
@@ -60,12 +61,12 @@ namespace Voxelforge.Voxels
                         continue; // Only block tops open to the sky (or a cave) grow plants.
                     if (biome < 0)
                         biome = sampler.SurfaceBiome(wx, wz);
-                    AddGround(new int3(wx, wy, wz), block, biome, biomeCount, seedHash, decorations, biomeWeights, output);
+                    AddGround(new int3(wx, wy, wz), block, biome, biomeCount, seedHash, sampler, decorations, biomeWeights, output);
                 }
             }
         }
 
-        static void AddGround(int3 w, ushort block, int biome, int biomeCount, uint seedHash,
+        static void AddGround(int3 w, ushort block, int biome, int biomeCount, uint seedHash, in TerrainSampler sampler,
             NativeArray<DecorationInfo> decorations, NativeArray<float> biomeWeights, NativeList<DecorationInstance> output)
         {
             uint h = math.hash(new uint4((uint)w.x, (uint)w.y, (uint)w.z, seedHash));
@@ -84,20 +85,21 @@ namespace Voxelforge.Voxels
                 // Fresh hashes for the look, so they don't depend on the roll that picked the type.
                 uint a = math.hash(new uint2(h, 1));
                 uint b = math.hash(new uint2(h, 2));
+                var position = new float3(w.x + 0.2f + 0.6f * Unit(a), w.y + 1f, w.z + 0.2f + 0.6f * Unit(a >> 12));
                 output.Add(new DecorationInstance
                 {
-                    Position = new float3(w.x + 0.2f + 0.6f * Unit(a), w.y + 1f, w.z + 0.2f + 0.6f * Unit(a >> 12)),
+                    Position = position,
                     Yaw = Unit(b) * 2f * math.PI,
                     Scale = math.lerp(info.MinScale, info.MaxScale, Unit(b >> 12)),
                     Type = (uint)type,
-                    Tint = DecorationInstance.White,
+                    Tint = TintAt(sampler, position, info.Tint),
                     Random = math.hash(new uint2(h, 3)),
                 });
                 return;
             }
         }
 
-        static void AddTree(int3 w, int biome, int biomeCount, uint treeHash, in TerrainParams terrain,
+        static void AddTree(int3 w, int biome, int biomeCount, uint treeHash, in TerrainSampler sampler, in TerrainParams terrain,
             NativeArray<DecorationInfo> decorations, NativeArray<float> biomeWeights, NativeList<DecorationInstance> output)
         {
             float total = 0f;
@@ -129,15 +131,21 @@ namespace Voxelforge.Voxels
 
             DecorationInfo info = decorations[chosen];
             int trunk = TreePlacement.TrunkHeight(treeHash, w.x, w.z, terrain.TreeMinHeight, terrain.TreeMaxHeight);
+            var position = new float3(w.x + 0.5f, w.y, w.z + 0.5f);
             output.Add(new DecorationInstance
             {
-                Position = new float3(w.x + 0.5f, w.y, w.z + 0.5f),
+                Position = position,
                 Yaw = Unit(variant >> 8) * 2f * math.PI,
                 Scale = trunk / info.ModelTrunkHeight,
                 Type = (uint)chosen,
-                Tint = DecorationInstance.White,
+                Tint = TintAt(sampler, position, info.Tint),
                 Random = math.hash(new uint2(variant, 7)),
             });
+        }
+
+        static uint TintAt(in TerrainSampler sampler, float3 position, BiomeTint tint)
+        {
+            return tint == BiomeTint.None ? DecorationInstance.White : BiomeTints.Pack(sampler.TintAt(position.xz, tint));
         }
 
         /// <summary>The top 24 bits of <paramref name="h"/> as a number from 0 (inclusive) to 1 (exclusive).</summary>

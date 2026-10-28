@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 14): Colours, Soft Corners & a Smarter Camera 🎨 Roadmap 2.6 done!
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **Every biome has its own colours.** Grass blocks, grass tufts, flower leaves, bushes and trees take their biome's grass or leaf colour. Meadows are fresh green, the desert is dry yellow, the red crags are autumn gold and orange, and the snowy peaks are cool blue-green. Colours fade smoothly where biomes meet. Details in DECISIONS.md **D-012**.
+- **Only the green parts change colour.** The dirt on a grass block's side, tree bark and flower petals keep their own colours.
+- **Soft corners (corner AO):** block corners tucked against other blocks are darker, so steps, walls and cliff bottoms get soft shading and the world looks solid instead of flat.
+- To get the shading right across chunk edges, each chunk now looks at **all 26 chunks around it** (it used to be 6).
+- **Camera fix:** the camera could show the inside of a mountain, and make the hero look stuck inside it, when the screen was split. Now it always keeps a clear view from your own hero's head, checks the corners of its view too, and ignores the invisible tree-trunk blocks.
+
+### Results 🎉
+- **FPS check passed:** 190-230 FPS with two players on one screen, and **124-139 FPS split-screen** (the target is 120+). ✅
+- A busy chunk still meshes in about 2.4 ms on a worker thread, even with the corner shading.
+- **Play-test passed:** colours and soft corners look good, and the camera no longer goes inside mountains. ✅
+- **Roadmap 2.6 is complete!** 🌳
+
+### Tests: 168 / 168 passing ✅
+- Open floors stay unshaded and stay one big piece. A block on a floor shades the floor around it.
+- A corner between two walls is fully shaded, and pieces with one dark corner are split through that corner.
+- Edges and corners are read from the diagonal chunks, and editing a chunk corner refreshes all 8 chunks that share it.
+- Grass faces carry their biome colour; stone stays white.
+- The camera's wall check passes through invisible tree trunks, but bodies still bump into them.
+
+### Things we learned
+- **Split-screen moves where each camera looks.** It aims a few metres toward the other player, so your hero sits in the middle of your half of the screen. Checking for walls from that point let the camera go inside hills. Checking from the hero's own head fixes it.
+- Biome tint and corner shading fit in the colour every block corner already had, so the meshes didn't get any bigger.
+
+### Next up
+- [x] You two: FPS check and camera play-test ✅ **2.6 done.**
+- [ ] Roadmap **2.7 Playable Demo Build**: a real Windows .exe we can play outside Unity, in split-screen at 120+ FPS
+
+---
+
 ## 2026-10-28 - Session 1 (part 13): Real Plants! 🌼 Roadmap 2.6, part B
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

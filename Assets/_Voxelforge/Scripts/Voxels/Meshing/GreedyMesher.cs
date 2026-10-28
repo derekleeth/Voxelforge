@@ -15,17 +15,38 @@ namespace Voxelforge.Voxels
     /// <item><b>Cull:</b> pack each row of opaque blocks into the bits of a <c>ulong</c>. One shift and
     /// mask then finds every visible face in that row at once (a face is visible when the block next to it isn't opaque).</item>
     /// <item><b>Greedy merge:</b> for each of the 6 directions and 32 slices, join neighbouring
-    /// visible faces of the <i>same block</i> into the biggest rectangles possible.</item>
+    /// visible faces of the <i>same block with the same corner shading</i> into the biggest rectangles possible.</item>
     /// <item><b>Emit:</b> write one quad (4 vertices, 2 triangles) per rectangle.</item>
     /// </list>
     /// A flat 32x32 floor becomes 1 quad instead of 1,024.
+    /// <para>
+    /// <b>Corner ambient occlusion</b> (Roadmap 2.6): each face corner is darkened by the blocks touching it in front
+    /// of the face, from 0 (tucked into a corner) to 3 (open). It goes in vertex colour alpha. Faces only merge when
+    /// all 4 corners match, and each quad is split along the diagonal that keeps the shading symmetric.
+    /// </para>
+    /// <para>
+    /// <b>Biome tint</b>: textured faces carry the biome colour of their block's <see cref="BiomeTint"/> at each
+    /// corner in vertex colour RGB (white for untinted blocks, see <see cref="ChunkTints"/>). Untextured faces carry
+    /// their flat map colour instead.
+    /// </para>
     /// </summary>
     public static class GreedyMesher
     {
         const int Rows = ChunkSize * ChunkSize;
 
-        /// <summary>Appends 4 vertices per visible quad. Burst-safe; tests call it directly.</summary>
+        /// <summary>Corner AO of a fully open corner. 0 is a corner tucked between two blocks.</summary>
+        public const int OpenCorner = 3;
+
+        /// <summary>Appends 4 vertices per visible quad, with no biome tint. Burst-safe; tests call it directly.</summary>
         public static void Build(NativeArray<ushort> padded, NativeArray<BlockInfo> blocks, NativeList<ChunkVertex> vertices)
+        {
+            ChunkTints tints = ChunkTints.None;
+            Build(padded, blocks, vertices, ref tints);
+        }
+
+        /// <summary>Appends 4 vertices per visible quad, colouring tinted blocks from <paramref name="tints"/>.</summary>
+        public static void Build(NativeArray<ushort> padded, NativeArray<BlockInfo> blocks, NativeList<ChunkVertex> vertices,
+            ref ChunkTints tints)
         {
             // Opaque bits along each axis. Bit p = padded coordinate p (0 and 33 are the neighbour border).
             var columnsX = new NativeArray<ulong>(Rows, Allocator.Temp); // [y * 32 + z], bits over x
@@ -54,7 +75,7 @@ namespace Voxelforge.Voxels
             {
                 var facing = (BlockFacing)face;
                 FindVisibleFaces(facing, columnsX, columnsY, columnsZ, faceRows);
-                MergeAndEmit(facing, faceRows, padded, blocks, vertices);
+                MergeAndEmit(facing, faceRows, padded, blocks, vertices, ref tints);
             }
         }
 
@@ -134,7 +155,7 @@ namespace Voxelforge.Voxels
         }
 
         static void MergeAndEmit(BlockFacing facing, NativeArray<uint> faceRows, NativeArray<ushort> padded,
-            NativeArray<BlockInfo> blocks, NativeList<ChunkVertex> vertices)
+            NativeArray<BlockInfo> blocks, NativeList<ChunkVertex> vertices, ref ChunkTints tints)
         {
             for (int slice = 0; slice < ChunkSize; slice++)
             for (int v = 0; v < ChunkSize; v++)
@@ -145,36 +166,72 @@ namespace Voxelforge.Voxels
                     uint bits = faceRows[row];
                     int u = math.tzcnt(bits);
                     ushort id = BlockAt(facing, slice, u, v, padded);
+                    int ao = CornerOcclusion(facing, slice, u, v, padded, blocks);
 
-                    // Grow right along u while the faces are visible and the same block.
+                    // Grow right along u while the faces are visible, the same block and shaded the same.
                     int width = 1;
-                    while (u + width < ChunkSize && (bits & (1u << (u + width))) != 0 && BlockAt(facing, slice, u + width, v, padded) == id)
+                    while (u + width < ChunkSize && (bits & (1u << (u + width))) != 0
+                           && Matches(facing, slice, u + width, v, id, ao, padded, blocks))
                         width++;
 
                     // Grow up along v while the whole strip matches.
                     uint mask = (width == ChunkSize ? uint.MaxValue : (1u << width) - 1) << u;
                     int height = 1;
                     while (v + height < ChunkSize && (faceRows[row + height] & mask) == mask
-                           && StripMatches(facing, slice, u, width, v + height, id, padded))
+                           && StripMatches(facing, slice, u, width, v + height, id, ao, padded, blocks))
                         height++;
 
                     for (int k = 0; k < height; k++)
                         faceRows[row + k] &= ~mask;
 
-                    EmitQuad(facing, slice, u, v, width, height, blocks[id], vertices);
+                    EmitQuad(facing, slice, u, v, width, height, blocks[id], ao, vertices, ref tints);
                 }
             }
         }
 
-        static bool StripMatches(BlockFacing facing, int slice, int u, int width, int v, ushort id, NativeArray<ushort> padded)
+        static bool Matches(BlockFacing facing, int slice, int u, int v, ushort id, int ao, NativeArray<ushort> padded,
+            NativeArray<BlockInfo> blocks)
+        {
+            return BlockAt(facing, slice, u, v, padded) == id && CornerOcclusion(facing, slice, u, v, padded, blocks) == ao;
+        }
+
+        static bool StripMatches(BlockFacing facing, int slice, int u, int width, int v, ushort id, int ao,
+            NativeArray<ushort> padded, NativeArray<BlockInfo> blocks)
         {
             for (int i = 0; i < width; i++)
             {
-                if (BlockAt(facing, slice, u + i, v, padded) != id)
+                if (!Matches(facing, slice, u + i, v, id, ao, padded, blocks))
                     return false;
             }
             return true;
         }
+
+        /// <summary>
+        /// The corner AO of one face, packed 2 bits per corner in (u, v) order (0, 0), (1, 0), (1, 1), (0, 1),
+        /// lowest bits first. Each corner is 0 to <see cref="OpenCorner"/>, from the 3 blocks that touch it in the
+        /// layer just in front of the face: two along the sides and one diagonal. Two sides blocked count as fully
+        /// tucked in, whatever the diagonal is.
+        /// </summary>
+        public static int CornerOcclusion(BlockFacing facing, int slice, int u, int v, NativeArray<ushort> padded,
+            NativeArray<BlockInfo> blocks)
+        {
+            int3 front = ToLocal(facing, slice, u, v) + Normal(facing) + 1; // Padded coordinates.
+            Axes(facing, out int3 uAxis, out int3 vAxis);
+            int packed = 0;
+            for (int corner = 0; corner < 4; corner++)
+            {
+                int3 du = corner == 1 || corner == 2 ? uAxis : -uAxis;
+                int3 dv = corner >= 2 ? vAxis : -vAxis;
+                bool side1 = IsOpaque(blocks, padded[PaddedIndexOf(front + du)]);
+                bool side2 = IsOpaque(blocks, padded[PaddedIndexOf(front + dv)]);
+                bool diagonal = IsOpaque(blocks, padded[PaddedIndexOf(front + du + dv)]);
+                int ao = side1 && side2 ? 0 : OpenCorner - ((side1 ? 1 : 0) + (side2 ? 1 : 0) + (diagonal ? 1 : 0));
+                packed |= ao << (corner * 2);
+            }
+            return packed;
+        }
+
+        static int PaddedIndexOf(int3 p) => PaddedIndex(p.x, p.y, p.z);
 
         static ushort BlockAt(BlockFacing facing, int slice, int u, int v, NativeArray<ushort> padded)
         {
@@ -198,11 +255,9 @@ namespace Voxelforge.Voxels
             }
         }
 
-        static void EmitQuad(BlockFacing facing, int slice, int u, int v, int width, int height, BlockInfo block,
-            NativeList<ChunkVertex> vertices)
+        /// <summary>The face plane's u and v directions, matching <see cref="ToLocal"/>.</summary>
+        static void Axes(BlockFacing facing, out int3 uAxis, out int3 vAxis)
         {
-            int3 normal = Normal(facing);
-            int3 uAxis, vAxis;
             switch (facing)
             {
                 case BlockFacing.East:
@@ -220,6 +275,13 @@ namespace Voxelforge.Voxels
                     vAxis = new int3(0, 1, 0);
                     break;
             }
+        }
+
+        static void EmitQuad(BlockFacing facing, int slice, int u, int v, int width, int height, BlockInfo block, int ao,
+            NativeList<ChunkVertex> vertices, ref ChunkTints tints)
+        {
+            int3 normal = Normal(facing);
+            Axes(facing, out int3 uAxis, out int3 vAxis);
 
             // Positive faces sit on the far side of the block.
             int3 origin = ToLocal(facing, slice, u, v) + math.max(normal, 0);
@@ -228,31 +290,40 @@ namespace Voxelforge.Voxels
             float3 dv = vAxis * height;
 
             // Unity draws triangles whose corners go clockwise as seen from the front.
-            // That holds for (o, o+du, o+du+dv) when cross(u, v) points along the normal; otherwise swap u and v.
+            // That holds for (o, o+du, o+du+dv) when cross(u, v) points along the normal; otherwise swap u and v,
+            // which visits the (u, v) corners in the order 0, 3, 2, 1.
             float3 n = normal;
             bool swap = math.dot(math.cross((float3)uAxis, (float3)vAxis), n) < 0;
+            int4 corners = swap ? new int4(0, 3, 2, 1) : new int4(0, 1, 2, 3);
+
+            // The index buffer splits each quad along its 1st and 3rd vertex. Splitting through two bright corners
+            // smears a dark corner into a triangle, so in that case start one corner later to split the other way.
+            int ao0 = ao & 3, ao1 = (ao >> 2) & 3, ao2 = (ao >> 4) & 3, ao3 = (ao >> 6) & 3;
+            if (ao0 + ao2 > ao1 + ao3)
+                corners = corners.yzwx;
+
             ushort layer = block.LayerFor(facing);
             float textureLayer = layer == BlockInfo.NoTexture ? -1f : layer;
 
-            if (!swap)
+            for (int i = 0; i < 4; i++)
             {
-                vertices.Add(Vertex(o, n, block.MapColor, new float2(0, 0), textureLayer));
-                vertices.Add(Vertex(o + du, n, block.MapColor, new float2(width, 0), textureLayer));
-                vertices.Add(Vertex(o + du + dv, n, block.MapColor, new float2(width, height), textureLayer));
-                vertices.Add(Vertex(o + dv, n, block.MapColor, new float2(0, height), textureLayer));
+                int corner = corners[i];
+                float cu = corner == 1 || corner == 2 ? 1f : 0f;
+                float cv = corner >= 2 ? 1f : 0f;
+                float3 position = o + du * cu + dv * cv;
+                byte occlusion = (byte)(((ao >> (corner * 2)) & 3) * 85); // 0, 85, 170 or 255.
+                Color32 colour = textureLayer < 0f
+                    ? new Color32(block.MapColor.r, block.MapColor.g, block.MapColor.b, occlusion)
+                    : BiomeTints.ToColor32(tints.At((int)position.x, (int)position.z, block.Tint), occlusion);
+                vertices.Add(new ChunkVertex
+                {
+                    Position = position,
+                    Normal = n,
+                    Color = colour,
+                    UV = new float2(width * cu, height * cv),
+                    TextureLayer = textureLayer,
+                });
             }
-            else
-            {
-                vertices.Add(Vertex(o, n, block.MapColor, new float2(0, 0), textureLayer));
-                vertices.Add(Vertex(o + dv, n, block.MapColor, new float2(0, height), textureLayer));
-                vertices.Add(Vertex(o + du + dv, n, block.MapColor, new float2(width, height), textureLayer));
-                vertices.Add(Vertex(o + du, n, block.MapColor, new float2(width, 0), textureLayer));
-            }
-        }
-
-        static ChunkVertex Vertex(float3 position, float3 normal, Color32 color, float2 uv, float textureLayer)
-        {
-            return new ChunkVertex { Position = position, Normal = normal, Color = color, UV = uv, TextureLayer = textureLayer };
         }
 
         public static bool IsPositive(BlockFacing facing)
@@ -322,10 +393,27 @@ namespace Voxelforge.Voxels
         [ReadOnly] public NativeArray<BlockInfo> Blocks;
         public Mesh.MeshData MeshData;
 
+        /// <summary>For biome tint: the chunk's world origin and the terrain it grew from. Empty biomes = no tint.</summary>
+        public int3 Origin;
+        public WorldSeed Seed;
+        public TerrainParams Terrain;
+        [ReadOnly] public NativeArray<BiomeInfo> Biomes;
+
         public void Execute()
         {
             var vertices = new NativeList<ChunkVertex>(4096, Allocator.Temp);
-            GreedyMesher.Build(Padded, Blocks, vertices);
+            if (Biomes.Length == 0)
+            {
+                GreedyMesher.Build(Padded, Blocks, vertices);
+            }
+            else
+            {
+                var sampler = new TerrainSampler(Seed, Terrain, Biomes, Allocator.Temp);
+                var tints = new ChunkTints(sampler, Origin, Allocator.Temp);
+                GreedyMesher.Build(Padded, Blocks, vertices, ref tints);
+                tints.Dispose();
+                sampler.Dispose();
+            }
             GreedyMesher.WriteMesh(vertices, MeshData);
         }
     }

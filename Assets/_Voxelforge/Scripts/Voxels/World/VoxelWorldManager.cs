@@ -101,6 +101,7 @@ namespace Voxelforge.Voxels
             {
                 IsChunkIncoming = _generator.IsRequested,
             };
+            _scheduler.SetBiomeTint(_generator.Seed, _generator.Terrain, _generator.Biomes);
             CreateDecorations();
         }
 

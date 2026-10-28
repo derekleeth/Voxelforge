@@ -68,25 +68,25 @@ namespace Voxelforge.Editor
             var decorations = new List<DecorationDefinition>
             {
                 MakeDecoration("GrassTuft", "GrassShort", DecorationKind.Ground, grassMat, onGrass, 0.4f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1.1f, 1.6f, 30f, 70f, false, DecorationTint.Grass),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1.1f, 1.6f, 30f, 70f, false, BiomeTint.Grass),
                 MakeDecoration("GrassTall", "GrassTall", DecorationKind.Ground, grassMat, onGrass, 0.07f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.8f) }, 1.0f, 1.4f, 30f, 70f, false, DecorationTint.Grass),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.8f) }, 1.0f, 1.4f, 30f, 70f, false, BiomeTint.Grass),
                 MakeDecoration("FlowerYellow", "FlowerYellow", DecorationKind.Ground, flowerMat, onGrass, 0.02f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.4f) }, 1.1f, 1.5f, 30f, 60f, false, DecorationTint.None),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.4f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
                 MakeDecoration("FlowerBlue", "FlowerBlue", DecorationKind.Ground, flowerMat, onGrass, 0.015f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.3f) }, 1.1f, 1.5f, 30f, 60f, false, DecorationTint.None),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.3f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
                 MakeDecoration("FlowerRed", "FlowerRed", DecorationKind.Ground, flowerMat, onGrass, 0.01f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1.1f, 1.5f, 30f, 60f, false, DecorationTint.None),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
                 MakeDecoration("Bush", "Bush", DecorationKind.Ground, bushMat, onGrass, 0.02f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 1f) }, 0.8f, 1.4f, 60f, 120f, true, DecorationTint.Foliage),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 1f) }, 0.8f, 1.4f, 60f, 120f, true, BiomeTint.Foliage),
                 MakeDecoration("DryShrub", "DryShrub", DecorationKind.Ground, shrubMat, onSand, 0.012f,
-                    new[] { Weight(Desert, 1f) }, 0.7f, 1.2f, 60f, 120f, true, DecorationTint.None),
+                    new[] { Weight(Desert, 1f) }, 0.7f, 1.2f, 60f, 120f, true, BiomeTint.Foliage),
                 MakeDecoration("OakTree", "OakTree", DecorationKind.Tree, treeMat, none, 0f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1f, 1f, 90f, 240f, true, DecorationTint.Foliage),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
                 MakeDecoration("PineTree", "PineTree", DecorationKind.Tree, treeMat, none, 0f,
-                    new[] { Weight(Snowy, 1f), Weight(Crags, 0.5f) }, 1f, 1f, 90f, 240f, true, DecorationTint.Foliage),
+                    new[] { Weight(Snowy, 1f), Weight(Crags, 0.5f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
                 MakeDecoration("ScrubTree", "ScrubTree", DecorationKind.Tree, treeMat, none, 0f,
-                    new[] { Weight(Desert, 1f), Weight(Crags, 0.6f) }, 1f, 1f, 90f, 240f, true, DecorationTint.Foliage),
+                    new[] { Weight(Desert, 1f), Weight(Crags, 0.6f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
             };
             if (decorations.Contains(null))
                 return;
@@ -155,7 +155,7 @@ namespace Voxelforge.Editor
 
         static DecorationDefinition MakeDecoration(string name, string model, DecorationKind kind, Material material,
             BlockDefinition[] surfaces, float density, BiomeWeight[] biomes, float minScale, float maxScale,
-            float lodDistance, float maxDistance, bool castShadows, DecorationTint tint)
+            float lodDistance, float maxDistance, bool castShadows, BiomeTint tint)
         {
             if (!TryLoadMeshes(model, out Mesh mesh, out Mesh lodMesh))
                 return null;

@@ -204,6 +204,13 @@ namespace Voxelforge.Voxels
         [Tooltip("Chance that each tree spot grows a tree. 0 = no trees, 1 = a tree in every spot.")]
         [SerializeField, Range(0f, 1f)] float treeChance;
 
+        [Header("Colours")]
+        [Tooltip("Multiplied into the green of grass blocks, grass tufts and flower leaves. White = unchanged.")]
+        [SerializeField] Color grassTint = Color.white;
+
+        [Tooltip("Multiplied into the green of leaves on bushes and trees. White = unchanged.")]
+        [SerializeField] Color foliageTint = Color.white;
+
         public string Name => name;
         public BlockDefinition SurfaceBlock => surfaceBlock;
         public BlockDefinition SubsurfaceBlock => subsurfaceBlock;
@@ -226,6 +233,8 @@ namespace Voxelforge.Voxels
                 SubsurfaceDepth = subsurfaceDepth,
                 OreRichness = oreRichness,
                 TreeChance = treeChance,
+                GrassTint = new float3(grassTint.r, grassTint.g, grassTint.b),
+                FoliageTint = new float3(foliageTint.r, foliageTint.g, foliageTint.b),
             };
         }
     }
@@ -276,5 +285,7 @@ namespace Voxelforge.Voxels
         public int SubsurfaceDepth;
         public float OreRichness;
         public float TreeChance;
+        public float3 GrassTint;
+        public float3 FoliageTint;
     }
 }

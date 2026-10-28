@@ -228,7 +228,8 @@ namespace Voxelforge.Gameplay
             rig.OwnYaw += look.x;
             rig.OwnPitch = ClampPitch(rig.OwnPitch - look.y);
 
-            rig.SetPose(FocusPoint(slot), rig.OwnYaw, rig.OwnPitch, baseDistance, WorldOf(slot));
+            float3 focus = FocusPoint(slot);
+            rig.SetPose(focus, rig.OwnYaw, rig.OwnPitch, baseDistance, WorldOf(slot), focus);
             rig.ShowOnScreen(rect);
             _inputs[slot].ViewYaw = rig.OwnYaw;
             _views[slot] = new PlayerView { LocalSlot = (byte)slot, Camera = rig.Camera, ScreenRect = rect };
@@ -278,7 +279,8 @@ namespace Voxelforge.Gameplay
             var fullScreen = new Rect(0f, 0f, 1f, 1f);
             if (!SplitScreenMath.IsSplit(separation, mergeDistance))
             {
-                rigA.SetPose((focusA + focusB) * 0.5f, _sharedYaw, _sharedPitch, distance, WorldOf(slotA));
+                float3 middle = (focusA + focusB) * 0.5f;
+                rigA.SetPose(middle, _sharedYaw, _sharedPitch, distance, WorldOf(slotA), SharedPivot(middle, focusA, focusB, WorldOf(slotA)));
                 rigA.ShowOnScreen(fullScreen);
                 rigB.Hide();
                 AttachComposite(null);
@@ -295,8 +297,10 @@ namespace Voxelforge.Gameplay
 
             // The first player draws straight to the screen; the second draws into a texture that the composite
             // camera paints over their side of the line.
-            rigA.SetPose(SplitFocus(rigA, focusA, focusB, -normal, yawA, pitchA, distance, freedom), yawA, pitchA, distance, WorldOf(slotA));
-            rigB.SetPose(SplitFocus(rigB, focusB, focusA, normal, yawB, pitchB, distance, freedom), yawB, pitchB, distance, WorldOf(slotB));
+            // Each split camera's look-at point is pushed towards the other player and may be inside a hill, so its
+            // collision line starts at its own player's head instead.
+            rigA.SetPose(SplitFocus(rigA, focusA, focusB, -normal, yawA, pitchA, distance, freedom), yawA, pitchA, distance, WorldOf(slotA), focusA);
+            rigB.SetPose(SplitFocus(rigB, focusB, focusA, normal, yawB, pitchB, distance, freedom), yawB, pitchB, distance, WorldOf(slotB), focusB);
             int width = Mathf.Max(1, Mathf.RoundToInt(Screen.width * splitRenderScale));
             int height = Mathf.Max(1, Mathf.RoundToInt(Screen.height * splitRenderScale));
             rigA.ShowOnScreen(fullScreen);
@@ -348,6 +352,19 @@ namespace Voxelforge.Gameplay
             float edge = SplitScreenMath.ScreenEdgeDistance(ownSide, halfWidth, halfHeight);
             float screenOffset = math.min(mergeDistance * 0.5f, edge * playerOffsetInHalf);
             return SplitScreenMath.SplitFocus(self, other, mergeDistance, ownSide, rotation * Vector3.right, rotation * Vector3.up, screenOffset, freedom);
+        }
+
+        /// <summary>
+        /// Where the shared camera's collision line starts: the middle of the two players when both can see it
+        /// (it's open air), otherwise the first player's head, so a hill between them never swallows the camera.
+        /// </summary>
+        static float3 SharedPivot(float3 middle, float3 focusA, float3 focusB, VoxelWorld world)
+        {
+            if (world == null)
+                return middle;
+            bool clear = !VoxelQueries.Raycast(world, focusA, middle - focusA, math.distance(focusA, middle), out _, opaqueOnly: true)
+                         && !VoxelQueries.Raycast(world, focusB, middle - focusB, math.distance(focusB, middle), out _, opaqueOnly: true);
+            return clear ? middle : focusA;
         }
 
         /// <summary>The point a player's camera looks at: a little above their feet.</summary>

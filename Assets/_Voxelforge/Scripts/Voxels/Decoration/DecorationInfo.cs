@@ -13,7 +13,7 @@ namespace Voxelforge.Voxels
         public const int MaxSurfaceId = 64;
 
         public DecorationKind Kind;
-        public DecorationTint Tint;
+        public BiomeTint Tint;
         /// <summary>Bit N set = this decoration can grow on block ID N.</summary>
         public ulong SurfaceMask;
         public float Density;

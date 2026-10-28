@@ -288,6 +288,7 @@ namespace Voxelforge.Tests
         {
             // Mesh one busy chunk directly (no scheduler) to time the Burst-compiled work.
             var padded = new NativeArray<ushort>(ChunkGatherJob.PaddedVolume, Allocator.Persistent);
+            var noBiomes = new NativeArray<BiomeInfo>(0, Allocator.Persistent); // No biome tint.
             var random = new Unity.Mathematics.Random(1234);
             for (int y = 1; y <= ChunkSize; y++)
             for (int z = 1; z <= ChunkSize; z++)
@@ -306,7 +307,7 @@ namespace Voxelforge.Tests
                     if (run == 0)
                         stopwatch.Start();
                     Mesh.MeshDataArray data = Mesh.AllocateWritableMeshData(1);
-                    new GreedyMeshJob { Padded = padded, Blocks = _world.Blocks, MeshData = data[0] }.Run();
+                    new GreedyMeshJob { Padded = padded, Blocks = _world.Blocks, MeshData = data[0], Biomes = noBiomes }.Run();
                     data.Dispose();
                 }
                 stopwatch.Stop();
@@ -315,6 +316,7 @@ namespace Voxelforge.Tests
             finally
             {
                 padded.Dispose();
+                noBiomes.Dispose();
             }
         }
     }

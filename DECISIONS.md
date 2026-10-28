@@ -7,7 +7,7 @@
 
 ## D-012: Foliage, Trees and the Decoration Layer
 - **Date:** 2026-10-28
-- **Status:** Accepted for parts A (engine) and B (art), both play-tested 2026-10-28. Part C (tint, corner AO, FPS) follows.
+- **Status:** Accepted (parts A engine, B art, C tint + corner AO + FPS; all play-tested 2026-10-28)
 
 ### Decisions
 - **Trees live in the terrain; everything else lives in the mesh job.**
@@ -48,8 +48,24 @@
 - **`FoliageDecorationBuilder`** (*Voxelforge -> Build Foliage Decorations*, renamed from the part A placeholder builder) makes 5 materials (Grass, Flowers, Shrub, Bush, Tree) on the atlas, the 10 decoration assets and the set. Ground densities add up per block top (0.4 short grass, 0.07 tall grass, 0.045 flowers, 0.02 bushes).
 - **Back-face normals:** new `_BackFaceFlip` (0 for crowns, which keep their outward normals on both sides). A card's back face mirrors only the sideways part of its normal. **Never blend a normal toward its own opposite:** at 50% it is zero, `normalize` gives NaN, and bloom turns each NaN pixel into a white orb. That happened with the dry shrub (`_NormalUp` 0.5) in the play-test. Normals now use `SafeNormalize`.
 
-### Measured (part A, editor)
-- ~25k decorations in 193 chunks around spawn, 766 trees. Overview camera ~181 FPS. 157/157 EditMode tests pass.
+- **Biome tint (part C):**
+  - `BiomeSettings` gains `grassTint` and `foliageTint` (Meadows white, Desert dry yellow, Red Crags autumn gold/orange, Snowy cool blue-green). Each colour is 0-1, so a tint can only darken.
+  - `BlockDefinition.biomeTint` (`BiomeTint`: None / Grass / Foliage, which replaces `DecorationTint`). Only Grass uses it for now.
+  - `TerrainSampler.TintAt(xz, tint)` blends the biome colours with the same climate weights that blend the terrain's shape, so colours fade smoothly across borders.
+  - **Blocks:** `ChunkTints` caches the colour at a chunk's 33×33 corner columns, worked out only when a tinted face needs it. The mesher writes it into vertex colour RGB of textured faces; untextured faces keep their MapColor. `ChunkMeshScheduler.SetBiomeTint` turns it on.
+  - **Decorations:** the decorator writes the tint at each plant into `DecorationInstance.Tint`. Flowers use Grass tint and the dry shrub uses Foliage.
+  - **Shaders** (`BiomeTint.hlsl`) multiply the tint only into the green parts of a texture: `smoothstep(0, 0.06, g - max(r, b))`. Dirt on grass block sides, bark, sand, snow and petals are untouched, so no separate masks are needed.
+- **Corner AO (part C):**
+  - The gather job reads all **27 chunks** (`GatherSource` holds a read-only pointer, because a job can't hold 27 NativeArrays), so the padding's edges and corners are filled. The scheduler's promise doesn't change: chunks are only edited or freed after `CompleteGatherJobs`.
+  - `VoxelWorld.CreateChunk` dirties all 26 neighbours. `SetVoxel` on a chunk edge or corner also dirties the diagonal chunks (up to 8 in all). The stale check and the wait-for-incoming-neighbours check cover all 27.
+  - `GreedyMesher.CornerOcclusion`: the classic 0-3 per corner (two sides + diagonal; two sides blocked = 0), packed 2 bits per corner. Faces merge only when block **and** all 4 corner values match. When the 0-2 diagonal joins the brighter corners, the quad starts one corner later so it splits through the dark one.
+  - AO goes in vertex colour alpha (0, 85, 170, 255), so the 40-byte vertex didn't change. `VoxelBlock.shader` darkens albedo by `_VertexAOStrength` (0.5): albedo rather than just ambient occlusion, for the classic soft-block look in sunlight too.
+- **Camera collision fix (found in the part C play-test, extends D-011):** split-screen's `SplitFocus` moves each camera's look-at point towards the other player, so it can sit inside or behind a hill. `PlayerCameraRig.SetPose` now takes a **pivot** in open air (the player's head; for the shared view, the midpoint only if both players can see it). It keeps the line from pivot to camera clear at the centre and the 4 near-plane corners (5 rays), snaps in and eases out along that line. `VoxelQueries.Raycast(..., opaqueOnly: true)` lets cameras look through invisible tree trunks.
+
+### Measured
+- **Part A:** ~25k decorations in 193 chunks around spawn, 766 trees. Overview camera ~181 FPS.
+- **Part C, play-tested by the users with the Game view focused:** two players on one screen 190-230 FPS; **split-screen 124-139 FPS (target 120+, passed)**.
+- A busy chunk greedy-meshes in ~2.4 ms with AO (was ~3 ms). 168/168 EditMode tests pass.
 
 ### Deferred on purpose
 - **Chopping trees (3.1/3.2):** removing a trunk voxel through `RequestModifyVoxel` should clear the whole trunk column and its tree visual, and drop wood.

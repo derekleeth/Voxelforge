@@ -23,6 +23,22 @@ namespace Voxelforge.Voxels
             new int3(0, 0, -1), new int3(0, 0, 1),
         };
 
+        /// <summary>All 26 chunks around a chunk: faces, edges and corners. Corner ambient occlusion reads all of them.</summary>
+        internal static readonly int3[] AllNeighbourOffsets = CreateAllNeighbourOffsets();
+
+        static int3[] CreateAllNeighbourOffsets()
+        {
+            var offsets = new List<int3>(26);
+            for (int y = -1; y <= 1; y++)
+            for (int z = -1; z <= 1; z++)
+            for (int x = -1; x <= 1; x++)
+            {
+                if (x != 0 || y != 0 || z != 0)
+                    offsets.Add(new int3(x, y, z));
+            }
+            return offsets.ToArray();
+        }
+
         readonly Dictionary<ChunkCoord, VoxelChunk> _chunks = new Dictionary<ChunkCoord, VoxelChunk>();
         readonly Queue<ChunkCoord> _dirtyQueue = new Queue<ChunkCoord>();
         readonly HashSet<ChunkCoord> _dirtySet = new HashSet<ChunkCoord>();
@@ -55,8 +71,8 @@ namespace Voxelforge.Voxels
         }
 
         /// <summary>
-        /// Adds a new chunk filled with <paramref name="fill"/> and queues it, and its loaded
-        /// neighbours (whose border faces may now be hidden), for meshing.
+        /// Adds a new chunk filled with <paramref name="fill"/> and queues it, and its 26 loaded
+        /// neighbours (whose border faces may now be hidden, or their corners shaded), for meshing.
         /// </summary>
         internal VoxelChunk CreateChunk(ChunkCoord coord, Voxel fill = default)
         {
@@ -66,7 +82,7 @@ namespace Voxelforge.Voxels
             var chunk = new VoxelChunk(coord, fill);
             _chunks.Add(coord, chunk);
             MarkDirty(coord);
-            foreach (int3 offset in NeighbourOffsets)
+            foreach (int3 offset in AllNeighbourOffsets)
                 MarkDirty(new ChunkCoord(coord.Value + offset));
             return chunk;
         }
@@ -102,15 +118,14 @@ namespace Voxelforge.Voxels
             if (!chunk.SetVoxel(local, voxel))
                 return false;
 
-            MarkDirty(coord);
-            // A block on the chunk's edge also changes which faces the neighbour can see.
-            for (int axis = 0; axis < 3; axis++)
-            {
-                if (local[axis] == 0)
-                    MarkDirty(new ChunkCoord(coord.Value + NeighbourOffsets[axis * 2]));
-                else if (local[axis] == VoxelConstants.ChunkMask)
-                    MarkDirty(new ChunkCoord(coord.Value + NeighbourOffsets[axis * 2 + 1]));
-            }
+            // A block on the chunk's border also changes what the neighbours across that border can see, and the
+            // corner shading of the diagonal neighbours when it sits on an edge or corner of the chunk.
+            int3 low = math.select(int3.zero, -1, local == 0);
+            int3 high = math.select(int3.zero, 1, local == VoxelConstants.ChunkMask);
+            for (int y = low.y; y <= high.y; y++)
+            for (int z = low.z; z <= high.z; z++)
+            for (int x = low.x; x <= high.x; x++)
+                MarkDirty(new ChunkCoord(coord.Value + new int3(x, y, z)));
             return true;
         }
 

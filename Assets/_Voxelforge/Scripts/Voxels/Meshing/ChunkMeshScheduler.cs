@@ -16,13 +16,14 @@ namespace Voxelforge.Voxels
     /// <see cref="GreedyMeshJob"/> (builds the mesh).
     /// </para>
     /// <para>
-    /// <b>Stale results:</b> the scheduler records the version of the chunk and its 6 neighbours.
-    /// If any of them changed before the job finished, the mesh is thrown away and the chunk is queued again.
+    /// <b>Stale results:</b> the scheduler records the version of the chunk and all 26 neighbours it gathered from
+    /// (corner shading reads the diagonal ones too). If any of them changed before the job finished, the mesh is
+    /// thrown away and the chunk is queued again.
     /// </para>
     /// </summary>
     public sealed class ChunkMeshScheduler : IDisposable
     {
-        const int SourceCount = 7; // The chunk itself, then its 6 neighbours in VoxelWorld.NeighbourOffsets order.
+        const int SourceCount = ChunkGatherJob.SourceCount; // Indexed by ChunkGatherJob.SourceIndex.
 
         sealed class PendingMesh
         {
@@ -48,7 +49,10 @@ namespace Voxelforge.Voxels
         readonly HashSet<ChunkCoord> _pendingCoords = new HashSet<ChunkCoord>();
         readonly List<ChunkCoord> _deferred = new List<ChunkCoord>();
         readonly Stack<NativeArray<ushort>> _paddedPool = new Stack<NativeArray<ushort>>();
-        NativeArray<Voxel> _emptyVoxels; // Stands in for chunks that have no voxel array.
+        NativeArray<BiomeInfo> _biomes; // Borrowed from the generator for biome tint; empty = no tint.
+        NativeArray<BiomeInfo> _noBiomes;
+        WorldSeed _seed;
+        TerrainParams _terrain;
         bool _isDisposed;
 
         /// <param name="parent">Chunk GameObjects are created under this transform.</param>
@@ -59,7 +63,8 @@ namespace Voxelforge.Voxels
             _parent = parent;
             _material = material;
             _maxJobsInFlight = math.max(1, maxJobsInFlight);
-            _emptyVoxels = new NativeArray<Voxel>(1, Allocator.Persistent);
+            _noBiomes = new NativeArray<BiomeInfo>(0, Allocator.Persistent);
+            _biomes = _noBiomes;
         }
 
         /// <summary>Chunks currently meshing on worker threads.</summary>
@@ -82,6 +87,17 @@ namespace Voxelforge.Voxels
         /// decorations stream and rebuild together with the terrain.
         /// </summary>
         public DecorationLayer Decorations { get; set; }
+
+        /// <summary>
+        /// Turns on biome tint (Roadmap 2.6): grass faces get their biome's colour, worked out from the same seed and
+        /// climate the terrain grew from. <paramref name="biomes"/> is borrowed and must outlive this scheduler.
+        /// </summary>
+        public void SetBiomeTint(WorldSeed seed, TerrainParams terrain, NativeArray<BiomeInfo> biomes)
+        {
+            _seed = seed;
+            _terrain = terrain;
+            _biomes = biomes.IsCreated && biomes.Length > 0 ? biomes : _noBiomes;
+        }
 
         /// <summary>Chunks that currently have a renderer (visible or empty).</summary>
         public int RendererCount => _renderers.Count;
@@ -149,7 +165,7 @@ namespace Voxelforge.Voxels
         {
             if (IsChunkIncoming == null)
                 return false;
-            foreach (int3 offset in VoxelWorld.NeighbourOffsets)
+            foreach (int3 offset in VoxelWorld.AllNeighbourOffsets)
             {
                 if (IsChunkIncoming(new ChunkCoord(coord.Value + offset)))
                     return true;
@@ -166,14 +182,12 @@ namespace Voxelforge.Voxels
             }
 
             var pending = new PendingMesh { Coord = coord };
-            pending.Sources[0] = center;
-            for (int i = 0; i < 6; i++)
-            {
-                _world.TryGetChunk(new ChunkCoord(coord.Value + VoxelWorld.NeighbourOffsets[i]), out VoxelChunk neighbour);
-                pending.Sources[i + 1] = neighbour;
-            }
             for (int i = 0; i < SourceCount; i++)
-                pending.Versions[i] = pending.Sources[i]?.Version ?? 0;
+            {
+                _world.TryGetChunk(new ChunkCoord(coord.Value + ChunkGatherJob.SourceOffset(i)), out VoxelChunk source);
+                pending.Sources[i] = source;
+                pending.Versions[i] = source?.Version ?? 0;
+            }
 
             if (IsTriviallyEmpty(pending.Sources))
             {
@@ -185,20 +199,17 @@ namespace Voxelforge.Voxels
 
             pending.Padded = _paddedPool.Count > 0
                 ? _paddedPool.Pop()
-                : new NativeArray<ushort>(ChunkGatherJob.PaddedVolume, Allocator.Persistent); // Zeroed: padding corners are never written.
+                : new NativeArray<ushort>(ChunkGatherJob.PaddedVolume, Allocator.Persistent);
 
-            VoxelChunk[] s = pending.Sources;
+            var sources = new NativeArray<GatherSource>(SourceCount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            for (int i = 0; i < SourceCount; i++)
+                sources[i] = SourceOf(pending.Sources[i]);
             pending.GatherHandle = new ChunkGatherJob
             {
-                Center = ArrayOf(s[0]), CenterSource = SourceOf(s[0]),
-                NegX = ArrayOf(s[1]), NegXSource = SourceOf(s[1]),
-                PosX = ArrayOf(s[2]), PosXSource = SourceOf(s[2]),
-                NegY = ArrayOf(s[3]), NegYSource = SourceOf(s[3]),
-                PosY = ArrayOf(s[4]), PosYSource = SourceOf(s[4]),
-                NegZ = ArrayOf(s[5]), NegZSource = SourceOf(s[5]),
-                PosZ = ArrayOf(s[6]), PosZSource = SourceOf(s[6]),
+                Sources = sources,
                 Padded = pending.Padded,
             }.Schedule();
+            sources.Dispose(pending.GatherHandle);
 
             pending.MeshData = Mesh.AllocateWritableMeshData(1);
             pending.MeshHandle = new GreedyMeshJob
@@ -206,6 +217,10 @@ namespace Voxelforge.Voxels
                 Padded = pending.Padded,
                 Blocks = _world.Blocks,
                 MeshData = pending.MeshData[0],
+                Origin = coord.Value * VoxelConstants.ChunkSize,
+                Seed = _seed,
+                Terrain = _terrain,
+                Biomes = _biomes,
             }.Schedule(pending.GatherHandle);
 
             if (Decorations != null)
@@ -226,33 +241,26 @@ namespace Voxelforge.Voxels
         /// </summary>
         bool IsTriviallyEmpty(VoxelChunk[] sources)
         {
-            VoxelChunk center = sources[0];
+            VoxelChunk center = sources[ChunkGatherJob.CenterSource];
             if (!center.IsUniform)
                 return false;
             if (!GreedyMesher.IsOpaque(_world.Blocks, center.UniformVoxel.BlockId))
                 return true; // Transparent blocks aren't meshed yet, so a uniform see-through chunk draws nothing.
 
-            for (int i = 1; i < SourceCount; i++)
+            foreach (int3 offset in VoxelWorld.NeighbourOffsets)
             {
-                VoxelChunk neighbour = sources[i];
+                VoxelChunk neighbour = sources[ChunkGatherJob.SourceIndex(offset)];
                 if (neighbour == null || !neighbour.IsUniform || !GreedyMesher.IsOpaque(_world.Blocks, neighbour.UniformVoxel.BlockId))
                     return false;
             }
             return true;
         }
 
-        NativeArray<Voxel>.ReadOnly ArrayOf(VoxelChunk chunk)
-        {
-            return chunk != null && !chunk.IsUniform ? chunk.GetReadOnlyVoxels() : _emptyVoxels.AsReadOnly();
-        }
-
         static GatherSource SourceOf(VoxelChunk chunk)
         {
             if (chunk == null)
-                return new GatherSource { UniformId = BlockIds.Air };
-            return chunk.IsUniform
-                ? new GatherSource { UniformId = chunk.UniformVoxel.BlockId }
-                : new GatherSource { HasArray = true };
+                return GatherSource.Uniform(BlockIds.Air);
+            return chunk.IsUniform ? GatherSource.Uniform(chunk.UniformVoxel.BlockId) : GatherSource.Of(chunk.GetReadOnlyVoxels());
         }
 
         void CollectFinished(bool waitForAll)
@@ -305,7 +313,7 @@ namespace Voxelforge.Voxels
         {
             for (int i = 0; i < SourceCount; i++)
             {
-                var coord = new ChunkCoord(i == 0 ? pending.Coord.Value : pending.Coord.Value + VoxelWorld.NeighbourOffsets[i - 1]);
+                var coord = new ChunkCoord(pending.Coord.Value + ChunkGatherJob.SourceOffset(i));
                 _world.TryGetChunk(coord, out VoxelChunk current);
                 if (current != pending.Sources[i] || (current != null && current.Version != pending.Versions[i]))
                     return true;
@@ -369,7 +377,7 @@ namespace Voxelforge.Voxels
 
             while (_paddedPool.Count > 0)
                 _paddedPool.Pop().Dispose();
-            _emptyVoxels.Dispose();
+            _noBiomes.Dispose();
 
             foreach (ChunkRenderer chunkRenderer in _renderers.Values)
             {

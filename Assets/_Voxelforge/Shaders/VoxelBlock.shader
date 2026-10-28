@@ -4,6 +4,9 @@
 // Textures come from three Texture2DArrays built by Voxelforge > Rebuild Block Textures. Each vertex carries its
 // face's array layer in UV1.x (-1 = no texture: the block's flat MapColor vertex color is used instead), and UVs are
 // measured in blocks, so with Repeat wrapping every block shows one whole copy of its texture, even on merged quads.
+//
+// Vertex colour (Roadmap 2.6, GreedyMesher): RGB = biome tint for the green parts of textured faces (or the flat
+// MapColor of untextured ones), A = corner ambient occlusion, 0 (tucked into a corner) to 1 (open).
 Shader "Voxelforge/Voxel Block"
 {
     Properties
@@ -17,6 +20,7 @@ Shader "Voxelforge/Voxel Block"
         _ParallaxDepth ("Parallax Depth (blocks)", Range(0, 0.2)) = 0.03
         _ParallaxFadeDistance ("Parallax Fade Distance", Range(4, 128)) = 32
         _EmissionStrength ("Emission Strength", Range(0, 20)) = 4
+        _VertexAOStrength ("Corner Shading Strength", Range(0, 1)) = 0.5
     }
 
     SubShader
@@ -25,6 +29,7 @@ Shader "Voxelforge/Voxel Block"
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #include "BiomeTint.hlsl"
 
         // Every pass shares one material buffer so the SRP Batcher can batch all chunks together.
         CBUFFER_START(UnityPerMaterial)
@@ -34,6 +39,7 @@ Shader "Voxelforge/Voxel Block"
             float _ParallaxDepth;
             float _ParallaxFadeDistance;
             half _EmissionStrength;
+            half _VertexAOStrength;
         CBUFFER_END
 
         TEXTURE2D_ARRAY(_AlbedoHeightArray);
@@ -203,12 +209,15 @@ Shader "Voxelforge/Voxel Block"
 
                     half4 albedoHeight = SAMPLE_TEXTURE2D_ARRAY(_AlbedoHeightArray, sampler_trilinear_repeat_aniso8, uv, layer);
                     half4 mask = SAMPLE_TEXTURE2D_ARRAY(_MaskArray, sampler_trilinear_repeat_aniso8, uv, layer);
-                    surface.albedo = albedoHeight.rgb * _Tint.rgb;
+                    surface.albedo = ApplyBiomeTint(albedoHeight.rgb, input.color.rgb) * _Tint.rgb;
                     surface.normalTS = SampleBlockNormalTS(uv, layer);
                     surface.smoothness = mask.g;
                     surface.occlusion = lerp(1.0, mask.r, _OcclusionStrength);
                     surface.emission = albedoHeight.rgb * mask.b * _EmissionStrength;
                 }
+
+                // Corner shading darkens the surface itself, not just ambient light, for the classic soft-block look.
+                surface.albedo *= 1.0 - _VertexAOStrength * (1.0 - input.color.a);
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;

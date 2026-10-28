@@ -9,8 +9,16 @@ namespace Voxelforge.Gameplay
     /// (so every view shares its render settings), and each frame tells it where to look and where to draw: straight
     /// to the screen, to a rectangle of it, or into a texture for the Voronoi composite.
     /// <para>
-    /// The camera never goes inside a hill: if blocks are between the focus and the camera, it moves in front of
-    /// them right away, then eases back out once the view is clear.
+    /// The camera never goes inside a hill, and never loses its player behind one. It keeps a clear line from a
+    /// <i>pivot</i> that is always in open air (the player's head, or the middle of a shared view when both players
+    /// can see it) to where it wants to be. If blocks are in the way, it slides in along that line right away,
+    /// then eases back out once the view is clear. The line is checked at the centre and at the 4 corners of the
+    /// camera's near clip plane, so the edges of the view can't cut into a wall either.
+    /// </para>
+    /// <para>
+    /// The look-at point itself may sit inside a hill: split-screen moves it towards the other player so each
+    /// player is centred on their own side of the line (<see cref="SplitScreenMath.SplitFocus"/>). That's why the
+    /// line starts at the pivot, not at the look-at point.
     /// </para>
     /// </summary>
     [RequireComponent(typeof(Camera))]
@@ -18,14 +26,16 @@ namespace Voxelforge.Gameplay
     {
         /// <summary>How far in front of a block the camera stops.</summary>
         const float WallGap = 0.3f;
-        /// <summary>Closest the camera gets to its focus, even when squeezed against a wall.</summary>
-        const float MinDistance = 0.5f;
+        /// <summary>Closest the camera gets to its pivot, even when squeezed against a wall.</summary>
+        const float MinDistance = 0.2f;
+        /// <summary>Extra room around the near clip plane's corners.</summary>
+        const float NearPlaneMargin = 1.25f;
         /// <summary>How quickly the camera eases back out after the view clears (per second).</summary>
         const float EaseOutRate = 4f;
 
         Camera _camera;
         RenderTexture _texture;
-        float _clearDistance = float.PositiveInfinity;
+        float _clearFraction = 1f; // How far from the pivot to the wanted spot the camera may go, 0-1.
 
         public byte LocalSlot { get; private set; }
 
@@ -51,27 +61,47 @@ namespace Voxelforge.Gameplay
 
         /// <summary>
         /// Orbits the camera <paramref name="distance"/> meters back from <paramref name="focus"/>, looking at it.
-        /// With a <paramref name="world"/>, it moves closer when blocks are in the way.
+        /// With a <paramref name="world"/>, it slides towards <paramref name="pivot"/> when blocks are between the
+        /// two. <paramref name="pivot"/> must be in open air: the player's head (see the class summary).
         /// </summary>
-        public void SetPose(Vector3 focus, float yaw, float pitch, float distance, VoxelWorld world = null)
+        public void SetPose(Vector3 focus, float yaw, float pitch, float distance, VoxelWorld world, Vector3 pivot)
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-            Vector3 back = rotation * Vector3.back;
-            transform.SetPositionAndRotation(focus + back * ClearDistance(focus, back, distance, world), rotation);
-        }
-
-        float ClearDistance(float3 focus, float3 back, float distance, VoxelWorld world)
-        {
-            float allowed = distance;
-            if (world != null && VoxelQueries.Raycast(world, focus, back, distance + WallGap, out VoxelHit hit))
-                allowed = math.max(MinDistance, hit.Distance - WallGap);
+            Vector3 wanted = focus + rotation * Vector3.back * distance;
+            float fraction = world != null ? ClearFraction(pivot, wanted, rotation, world) : 1f;
 
             // Snap in at once so the view never shows the inside of a hill, but ease back out.
-            if (allowed < _clearDistance)
-                _clearDistance = allowed;
+            if (fraction < _clearFraction)
+                _clearFraction = fraction;
             else
-                _clearDistance = math.lerp(_clearDistance, allowed, 1f - math.exp(-EaseOutRate * Time.unscaledDeltaTime));
-            return math.min(_clearDistance, distance);
+                _clearFraction = math.lerp(_clearFraction, fraction, 1f - math.exp(-EaseOutRate * Time.unscaledDeltaTime));
+            transform.SetPositionAndRotation(Vector3.Lerp(pivot, wanted, _clearFraction), rotation);
+        }
+
+        /// <summary>
+        /// How far along the line from <paramref name="pivot"/> to <paramref name="wanted"/> (0-1) the camera can go
+        /// and still have its whole near clip plane in front of every visible block.
+        /// </summary>
+        float ClearFraction(float3 pivot, float3 wanted, Quaternion rotation, VoxelWorld world)
+        {
+            float length = math.distance(pivot, wanted);
+            if (length < 1e-4f)
+                return 1f;
+
+            float halfHeight = _camera.nearClipPlane * math.tan(math.radians(_camera.fieldOfView) * 0.5f) * NearPlaneMargin;
+            float3 up = rotation * Vector3.up * halfHeight;
+            float3 right = rotation * Vector3.right * (halfHeight * _camera.aspect);
+            float allowed = length;
+            for (int corner = 0; corner < 5; corner++)
+            {
+                // The centre, then the 4 corners of the near plane at the wanted spot.
+                float3 offset = corner == 0 ? float3.zero : (corner % 2 == 0 ? right : -right) + (corner < 3 ? up : -up);
+                float3 ray = wanted + offset - pivot;
+                float rayLength = math.length(ray);
+                if (VoxelQueries.Raycast(world, pivot, ray, rayLength + WallGap, out VoxelHit hit, opaqueOnly: true))
+                    allowed = math.min(allowed, (hit.Distance - WallGap) * length / rayLength);
+            }
+            return math.saturate(math.max(allowed, math.min(MinDistance, length)) / length);
         }
 
         /// <summary>Draws straight to the screen, in <paramref name="rect"/> (0-1, origin bottom-left).</summary>

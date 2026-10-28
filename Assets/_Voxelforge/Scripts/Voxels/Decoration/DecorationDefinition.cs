@@ -12,14 +12,6 @@ namespace Voxelforge.Voxels
         Tree,
     }
 
-    /// <summary>Which biome colour a decoration is tinted with (Roadmap 2.6 part C).</summary>
-    public enum DecorationTint : byte
-    {
-        None,
-        Grass,
-        Foliage,
-    }
-
     /// <summary>How likely (ground) or how often picked (tree) a decoration is in one biome.</summary>
     [Serializable]
     public struct BiomeWeight
@@ -50,7 +42,8 @@ namespace Voxelforge.Voxels
         [Tooltip("Must use the Voxelforge/Foliage shader.")]
         [SerializeField] Material material;
 
-        [SerializeField] DecorationTint tint;
+        [Tooltip("Biome colour multiplied into the green parts of the texture.")]
+        [SerializeField] BiomeTint tint;
 
         [SerializeField] bool castShadows = true;
 

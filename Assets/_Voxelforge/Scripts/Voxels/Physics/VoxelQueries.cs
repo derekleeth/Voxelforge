@@ -47,8 +47,11 @@ namespace Voxelforge.Voxels
         /// <summary>
         /// Walks a ray through the grid one block at a time (Amanatides &amp; Woo) and stops at the first solid
         /// block within <paramref name="maxDistance"/>. <paramref name="direction"/> doesn't need to be normalized.
+        /// With <paramref name="opaqueOnly"/>, it stops only at blocks you can see, passing through invisible solid
+        /// ones such as tree trunks (cameras use this).
         /// </summary>
-        public static bool Raycast(VoxelWorld world, float3 origin, float3 direction, float maxDistance, out VoxelHit hit)
+        public static bool Raycast(VoxelWorld world, float3 origin, float3 direction, float maxDistance, out VoxelHit hit,
+            bool opaqueOnly = false)
         {
             hit = default;
             float length = math.length(direction);
@@ -67,7 +70,10 @@ namespace Voxelforge.Voxels
             float distance = 0f;
             while (distance <= maxDistance)
             {
-                if (VoxelBodyMotor.IsSolid(block, world))
+                bool stops = opaqueOnly
+                    ? GreedyMesher.IsOpaque(world.Blocks, world.GetVoxel(block).BlockId)
+                    : VoxelBodyMotor.IsSolid(block, world);
+                if (stops)
                 {
                     hit = new VoxelHit { Block = block, Normal = normal, Distance = distance, Point = origin + dir * distance };
                     return true;
