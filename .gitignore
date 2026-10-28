@@ -9,6 +9,10 @@
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
 
+# Screenshots the Unity MCP captures while testing
+/[Aa]ssets/[Ss]creenshots/
+/[Aa]ssets/[Ss]creenshots.meta
+
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
 
