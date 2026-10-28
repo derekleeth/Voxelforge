@@ -21,6 +21,8 @@ namespace Voxelforge.Gameplay
         ToggleGhost = 1 << 5,
         /// <summary>Open or close the crafting window (Roadmap 3.5, <see cref="PlayerCrafter"/>).</summary>
         Interact = 1 << 6,
+        /// <summary>Ask to hearth back to this player's Home Totem (Roadmap 3.8, <see cref="PlayerHearth"/>). Place confirms.</summary>
+        Home = 1 << 7,
     }
 
     /// <summary>

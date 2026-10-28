@@ -5,6 +5,31 @@
 
 ---
 
+## D-021: Home Totems and Hearthing Home
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested 2026-10-28)
+
+### Decisions
+- **Block `HomeTotem = 13`:** a solid prop like the Workbench (invisible full block under the model, Axe harvest kind, drops itself, 60 durability). Not `NeedsSupport`: one model that stands anywhere is simpler than a floor-only rule, and a 1-block-tall totem looks right on a ledge or a floor. It's drawn by the decoration layer and comes back from the delta log like any block, so it needs no new sync.
+  - **Art (`build_props.py`, `PropsBuilder`):** a carved post on a stone base, a little house glowing green on all four sides (the model is turned to a seeded quarter, so every side gets one), a green rune band and a roof cap with a gem, all inside one block (266 triangles). Two new atlas areas, `totem` and `hearth`, painted **after** the older ones so their random numbers don't change. A `DecorationLight` (green, 1.6 intensity, 7 m, gentle flicker) from the 32-light torch pool.
+  - **Recipe:** 4 Log + 1 Mana Crystal Ore at a Workbench, added at the end of the `RecipeBook`.
+- **One home per player, owned by the host (`PlayerHearth`).** The block doesn't store an owner; the home is the player's own state: `int3` on the host, plus a synced `HasHome`.
+  - `PlayerBuilder` calls `ServerSetHome(cell)` after a totem placement succeeds. If the old totem still stands, the host breaks it through `RequestModifyVoxel(old, Air, owner)`. That's an ordinary edit, so it drops (Law #3).
+  - **Is it still there?** `HomeTotems.IsStanding` reads the block when its chunk is loaded, otherwise the `VoxelDeltaLog` (a totem is always a player edit, so the log knows far-away ones). The host re-checks once a second and tells the owner "Your Home Totem was broken!".
+  - Saved in `PlayerProfile` (`HasHome`, `HomeBlock`). **Save format 2** adds them at the end of each profile; format 1 saves still load, with no home.
+- **Hearthing home.** New `PlayerButtons.Home` (the last free bit of the byte; H, `[`, gamepad View/Select).
+  - **Owner PC:** Home opens a prompt in the player's own view (`HearthPrompt`, Law #5). **Place** confirms and sends `RequestHearthRpc` (no data); Home or Interact closes it, and so does 6 s or opening the crafting window. While the prompt is open, and until Place is let go, `PlayerBuilder` won't build (`IsUsingPlace`), so the confirming press can't also place a block.
+  - **Host:** re-checks the home and the totem, then a **2 s cast**. Moving the stick, jumping, mining, or drifting 0.35 m cancels it. During the cast `PlayerHearth` is a chunk viewer (2-chunk radius) at the home, so far-away terrain streams in. The host waits up to 10 s more for it, then gives up.
+  - **Landing (`HomeTotems.TryFindLanding`):** the first of the 8 cells around the totem (sides first) at its level, one up or one down, with room for the body and ground underneath, facing the totem; failing that, on top of the totem's column. `PlayerController.ServerTeleport` moves the body and calls `NetworkTransform.Teleport`, so other PCs don't see the hero slide.
+  - **Every PC:** `CastStartedRpc` / `CastEndedRpc` drive `HearthView`: green motes spiralling up a tightening ring, a growing green light, then a burst and a flash where they land (a small puff if cancelled). The owner gets a "Going home..." bar and messages.
+
+### Deferred on purpose
+- A cooldown on hearthing (WoW-style): not needed for couch play yet; it can come with the 4.1 ability framework.
+- Showing whose totem is whose (a team-colour trim): every totem looks the same for now.
+- Home Totems in the 6.x world picker or map.
+
+---
+
 ## D-020: Tunnel Camera and Split-Screen Styles
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested 2026-10-28)

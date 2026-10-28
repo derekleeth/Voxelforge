@@ -37,6 +37,7 @@ namespace Voxelforge.Gameplay
         PlayerBlockBag _bag;
         PlayerHands _hands;
         PlayerCrafter _crafter;
+        PlayerHearth _hearth;
         BlockGhost _ghost;
         readonly List<BodyBounds> _bodies = new List<BodyBounds>();
 
@@ -55,6 +56,7 @@ namespace Voxelforge.Gameplay
             _bag = GetComponent<PlayerBlockBag>();
             _hands = GetComponent<PlayerHands>();
             _crafter = GetComponent<PlayerCrafter>();
+            _hearth = GetComponent<PlayerHearth>();
             _ghostOn = ghostOnAtStart;
         }
 
@@ -85,7 +87,7 @@ namespace Voxelforge.Gameplay
 
             // Only blocks are built; a tool in hand (or the crafting window) means no ghost and no placing.
             _selected = ItemIds.IsBlock(_hands.OwnerSelected) ? _hands.OwnerSelected : BlockIds.Air;
-            if (_crafter != null && _crafter.IsMenuOpen)
+            if ((_crafter != null && _crafter.IsMenuOpen) || (_hearth != null && _hearth.IsUsingPlace))
                 _selected = BlockIds.Air;
             if ((pressed & PlayerButtons.ToggleGhost) != 0)
                 _ghostOn = !_ghostOn;
@@ -136,7 +138,11 @@ namespace Voxelforge.Gameplay
 
             VoxelEditResult result = world.RequestModifyVoxel(cell, blockId, _player.PlayerId);
             if (result == VoxelEditResult.Applied)
+            {
                 _lastPlaceTime = Time.time;
+                if (blockId == BlockIds.HomeTotem && _hearth != null)
+                    _hearth.ServerSetHome(cell); // Roadmap 3.8: it's this player's home now.
+            }
             else
                 _bag.ServerAdd(blockId, 1); // Give it back.
             if (logPlacements)

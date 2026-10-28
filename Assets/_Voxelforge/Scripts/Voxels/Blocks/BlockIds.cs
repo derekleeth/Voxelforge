@@ -24,5 +24,10 @@ namespace Voxelforge.Voxels
         public const ushort Torch = 11;
         /// <summary>Where tools are crafted (Roadmap 3.5). A solid prop: an invisible full block under the bench model.</summary>
         public const ushort Workbench = 12;
+        /// <summary>
+        /// A player's home (Roadmap 3.8): a carved totem that glows green. Its owner can hearth back to it. A solid prop,
+        /// like the Workbench.
+        /// </summary>
+        public const ushort HomeTotem = 13;
     }
 }

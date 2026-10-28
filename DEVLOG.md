@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 23): There's No Place Like Home 🏠✨ Roadmap 3.8
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **Home Totems!** Each player can set up their own home and teleport back to it. Details in DECISIONS.md **D-021**.
+  - **Craft it** at a Workbench: 4 Log + 1 Mana Crystal Ore.
+  - **The look:** a carved wooden post on a stone base, with a little house carved on every side that glows green, a glowing rune band and a gem on its roof. It lights up the room with a soft green glow.
+  - **Place it** and it's your home. Placing a new one moves your home there, and the old totem pops out so you can pick it up.
+  - **Go home:** press **Home** (H, `[` for the right-hand keyboard player, or the gamepad's View/Select button). A "Teleport home?" box opens in your own part of the screen. **Place** = yes, **Home** = no. Only Place teleports you, so you can't go home by accident.
+  - **The trip:** 2 seconds of green sparkles spiralling up around you. Move, jump or mine and it's cancelled. Then you pop out right next to your totem with a green flash.
+  - If someone breaks your totem, you're told, and your home is gone until you place a new one.
+  - Your home is saved with your profile.
+
+### Tests: 261 / 261 passing ✅
+- A totem far away still counts (the game remembers it from the edits it saved).
+- You land beside the totem facing it, skip blocked sides, and stand on top of it if it's walled in.
+- Teleporting waits until the land around the totem has loaded.
+- Homes save and load, and old saves from before totems still load.
+
+### Editor test by Claude
+- Placed a totem in a tunnel with real button presses: the walls glowed green.
+- From 35 m away: Home opened the box, Place teleported Player 1 beside the totem. Walking during the charge cancelled it.
+- A second totem moved the home and dropped the first one. Breaking the totem cleared the home. The home came back after a restart.
+
+### Play-test results 🎉
+- **The totem looks great** ✅
+- Teleporting works and the 2-second timing feels right ✅
+- Pressing No, or moving, cancels the teleport ✅
+
+### Next up
+- [x] Play-test 3.8
+- [ ] Roadmap **3.9 Split-Screen Spatial Audio & Voxel Foley**
+
+---
+
 ## 2026-10-28 - Session 1 (part 22): Seeing in Tunnels 🔦 Roadmap 3.7
 **Phase:** 3 - "Forge & Carve"
 

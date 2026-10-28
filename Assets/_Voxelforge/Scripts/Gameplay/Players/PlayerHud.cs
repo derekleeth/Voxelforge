@@ -39,6 +39,7 @@ namespace Voxelforge.Gameplay
         readonly StringBuilder _text = new StringBuilder();
         GUIStyle _bagStyle;
         CraftingWindow _craftingWindow;
+        HearthPrompt _hearthPrompt;
         ItemLooks _looks;
         ItemIcons _icons;
 
@@ -98,12 +99,22 @@ namespace Voxelforge.Gameplay
                 if (line.Length > 0)
                     DrawShadowedLabel(new Rect(under.x - 500f * scale, under.y + 6f * scale, 1000f * scale, 40f * scale), line,
                         DescribeBag(bag, selected, null), scale);
+                // A small reminder that Home works (Roadmap 3.8).
+                if (player.TryGetComponent(out PlayerHearth home) && home.HasHome)
+                    DrawShadowedLabel(new Rect(under.x - 300f * scale, under.y + 58f * scale, 600f * scale, 30f * scale),
+                        "<color=#7CFF8A>Home Totem set</color>", "Home Totem set", scale);
             }
 
             if (player.TryGetComponent(out PlayerCrafter crafter))
             {
                 _craftingWindow ??= new CraftingWindow(ItemName, id => Icons?.Get(id));
                 _craftingWindow.Draw(OwnArea(player, view), crafter, bag, player.TeamColor, scale);
+            }
+
+            if (player.TryGetComponent(out PlayerHearth hearth))
+            {
+                _hearthPrompt ??= new HearthPrompt(() => Icons?.Get(BlockIds.HomeTotem));
+                _hearthPrompt.Draw(OwnArea(player, view), hearth, scale);
             }
         }
 

@@ -329,6 +329,11 @@ namespace Voxelforge.Gameplay
                 profile.Yaw = yaw;
                 if (player.TryGetComponent(out PlayerBlockBag bag))
                     profile.Bag = bag.ServerSnapshot();
+                if (player.TryGetComponent(out PlayerHearth hearth))
+                {
+                    profile.HasHome = hearth.HasHome;
+                    profile.HomeBlock = hearth.ServerHomeBlock;
+                }
             }
         }
 

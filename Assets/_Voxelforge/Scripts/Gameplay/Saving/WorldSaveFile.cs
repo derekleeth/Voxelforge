@@ -47,7 +47,8 @@ namespace Voxelforge.Gameplay
     /// </summary>
     public static class WorldSaveFile
     {
-        public const int FormatVersion = 1;
+        /// <summary>1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). Older saves still load.</summary>
+        public const int FormatVersion = 2;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -84,6 +85,10 @@ namespace Voxelforge.Gameplay
                         writer.Write(stack.ItemId);
                         writer.Write(stack.Count);
                     }
+                    writer.Write(profile.HasHome);
+                    writer.Write(profile.HomeBlock.x);
+                    writer.Write(profile.HomeBlock.y);
+                    writer.Write(profile.HomeBlock.z);
                 }
                 writer.Write(EndMarker);
             }
@@ -170,6 +175,11 @@ namespace Voxelforge.Gameplay
                         return WorldLoadResult.Corrupt;
                     for (int s = 0; s < stacks; s++)
                         profile.Bag.Add(new ItemStack(reader.ReadUInt16(), reader.ReadUInt16()));
+                    if (format >= 2)
+                    {
+                        profile.HasHome = reader.ReadBoolean();
+                        profile.HomeBlock = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
+                    }
                     if (profile.Uuid.IsValid)
                         result.Profiles[profile.Uuid] = profile;
                 }

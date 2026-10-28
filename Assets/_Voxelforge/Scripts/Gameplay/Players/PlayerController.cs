@@ -1,6 +1,7 @@
 using System;
 using Unity.Mathematics;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 using Voxelforge.Core;
 using Voxelforge.Voxels;
@@ -337,6 +338,19 @@ namespace Voxelforge.Gameplay
                 return false;
             PlaceAt(feet, yaw);
             return true;
+        }
+
+        /// <summary>
+        /// Host only: moves this hero to <paramref name="feet"/> at once, facing <paramref name="yaw"/>, e.g. hearthing home
+        /// (Roadmap 3.8). Other PCs jump there too instead of sliding across the world.
+        /// </summary>
+        internal void ServerTeleport(float3 feet, float yaw)
+        {
+            if (!IsServer || !_placed)
+                return;
+            PlaceAt(feet, yaw);
+            if (TryGetComponent(out NetworkTransform networkTransform))
+                networkTransform.Teleport(feet, Quaternion.Euler(0f, yaw, 0f), transform.localScale);
         }
 
         bool IsGenerated(float3 position) =>

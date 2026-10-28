@@ -243,7 +243,7 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>A rounded box with a border, drawn by the GPU: no textures needed.</summary>
-        static void Box(Rect rect, Color fill, Color border, float borderWidth, float radius)
+        internal static void Box(Rect rect, Color fill, Color border, float borderWidth, float radius)
         {
             GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, fill, 0f, radius);
             if (borderWidth > 0f && border.a > 0f)

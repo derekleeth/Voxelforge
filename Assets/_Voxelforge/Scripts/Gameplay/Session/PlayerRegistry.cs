@@ -42,6 +42,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Loads terrain around every player.")]
         [SerializeField] ChunkLoader chunkLoader;
 
+        [Tooltip("How many chunks around a Home Totem load while its owner hearths there (Roadmap 3.8).")]
+        [SerializeField, Range(1, 4)] int hearthRadiusChunks = 2;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -98,8 +101,15 @@ namespace Voxelforge.Gameplay
             player.NetworkObject.SpawnWithOwnership(ownerClientId, destroyWithScene: true);
             if (profile != null && player.TryGetComponent(out PlayerBlockBag bag))
                 bag.ServerRestore(profile.Bag); // After spawning: the bag's list only syncs once it's on the network.
+            player.TryGetComponent(out PlayerHearth hearth);
+            if (profile != null && hearth != null)
+                hearth.ServerRestore(profile.HasHome, profile.HomeBlock);
             if (chunkLoader != null)
+            {
                 chunkLoader.Register(player);
+                if (hearth != null)
+                    chunkLoader.Register(hearth, hearthRadiusChunks); // Only has a position while hearthing.
+            }
 
             _records.Add(playerId, new PlayerRecord(ownerClientId, localSlot, uuid, player));
             _players.Add(player);
@@ -114,7 +124,11 @@ namespace Voxelforge.Gameplay
             if (chunkLoader != null)
             {
                 foreach (PlayerController player in _players)
+                {
                     chunkLoader.Unregister(player);
+                    if (player != null && player.TryGetComponent(out PlayerHearth hearth))
+                        chunkLoader.Unregister(hearth);
+                }
             }
             _records.Clear();
             _players.Clear();

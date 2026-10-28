@@ -1,5 +1,5 @@
-"""Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench
-and Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6).
+"""Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
+Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6) and the Home Totem (3.8).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -40,6 +40,7 @@ GRID = {
     "wood": (0, 0), "wood_dark": (1, 0), "planks": (2, 0), "stone": (3, 0),
     "iron": (0, 1), "steel": (1, 1), "gold": (2, 1), "leather": (3, 1),
     "cloth": (0, 2), "flame": (1, 2), "mana": (2, 2), "rune": (3, 2),
+    "totem": (0, 3), "hearth": (1, 3),
 }
 
 
@@ -185,6 +186,24 @@ def paint_rune(rng):
     return colour, rune * glyph[..., None]
 
 
+def paint_totem(rng):
+    """Weathered, carved wood for the Home Totem: tall grain with a few chiselled bands across it."""
+    colour, glow = paint_wood(rng, rgb(150, 100, 60), rgb(88, 56, 32), rings=7.0)
+    x, y = grid(CELL)
+    bands = np.clip(1.0 - np.abs(np.mod(y * 5.0, 1.0) - 0.5) * 22.0, 0, 1)
+    colour = colour * (1 - 0.45 * bands[..., None])
+    return colour, glow
+
+
+def paint_hearth(rng):
+    """The Home Totem's green glow: bright in the middle of each carved line, deeper green at the edges."""
+    x, y = grid(CELL)
+    n = noise(CELL, 4, rng, 2)
+    k = np.clip(n * 1.3 - 0.15, 0, 1)[..., None]
+    colour = rgb(40, 200, 80) * (1 - k) + rgb(170, 255, 170) * k
+    return colour, colour * 0.95
+
+
 def paint_atlas(seed=35):
     rng = np.random.default_rng(seed)
     painters = {
@@ -200,6 +219,9 @@ def paint_atlas(seed=35):
         "flame": lambda: paint_flame(rng),
         "mana": lambda: paint_mana(rng),
         "rune": lambda: paint_rune(rng),
+        # Added after the rest so their random numbers don't change the older areas.
+        "totem": lambda: paint_totem(rng),
+        "hearth": lambda: paint_hearth(rng),
     }
     albedo = np.zeros((SIZE, SIZE, 4), np.float32)
     glow = np.zeros((SIZE, SIZE, 4), np.float32)
@@ -587,6 +609,39 @@ def build_mgrs():
     return b
 
 
+def house_sign(b, face_centre, across, outward):
+    """A little house carved into a totem face: a glowing house shape set into the wood, with a dark door and window."""
+    c, a, n = Vector(face_centre), Vector(across).normalized(), Vector(outward).normalized()
+    up = Vector((0, 0, 1))
+    house = [(-0.085, -0.08), (0.085, -0.08), (0.085, 0.04), (0.115, 0.04), (0.0, 0.14), (-0.115, 0.04), (-0.085, 0.04)]
+    b.part("hearth", slab(house, c + n * 0.004, a, up, lambda i: 0.016))
+    b.part("wood_dark", box(c + n * 0.012 + up * -0.035, (0.045, 0.012, 0.09), Matrix((a, n, up)).transposed()))  # Door.
+    b.part("wood_dark", box(c + n * 0.012 + a * 0.045 + up * 0.0, (0.03, 0.012, 0.03), Matrix((a, n, up)).transposed()))  # Window.
+
+
+def build_home_totem():
+    """The Home Totem (3.8): a carved post on a stone base, a little house on every side glowing green, a band of
+    green runes, and a roof cap, all inside one block (origin at the block's bottom centre)."""
+    b = MeshBuilder()
+    b.part("stone", box((0, 0, 0.05), (0.62, 0.62, 0.1)))
+    b.part("stone", box((0, 0, 0.12), (0.5, 0.5, 0.04)))
+    half, bottom, top = 0.17, 0.14, 0.8
+    b.part("totem", box((0, 0, (bottom + top) / 2), (half * 2, half * 2, top - bottom)))
+    # A glowing rune band low on the post, and a carved collar under the cap.
+    b.part("hearth", box((0, 0, 0.24), (half * 2 + 0.012, half * 2 + 0.012, 0.035)))
+    b.part("wood_dark", box((0, 0, top - 0.02), (half * 2 + 0.04, half * 2 + 0.04, 0.05)))
+    for across, outward in (((1, 0, 0), (0, -1, 0)), ((-1, 0, 0), (0, 1, 0)), ((0, 1, 0), (1, 0, 0)), ((0, -1, 0), (-1, 0, 0))):
+        o = Vector(outward)
+        house_sign(b, Vector((0, 0, 0.5)) + o * half, across, o)
+    # The roof cap: a little four-sided roof, like the house on the sides, with a glowing gem on its peak.
+    eave, peak = 0.25, 0.94
+    corners = [Vector((sx * eave, sy * eave, top + 0.005)) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    tip = Vector((0, 0, peak))
+    b.part("wood_dark", convex([[corners[k], corners[(k + 1) % 4], tip] for k in range(4)] + [list(corners)]))
+    b.part("hearth", gem((0, 0, 0.965), (0.035, 0.035, 0.035)))
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -596,6 +651,7 @@ MODELS = {
     "TorchFloor": build_torch_floor,
     "TorchWall": build_torch_wall,
     "Workbench": build_workbench,
+    "HomeTotem": build_home_totem,
 }
 
 

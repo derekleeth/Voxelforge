@@ -21,6 +21,8 @@ GameObject:
   - component: {fileID: 7809432373712665520}
   - component: {fileID: 232346518821036264}
   - component: {fileID: 6004430841717266802}
+  - component: {fileID: 520568974359262074}
+  - component: {fileID: 8021262987991610499}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -305,6 +307,39 @@ MonoBehaviour:
   flashTime: 0.12
   burstSparks: 28
   muzzleSparks: 8
+--- !u!114 &520568974359262074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9154cfa495107c4c88aa72dd47f7711, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerHearth
+  ShowTopMostFoldoutHeaderGroup: 1
+  castSeconds: 2
+  loadWaitSeconds: 10
+  promptSeconds: 6
+  messageSeconds: 3
+--- !u!114 &8021262987991610499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d91563e9511eb6e4e8024474d640f164, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HearthView
+  glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  glow: {r: 0.35, g: 1, b: 0.45, a: 1}
+  motesPerSecond: 70
+  lightIntensity: 3
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

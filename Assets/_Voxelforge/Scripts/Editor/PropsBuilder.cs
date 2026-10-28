@@ -18,6 +18,7 @@ namespace Voxelforge.Editor
     /// the recipes and the <see cref="RecipeBook"/>.</item>
     /// <item>Kian's M.G.R.S. (Roadmap 3.6): its item with what it shoots, its recipe, and <c>ManaBolt.mat</c>, the additive
     /// glow for its bolts, trails and sparks.</item>
+    /// <item>The Home Totem (Roadmap 3.8): block 13, its prop with a soft green light, its item and its recipe.</item>
     /// </list>
     /// </summary>
     public static class PropsBuilder
@@ -41,6 +42,7 @@ namespace Voxelforge.Editor
         // The M.G.R.S. (3.6) is aimed, not swung: its barrel points ahead of the hero and a little up.
         static readonly Vector3 StaffPose = new Vector3(72.3f, 233.3f, 350.7f);
         static readonly Color TorchLight = new Color(1f, 0.64f, 0.32f);
+        static readonly Color HomeGlow = new Color(0.35f, 1f, 0.45f);
 
         // The M.G.R.S. (3.6, D-019): 45 damage (Stone in 2 shots), 0.5 s apart, 40 m/s out to 24 m. Its muzzle is the top
         // of the gold barrel crown in build_props.py (z 1.15 in Blender, +Y in Unity).
@@ -72,14 +74,17 @@ namespace Voxelforge.Editor
                 light: 14, HarvestKind.Any, new Color32(255, 170, 70, 255));
             BlockDefinition workbench = MakeBlock("Workbench", BlockIds.Workbench, durability: 60, solid: true, needsSupport: false,
                 light: 0, HarvestKind.Axe, new Color32(150, 100, 60, 255));
-            AddToList(registry, "blocks", torch, workbench);
+            BlockDefinition homeTotem = MakeBlock("HomeTotem", BlockIds.HomeTotem, durability: 60, solid: true, needsSupport: false,
+                light: 0, HarvestKind.Axe, new Color32(90, 220, 110, 255));
+            AddToList(registry, "blocks", torch, workbench, homeTotem);
             SetHarvestKinds(registry);
 
             // ---- Prop decorations ----
             Mesh torchFloorMesh = LoadMesh("TorchFloor");
             Mesh torchWallMesh = LoadMesh("TorchWall");
             Mesh workbenchMesh = LoadMesh("Workbench");
-            if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null)
+            Mesh totemMesh = LoadMesh("HomeTotem");
+            if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null || totemMesh == null)
                 return;
             var floorLight = new DecorationLight
             {
@@ -92,7 +97,11 @@ namespace Voxelforge.Editor
             AddToList(decorationSet, "decorations",
                 MakeProp("TorchFloor", torchFloorMesh, world, torch, PropAttach.Floor, floorLight, castShadows: false),
                 MakeProp("TorchWall", torchWallMesh, world, torch, PropAttach.Wall, wallLight, castShadows: false),
-                MakeProp("Workbench", workbenchMesh, world, workbench, PropAttach.Any, default, castShadows: true));
+                MakeProp("Workbench", workbenchMesh, world, workbench, PropAttach.Any, default, castShadows: true),
+                // A soft green glow at the carved houses, with only a little shimmer.
+                MakeProp("HomeTotem", totemMesh, world, homeTotem, PropAttach.Any,
+                    new DecorationLight { enabled = true, color = HomeGlow, intensity = 1.6f, range = 7f, offset = new Vector3(0f, 0.6f, 0f), flicker = 0.12f },
+                    castShadows: true));
 
             // ---- Items ----
             ItemDefinition woodenPickaxe = MakeItem("WoodenPickaxe", ItemIds.WoodenPickaxe, "Wooden Pickaxe", held, new ToolPower(2f, 1f, 1.5f));
@@ -104,8 +113,10 @@ namespace Voxelforge.Editor
                 heldScale: 0.7f, upright: true);
             ItemDefinition benchItem = MakeItem("Workbench", BlockIds.Workbench, "Workbench", held, default, "WorkbenchItem", dropSize: 1.3f,
                 heldScale: 0.3f, upright: true);
+            ItemDefinition totemItem = MakeItem("HomeTotem", BlockIds.HomeTotem, "Home Totem", held, default, "HomeTotemItem", dropSize: 1.4f,
+                heldScale: 0.35f, upright: true);
             var items = LoadOrCreate<ItemRegistry>($"{ItemDir}/ItemRegistry.asset");
-            AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs);
+            AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs, totemItem);
 
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
@@ -121,7 +132,8 @@ namespace Voxelforge.Editor
                 MakeRecipe("PickOfDestiny", new ItemAmount(destiny, 1), true,
                     new ItemAmount(stonePickaxe, 1), new ItemAmount(stoneAxe, 1), new ItemAmount(mana, 3)),
                 MakeRecipe("Mgrs", new ItemAmount(mgrs, 1), true,
-                    new ItemAmount(log, 3), new ItemAmount(stone, 2), new ItemAmount(mana, 5)));
+                    new ItemAmount(log, 3), new ItemAmount(stone, 2), new ItemAmount(mana, 5)),
+                MakeRecipe("HomeTotem", new ItemAmount(homeTotem, 1), true, new ItemAmount(log, 4), new ItemAmount(mana, 1)));
             MakeBoltMaterial();
 
             AssetDatabase.SaveAssets();
@@ -251,6 +263,7 @@ namespace Voxelforge.Editor
                     case BlockIds.TreeTrunk:
                     case BlockIds.Log:
                     case BlockIds.Workbench:
+                    case BlockIds.HomeTotem:
                         kind = HarvestKind.Axe;
                         break;
                     default:
