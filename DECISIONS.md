@@ -5,6 +5,44 @@
 
 ---
 
+## D-011: How Heroes Move and Look
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-test pending)
+
+### Decisions
+- **Auto-step lives in the host's motor** (`VoxelBodyMotor`, `MotorSettings.StepHeight = 1`).
+  - **Up:** a body that was on the ground at the start of the tick, walking into a block whose top is ≤ 1 block above its feet, climbs onto it if the box fits there (head room is checked). A 2-block wall still blocks, and a jumping or falling body never steps.
+  - **Down:** a body that was on the ground and walks off a ledge of ≤ 1 block snaps straight down and stays `Grounded`, so stairs never flicker into a fall animation. Taller drops fall normally.
+  - `VoxelBody.StepOffset` reports each tick's step for tests and debugging.
+- **Heroes face where they walk:** the host turns the player's yaw toward the world move direction at 720°/s, the short way round (`MoveDirection.TurnToward`), and blends it between ticks like position. The existing `NetworkTransform` already syncs yaw.
+- **Animation is presentation only.** No `NetworkAnimator`. Every PC works it out from the synced transform plus one new `NetworkVariable<bool>` (`Grounded`, written only when it changes).
+  - `HeroAnimator`, on the `Visual` child, feeds the Animator `Speed`, `VerticalSpeed` and `Grounded`.
+  - It also **glides over steps:** while grounded, it soaks up any height change of the root and eases it out (about 0.12 s). Cameras follow `PlayerController.VisualRoot`, so they glide too.
+- **Foot IK on blocks** (`HeroFootIK`, `OnAnimatorIK`, IK Pass on): block ground comes in whole metres, so each foot either plants on ground within 0.6 m, or, over a drop it can't reach, **slides back toward the body until it's on the block edge** instead of standing on air. The pelvis drops when a foot has to reach down. Weights fade while swinging, running fast or airborne.
+  - It reads blocks through `PlayerController.World`. Only the host has one for now; a remote PC skips IK until it builds its own world (6.2).
+- **`VoxelQueries`** (new, plain C#, unit-tested): `TryGetGroundHeight` for foot IK, and a grid DDA `Raycast` that returns the block, face normal and distance. **3.2 mining reuses the raycast.**
+- **Camera collision** (D-009 deferred it here): each camera raycasts from its focus back to its wanted spot. It snaps in to 0.3 m in front of any block right away, then eases back out.
+- **The hero art pipeline** (Roadmap 2.5 Creative):
+  - **"The Wayfarer"**, our own design: a hooded, bearded traveller with pauldrons, short cape, chunky boots and gloves, ~10.8k triangles, 1.8 m tall.
+  - Built by `Tools/Blender/build_hero.py` into `Tools/Blender/Hero.blend`, so it can be rebuilt and tweaked.
+  - One 1024² albedo with painted shading baked in (AO, light from above, brush noise, worn edges), like D-006's blocks. No normal map: classic-MMO characters read fine without one.
+  - **Two material slots**, both URP Lit with the same texture. `Hero_TeamCloth` (tunic, hood, cape) is painted pale, and each player gets their own material copy in their slot colour. That's a copy rather than a property block, so the SRP Batcher keeps working.
+- **Mixamo through a stand-in.** Mixamo's auto-rigger fails on the real hero ("Unknown error while generating motion"), because it's ~60 overlapping pieces.
+  - `build_rig_proxy()` voxel-remeshes it into one closed shell, which Mixamo rigs (Skeleton LOD: No Fingers).
+  - `apply_mixamo_rig()` copies each vertex's weights from the nearest point on the rigged stand-in (4 bones max, normalized) onto the real hero, and `export_hero_fbx()` writes `Art/Models/Hero/Hero.fbx`.
+  - Mixamo clips are downloaded as `Animations/Hero@Idle|Walk|Run|Jump|Fall|Land.fbx`, all In Place. Mixamo content is royalty-free for games.
+- ***Voxelforge → Rebuild Hero Animator*** (`HeroAnimatorBuilder`) sets everything up from those files:
+  - **Imports:** Humanoid everywhere. Each animation has its **own** avatar, because copying the hero's fails: Blender's export roots the bones differently. Root motion is baked into the pose, because the motor moves the player, not the clip.
+  - **Materials** and their remaps.
+  - **`Hero.controller`:** a Locomotion blend tree on `Speed` (Idle 0, Walk 2, Run 5 m/s), plus Jump / Fall / Land.
+
+### Deferred on purpose
+- Cape and hood are skinned to the spine like the rest. Cloth physics or secondary motion can come with the 2.6 wind work.
+- A walk/run toggle: the motor only has one speed (5 m/s), so heroes always run unless the stick is half-pushed.
+- Races with bigger rigs (Thunderhoof, 4.6) reuse this pipeline: build, stand-in, Mixamo, weight copy.
+
+---
+
 ## D-010: Streaming Terrain Around Every Player, and Cheap Extra Cameras
 - **Date:** 2026-10-27
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

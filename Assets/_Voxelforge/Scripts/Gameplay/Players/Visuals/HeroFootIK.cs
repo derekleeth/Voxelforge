@@ -21,7 +21,7 @@ namespace Voxelforge.Gameplay
         [SerializeField] PlayerController player;
 
         [Tooltip("Height of the ankle above the sole, in meters.")]
-        [SerializeField, Min(0f)] float footHeight = 0.1f;
+        [SerializeField, Min(0f)] float footHeight = 0.2f;
 
         [Tooltip("Furthest a foot reaches up or down to find ground, in meters.")]
         [SerializeField, Min(0f)] float maxReach = 0.6f;

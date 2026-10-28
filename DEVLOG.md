@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 11): Meet the Wayfarer 🧙 Roadmap 2.5
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **Real heroes!** The capsules are gone. Meet **the Wayfarer**: our own hooded, bearded adventurer with shoulder armour, a cape and big chunky boots. Details in DECISIONS.md **D-011**.
+- **Built in Blender by a script**, then painted with soft hand-painted shading baked into one texture, just like our blocks.
+- **Team colours:** the tunic, hood and cape take your player colour (P1 blue, P2 orange, P3 green, P4 purple).
+- **Rigged and animated with Mixamo:** idle, walk, run, jump, fall and land.
+- **Walk up stairs without jumping!** Any 1-block step is climbed automatically, and walking down a step keeps your feet on the ground. 2-block walls still need a jump.
+- **Heroes face where they walk** and turn smoothly.
+- **Feet stay on the blocks:** foot IK plants each foot on the block under it, and pulls a foot back onto the edge instead of standing on air.
+- **The camera no longer goes inside hills.** It slides in front of them.
+
+### Results 🎉
+- The hero ran up a natural staircase of 1-block steps with no jumps (y 77 → 87). He faced his running direction, the Animator moved Idle → Run → Jump → Land → Idle, and he landed with both boots flat on the grass.
+- About **212 FPS** standing in the editor with one player.
+
+### Tests: 140 / 140 passing ✅
+- Climbs a 1-block step without jumping, but not a 2-block wall, not without head room, and not while in the air.
+- Stays grounded walking down a 1-block ledge; falls off a 2-block ledge.
+- Jump still works next to a step.
+- Ground finder and block raycast hit the right block and face, including negative coordinates.
+- Turning takes the short way round and respects the turn speed.
+
+### Things we learned
+- **Mixamo needs one closed body.** Our hero is ~60 overlapping pieces (head inside hood, belt through tunic), so the auto-rigger failed. Fix: melt a copy into one shell, rig *that*, then copy the bones and weights back onto the real hero in Blender.
+- Mixamo's clips are skeleton-only motion, so they work on our hero even though Mixamo never saw it.
+- After restarting Unity, Claude Code needs **`/mcp` → Reconnect** to talk to it again.
+
+### Next up
+- [ ] You two: play-test! Split-screen, run up and down hills and stairs, jump off ledges, back the camera into a hill, and check FPS holds at **120+** with the Game view focused. Then we tick 2.5 off.
+- [ ] Roadmap **2.6 Foliage & Decoration Layer**: grass tufts, flowers, bushes and trees
+
+---
+
 ## 2026-10-27 - Session 1 (part 10): A World With No Edge 🌍 Roadmap 2.4
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 
