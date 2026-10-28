@@ -112,6 +112,22 @@ namespace Voxelforge.Voxels
         }
 
         /// <summary>
+        /// Overwrites every block from <paramref name="source"/>, which must hold <see cref="ChunkVolume"/> voxels
+        /// in <see cref="VoxelMath.ToIndex(int3)"/> order. Used by generators that build a whole chunk in a job.
+        /// </summary>
+        internal void CopyFrom(NativeArray<Voxel> source)
+        {
+            CheckNotDisposed();
+            if (source.Length != ChunkVolume)
+                throw new ArgumentException($"Expected {ChunkVolume} voxels, got {source.Length}.", nameof(source));
+
+            if (IsUniform)
+                _voxels = new NativeArray<Voxel>(ChunkVolume, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            _voxels.CopyFrom(source);
+            Version++;
+        }
+
+        /// <summary>
         /// Frees the array if every block is the same. Returns true if the chunk is uniform afterwards.
         /// Doesn't change <see cref="Version"/>, because the blocks themselves don't change.
         /// </summary>

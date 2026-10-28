@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 4): We Can SEE the World! ✅ Roadmap 1.3
+**Phase:** 1 - The Voxel Foundation
+
+### What we did
+- **Greedy meshing.** Neighbouring faces of the same block join into one big rectangle, so a flat 32×32 floor is 1 quad instead of 1,024. Full details are in DECISIONS.md **D-004**.
+- **Hidden-face culling.** Faces touching another solid block are never drawn, even across chunk borders. Each row of 32 blocks is packed into one number, so a single bit trick checks the whole row at once.
+- **Off the main thread.** Burst jobs on worker threads do all the meshing. The game never waits for them: finished meshes are picked up on the next frame.
+- **`VoxelWorld` + `VoxelWorldManager`** hold all the chunks and keep track of which ones need redrawing. They're not singletons, so we can pass them around explicitly for split-screen later.
+- **A placeholder shader** colors each block type, adds sun, shadows and ambient light, and draws faint lines so you can still see single blocks on big merged faces.
+- **A test pattern:** 16×4×16 chunks (512×128×512 blocks) of hills, tunnels and Mana Crystal Ore specks in the Sandbox scene. Real terrain replaces it in 1.4.
+
+### Results 🎉
+- **140–158 FPS** in the editor with the whole test world on screen.
+- 1,024 chunks, of which 740 have something to draw (the rest are empty sky or buried). That's about 533,000 quads.
+- One busy chunk meshes in about **3 ms** on a worker thread. The test pattern generates in **138 ms**.
+
+### Tests: 53 / 53 passing ✅
+- Face counts:
+  - 1 block → 6 faces
+  - a 2-block bar → still 6 faces (merged)
+  - 2 different blocks → 10 faces (different blocks don't merge)
+  - full chunk → 6 giant faces
+  - buried chunk → 0 faces
+- Faces between chunks are hidden. Loading a neighbour or editing an edge block redraws both chunks.
+- Every triangle faces outward, and UVs count blocks, so textures will tile properly in 1.5.
+- A checkerboard (worst case: 393k vertices) works.
+- If a chunk changes while its mesh is being built, the old mesh is thrown away and rebuilt.
+
+### Things we learned
+- Burst can quietly skip a job that's a **private struct nested inside a class**, and run it as slow normal C# instead. Moving it to its own struct made world generation 5× faster (664 → 138 ms).
+- Unity only runs Play Mode while its window has focus, so click into the Game view when Claude is testing.
+
+### Next up
+- [ ] Roadmap **1.4 Procedural Noise Terrain**: real hills, caves and biomes from a `WorldSeed`
+- [ ] Roadmap **1.5 Art & Shaders (Creative)**: real block materials replace the placeholder colors
+
+---
+
 ## 2026-10-27 - Session 1 (part 3): Blocks Have a Home ✅ Roadmap 1.2
 **Phase:** 1 - The Voxel Foundation
 

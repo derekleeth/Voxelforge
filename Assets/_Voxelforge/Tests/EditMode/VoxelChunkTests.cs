@@ -111,6 +111,30 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void CopyFrom_ReplacesEveryBlockAndBumpsVersion()
+        {
+            var source = new Unity.Collections.NativeArray<Voxel>(VoxelConstants.ChunkVolume, Unity.Collections.Allocator.Temp);
+            source[5] = Stone;
+            source[VoxelConstants.ChunkVolume - 1] = Dirt;
+
+            _chunk.CopyFrom(source);
+            source.Dispose();
+
+            Assert.IsFalse(_chunk.IsUniform);
+            Assert.AreEqual(1, _chunk.Version);
+            Assert.AreEqual(Stone, _chunk.GetVoxel(5));
+            Assert.AreEqual(Dirt, _chunk.GetVoxel(VoxelConstants.ChunkVolume - 1));
+            Assert.AreEqual(Voxel.Air, _chunk.GetVoxel(0));
+        }
+
+        [Test]
+        public void CopyFrom_WrongLength_Throws()
+        {
+            using var source = new Unity.Collections.NativeArray<Voxel>(10, Unity.Collections.Allocator.Temp);
+            Assert.Throws<ArgumentException>(() => _chunk.CopyFrom(source));
+        }
+
+        [Test]
         public void Dispose_FreesArrayAndBlocksFurtherUse()
         {
             _chunk.SetVoxel(new int3(0, 0, 0), Stone);

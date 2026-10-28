@@ -5,6 +5,43 @@
 
 ---
 
+## D-004: How Chunks Become Meshes
+- **Date:** 2026-10-27
+- **Status:** Accepted
+
+### Decisions
+- **Two jobs per chunk.**
+  1. `ChunkGatherJob` copies the chunk's block IDs, plus a 1-block border from its 6 neighbours, into a padded 34³ buffer.
+  2. `GreedyMeshJob` (Burst) builds the mesh from that copy only.
+
+  Chunks are only locked during the short gather step. Before editing a chunk, call `ChunkMeshScheduler.CompleteGatherJobs()`.
+- **Binary culling.** Each row of opaque blocks is packed into a `ulong` (34 bits including the border). `col & ~(col >> 1)` finds every visible face in the row at once.
+- **Greedy merge per block type.** Faces only merge with the same block ID, so each block keeps its own color and texture.
+- **"Opaque" = registered and not transparent** (`BlockInfo.IsOpaque`). Transparent blocks (glass, water) aren't drawn yet. They'll need their own pass when we add one.
+- **Unloaded neighbours count as Air.** The edge of the loaded world shows its faces. When a neighbour loads, both chunks are remeshed.
+- **Vertex format (40 bytes):**
+
+  | Field | Format | Notes |
+  |---|---|---|
+  | Position | float3 | chunk-local |
+  | Normal | float3 | |
+  | Color | Color32 | placeholder `MapColor` |
+  | UV0 | float2 | **in blocks**, so textures repeat once per block |
+  | UV1.x | float | block ID, for 1.5 texture arrays |
+
+  Indices are always 32-bit, because the worst case is 393k vertices.
+- **Meshes are written straight from jobs** with `Mesh.MeshData`, so the main thread doesn't copy vertex arrays.
+- **Never wait on jobs.** Each frame picks up finished jobs and schedules new ones, with at most 32 chunks meshing at once (adjustable on `VoxelWorldManager`).
+- **Stale results are thrown away.** Each job remembers the version of its chunk and its 6 neighbours. If any changed before the job finished, the mesh is discarded and rebuilt.
+- **Shortcuts:** all-air chunks, and solid chunks buried in solid chunks, skip meshing entirely and get no GameObject.
+
+### Deferred on purpose
+- **Ambient occlusion / smooth lighting.** Per-corner shading stops some faces from merging. We'll decide on it alongside the 1.5 art.
+- **Mesh colliders.** Needed when characters arrive in Phase 2.
+- **Unloading chunks and object pooling.** Comes with the multi-viewer loader in 2.4.
+
+---
+
 ## D-003: How the World Stores Blocks
 - **Date:** 2026-10-27
 - **Status:** Accepted

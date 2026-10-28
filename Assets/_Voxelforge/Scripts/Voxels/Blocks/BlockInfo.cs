@@ -33,5 +33,11 @@ namespace Voxelforge.Voxels
         public bool IsRegistered => (Flags & BlockFlags.Registered) != 0;
         public bool IsSolid => (Flags & BlockFlags.Solid) != 0;
         public bool IsTransparent => (Flags & BlockFlags.Transparent) != 0;
+
+        /// <summary>
+        /// A registered block you can't see through. The mesher draws these and hides any face
+        /// that touches one. Air, glass and unused IDs are not opaque.
+        /// </summary>
+        public bool IsOpaque => (Flags & (BlockFlags.Registered | BlockFlags.Transparent)) == BlockFlags.Registered;
     }
 }
