@@ -5,6 +5,35 @@
 
 ---
 
+## D-010: Streaming Terrain Around Every Player, and Cheap Extra Cameras
+- **Date:** 2026-10-27
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **Viewers, not cameras.** A `ChunkViewer` is a point the world must exist around plus a radius. Anything implementing `IChunkViewerSource` can be one. The **host** loads terrain around every player (local or, in Phase 6, remote), because its physics needs the blocks (CLAUDE.md Law #2). Client-side streaming of what a remote PC *draws* comes with 6.2 world sync.
+- **`ChunkLoader`** (scene component on `VoxelWorld`, not a singleton) holds the registered sources. `PlayerRegistry` registers each player it spawns. Destroyed sources are dropped automatically.
+  - Before landing, a player reports its **spawn column**, so the ground under the spawn point generates first. The spawn no longer has to be inside a fixed box.
+  - **Fallback viewers** are only used while no other source has a position. The `Spawn Anchor` (radius 6) is one, so the overview camera shows a world before anyone joins.
+- **`ChunkStreamer`** (plain C#, unit-tested) works in whole **columns** (all 8 layers, 256 blocks):
+  - **Load:** columns within a viewer's radius (default **8 chunks = 256 m**, a circle), **nearest first, top layer down**.
+  - **Unload:** once a column is more than radius + **2** chunks from *every* viewer. The margin stops terrain flickering when someone walks back and forth over a border. At most **4 columns per frame** unload, so a teleport can't spike a frame.
+  - It only re-plans when a viewer enters another column, so standing still costs nothing. Each re-plan clears the generator's queue (`CancelQueued`) and re-requests in the new nearest-first order. Jobs already running still finish; their columns unload afterwards if no longer wanted.
+- **Unloading a chunk** (`VoxelWorld.RemoveChunk`) frees its memory and does **not** remesh its neighbours. Their faces toward the gap stay hidden, which is invisible at the fog line and saves a ring of remeshes every step. Mesh jobs for removed chunks are thrown away by the existing stale check (D-004).
+- **Chunk GameObjects are pooled** (D-004 deferred this): an unloaded chunk's renderer is hidden and later moved to a new chunk.
+- **Linear fog, 150 → 235 m**, sky-tinted, so the streaming edge fades out instead of popping. The overview camera moved in to ~185 m from spawn so it isn't fogged out.
+- **GPU Resident Drawer** (Instanced Drawing) with **GPU occlusion culling** on the PC render pipeline asset. Chunks are submitted once and culled on the GPU for every camera, instead of each split-screen camera culling and submitting ~900 renderers on the CPU. The block shader got DOTS instancing in all 4 passes. Graphics settings keep **all BatchRendererGroup variants**, or builds would strip them (needed for 2.7).
+
+### Measured so far (editor, not focused, so FPS isn't meaningful yet)
+- Spawn area: 113 columns / 904 chunks, 0 errors. Teleporting the anchor 1 km: the old area unloaded completely, the new one loaded, and pooled renderers were reused.
+- All 121 EditMode tests pass.
+- Each chunk has its own mesh, so the GRD can't merge chunks into fewer draw calls. Its win is GPU culling (frustum + occlusion) per camera. **Play-test (2026-10-28): split-screen passed.** If FPS ever falls short later, the next suspects are per-camera shadow cascades, then our own `BatchRendererGroup`.
+
+### Deferred on purpose
+- **Edits + unloading (3.1/3.4):** an unloaded chunk regenerates from the seed. When edits exist it must re-apply its `VoxelDeltaLog` entries on load (`TODO(3.1)` in `ChunkStreamer.RequestColumn`).
+- Fog colour is hand-picked to match the procedural sky. Tune it with the 2.6 art pass.
+
+---
+
 ## D-009: Cameras and Voronoi Split-Screen
 - **Date:** 2026-10-27
 - **Status:** Accepted

@@ -97,6 +97,11 @@ Shader "Voxelforge/Voxel Block"
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fog
 
+            // GPU Resident Drawer (D-010): chunks are drawn as DOTS instances, so every pass needs these.
+            #pragma multi_compile_instancing
+            #pragma instancing_options renderinglayer
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Attributes
@@ -106,6 +111,7 @@ Shader "Voxelforge/Voxel Block"
                 half4  color      : COLOR;
                 float2 uv         : TEXCOORD0;
                 float  layer      : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -117,11 +123,14 @@ Shader "Voxelforge/Voxel Block"
                 nointerpolation float layer : TEXCOORD3;
                 half   fogFactor  : TEXCOORD4;
                 half4  color      : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID // Light layers read the renderer's rendering layer in the fragment.
             };
 
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 VertexPositionInputs positions = GetVertexPositionInputs(input.positionOS);
                 output.positionCS = positions.positionCS;
                 output.positionWS = positions.positionWS;
@@ -165,6 +174,7 @@ Shader "Voxelforge/Voxel Block"
 
             half4 Frag(Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 float3 normalWS = normalize(input.normalWS);
                 float3 tangentWS, bitangentWS;
                 BlockTangentFrame(normalWS, tangentWS, bitangentWS);
@@ -232,6 +242,8 @@ Shader "Voxelforge/Voxel Block"
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
@@ -239,10 +251,18 @@ Shader "Voxelforge/Voxel Block"
             float3 _LightDirection;
             float3 _LightPosition;
 
-            float4 ShadowVert(float3 positionOS : POSITION, float3 normalOS : NORMAL) : SV_POSITION
+            struct ShadowAttributes
             {
-                float3 positionWS = TransformObjectToWorld(positionOS);
-                float3 normalWS = TransformObjectToWorldNormal(normalOS);
+                float3 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            float4 ShadowVert(ShadowAttributes input) : SV_POSITION
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                float3 positionWS = TransformObjectToWorld(input.positionOS);
+                float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
                 #if _CASTING_PUNCTUAL_LIGHT_SHADOW
                     float3 lightDirectionWS = normalize(_LightPosition - positionWS);
                 #else
@@ -265,10 +285,19 @@ Shader "Voxelforge/Voxel Block"
             HLSLPROGRAM
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
-            float4 DepthVert(float3 positionOS : POSITION) : SV_POSITION
+            struct DepthAttributes
             {
-                return TransformObjectToHClip(positionOS);
+                float3 positionOS : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            float4 DepthVert(DepthAttributes input) : SV_POSITION
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                return TransformObjectToHClip(input.positionOS);
             }
 
             half DepthFrag() : SV_Target { return 0; }
@@ -287,6 +316,8 @@ Shader "Voxelforge/Voxel Block"
             #pragma vertex DepthNormalsVert
             #pragma fragment DepthNormalsFrag
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+            #pragma multi_compile_instancing
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             struct Attributes
             {
@@ -294,6 +325,7 @@ Shader "Voxelforge/Voxel Block"
                 float3 normalOS   : NORMAL;
                 float2 uv         : TEXCOORD0;
                 float  layer      : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -307,6 +339,7 @@ Shader "Voxelforge/Voxel Block"
             Varyings DepthNormalsVert(Attributes input)
             {
                 Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
                 output.positionCS = TransformObjectToHClip(input.positionOS);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;

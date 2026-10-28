@@ -41,6 +41,7 @@ namespace Voxelforge.Voxels
         readonly int _maxJobsInFlight;
 
         readonly Dictionary<ChunkCoord, ChunkRenderer> _renderers = new Dictionary<ChunkCoord, ChunkRenderer>();
+        readonly Stack<ChunkRenderer> _rendererPool = new Stack<ChunkRenderer>();
         readonly List<PendingMesh> _pending = new List<PendingMesh>();
         readonly HashSet<ChunkCoord> _pendingCoords = new HashSet<ChunkCoord>();
         readonly List<ChunkCoord> _deferred = new List<ChunkCoord>();
@@ -74,7 +75,16 @@ namespace Voxelforge.Voxels
         /// </summary>
         public Func<ChunkCoord, bool> IsChunkIncoming { get; set; }
 
+        /// <summary>Chunks that currently have a renderer (visible or empty).</summary>
+        public int RendererCount => _renderers.Count;
+
         public bool TryGetRenderer(ChunkCoord coord, out ChunkRenderer chunkRenderer) => _renderers.TryGetValue(coord, out chunkRenderer);
+
+        /// <summary>
+        /// Hides an unloaded chunk's renderer and keeps it for reuse. Does nothing if the chunk has none.
+        /// A mesh job still running for it is thrown away when it finishes, because its chunk is gone.
+        /// </summary>
+        public void ReleaseRenderer(ChunkCoord coord) => RemoveRenderer(coord);
 
         /// <summary>Call once per frame: applies finished meshes, then schedules more dirty chunks.</summary>
         public void Update()
@@ -285,7 +295,15 @@ namespace Voxelforge.Voxels
         {
             if (!_renderers.TryGetValue(coord, out ChunkRenderer chunkRenderer))
             {
-                chunkRenderer = ChunkRenderer.Create(coord, _parent, _material);
+                if (_rendererPool.Count > 0)
+                {
+                    chunkRenderer = _rendererPool.Pop();
+                    chunkRenderer.Reuse(coord);
+                }
+                else
+                {
+                    chunkRenderer = ChunkRenderer.Create(coord, _parent, _material);
+                }
                 _renderers.Add(coord, chunkRenderer);
             }
             return chunkRenderer;
@@ -294,7 +312,10 @@ namespace Voxelforge.Voxels
         void RemoveRenderer(ChunkCoord coord)
         {
             if (_renderers.Remove(coord, out ChunkRenderer chunkRenderer))
-                DestroyObject(chunkRenderer.gameObject);
+            {
+                chunkRenderer.Release();
+                _rendererPool.Push(chunkRenderer);
+            }
         }
 
         static void DestroyObject(UnityEngine.Object obj)
@@ -331,6 +352,12 @@ namespace Voxelforge.Voxels
                     DestroyObject(chunkRenderer.gameObject);
             }
             _renderers.Clear();
+            while (_rendererPool.Count > 0)
+            {
+                ChunkRenderer pooled = _rendererPool.Pop();
+                if (pooled != null)
+                    DestroyObject(pooled.gameObject);
+            }
         }
     }
 }

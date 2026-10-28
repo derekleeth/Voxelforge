@@ -1,5 +1,6 @@
 using System.Text;
 using UnityEngine;
+using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
@@ -10,6 +11,12 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Optional: shows the split-screen mode.")]
         [SerializeField] SplitScreenDirector cameras;
+
+        [Tooltip("Optional: shows how much terrain is loaded.")]
+        [SerializeField] VoxelWorldManager world;
+
+        [Tooltip("Optional: shows terrain streaming around the players.")]
+        [SerializeField] ChunkLoader chunkLoader;
 
         [SerializeField] bool visible = true;
 
@@ -45,6 +52,8 @@ namespace Voxelforge.Gameplay
                     _text.Append($" ({layout.Separation:F1} m apart)");
             }
 
+            AppendTerrain();
+
             foreach (PlayerController player in session.Players.Players)
             {
                 if (player == null)
@@ -57,9 +66,26 @@ namespace Voxelforge.Gameplay
 
             AppendLocalSlots();
 
-            GUILayout.BeginArea(new Rect(10, 10, 520, 260));
+            GUILayout.BeginArea(new Rect(10, 10, 560, 300));
             GUILayout.Label(_text.ToString(), _style);
             GUILayout.EndArea();
+        }
+
+        void AppendTerrain()
+        {
+            if (world == null || world.World == null)
+                return;
+
+            _text.Append($"\nchunks: {world.World.ChunkCount} loaded, {world.Scheduler.RendererCount} drawn");
+            if (world.Generator.QueuedCount + world.Generator.PendingCount > 0)
+                _text.Append($", {world.Generator.QueuedCount + world.Generator.PendingCount} generating");
+            if (chunkLoader != null && chunkLoader.Streamer != null)
+            {
+                _text.Append($"   columns: {chunkLoader.Streamer.ColumnCount}");
+                if (chunkLoader.Streamer.UnloadingCount > 0)
+                    _text.Append($" ({chunkLoader.Streamer.UnloadingCount} unloading)");
+                _text.Append($"   viewers: {chunkLoader.Viewers.Count}");
+            }
         }
 
         /// <summary>One line per joined slot on this PC, plus a join prompt for the next free one.</summary>

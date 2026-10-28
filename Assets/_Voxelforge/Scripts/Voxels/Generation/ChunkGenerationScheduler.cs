@@ -12,7 +12,7 @@ namespace Voxelforge.Voxels
     /// <para>
     /// Each <see cref="Update"/> adds finished chunks to the <see cref="VoxelWorld"/> (it never waits on jobs),
     /// then schedules more <see cref="GenerateChunkJob"/>s from the request queue, up to a limit in flight.
-    /// The multi-viewer loader (Roadmap 2.4) will call <see cref="Request"/> around each player.
+    /// <see cref="ChunkStreamer"/> calls <see cref="Request"/> around each viewer, nearest first.
     /// </para>
     /// </summary>
     public sealed class ChunkGenerationScheduler : IDisposable
@@ -71,6 +71,17 @@ namespace Voxelforge.Voxels
                 return false;
             _requests.Enqueue(coord);
             return true;
+        }
+
+        /// <summary>
+        /// Forgets every request that hasn't started yet, so a caller can queue them again in a new order.
+        /// Chunks already generating still arrive.
+        /// </summary>
+        public void CancelQueued()
+        {
+            foreach (ChunkCoord coord in _requests)
+                _requested.Remove(coord);
+            _requests.Clear();
         }
 
         /// <summary>Call once per frame: adds finished chunks to the world, then schedules more.</summary>

@@ -40,7 +40,7 @@ namespace Voxelforge.Voxels
         public int ChunkCount => _chunks.Count;
 
         /// <summary>Chunks waiting to be (re)meshed.</summary>
-        public int DirtyCount => _dirtyQueue.Count;
+        public int DirtyCount => _dirtySet.Count;
 
         public IEnumerable<VoxelChunk> Chunks => _chunks.Values;
 
@@ -69,6 +69,22 @@ namespace Voxelforge.Voxels
             foreach (int3 offset in NeighbourOffsets)
                 MarkDirty(new ChunkCoord(coord.Value + offset));
             return chunk;
+        }
+
+        /// <summary>
+        /// Unloads a chunk and frees its memory. Returns false if it wasn't loaded.
+        /// Neighbours are <b>not</b> remeshed: their faces toward the gap stay hidden, which is fine at the edge of
+        /// the loaded area (D-010). Callers must make sure no gather job is reading the chunk
+        /// (<see cref="ChunkMeshScheduler.CompleteGatherJobs"/>).
+        /// </summary>
+        internal bool RemoveChunk(ChunkCoord coord)
+        {
+            if (!_chunks.Remove(coord, out VoxelChunk chunk))
+                return false;
+
+            chunk.Dispose();
+            _dirtySet.Remove(coord); // Its queue entry is skipped by TryTakeDirty.
+            return true;
         }
 
         /// <summary>
@@ -108,15 +124,14 @@ namespace Voxelforge.Voxels
         /// <summary>Takes the oldest chunk waiting for a mesh.</summary>
         internal bool TryTakeDirty(out ChunkCoord coord)
         {
-            if (_dirtyQueue.Count == 0)
+            while (_dirtyQueue.Count > 0)
             {
-                coord = default;
-                return false;
+                coord = _dirtyQueue.Dequeue();
+                if (_dirtySet.Remove(coord)) // False for chunks unloaded while they were queued.
+                    return true;
             }
-
-            coord = _dirtyQueue.Dequeue();
-            _dirtySet.Remove(coord);
-            return true;
+            coord = default;
+            return false;
         }
 
         public void Dispose()

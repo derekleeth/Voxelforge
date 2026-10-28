@@ -31,7 +31,7 @@ namespace Voxelforge.Gameplay
         [Tooltip("Blocks between each player's spawn column.")]
         [SerializeField, Min(1)] int spawnSpacing = 3;
 
-        [Tooltip("Highest block the spawn search starts from. Must be inside the generated area.")]
+        [Tooltip("Highest block the spawn search starts from. Must be below the top of the world.")]
         [SerializeField] int spawnSearchTopY = 255;
 
         public void RequestJoin(byte localSlot)

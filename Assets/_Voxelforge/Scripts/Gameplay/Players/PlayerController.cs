@@ -16,7 +16,7 @@ namespace Voxelforge.Gameplay
     /// </para>
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
-    public sealed class PlayerController : NetworkBehaviour
+    public sealed class PlayerController : NetworkBehaviour, IChunkViewerSource
     {
         [SerializeField] MotorSettings motor = MotorSettings.Default;
 
@@ -74,6 +74,16 @@ namespace Voxelforge.Gameplay
             _spawnColumn = spawnColumn;
             _spawnTopY = spawnTopY;
             name = $"Player {playerId}";
+        }
+
+        /// <summary>
+        /// Host only: where the <see cref="ChunkLoader"/> should load terrain. Before landing, that's the spawn column,
+        /// so the ground under the spawn point generates first.
+        /// </summary>
+        public bool TryGetViewerPosition(out float3 position)
+        {
+            position = _placed ? (float3)transform.position : new float3(_spawnColumn.x + 0.5f, 0f, _spawnColumn.y + 0.5f);
+            return IsServer && IsSpawned;
         }
 
         /// <summary>

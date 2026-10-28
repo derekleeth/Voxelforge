@@ -6,6 +6,10 @@ namespace Voxelforge.Voxels
     /// <summary>
     /// Draws one chunk. Lives on its own GameObject at the chunk's world origin and keeps a single
     /// <see cref="Mesh"/> that is overwritten every time the chunk is remeshed.
+    /// <para>
+    /// Pooled: when its chunk unloads, <see cref="ChunkMeshScheduler"/> deactivates it and later moves it to another
+    /// chunk with <see cref="Reuse"/>, so streaming doesn't create and destroy GameObjects and meshes all the time.
+    /// </para>
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class ChunkRenderer : MonoBehaviour
@@ -22,18 +26,34 @@ namespace Voxelforge.Voxels
 
         internal static ChunkRenderer Create(ChunkCoord coord, Transform parent, Material material)
         {
-            var go = new GameObject($"Chunk {coord.X},{coord.Y},{coord.Z}");
+            var go = new GameObject();
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3(coord.WorldOrigin.x, coord.WorldOrigin.y, coord.WorldOrigin.z);
 
             var chunkRenderer = go.AddComponent<ChunkRenderer>();
-            chunkRenderer.Coord = coord;
-            chunkRenderer._mesh = new Mesh { name = go.name };
+            chunkRenderer._mesh = new Mesh();
             go.GetComponent<MeshFilter>().sharedMesh = chunkRenderer._mesh;
             chunkRenderer._renderer = go.GetComponent<MeshRenderer>();
             chunkRenderer._renderer.sharedMaterial = material;
-            chunkRenderer._renderer.enabled = false;
+            chunkRenderer.Reuse(coord);
             return chunkRenderer;
+        }
+
+        /// <summary>Moves this renderer to <paramref name="coord"/> with an empty mesh, and activates it.</summary>
+        internal void Reuse(ChunkCoord coord)
+        {
+            Coord = coord;
+            name = $"Chunk {coord.X},{coord.Y},{coord.Z}";
+            _mesh.name = name;
+            transform.localPosition = new Vector3(coord.WorldOrigin.x, coord.WorldOrigin.y, coord.WorldOrigin.z);
+            Clear();
+            gameObject.SetActive(true);
+        }
+
+        /// <summary>Empties and hides this renderer so it can wait in the pool.</summary>
+        internal void Release()
+        {
+            Clear();
+            gameObject.SetActive(false);
         }
 
         /// <summary>Replaces the mesh with a finished job's output and disposes <paramref name="data"/>.</summary>

@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 10): A World With No Edge 🌍 Roadmap 2.4
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **The world grows around you!** It used to be a fixed 512 m box that you could walk off. Now terrain loads in a 256 m circle around **each** player, closest ground first, and unloads again when nobody is near. Details in DECISIONS.md **D-010**.
+- **Walk apart as far as you like.** Each of you gets your own circle of world, so you can explore in opposite directions.
+- **No flickering on borders:** terrain only unloads once you're 2 chunks past the edge of your circle, so stepping back and forth doesn't reload it.
+- **Fog** now softly hides the far edge of the world, so you don't see chunks popping in.
+- Chunk objects are **recycled** instead of thrown away and rebuilt.
+- **Cheaper second camera:** Unity's **GPU Resident Drawer** now draws the chunks, and the graphics card itself skips chunks hidden behind hills. The block shader was updated to support it.
+- The debug corner (F3) shows chunks loaded and drawn, columns, and how many viewers the world is loading around.
+
+### Results 🎉
+- Before anyone joins: 113 columns (904 chunks) around the spawn point, 0 errors.
+- Teleported the loading point 1 km away: the old area unloaded, the new one loaded, and the recycled chunk objects were reused.
+- Terrain, textures and the new fog look right with the GPU Resident Drawer on.
+
+### Tests: 121 / 121 passing ✅
+- Terrain loads around *every* viewer, in full columns, nearest first.
+- The unload margin keeps nearby terrain loaded, and it all unloads when everyone leaves.
+- Unloading is spread over several frames.
+- A mesh being built for a chunk that unloads is thrown away, and recycled chunk objects get reused.
+
+### Things we learned
+- Unity shows things in **cyan** while it's still compiling new shader versions. It isn't a bug; wait a few seconds!
+- The host loads the world around *every* player, because it runs everyone's physics. That's what will let online friends explore too.
+
+### Next up
+- [x] You two: play-test split-screen with the Game view focused. Walk far apart and check the FPS (target **120+**), that the ground is always there under you, and that the fog hides the edge. Everything looked good! ✅ **2.4 done.**
+- [ ] Roadmap **2.5 Smooth Character Integration**: real heroes with animations, auto-stepping and feet that plant on blocky stairs
+
+---
+
 ## 2026-10-27 - Session 1 (part 9): Your Own Camera, and a Screen That Splits 🎥 Roadmap 2.3
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

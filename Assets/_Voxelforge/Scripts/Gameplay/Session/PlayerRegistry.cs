@@ -36,6 +36,9 @@ namespace Voxelforge.Gameplay
 
         [SerializeField] PlayerController playerPrefab;
 
+        [Tooltip("Loads terrain around every player.")]
+        [SerializeField] ChunkLoader chunkLoader;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -75,6 +78,8 @@ namespace Voxelforge.Gameplay
             PlayerController player = Instantiate(playerPrefab);
             player.ServerInitialize(playerId, localSlot, worldManager, spawnColumn, spawnTopY);
             player.NetworkObject.SpawnWithOwnership(ownerClientId, destroyWithScene: true);
+            if (chunkLoader != null)
+                chunkLoader.Register(player);
 
             _records.Add(playerId, new PlayerRecord(ownerClientId, localSlot, player));
             _players.Add(player);
@@ -85,6 +90,11 @@ namespace Voxelforge.Gameplay
         /// <summary>Forgets every player. Called when the host stops.</summary>
         public void Clear()
         {
+            if (chunkLoader != null)
+            {
+                foreach (PlayerController player in _players)
+                    chunkLoader.Unregister(player);
+            }
             _records.Clear();
             _players.Clear();
             _nextId = 1;
