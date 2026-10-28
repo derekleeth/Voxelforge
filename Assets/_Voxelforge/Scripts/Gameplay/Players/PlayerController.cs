@@ -1,3 +1,4 @@
+using System;
 using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
@@ -71,9 +72,24 @@ namespace Voxelforge.Gameplay
             name = $"Player {playerId}";
         }
 
-        void Awake()
+        /// <summary>
+        /// Raised on the owning PC when one of its players spawns, so <see cref="LocalPlayerManager"/> can give it
+        /// the controls of its local slot. An event, not a global player list (CLAUDE.md Law #1).
+        /// </summary>
+        public static event Action<PlayerController> OwnerSpawned;
+
+        /// <summary>Raised on the owning PC when one of its players despawns.</summary>
+        public static event Action<PlayerController> OwnerDespawned;
+
+        /// <summary>Owner only: where this player's controls come from.</summary>
+        public void SetInputSource(IPlayerInputSource source)
         {
-            _inputSource = GetComponent<IPlayerInputSource>();
+            if (!IsOwner)
+            {
+                Debug.LogError($"Only the owning PC can control {PlayerId}.", this);
+                return;
+            }
+            _inputSource = source;
         }
 
         public override void OnNetworkSpawn()
@@ -91,6 +107,16 @@ namespace Voxelforge.Gameplay
                 block.SetColor("_BaseColor", slotColors[LocalSlot % slotColors.Length]);
                 bodyRenderer.SetPropertyBlock(block);
             }
+
+            if (IsOwner)
+                OwnerSpawned?.Invoke(this);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsOwner)
+                OwnerDespawned?.Invoke(this);
+            _inputSource = null;
         }
 
         /// <summary>
@@ -116,7 +142,7 @@ namespace Voxelforge.Gameplay
 
             if (IsOwner && _inputSource != null)
             {
-                PlayerInputFrame frame = _inputSource.Read(LocalSlot);
+                PlayerInputFrame frame = _inputSource.Read();
                 frame.Sequence = _nextSequence++;
                 SubmitInputRpc(frame);
             }

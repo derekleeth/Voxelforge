@@ -47,6 +47,17 @@ namespace Voxelforge.Gameplay
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 
+        /// <summary>Host only: true if <paramref name="ownerClientId"/> already has a player in <paramref name="localSlot"/>.</summary>
+        public bool IsSlotTaken(ulong ownerClientId, byte localSlot)
+        {
+            foreach (PlayerRecord record in _records.Values)
+            {
+                if (record.OwnerClientId == ownerClientId && record.LocalSlot == localSlot)
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// Host only: creates a player owned by <paramref name="ownerClientId"/> in <paramref name="localSlot"/>, who
         /// will appear on the ground of the given block column once its terrain is generated.

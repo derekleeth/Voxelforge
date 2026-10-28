@@ -643,6 +643,86 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.WorldAreaGenerator
   worldManager: {fileID: 1325734895}
   sizeInChunks: {x: 16, y: 8, z: 16}
+--- !u!1 &2145343286
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2145343288}
+  - component: {fileID: 2145343287}
+  - component: {fileID: 2145343289}
+  m_Layer: 0
+  m_Name: Session Network
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2145343287
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2145343286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2096825305
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!4 &2145343288
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2145343286}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2145343289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2145343286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f21c7e290e4ca6c479c91364cc955b0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerJoinService
+  ShowTopMostFoldoutHeaderGroup: 1
+  playerRegistry: {fileID: 2147055197}
+  worldManager: {fileID: 1325734895}
+  maxLocalPlayersPerConnection: 4
+  maxPlayers: 4
+  spawnColumn: {x: 256, y: 256}
+  spawnSpacing: 3
+  spawnSearchTopY: 255
 --- !u!1 &2147055194
 GameObject:
   m_ObjectHideFlags: 0
@@ -657,6 +737,7 @@ GameObject:
   - component: {fileID: 2147055197}
   - component: {fileID: 2147055196}
   - component: {fileID: 2147055195}
+  - component: {fileID: 2147055201}
   m_Layer: 0
   m_Name: Session
   m_TagString: Untagged
@@ -693,12 +774,8 @@ MonoBehaviour:
   networkManager: {fileID: 2147055199}
   transport: {fileID: 2147055198}
   playerRegistry: {fileID: 2147055197}
-  worldManager: {fileID: 1325734895}
-  localPlayerCount: 2
+  localPlayers: {fileID: 2147055201}
   port: 7777
-  spawnColumn: {x: 256, y: 256}
-  spawnSpacing: 3
-  spawnSearchTopY: 255
 --- !u!114 &2147055197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -801,6 +878,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2147055201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147055194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9dec5e0c049de54d95d9e9fbaefe282, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.LocalPlayerManager
+  actions: {fileID: -944628639613478452, guid: aaa1979e6b1e9904086fc4823b258ce4, type: 3}
+  joinService: {fileID: 2145343289}
+  maxLocalPlayers: 4
+  allowSplitKeyboard: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -811,3 +904,4 @@ SceneRoots:
   - {fileID: 1325734896}
   - {fileID: 947524709}
   - {fileID: 2147055200}
+  - {fileID: 2145343288}

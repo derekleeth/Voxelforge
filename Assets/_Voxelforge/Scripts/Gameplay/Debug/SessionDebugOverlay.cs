@@ -45,9 +45,40 @@ namespace Voxelforge.Gameplay
                 _text.Append($"\n{player.PlayerId}  slot {player.LocalSlot}  ({p.x:F1}, {p.y:F1}, {p.z:F1})  {state}");
             }
 
-            GUILayout.BeginArea(new Rect(10, 10, 460, 200));
+            AppendLocalSlots();
+
+            GUILayout.BeginArea(new Rect(10, 10, 520, 260));
             GUILayout.Label(_text.ToString(), _style);
             GUILayout.EndArea();
+        }
+
+        /// <summary>One line per joined slot on this PC, plus a join prompt for the next free one.</summary>
+        void AppendLocalSlots()
+        {
+            LocalPlayerRoster roster = session.LocalPlayers != null ? session.LocalPlayers.Roster : null;
+            if (roster == null)
+                return;
+
+            _text.Append("\n<b>This PC</b>");
+            for (int slot = 0; slot < roster.MaxSlots; slot++)
+            {
+                LocalPlayerInput input = roster.GetInput(slot);
+                switch (roster.GetState(slot))
+                {
+                    case LocalSlotState.Free:
+                        _text.Append($"\n  slot {slot}: press Start / Enter to join");
+                        return; // Only prompt for the next free slot.
+                    case LocalSlotState.Joining:
+                        _text.Append($"\n  slot {slot}: {input.DeviceName} joining...");
+                        break;
+                    case LocalSlotState.Active:
+                        _text.Append($"\n  slot {slot}: {input.DeviceName} ({input.ControlScheme})");
+                        break;
+                    case LocalSlotState.Disconnected:
+                        _text.Append($"\n  slot {slot}: <color=#ff8040>{input.DeviceName} disconnected</color> (reconnect, or press Start on another controller)");
+                        break;
+                }
+            }
         }
     }
 }

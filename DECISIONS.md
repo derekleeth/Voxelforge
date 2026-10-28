@@ -5,6 +5,32 @@
 
 ---
 
+## D-008: How Each Player Gets Their Controller
+- **Date:** 2026-10-27
+- **Status:** Accepted
+
+### Decisions
+- **Press to join.** Nobody spawns when Play starts. Pressing **Start or A** on a gamepad, or **Enter or Space** on the keyboard, claims the next local slot for that device, and the host spawns a player for it. Keyboard + mouse always join together as one player.
+- **Each player only hears their own devices.** Every slot gets a `LocalPlayerInput`: its own copy of `VoxelforgeControls.inputactions` plus an Input System **`InputUser`** paired to that player's devices, with that player's **control scheme** as the binding mask. Two gamepads can't steer each other's heroes.
+- **Our own actions asset** (`Assets/_Voxelforge/Input/VoxelforgeControls.inputactions`): `Move`, `Jump`, and `Look` (defined for the 2.3 cameras, not sent yet). Control schemes: `KeyboardMouse`, `Gamepad`, and the dev-only `KeyboardLeft` / `KeyboardRight`. Unity's template `InputSystem_Actions` is unused.
+- **Slots go Free → Joining → Active ⇄ Disconnected.** `LocalSlotAllocator` (pure, tested) picks the slot for a new device:
+  1. A **disconnected** player first, so a new controller takes over a lost one.
+  2. Otherwise the lowest free slot.
+  3. Otherwise nobody: there are 4 slots per PC.
+- **Unplugged controller:** `InputUser` reports `DeviceLost`, and that player stands still (sends zero input) until `DeviceRegained`, or until another unclaimed controller presses Start and takes the slot over. Taking over keeps the same hero; it doesn't spawn a new one.
+- **One input object per slot for the whole session.** Taking over a slot re-pairs the devices *inside* the same `LocalPlayerInput`, so the `PlayerController` never needs re-wiring.
+- **Split keyboard is a dev toggle** (`LocalPlayerManager → Allow Split Keyboard`, off by default): Space joins with WASD + Space, and Enter joins with Arrows + Right Ctrl. Both players are paired to the same keyboard but use different binding masks.
+- **Joining goes through the host.** The roster calls `PlayerJoinService.RequestJoin`, which sends `RequestJoinRpc(localSlot)` to the host. The host refuses a slot above the per-connection limit, a slot that connection already has (`PlayerRegistry.IsSlotTaken`), or a full session (4 players). Remote couches in Phase 6 use the same RPC. `PlayerJoinService` lives on its own `Session Network` scene object, because NGO doesn't allow a `NetworkObject` on the NetworkManager.
+- **Finding your own players without a global search:** `PlayerController` raises static `OwnerSpawned` / `OwnerDespawned` events on the owning PC. `LocalPlayerManager` listens and hands the player its slot's `LocalPlayerInput` (`SetInputSource`). These are events, not a player singleton, so CLAUDE.md Law #1 still holds.
+- **Code split:** the join rules live in the plain-C# `LocalPlayerRoster`, so tests drive it with the Input System's virtual devices (`InputTestFixture`). `LocalPlayerManager` is the thin scene component around it.
+
+### Deferred on purpose
+- **Leaving the game** (a "drop out" button that despawns your hero): not needed yet.
+- **Join refused by the host** leaves the slot showing "joining…": only possible with 4+ players, so there's no reply message yet.
+- **Rumble, button-prompt icons per device, and rebinding:** Phase 4 UI.
+
+---
+
 ## D-007: How Couch Co-Op Runs on a Host
 - **Date:** 2026-10-27
 - **Status:** Accepted
@@ -23,7 +49,7 @@
 - **New assembly `Voxelforge.Gameplay`** (Core + Voxels + Netcode + Transport + Input System). Voxels and Core still know nothing about networking.
 
 ### Temporary on purpose
-- `TempKeyboardInputSource`: P1 = WASD + Space, P2 = Arrows + Right Ctrl on one keyboard. **2.2** replaces it with per-device binding.
+- `TempKeyboardInputSource`: P1 = WASD + Space, P2 = Arrows + Right Ctrl on one keyboard. **Replaced in 2.2** by per-device binding (D-008).
 - `TempMidpointCamera`: one camera on the players' midpoint. **2.3** replaces it with per-player Voronoi split-screen.
 - Movement is world-aligned (W = north), not camera-relative, until the cameras exist (2.3).
 

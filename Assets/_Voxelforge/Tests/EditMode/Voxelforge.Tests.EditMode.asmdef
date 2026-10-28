@@ -4,6 +4,9 @@
     "references": [
         "Voxelforge.Core",
         "Voxelforge.Voxels",
+        "Voxelforge.Gameplay",
+        "Unity.InputSystem",
+        "Unity.InputSystem.TestFramework",
         "Unity.Burst",
         "Unity.Collections",
         "Unity.Mathematics",

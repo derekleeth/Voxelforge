@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 8): Grab a Controller and Press Start 🕹️ Roadmap 2.2
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **Press to join!** The world starts empty. Press **Start** (or **A**) on a gamepad, or **Enter** (or **Space**) on the keyboard, and a hero drops in for you. Details in DECISIONS.md **D-008**.
+- **Everyone has their own controls.** Each player gets their own copy of the controls, tied to their own device. Your gamepad only moves *your* hero.
+  - Keyboard: **WASD** or **arrow keys** to walk, **Space** to jump (keyboard and mouse join together as one player).
+  - Gamepad: **left stick** to walk, **A** to jump.
+- **Unplugged controller?** That hero stands still and the debug corner turns orange: "disconnected". Plug it back in to carry on, or press Start on a different controller to take over the same hero.
+- **Up to 4 players per PC.** The host checks every join request, just like it will for online friends later.
+- **Split-keyboard dev mode** (off by default): tick *Allow Split Keyboard* on the `Session` object's **Local Player Manager**. Then Space joins a WASD player and Enter joins an arrow-keys player.
+- The debug corner (F3) now shows each slot's device, plus "press Start / Enter to join" for the next free slot.
+
+### Results 🎉
+- Virtual gamepad pressed Start → **P1** spawned. Keyboard pressed Enter → **P2** spawned.
+- The stick moved only P1 (10 blocks east), and W moved only P2.
+- Pulled the virtual gamepad: P1 went "disconnected". Plugged it back: P1 was back in control.
+- About **137 FPS** in the editor.
+
+### Tests: 92 / 92 passing ✅
+- Slot rules: first device gets slot 0, a lost player's slot is reused first, and nobody joins a full roster.
+- With virtual devices: Start joins, keyboard brings the mouse along, the same controller can't join twice, each player only hears their own gamepad, and unplugging/replugging works. A new controller takes over a lost slot without spawning a second hero, and split keyboard keeps WASD and arrows apart.
+
+### Things we learned
+- The Input System's **InputUser** is the "local player" system: pair a device to a user, give the user its own copy of the controls, and that player only hears their device.
+- **Don't press Play while Claude is changing scripts!** Unity reloads the code mid-game and the world falls apart (lots of red errors). Wait until Claude says it's ready.
+
+### Next up
+- [x] You two: play-test 2.2 (P1 on keyboard + mouse, P2 on your gamepad), then we tick it off in the roadmap. Worked with keyboard and an Xbox controller!
+- [ ] Roadmap **2.3 Voronoi Dynamic Split-Screen**: a camera for each player, splitting the screen when you wander apart
+
+---
+
 ## 2026-10-27 - Session 1 (part 7): Two Heroes Join the World 🎮 Roadmap 2.1
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 
