@@ -79,9 +79,9 @@ namespace Voxelforge.Gameplay
                     writer.Write(profile.Feet.z);
                     writer.Write(profile.Yaw);
                     writer.Write(profile.Bag.Count);
-                    foreach (BlockStack stack in profile.Bag)
+                    foreach (ItemStack stack in profile.Bag)
                     {
-                        writer.Write(stack.BlockId);
+                        writer.Write(stack.ItemId);
                         writer.Write(stack.Count);
                     }
                 }
@@ -169,7 +169,7 @@ namespace Voxelforge.Gameplay
                     if (stacks < 0 || stacks > ushort.MaxValue)
                         return WorldLoadResult.Corrupt;
                     for (int s = 0; s < stacks; s++)
-                        profile.Bag.Add(new BlockStack(reader.ReadUInt16(), reader.ReadUInt16()));
+                        profile.Bag.Add(new ItemStack(reader.ReadUInt16(), reader.ReadUInt16()));
                     if (profile.Uuid.IsValid)
                         result.Profiles[profile.Uuid] = profile;
                 }

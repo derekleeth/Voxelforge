@@ -69,7 +69,7 @@ namespace Voxelforge.Voxels
                 return VoxelDamageResult.ChunkNotLoaded;
 
             BlockInfo block = _world.Blocks[_world.GetVoxel(coord).BlockId];
-            if (!block.IsSolid)
+            if (!block.IsTargetable)
                 return VoxelDamageResult.NotSolid;
             if (block.MaxDurability == 0)
                 return VoxelDamageResult.Unbreakable;
@@ -83,7 +83,8 @@ namespace Voxelforge.Voxels
 
         /// <summary>
         /// Sets the block at <paramref name="coord"/> to <paramref name="blockId"/> on behalf of <paramref name="instigator"/>.
-        /// Removing a <see cref="BlockIds.TreeTrunk"/> block clears the rest of its trunk too, so the tree falls.
+        /// Removing a <see cref="BlockIds.TreeTrunk"/> block clears the rest of its trunk too, so the tree falls, and
+        /// removing a solid block breaks any torch (<see cref="BlockInfo.NeedsSupport"/>) left with nothing to rest on.
         /// </summary>
         public VoxelEditResult RequestModifyVoxel(int3 coord, ushort blockId, PlayerId instigator)
         {
@@ -110,6 +111,20 @@ namespace Voxelforge.Voxels
             return VoxelEditResult.Applied;
         }
 
+        /// <summary>Breaks the blocks next to <paramref name="coord"/> that need support and no longer have any.</summary>
+        void BreakUnsupportedAround(int3 coord, PlayerId instigator)
+        {
+            foreach (int3 offset in VoxelSupport.Neighbours)
+            {
+                int3 neighbour = coord - offset; // coord is the neighbour's support in direction offset.
+                if (!_world.TryGetChunk(VoxelMath.WorldToChunk(neighbour), out _))
+                    continue;
+                Voxel there = _world.GetVoxel(neighbour);
+                if (_world.Blocks[there.BlockId].NeedsSupport && !VoxelSupport.HasSupport(_world, neighbour))
+                    Apply(neighbour, there, Voxel.Air, instigator);
+            }
+        }
+
         void ClearTrunk(int3 from, int3 step, PlayerId instigator)
         {
             int3 coord = from + step;
@@ -130,6 +145,9 @@ namespace Voxelforge.Voxels
             DeltaLog.Record(coord, before, after, instigator);
             Damage.Remove(coord);
             EditApplied?.Invoke(new VoxelEdit(coord, before, after, instigator));
+            // A torch is never solid, so breaking one can't start a chain.
+            if (_world.Blocks[before.BlockId].IsSolid && !_world.Blocks[after.BlockId].IsSolid)
+                BreakUnsupportedAround(coord, instigator);
         }
 
         /// <summary>

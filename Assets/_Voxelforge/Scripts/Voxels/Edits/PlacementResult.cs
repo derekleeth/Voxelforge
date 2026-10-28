@@ -13,5 +13,7 @@ namespace Voxelforge.Voxels
         Occupied,
         /// <summary>The block would overlap a character.</summary>
         BlocksCharacter,
+        /// <summary>The block needs something solid below or beside it (a torch, Roadmap 3.5), and there's nothing.</summary>
+        NoSupport,
     }
 }

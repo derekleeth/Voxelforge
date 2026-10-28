@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e397aa0a06ea6d438af57d1a2eafa71, type: 3}
+  m_Name: Torch
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.BlockDefinition
+  id: 11
+  displayName: Torch
+  maxDurability: 1
+  drop: {fileID: 0}
+  dropCount: 1
+  harvestKind: 0
+  isSolid: 0
+  isTransparent: 1
+  isProp: 1
+  needsSupport: 1
+  lightEmission: 14
+  mapColor:
+    serializedVersion: 2
+    rgba: 4282821375
+  biomeTint: 0
+  topTexture: {fileID: 0}
+  sideTexture: {fileID: 0}
+  bottomTexture: {fileID: 0}

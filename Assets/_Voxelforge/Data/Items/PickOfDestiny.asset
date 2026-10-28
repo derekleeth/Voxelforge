@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27dcee36aa6d030498f13f390444dd34, type: 3}
+  m_Name: PickOfDestiny
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
+  id: 1003
+  displayName: The Pick of Destiny
+  mesh: {fileID: 4773051913210794814, guid: 3d34e1f8d0378f448847c56c9ed236bb, type: 3}
+  material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
+  heldPosition: {x: 0, y: 0.08, z: 0}
+  heldRotation: {x: 352, y: 314, z: 70.8}
+  heldScale: 1
+  dropSize: 2
+  toolPower:
+    pick: 5
+    axe: 5
+    any: 3

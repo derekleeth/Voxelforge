@@ -11,7 +11,7 @@ namespace Voxelforge.Gameplay
     /// block is mined or chopped away, its <see cref="BlockInfo.DropId"/> pops out as a <see cref="BlockDrop"/>. It
     /// then merges drops lying close together, pulls drops toward the nearest player and puts them in that player's
     /// <see cref="PlayerBlockBag"/>, and clears away drops nobody picks up. On every PC it gives each drop the mesh of
-    /// its block.
+    /// its block, or its model for prop blocks such as torches (<see cref="ItemLooks"/>, Roadmap 3.5).
     /// </summary>
     public sealed class BlockDropSpawner : MonoBehaviour
     {
@@ -23,6 +23,12 @@ namespace Voxelforge.Gameplay
         [SerializeField] PlayerRegistry players;
 
         [SerializeField] BlockDrop dropPrefab;
+
+        [Tooltip("Data/Items/ItemRegistry.asset: models for prop blocks such as torches.")]
+        [SerializeField] ItemRegistry items;
+
+        [Tooltip("Materials/VoxelBlocks.mat: for plain block drops.")]
+        [SerializeField] Material blockMaterial;
 
         [Tooltip("Drops closer than this to a hero's middle fly toward them, in metres.")]
         [SerializeField, Range(0.5f, 5f)] float pullRadius = 2f;
@@ -46,7 +52,7 @@ namespace Voxelforge.Gameplay
         const float HeroMiddle = 0.8f;
 
         readonly List<BlockDrop> _drops = new List<BlockDrop>();
-        readonly Dictionary<ushort, Mesh> _meshes = new Dictionary<ushort, Mesh>();
+        ItemLooks _looks;
 
         /// <summary>Host only: drops lying in the world right now.</summary>
         public int DropCount => _drops.Count;
@@ -69,8 +75,7 @@ namespace Voxelforge.Gameplay
 
         void OnDestroy()
         {
-            foreach (Mesh mesh in _meshes.Values)
-                Destroy(mesh);
+            _looks?.Dispose();
         }
 
         void OnEditApplied(VoxelEdit edit)
@@ -94,13 +99,9 @@ namespace Voxelforge.Gameplay
         {
             if (world == null || world.World == null)
                 return; // A remote PC can't see blocks yet (Phase 6).
-            ushort id = drop.BlockId;
-            if (!_meshes.TryGetValue(id, out Mesh mesh))
-            {
-                mesh = BlockItemMesh.Create(world.World.Blocks, id);
-                _meshes.Add(id, mesh);
-            }
-            drop.SetLook(mesh);
+            _looks ??= new ItemLooks(items, blockMaterial);
+            if (_looks.TryGet(drop.BlockId, world.World.Blocks, out ItemLook look))
+                drop.SetLook(look);
         }
 
         void FixedUpdate()
@@ -134,7 +135,7 @@ namespace Voxelforge.Gameplay
                 float3 middle = (float3)player.transform.position + new float3(0f, HeroMiddle, 0f);
                 float distance = math.distance(position, middle);
                 // A full bag can't take this block, so the drop stays for someone else.
-                if (distance < nearest && bag.CountOf(drop.BlockId) < BlockStacks.MaxPerBlock)
+                if (distance < nearest && bag.CountOf(drop.BlockId) < ItemStacks.MaxPerItem)
                 {
                     nearest = distance;
                     nearestBag = bag;

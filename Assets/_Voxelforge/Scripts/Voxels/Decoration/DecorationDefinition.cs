@@ -10,6 +10,39 @@ namespace Voxelforge.Voxels
         Ground,
         /// <summary>Drawn over an invisible <see cref="BlockIds.TreeTrunk"/> column that terrain generation placed.</summary>
         Tree,
+        /// <summary>
+        /// The model of a prop block (<see cref="BlockInfo.IsProp"/>: torch, workbench, Roadmap 3.5), drawn on every
+        /// block of that type. Placed players' blocks, so they come from the delta log, not the seed.
+        /// </summary>
+        Prop,
+    }
+
+    /// <summary>How a prop decoration sits in its block (Roadmap 3.5).</summary>
+    public enum PropAttach : byte
+    {
+        /// <summary>Always used, turned to a random quarter. Workbenches.</summary>
+        Any,
+        /// <summary>Used when the block below is solid (<see cref="VoxelSupport"/>). Standing torches.</summary>
+        Floor,
+        /// <summary>
+        /// Used when the block below isn't solid but one beside it is; turned to face away from that wall. The mesh is
+        /// modelled with the wall on its +Z side, half a block from its origin. Wall torches.
+        /// </summary>
+        Wall,
+    }
+
+    /// <summary>A real point light carried by every instance of a decoration (torches, Roadmap 3.5). See <c>PropLights</c>.</summary>
+    [Serializable]
+    public struct DecorationLight
+    {
+        public bool enabled;
+        [ColorUsage(false)] public Color color;
+        [Min(0f)] public float intensity;
+        [Min(0.1f)] public float range;
+        [Tooltip("Where the light sits, in the mesh's own space (1 = one block), before the instance is turned.")]
+        public Vector3 offset;
+        [Tooltip("How much the brightness flickers, 0-1.")]
+        [Range(0f, 1f)] public float flicker;
     }
 
     /// <summary>How likely (ground) or how often picked (tree) a decoration is in one biome.</summary>
@@ -55,6 +88,12 @@ namespace Voxelforge.Voxels
         [SerializeField, Min(1f)] float maxDistance = 80f;
 
         [Header("Placement")]
+        [Tooltip("Props only: the prop block this model is drawn on.")]
+        [SerializeField] BlockDefinition propBlock;
+
+        [Tooltip("Props only: when this model is used, and how it's turned.")]
+        [SerializeField] PropAttach attach;
+
         [Tooltip("Ground decorations only: the blocks it can grow on. The block above must be air.")]
         [SerializeField] List<BlockDefinition> surfaces = new List<BlockDefinition>();
 
@@ -70,6 +109,10 @@ namespace Voxelforge.Voxels
         [Tooltip("Trees only: the trunk height, in blocks, the mesh was modelled for. Taller trunks scale the tree up.")]
         [SerializeField, Min(1f)] float modelTrunkHeight = 5f;
 
+        [Header("Light")]
+        [Tooltip("A real point light on every instance near a player (torches). Lights are pooled, see PropLights.")]
+        [SerializeField] DecorationLight light;
+
         public DecorationKind Kind => kind;
         public Mesh Mesh => mesh;
         public Mesh LodMesh => lodMesh != null ? lodMesh : mesh;
@@ -79,6 +122,9 @@ namespace Voxelforge.Voxels
         public float MaxDistance => maxDistance;
         public IReadOnlyList<BlockDefinition> Surfaces => surfaces;
         public IReadOnlyList<BiomeWeight> Biomes => biomes;
+        public BlockDefinition PropBlock => propBlock;
+        public PropAttach Attach => attach;
+        public DecorationLight Light => light;
 
         /// <summary>This definition's weight in the biome called <paramref name="biomeName"/>, or 0 if it isn't listed.</summary>
         public float WeightIn(string biomeName)
@@ -109,6 +155,8 @@ namespace Voxelforge.Voxels
                 MinScale = minScale,
                 MaxScale = Mathf.Max(maxScale, minScale),
                 ModelTrunkHeight = modelTrunkHeight,
+                PropBlock = propBlock != null ? propBlock.Id : BlockIds.Air,
+                Attach = attach,
             };
         }
 
@@ -123,6 +171,17 @@ namespace Voxelforge.Voxels
             definition.biomes = new List<BiomeWeight>(biomes);
             definition.minScale = minScale;
             definition.maxScale = maxScale;
+            return definition;
+        }
+
+        /// <summary>Builds a prop decoration in code, for tests and tools.</summary>
+        internal static DecorationDefinition CreateProp(BlockDefinition block, PropAttach attach, DecorationLight light = default)
+        {
+            var definition = CreateInstance<DecorationDefinition>();
+            definition.kind = DecorationKind.Prop;
+            definition.propBlock = block;
+            definition.attach = attach;
+            definition.light = light;
             return definition;
         }
     }

@@ -28,6 +28,7 @@ namespace Voxelforge.Gameplay
         readonly InputAction _selectNext;
         readonly InputAction _selectPrevious;
         readonly InputAction _toggleGhost;
+        readonly InputAction _interact;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -43,6 +44,7 @@ namespace Voxelforge.Gameplay
             _selectNext = _actions.FindAction("Player/SelectNext", throwIfNotFound: true);
             _selectPrevious = _actions.FindAction("Player/SelectPrevious", throwIfNotFound: true);
             _toggleGhost = _actions.FindAction("Player/ToggleGhost", throwIfNotFound: true);
+            _interact = _actions.FindAction("Player/Interact", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -107,6 +109,8 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.SelectPrevious;
             if (_toggleGhost.IsPressed())
                 buttons |= PlayerButtons.ToggleGhost;
+            if (_interact.IsPressed())
+                buttons |= PlayerButtons.Interact;
 
             return new PlayerInputFrame
             {

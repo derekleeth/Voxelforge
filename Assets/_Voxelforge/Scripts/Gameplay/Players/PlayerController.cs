@@ -47,6 +47,7 @@ namespace Voxelforge.Gameplay
         readonly NetworkVariable<bool> _grounded = new NetworkVariable<bool>();
 
         IPlayerInputSource _inputSource;
+        PlayerHands _hands;
         uint _nextSequence;
 
         // Host-only state.
@@ -193,6 +194,11 @@ namespace Voxelforge.Gameplay
             _inputSource = source;
         }
 
+        void Awake()
+        {
+            _hands = GetComponent<PlayerHands>();
+        }
+
         public override void OnNetworkSpawn()
         {
             if (IsServer)
@@ -268,6 +274,7 @@ namespace Voxelforge.Gameplay
             {
                 PlayerInputFrame frame = _inputSource.Read();
                 frame.Sequence = _nextSequence++;
+                frame.HeldItem = _hands != null ? _hands.OwnerSelected : BlockIds.Air;
                 OwnerInput = frame;
                 SubmitInputRpc(frame);
             }

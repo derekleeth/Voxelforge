@@ -40,6 +40,13 @@ namespace Voxelforge.Voxels
                     errors.Add($"'{decoration.name}' needs a mesh and a material.");
                 if (decoration.Kind == DecorationKind.Ground && decoration.Surfaces.Count == 0)
                     errors.Add($"'{decoration.name}' has no surface blocks to grow on.");
+                if (decoration.Kind == DecorationKind.Prop)
+                {
+                    if (decoration.PropBlock == null || !decoration.PropBlock.IsProp)
+                        errors.Add($"'{decoration.name}' is a prop, so it needs a Prop Block marked as a prop.");
+                    else if (registry != null && !registry.TryGet(decoration.PropBlock.Id, out _))
+                        errors.Add($"'{decoration.name}' is drawn on '{decoration.PropBlock.DisplayName}', which is not in the block registry.");
+                }
                 foreach (BlockDefinition surface in decoration.Surfaces)
                 {
                     if (surface == null)
@@ -53,6 +60,21 @@ namespace Voxelforge.Voxels
                 {
                     if (terrain != null && !biomeNames.Contains(weight.biome))
                         errors.Add($"'{decoration.name}' lists biome '{weight.biome}', which isn't in Terrain Settings.");
+                }
+            }
+
+            // Every prop block needs a model, or it would be invisible (a block with only a floor model uses it on walls too).
+            if (registry != null)
+            {
+                foreach (BlockDefinition block in registry.Blocks)
+                {
+                    if (block == null || !block.IsProp)
+                        continue;
+                    bool hasModel = false;
+                    foreach (DecorationDefinition decoration in decorations)
+                        hasModel |= decoration != null && decoration.Kind == DecorationKind.Prop && decoration.PropBlock == block;
+                    if (!hasModel)
+                        errors.Add($"Prop block '{block.DisplayName}' has no prop decoration, so it would be invisible.");
                 }
             }
 

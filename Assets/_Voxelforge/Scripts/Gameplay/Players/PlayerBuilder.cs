@@ -7,14 +7,15 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// Building with the blocks in your bag (Roadmap 3.3, D-016). The owning PC picks a block, shows a ghost block where
+    /// Building with the blocks in your bag (Roadmap 3.3, D-016). The owning PC holds a block (<see cref="PlayerHands"/>,
+    /// 3.5), shows a ghost block where
     /// it would go, and asks with <see cref="RequestPlaceRpc"/>, which carries <b>only the block type</b>. The host aims
     /// itself with the controls it received (<see cref="PlayerController.ServerInput"/>), like mining, checks the cell
     /// with <see cref="VoxelPlacement"/> against every player, takes the block from this player's
     /// <see cref="PlayerBlockBag"/> and places it through <see cref="VoxelWorldManager.RequestModifyVoxel"/> in this
     /// player's name. No block position ever comes from a PC (CLAUDE.md Laws #1-#3).
     /// </summary>
-    [RequireComponent(typeof(PlayerController), typeof(PlayerBlockBag))]
+    [RequireComponent(typeof(PlayerController), typeof(PlayerBlockBag), typeof(PlayerHands))]
     public sealed class PlayerBuilder : NetworkBehaviour
     {
         [Tooltip("Holding Place puts down another block this often, in seconds.")]
@@ -34,8 +35,9 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerBlockBag _bag;
+        PlayerHands _hands;
+        PlayerCrafter _crafter;
         BlockGhost _ghost;
-        readonly List<BlockStack> _stacks = new List<BlockStack>();
         readonly List<BodyBounds> _bodies = new List<BodyBounds>();
 
         // Owner state.
@@ -47,13 +49,12 @@ namespace Voxelforge.Gameplay
         // Host state.
         float _lastPlaceTime = float.NegativeInfinity;
 
-        /// <summary>Owner only: the block this player builds with, or <see cref="BlockIds.Air"/> if their bag is empty.</summary>
-        public ushort SelectedBlock => _selected;
-
         void Awake()
         {
             _player = GetComponent<PlayerController>();
             _bag = GetComponent<PlayerBlockBag>();
+            _hands = GetComponent<PlayerHands>();
+            _crafter = GetComponent<PlayerCrafter>();
             _ghostOn = ghostOnAtStart;
         }
 
@@ -82,12 +83,10 @@ namespace Voxelforge.Gameplay
             PlayerButtons pressed = buttons & ~_previousButtons;
             _previousButtons = buttons;
 
-            ReadBag();
-            _selected = BlockSelection.Fix(_stacks, _selected);
-            if ((pressed & PlayerButtons.SelectNext) != 0)
-                _selected = BlockSelection.Next(_stacks, _selected);
-            if ((pressed & PlayerButtons.SelectPrevious) != 0)
-                _selected = BlockSelection.Previous(_stacks, _selected);
+            // Only blocks are built; a tool in hand (or the crafting window) means no ghost and no placing.
+            _selected = ItemIds.IsBlock(_hands.OwnerSelected) ? _hands.OwnerSelected : BlockIds.Air;
+            if (_crafter != null && _crafter.IsMenuOpen)
+                _selected = BlockIds.Air;
             if ((pressed & PlayerButtons.ToggleGhost) != 0)
                 _ghostOn = !_ghostOn;
 
@@ -96,7 +95,7 @@ namespace Voxelforge.Gameplay
             PlacementResult result = PlacementResult.NoFace;
             int3 cell = default;
             if (_selected != BlockIds.Air && _player.Aim.TryAim(world, transform.position, _player.OwnerInput, out VoxelHit hit))
-                result = VoxelPlacement.Check(world, hit, GatherBodies(), out cell);
+                result = VoxelPlacement.Check(world, hit, _selected, GatherBodies(), out cell);
             // Out of the way while mining, so the cracks and the outline are easy to see (asked for in the play-test).
             bool ghostVisible = _ghostOn && (buttons & PlayerButtons.Mine) == 0;
             ShowGhost(world, result, cell, ghostVisible);
@@ -118,13 +117,14 @@ namespace Voxelforge.Gameplay
                 return;
 
             VoxelWorldManager world = _player.WorldManager;
-            if (world == null || !_player.HasLanded || blockId == BlockIds.Air || Time.time - _lastPlaceTime < minPlaceInterval)
+            if (world == null || !_player.HasLanded || blockId == BlockIds.Air || !ItemIds.IsBlock(blockId) ||
+                Time.time - _lastPlaceTime < minPlaceInterval)
                 return;
 
             // The RPC is sent after this frame's controls, so ServerInput is the frame the player saw when they pressed.
             if (!_player.Aim.TryAim(world.World, transform.position, _player.ServerInput, out VoxelHit hit))
                 return;
-            PlacementResult check = VoxelPlacement.Check(world.World, hit, GatherBodies(), out int3 cell);
+            PlacementResult check = VoxelPlacement.Check(world.World, hit, blockId, GatherBodies(), out int3 cell);
             if (check != PlacementResult.Ok || !_player.Aim.InReach(transform.position, cell))
             {
                 if (logPlacements)
@@ -141,13 +141,6 @@ namespace Voxelforge.Gameplay
                 _bag.ServerAdd(blockId, 1); // Give it back.
             if (logPlacements)
                 Debug.Log($"[Voxelforge] {_player.PlayerId} placed block {blockId} at {cell}: {result}.", this);
-        }
-
-        void ReadBag()
-        {
-            _stacks.Clear();
-            for (int i = 0; i < _bag.SlotCount; i++)
-                _stacks.Add(_bag.GetSlot(i));
         }
 
         /// <summary>Every hero a block mustn't trap: all players on the host, or just this one on a remote PC.</summary>
@@ -173,8 +166,9 @@ namespace Voxelforge.Gameplay
             if (ghostMaterial == null)
                 return;
             _ghost ??= new BlockGhost($"Ghost Block ({_player.PlayerId})", ghostMaterial, _player.TeamColor);
-            if (visible && (result == PlacementResult.Ok || result == PlacementResult.BlocksCharacter))
-                _ghost.Show(world.Blocks, _selected, cell, result == PlacementResult.Ok);
+            if (visible && (result == PlacementResult.Ok || result == PlacementResult.BlocksCharacter) &&
+                _hands.Looks.TryGet(_selected, world.Blocks, out ItemLook look))
+                _ghost.Show(look, cell, result == PlacementResult.Ok);
             else
                 _ghost.Hide();
         }

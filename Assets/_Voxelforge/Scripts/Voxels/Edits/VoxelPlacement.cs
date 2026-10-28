@@ -42,7 +42,16 @@ namespace Voxelforge.Voxels
         /// Can a block go against the face of <paramref name="hit"/>, without overlapping any of <paramref name="bodies"/>?
         /// </summary>
         /// <param name="cell">The snapped cell, <c>hit.Block + hit.Normal</c>, even when the answer is no.</param>
-        public static PlacementResult Check(VoxelWorld world, VoxelHit hit, IReadOnlyList<BodyBounds> bodies, out int3 cell)
+        public static PlacementResult Check(VoxelWorld world, VoxelHit hit, IReadOnlyList<BodyBounds> bodies, out int3 cell) =>
+            Check(world, hit, BlockIds.Air, bodies, out cell);
+
+        /// <summary>
+        /// Can <paramref name="blockId"/> go against the face of <paramref name="hit"/>? Like the check above, plus the
+        /// block's own rules (Roadmap 3.5): one that needs support needs a solid block below or beside the cell, and
+        /// one you can walk through (a torch) may go where a character stands. <see cref="BlockIds.Air"/> = any solid block.
+        /// </summary>
+        public static PlacementResult Check(VoxelWorld world, VoxelHit hit, ushort blockId, IReadOnlyList<BodyBounds> bodies,
+            out int3 cell)
         {
             cell = hit.Block + hit.Normal;
             if (math.all(hit.Normal == 0))
@@ -51,6 +60,12 @@ namespace Voxelforge.Voxels
                 return PlacementResult.ChunkNotLoaded;
             if (!world.GetVoxel(cell).IsAir)
                 return PlacementResult.Occupied;
+
+            bool known = blockId != BlockIds.Air && blockId < world.Blocks.Length;
+            if (known && world.Blocks[blockId].NeedsSupport && !VoxelSupport.HasSupport(world, cell))
+                return PlacementResult.NoSupport;
+            if (known && !world.Blocks[blockId].IsSolid)
+                return PlacementResult.Ok;
 
             if (bodies != null)
             {

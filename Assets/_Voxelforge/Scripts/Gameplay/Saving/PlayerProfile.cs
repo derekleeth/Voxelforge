@@ -23,7 +23,7 @@ namespace Voxelforge.Gameplay
         public float Yaw;
 
         /// <summary>The bag's slots in order, including empty ones, so the block picker order stays the same.</summary>
-        public List<BlockStack> Bag = new List<BlockStack>();
+        public List<ItemStack> Bag = new List<ItemStack>();
 
         public PlayerProfile Clone() => new PlayerProfile
         {
@@ -31,7 +31,7 @@ namespace Voxelforge.Gameplay
             Name = Name,
             Feet = Feet,
             Yaw = Yaw,
-            Bag = new List<BlockStack>(Bag),
+            Bag = new List<ItemStack>(Bag),
         };
     }
 }

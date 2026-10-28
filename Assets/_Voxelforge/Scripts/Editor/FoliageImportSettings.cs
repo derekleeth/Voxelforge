@@ -3,17 +3,27 @@ using UnityEditor;
 namespace Voxelforge.Editor
 {
     /// <summary>
-    /// Import settings for the Blender foliage (Roadmap 2.6): the decoration renderer draws the raw meshes with
-    /// their vertex colours and custom normals, so Unity must keep those exactly and add nothing else.
+    /// Import settings for the Blender foliage (Roadmap 2.6) and props (3.5): the decoration renderer draws the raw
+    /// meshes with their vertex colours and custom normals, so Unity must keep those exactly and add nothing else.
     /// </summary>
     public sealed class FoliageImportSettings : AssetPostprocessor
     {
-        const string ModelDir = "Assets/_Voxelforge/Art/Models/Foliage/";
-        const string TextureDir = "Assets/_Voxelforge/Art/Textures/Foliage/";
+        static readonly string[] ModelDirs = { "Assets/_Voxelforge/Art/Models/Foliage/", "Assets/_Voxelforge/Art/Models/Props/" };
+        static readonly string[] TextureDirs = { "Assets/_Voxelforge/Art/Textures/Foliage/", "Assets/_Voxelforge/Art/Textures/Props/" };
+
+        static bool IsIn(string path, string[] dirs)
+        {
+            foreach (string dir in dirs)
+            {
+                if (path.StartsWith(dir))
+                    return true;
+            }
+            return false;
+        }
 
         void OnPreprocessModel()
         {
-            if (!assetPath.StartsWith(ModelDir) || !assetPath.EndsWith(".fbx"))
+            if (!IsIn(assetPath, ModelDirs) || !assetPath.EndsWith(".fbx"))
                 return;
 
             var importer = (ModelImporter)assetImporter;
@@ -35,7 +45,7 @@ namespace Voxelforge.Editor
 
         void OnPreprocessTexture()
         {
-            if (!assetPath.StartsWith(TextureDir))
+            if (!IsIn(assetPath, TextureDirs))
                 return;
 
             var importer = (TextureImporter)assetImporter;

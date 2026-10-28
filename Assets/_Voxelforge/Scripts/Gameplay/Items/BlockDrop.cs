@@ -38,6 +38,7 @@ namespace Voxelforge.Gameplay
         float3 _velocity;
         bool _pulled;
         float _bobPhase;
+        Vector3 _lookOffset;
 
         public ushort BlockId => _blockId.Value;
         public int Count => _count.Value;
@@ -73,14 +74,20 @@ namespace Voxelforge.Gameplay
             Spawned?.Invoke(this);
         }
 
-        /// <summary>Any PC: shows this drop as <paramref name="mesh"/>.</summary>
-        public void SetLook(Mesh mesh)
+        /// <summary>
+        /// Any PC: shows this drop as <paramref name="look"/>. A block is a cube <c>size</c> across; a model (a torch,
+        /// Roadmap 3.5) is fitted to that size times its <see cref="ItemDefinition.DropSize"/> and centred.
+        /// </summary>
+        public void SetLook(ItemLook look)
         {
-            if (visual != null)
-            {
-                visual.sharedMesh = mesh;
-                visual.transform.localScale = Vector3.one * size;
-            }
+            if (visual == null)
+                return;
+            visual.sharedMesh = look.Mesh;
+            if (visual.TryGetComponent(out MeshRenderer meshRenderer))
+                meshRenderer.sharedMaterial = look.Material;
+            float scale = look.IsModel ? size * look.Definition.DropSize * look.FitScale : size;
+            visual.transform.localScale = Vector3.one * scale;
+            _lookOffset = -look.Center * scale;
         }
 
         /// <summary>Host only: changes how many blocks this drop holds (merging, or a bag that was nearly full).</summary>
@@ -159,8 +166,10 @@ namespace Voxelforge.Gameplay
                 return;
             float t = Time.time + _bobPhase;
             Transform look = visual.transform;
-            look.localPosition = new Vector3(0f, bobHeight * (1f + Mathf.Sin(t * 2.5f)), 0f);
-            look.localRotation = Quaternion.Euler(0f, t * spinSpeed, 0f);
+            Quaternion spin = Quaternion.Euler(0f, t * spinSpeed, 0f);
+            look.localRotation = spin;
+            // Spin around the middle of the model, not its origin.
+            look.localPosition = new Vector3(0f, bobHeight * (1f + Mathf.Sin(t * 2.5f)), 0f) + spin * _lookOffset;
         }
     }
 }

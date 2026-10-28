@@ -96,13 +96,14 @@ namespace Voxelforge.Voxels
         /// (the gather job filling <paramref name="padded"/>). Pass <paramref name="output"/> to <see cref="SetChunk"/>
         /// or <see cref="Discard"/> once the job is done.
         /// </summary>
-        public JobHandle Schedule(ChunkCoord coord, NativeArray<ushort> padded, JobHandle dependsOn,
+        public JobHandle Schedule(ChunkCoord coord, NativeArray<ushort> padded, NativeArray<BlockInfo> blocks, JobHandle dependsOn,
             out NativeList<DecorationInstance> output)
         {
             output = _listPool.Count > 0 ? _listPool.Pop() : new NativeList<DecorationInstance>(256, Allocator.Persistent);
             return new DecorateChunkJob
             {
                 Padded = padded,
+                Blocks = blocks,
                 Origin = coord.WorldOrigin,
                 Seed = _seed,
                 Terrain = _terrain,

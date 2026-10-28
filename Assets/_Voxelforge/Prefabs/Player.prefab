@@ -16,6 +16,9 @@ GameObject:
   - component: {fileID: 5854789363782829248}
   - component: {fileID: 5932483091153027549}
   - component: {fileID: 4898909458440408399}
+  - component: {fileID: 2704019694644262209}
+  - component: {fileID: 4889235506312742568}
+  - component: {fileID: 7809432373712665520}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -210,7 +213,58 @@ MonoBehaviour:
   repeatSeconds: 0.25
   minPlaceInterval: 0.15
   ghostMaterial: {fileID: 2100000, guid: 9140c02c1c305884aa0e0678ed98834a, type: 2}
+  ghostOnAtStart: 1
   logPlacements: 0
+--- !u!114 &2704019694644262209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89cd4b48d7dc4784f8dbd2d2f71efa10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerHands
+  ShowTopMostFoldoutHeaderGroup: 1
+  items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
+  blockMaterial: {fileID: 2100000, guid: 5ee5e8c52c9196249955d2e268fc5f7d, type: 2}
+--- !u!114 &4889235506312742568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ac25fd265ff09e4c8a8f3df9c0c3c71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerCrafter
+  ShowTopMostFoldoutHeaderGroup: 1
+  recipes: {fileID: 11400000, guid: 3f319bbb947b42a40adc0df57dbff09f, type: 2}
+  workbenchReach: 4
+  minCraftInterval: 0.2
+  messageSeconds: 2
+--- !u!114 &7809432373712665520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87968746500a51c42984f30062fb577d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HeldItemView
+  animator: {fileID: 2811615453234438372}
+  blockPosition: {x: 0, y: 0.12, z: 0.04}
+  blockSize: 0.22
+  swingAngle: 55
+  swingRate: 2.5
+  swingAxis: {x: 0.589, y: -0.009, z: -0.808}
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

@@ -5,7 +5,7 @@ namespace Voxelforge.Voxels
     /// <summary>Where a <see cref="VoxelQueries.Raycast"/> hit the block grid.</summary>
     public struct VoxelHit
     {
-        /// <summary>The solid block the ray hit.</summary>
+        /// <summary>The block the ray hit: solid, or a prop such as a torch (<see cref="BlockInfo.IsTargetable"/>).</summary>
         public int3 Block;
         /// <summary>Outward normal of the face the ray entered through. Zero if the ray started inside the block.</summary>
         public int3 Normal;
@@ -46,7 +46,8 @@ namespace Voxelforge.Voxels
 
         /// <summary>
         /// Walks a ray through the grid one block at a time (Amanatides &amp; Woo) and stops at the first solid
-        /// block within <paramref name="maxDistance"/>. <paramref name="direction"/> doesn't need to be normalized.
+        /// block or prop (a torch, Roadmap 3.5) within <paramref name="maxDistance"/>. A prop is hit as its whole cell.
+        /// <paramref name="direction"/> doesn't need to be normalized.
         /// With <paramref name="opaqueOnly"/>, it stops only at blocks you can see, passing through invisible solid
         /// ones such as tree trunks (cameras use this).
         /// </summary>
@@ -72,7 +73,7 @@ namespace Voxelforge.Voxels
             {
                 bool stops = opaqueOnly
                     ? GreedyMesher.IsOpaque(world.Blocks, world.GetVoxel(block).BlockId)
-                    : VoxelBodyMotor.IsSolid(block, world);
+                    : IsTargetable(block, world);
                 if (stops)
                 {
                     hit = new VoxelHit { Block = block, Normal = normal, Distance = distance, Point = origin + dir * distance };
@@ -90,6 +91,15 @@ namespace Voxelforge.Voxels
                 normal[axis] = -step[axis];
             }
             return false;
+        }
+
+        /// <summary>Aim rays stop here: anything <see cref="VoxelBodyMotor.IsSolid"/> stops, plus props such as torches.</summary>
+        public static bool IsTargetable(int3 block, VoxelWorld world)
+        {
+            if (VoxelBodyMotor.IsSolid(block, world))
+                return true;
+            ushort id = world.GetVoxel(block).BlockId;
+            return id < world.Blocks.Length && world.Blocks[id].IsProp;
         }
     }
 }

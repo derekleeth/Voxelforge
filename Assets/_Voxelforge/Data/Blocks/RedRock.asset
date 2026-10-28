@@ -15,12 +15,18 @@ MonoBehaviour:
   id: 8
   displayName: Red Rock
   maxDurability: 60
+  drop: {fileID: 0}
+  dropCount: 1
+  harvestKind: 1
   isSolid: 1
   isTransparent: 0
+  isProp: 0
+  needsSupport: 0
   lightEmission: 0
   mapColor:
     serializedVersion: 2
     rgba: 4281618088
+  biomeTint: 0
   topTexture: {fileID: 11400000, guid: c58d3c3a89356bc4eb9d07fc26fd3b71, type: 2}
   sideTexture: {fileID: 0}
   bottomTexture: {fileID: 0}

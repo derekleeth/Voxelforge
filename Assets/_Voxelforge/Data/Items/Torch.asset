@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27dcee36aa6d030498f13f390444dd34, type: 3}
+  m_Name: Torch
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
+  id: 11
+  displayName: Torch
+  mesh: {fileID: 4805867800507480435, guid: b5f657b45dd9d5247a8266e08475d825, type: 3}
+  material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
+  heldPosition: {x: 0, y: 0.08, z: 0}
+  heldRotation: {x: 359.5, y: 323.9, z: 148}
+  heldScale: 0.7
+  dropSize: 1.6
+  toolPower:
+    pick: 0
+    axe: 0
+    any: 0

@@ -142,9 +142,9 @@ namespace Voxelforge.Tests
             save.Deltas.Record(new int3(0, 70, 0), Air, Log, P1);
 
             var p1 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 1", Feet = new float3(256.5f, 71f, -12.25f), Yaw = 135f };
-            p1.Bag.Add(new BlockStack(BlockIds.Dirt, 12));
-            p1.Bag.Add(new BlockStack(BlockIds.Stone, 0)); // Empty slots keep their place.
-            p1.Bag.Add(new BlockStack(BlockIds.Log, 4));
+            p1.Bag.Add(new ItemStack(BlockIds.Dirt, 12));
+            p1.Bag.Add(new ItemStack(BlockIds.Stone, 0)); // Empty slots keep their place.
+            p1.Bag.Add(new ItemStack(BlockIds.Log, 4));
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
@@ -265,20 +265,20 @@ namespace Voxelforge.Tests
         [Test]
         public void BlockStacks_Restore_KeepsSlotOrder_MergesRepeats_AndCaps()
         {
-            var stacks = new BlockStacks();
+            var stacks = new ItemStacks();
             stacks.Add(BlockIds.Stone, 50, out _);
             stacks.Restore(new[]
             {
-                new BlockStack(BlockIds.Log, 4),
-                new BlockStack(BlockIds.Dirt, 0),
-                new BlockStack(BlockIds.Log, 3),
-                new BlockStack(BlockIds.Snow, 2000),
+                new ItemStack(BlockIds.Log, 4),
+                new ItemStack(BlockIds.Dirt, 0),
+                new ItemStack(BlockIds.Log, 3),
+                new ItemStack(BlockIds.Snow, 2000),
             });
 
             Assert.AreEqual(3, stacks.Stacks.Count, "The old contents are gone and the repeated Log merged.");
-            Assert.AreEqual(new BlockStack(BlockIds.Log, 7), stacks.Stacks[0]);
-            Assert.AreEqual(new BlockStack(BlockIds.Dirt, 0), stacks.Stacks[1]);
-            Assert.AreEqual(BlockStacks.MaxPerBlock, stacks.CountOf(BlockIds.Snow));
+            Assert.AreEqual(new ItemStack(BlockIds.Log, 7), stacks.Stacks[0]);
+            Assert.AreEqual(new ItemStack(BlockIds.Dirt, 0), stacks.Stacks[1]);
+            Assert.AreEqual(ItemStacks.MaxPerItem, stacks.CountOf(BlockIds.Snow));
             Assert.AreEqual(0, stacks.CountOf(BlockIds.Stone));
         }
 

@@ -20,5 +20,9 @@ namespace Voxelforge.Voxels
         public const ushort TreeTrunk = 9;
         /// <summary>Wood from a chopped tree (Roadmap 3.2). Each trunk block drops one.</summary>
         public const ushort Log = 10;
+        /// <summary>Stands on a floor or hangs on a wall and lights the dark (Roadmap 3.5). A prop: drawn as a model, not a cube.</summary>
+        public const ushort Torch = 11;
+        /// <summary>Where tools are crafted (Roadmap 3.5). A solid prop: an invisible full block under the bench model.</summary>
+        public const ushort Workbench = 12;
     }
 }

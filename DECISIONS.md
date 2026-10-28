@@ -5,6 +5,49 @@
 
 ---
 
+## D-018: Items, Tools, Torches and the Workbench (Props & Crafting)
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **Items beyond blocks, without a new save format.** A block's item ID is its block ID; other items start at `ItemIds.FirstNonBlock` (1000). `BlockStack`/`BlockStacks` became `ItemStack`/`ItemStacks` (field `ItemId`). A bag slot was already an ID plus a count, so 3.4 saves load unchanged.
+  - `ItemDefinition` (Gameplay): ID, name, model + lit material, held pose in the hand bone, drop size and `ToolPower`. `ItemRegistry` lists them. A definition with a **block's** ID just gives that block a model when held or dropped (torch, workbench).
+  - Tools stack like blocks for now: there's no tool wear yet.
+- **Tool power.** Each block has a `HarvestKind` (Pick: Stone, Ore, Sandstone, Red Rock; Axe: trunks, Logs, Workbench; Any: the rest). `ToolPower` multiplies mining power (40/s) per kind. Bare hands are 1×.
+
+| Tool | Pick | Axe | Any |
+|---|---|---|---|
+| Wooden Pickaxe | 2 | 1 | 1.5 |
+| Stone Pickaxe | 3 | 1 | 2 |
+| Stone Axe | 1 | 3 | 1.5 |
+| **The Pick of Destiny** (Kian's) | 5 | 5 | 3 |
+
+- **Holding things (`PlayerHands`).** D-016's block picker now picks any item (`ItemSelection`). The owner sends it in every input frame (`PlayerInputFrame.HeldItem`). **The host** only accepts it if the bag really has one, and shares the result as a `NetworkVariable`. `PlayerMiner` reads the host's value, so a PC can't claim a tool it doesn't own (Law #2). `PlayerBuilder` places only items that are blocks.
+  - `HeldItemView` puts the model on the Wayfarer's humanoid **right hand bone** on every PC, and swings it while `PlayerMiner.IsMining` (a synced bool). Poses were measured on the idle pose (`PropsBuilder`).
+- **Prop blocks.** New `BlockFlags.Prop` (drawn as a model by the 2.6 decoration layer, never as a cube; aim rays stop at it even when it isn't solid) and `BlockFlags.NeedsSupport`.
+  - **Torch (11):** not solid, needs support, breaks in one hit, drops itself. **Workbench (12):** solid (an invisible full block under the model, like tree trunks), Axe.
+  - A new `DecorationKind.Prop` draws every prop block's model, placed in the `DecorateChunkJob` beside meshing. Props come back from the delta log like any block, so they need no extra save data or sync.
+  - **Floor or wall** comes from the blocks around the torch, not from stored facing. `VoxelSupport`: the solid block below wins, then north, east, south, west. Wall models have their wall on +Z and are turned to face it. Torches never hang from ceilings. Workbenches are turned to a seeded quarter.
+  - **Support:** `VoxelPlacement.Check(…, blockId, …)` refuses a torch with nothing to rest on (`NoSupport`) and lets one go where a hero stands, since it isn't solid. The editor breaks unsupported torches whenever a solid block next to them goes, and that break is a normal edit, so the torch drops.
+- **Torch lights (`PropLights`, scene, presentation only).** A `DecorationLight` on a decoration (colour, intensity, range, offset, flicker). A fixed pool of **32** point lights goes each frame to the torches nearest **any** viewer within 48 m, with Perlin flicker and no shadows. Forward+ shades only the lights each split-screen camera sees. Flames glow through a new emission map on `Voxelforge/Foliage`; only flame tips have wind sway painted in.
+- **Crafting (`PlayerCrafter`).** **Interact** (F, gamepad X, `;` for the right split-keyboard player) opens a recipe list in the **top-right of that player's view** (Law #5). Next / Previous choose a recipe, and Place crafts it.
+  - The PC sends only the recipe's index (`RequestCraftRpc(byte)`). The host re-checks it (`RecipeBook.Check`): a Workbench block within 4 blocks of the hero's middle, then the inputs. `ItemStacks.TryExchange` swaps inputs for the output all at once, or changes nothing. Crafts are at least 0.2 s apart.
+  - `RecipeDefinition` (inputs, output, `needsWorkbench`) stays small so 5.6 can add stations and skill. Recipes are sent by **index, so new ones go at the end** of the `RecipeBook`.
+  - Recipes: Workbench = 4 Log (anywhere), 4 Torches = 1 Log (anywhere), Wooden Pickaxe = 3 Log, Stone Pickaxe / Stone Axe = 2 Log + 3 Stone, **The Pick of Destiny = Stone Pickaxe + Stone Axe + 3 Mana Crystal Ore**.
+- **Art (`Tools/Blender/build_props.py` → `Voxelforge > Build Props & Items`).** One 1024² painted atlas plus a glow map, all drawn by code. Models: 3 tools, The Pick of Destiny, torches (floor + wall), the workbench, and the **M.G.R.S.** for 3.6. Each is 97-384 triangles.
+  - `FoliageImportSettings` now covers `Art/*/Props/` too. Without it, Unity turns FBX models half way round instead of baking the axes.
+  - Re-running *Build Foliage Decorations* keeps the prop decorations.
+- **Ghost block:** props show their model (the `_PROP_MODEL` variant of `Voxelforge/Block Ghost`) standing on the cell's floor. **Drops:** models are fitted to drop size and spin around their middle.
+- **Phase 4 weapons and items are our own, inspired by classic RPG kinds and rarities, with no Blizzard IP** (names, looks or lore), same as the races in 4.7 (asked for 2026-10-28).
+
+### Deferred on purpose
+- Wall torches pick their wall by the rule above, not by the face you aimed at: the mesh gather job only copies block IDs. Storing facing in the voxel state would fix it later.
+- The swing is a simple turn of the tool in the hand, not an arm animation. A real swing animation comes with 4.x combat.
+- A wooden axe, tool wear, and the M.G.R.S. itself (3.6).
+- Torch light inside the voxel lighting (`Voxel` light bits, `lightEmission` 14 is already set): the real point lights do the job for now.
+
+---
+
 ## D-017: Saving the World (Seed + Deltas + Player Profiles)
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

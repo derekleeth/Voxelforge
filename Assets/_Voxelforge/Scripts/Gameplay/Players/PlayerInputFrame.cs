@@ -19,6 +19,8 @@ namespace Voxelforge.Gameplay
         SelectPrevious = 1 << 4,
         /// <summary>Turn this player's ghost block preview on or off. Placing still works with it off.</summary>
         ToggleGhost = 1 << 5,
+        /// <summary>Open or close the crafting window (Roadmap 3.5, <see cref="PlayerCrafter"/>).</summary>
+        Interact = 1 << 6,
     }
 
     /// <summary>
@@ -34,6 +36,11 @@ namespace Voxelforge.Gameplay
         /// <summary>How far this player's camera tilts down, in degrees. Used to aim at blocks (<see cref="PlayerVoxelEditor"/>).</summary>
         public float ViewPitch;
         public PlayerButtons Buttons;
+        /// <summary>
+        /// The item this player picked from their bag (Roadmap 3.5). The host only uses it if the bag really has one
+        /// (<see cref="PlayerHands"/>), so a PC can't claim a tool it doesn't own.
+        /// </summary>
+        public ushort HeldItem;
         /// <summary>Counts up every frame, so the host can ignore frames that arrive late and out of order.</summary>
         public uint Sequence;
 

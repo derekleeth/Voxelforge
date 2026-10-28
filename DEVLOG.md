@@ -5,6 +5,56 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 20): The Pick of Destiny ⛏️🪓 Roadmap 3.5
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **Kian's ideas went on the roadmap!**
+  - **The Pick of Destiny**, an axe on one side and a pick on the other, is in this step.
+  - His **M.G.R.S.** (Magic Gun Rifle Staff) gets its own step, **3.6**, where it'll shoot glowing Mana Bolts that break blocks. Its model is already built.
+  - Audio is now 3.7 and the demo build 3.8.
+- **Tools!** Hold one and you mine faster. Pickaxes are for stone and ore, axes are for trees and logs. Details in DECISIONS.md **D-018**.
+
+| Tool | Stone | Trees | Dirt & sand |
+|---|---|---|---|
+| Hands | 1.5 s | 0.75 s | 0.5 s |
+| Wooden Pickaxe | 0.75 s | 0.75 s | 0.33 s |
+| Stone Pickaxe | 0.5 s | 0.75 s | 0.25 s |
+| Stone Axe | 1.5 s | 0.25 s | 0.33 s |
+| **The Pick of Destiny** | **0.3 s** | **0.15 s** | 0.17 s |
+
+- **Your hero holds what you picked** in their right hand, and everyone sees it. The tool swings while you mine. Pick items the same way as blocks (wheel, LB / RB, Z / C, . / /).
+- **Crafting!** Press **Interact** (F, or X on a gamepad, or `;` for the right-hand keyboard player) to open your crafting list in **your own** part of the screen. Next / Previous choose, Place crafts.
+  - Anywhere: **Workbench** (4 Log) and **4 Torches** (1 Log).
+  - At a Workbench: **Wooden Pickaxe** (3 Log), **Stone Pickaxe** and **Stone Axe** (2 Log + 3 Stone each), and **The Pick of Destiny** (a Stone Pickaxe + a Stone Axe + 3 Mana Crystal Ore).
+- **Torches** stand on the floor, or hang on a wall if there's no floor. They give off **real flickering light**, and their flames glow. Mine the block under one and the torch drops.
+- **The Workbench** is a real wooden bench with a hammer, a vice and logs on the shelf.
+- Every model and texture was made by code in Blender (`Tools/Blender/build_props.py`), so it's all ours.
+- **Our rule for Phase 4 gear:** our own names and looks, *inspired by* classic RPG weapons and items, so no Blizzard stuff.
+
+### Tests: 244 / 244 passing ✅
+- Torches need something to rest on (not a ceiling!), can go where a hero stands, and fall when their floor is mined. A torch on a wall stays put.
+- Aim rays stop at torches, so you can mine them; the camera looks past them.
+- Tool power by block kind, and The Pick of Destiny breaks stone in 0.3 s.
+- Crafting takes everything or nothing, refuses when the bag is short or full, and knows which recipes need a workbench.
+- Floor torches stand up, wall torches turn to face away from their wall, and workbenches get their model with no grass under them.
+
+### Editor test by Claude
+- Joined with a pretend gamepad. With real button presses: crafted a **Workbench**, then a Stone Pickaxe, a Stone Axe and **The Pick of Destiny**. The host took the right items each time.
+- Placed a workbench, a floor torch and a wall torch on a stone pillar. All three showed their models, both torches lit the stone, and the light flickered.
+- Picked The Pick of Destiny: the host agreed it was in hand, and the hero held it out front, ready to swing.
+- Timed it: **stone broke in 0.30 s** (1.5 s by hand), and the tool swung while mining.
+- Restarted: the workbench and the crafted Pick of Destiny came back from the save.
+
+### Play-test results 🎉
+- **Play-tested: everything worked, and The Pick of Destiny is a hit** ✅
+
+### Next up
+- [x] Play-test 3.5
+- [ ] Roadmap **3.6 Kian's M.G.R.S.**: build the Mana Bolt
+
+---
+
 ## 2026-10-28 - Session 1 (part 19): The World Remembers 💾 Roadmap 3.4
 **Phase:** 3 - "Forge & Carve"
 

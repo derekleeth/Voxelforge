@@ -23,11 +23,21 @@ namespace Voxelforge.Voxels
         [Tooltip("How many blocks drop. 0 = nothing drops.")]
         [SerializeField, Range(0, 16)] int dropCount = 1;
 
+        [Tooltip("Which tool mines it fastest (Roadmap 3.5): pickaxes for Pick, axes for Axe. Any = no tool needed.")]
+        [SerializeField] HarvestKind harvestKind;
+
         [Tooltip("Blocks movement and has collision.")]
         [SerializeField] bool isSolid = true;
 
         [Tooltip("Light and neighbouring faces show through (glass, leaves, air).")]
         [SerializeField] bool isTransparent;
+
+        [Tooltip("Drawn as a model (a Prop decoration for this block) instead of a cube, e.g. torches and workbenches. " +
+                 "Aim rays stop at it even if it isn't solid. Props should also be transparent.")]
+        [SerializeField] bool isProp;
+
+        [Tooltip("Must rest on a solid block below or beside it, and breaks (dropping itself) when that block goes.")]
+        [SerializeField] bool needsSupport;
 
         [Tooltip("Light the block gives off, 0-15.")]
         [SerializeField, Range(0, Voxel.MaxLight)] int lightEmission;
@@ -55,6 +65,9 @@ namespace Voxelforge.Voxels
         public int DropCount => dropCount;
         public bool IsSolid => isSolid;
         public bool IsTransparent => isTransparent;
+        public bool IsProp => isProp;
+        public bool NeedsSupport => needsSupport;
+        public HarvestKind HarvestKind => harvestKind;
         public int LightEmission => lightEmission;
         public Color32 MapColor => mapColor;
         public BiomeTint BiomeTint => biomeTint;
@@ -69,6 +82,10 @@ namespace Voxelforge.Voxels
                 flags |= BlockFlags.Solid;
             if (isTransparent)
                 flags |= BlockFlags.Transparent;
+            if (isProp)
+                flags |= BlockFlags.Prop;
+            if (needsSupport)
+                flags |= BlockFlags.NeedsSupport;
 
             return new BlockInfo
             {
@@ -78,6 +95,7 @@ namespace Voxelforge.Voxels
                 DropCount = (byte)Mathf.Clamp(dropCount, 0, 16),
                 LightEmission = (byte)Mathf.Clamp(lightEmission, 0, Voxel.MaxLight),
                 Flags = flags,
+                Harvest = harvestKind,
                 MapColor = mapColor,
                 Tint = biomeTint,
                 // BlockRegistry.CreateLookup fills in real layers; a definition alone doesn't know the array order.
@@ -90,7 +108,8 @@ namespace Voxelforge.Voxels
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static BlockDefinition Create(ushort id, string displayName, int maxDurability = 20,
             bool isSolid = true, bool isTransparent = false, int lightEmission = 0, BiomeTint biomeTint = BiomeTint.None,
-            BlockDefinition drop = null, int dropCount = 1)
+            BlockDefinition drop = null, int dropCount = 1, HarvestKind harvestKind = HarvestKind.Any, bool isProp = false,
+            bool needsSupport = false)
         {
             var definition = CreateInstance<BlockDefinition>();
             definition.name = displayName;
@@ -103,6 +122,9 @@ namespace Voxelforge.Voxels
             definition.isTransparent = isTransparent;
             definition.lightEmission = lightEmission;
             definition.biomeTint = biomeTint;
+            definition.harvestKind = harvestKind;
+            definition.isProp = isProp;
+            definition.needsSupport = needsSupport;
             return definition;
         }
     }

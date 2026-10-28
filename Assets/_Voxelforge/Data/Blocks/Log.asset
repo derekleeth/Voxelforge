@@ -17,8 +17,11 @@ MonoBehaviour:
   maxDurability: 30
   drop: {fileID: 0}
   dropCount: 1
+  harvestKind: 2
   isSolid: 1
   isTransparent: 0
+  isProp: 0
+  needsSupport: 0
   lightEmission: 0
   mapColor:
     serializedVersion: 2

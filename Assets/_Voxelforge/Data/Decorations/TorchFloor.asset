@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: TorchFloor
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 2
+  mesh: {fileID: 4805867800507480435, guid: b5f657b45dd9d5247a8266e08475d825, type: 3}
+  lodMesh: {fileID: 0}
+  material: {fileID: 2100000, guid: 8711cf652b640b643b503b56091e4c3a, type: 2}
+  tint: 0
+  castShadows: 0
+  lodDistance: 200
+  maxDistance: 90
+  propBlock: {fileID: 11400000, guid: b5552905c5ff7a2498ab6cfc6158d542, type: 2}
+  attach: 1
+  surfaces: []
+  density: 0.1
+  biomes: []
+  minScale: 1
+  maxScale: 1
+  modelTrunkHeight: 5
+  light:
+    enabled: 1
+    color: {r: 1, g: 0.64, b: 0.32, a: 1}
+    intensity: 2.4
+    range: 10
+    offset: {x: 0, y: 0.73039997, z: 0}
+    flicker: 0.35

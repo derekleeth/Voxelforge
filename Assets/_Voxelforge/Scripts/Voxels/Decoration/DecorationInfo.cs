@@ -20,6 +20,9 @@ namespace Voxelforge.Voxels
         public float MinScale;
         public float MaxScale;
         public float ModelTrunkHeight;
+        /// <summary>Props: the block this model is drawn on.</summary>
+        public ushort PropBlock;
+        public PropAttach Attach;
 
         public bool GrowsOn(ushort blockId) => blockId < MaxSurfaceId && (SurfaceMask & (1ul << blockId)) != 0;
     }

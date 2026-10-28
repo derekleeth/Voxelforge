@@ -103,49 +103,49 @@ namespace Voxelforge.Tests
                 VoxelPlacement.Check(_world, GroundTop, Bodies(new float3(5.3f, 32f, 4.5f)), out _), "Side against the block's side.");
         }
 
-        static List<BlockStack> Bag(params (ushort id, ushort count)[] slots)
+        static List<ItemStack> Bag(params (ushort id, ushort count)[] slots)
         {
-            var stacks = new List<BlockStack>();
+            var stacks = new List<ItemStack>();
             foreach ((ushort id, ushort count) in slots)
-                stacks.Add(new BlockStack(id, count));
+                stacks.Add(new ItemStack(id, count));
             return stacks;
         }
 
         [Test]
         public void Selection_CyclesTheNonEmptyStacks_AndWraps()
         {
-            List<BlockStack> bag = Bag((BlockIds.Dirt, 4), (BlockIds.Stone, 0), (BlockIds.Log, 2), (BlockIds.Sand, 1));
-            Assert.AreEqual(BlockIds.Log, BlockSelection.Next(bag, BlockIds.Dirt), "Skips the empty Stone slot.");
-            Assert.AreEqual(BlockIds.Sand, BlockSelection.Next(bag, BlockIds.Log));
-            Assert.AreEqual(BlockIds.Dirt, BlockSelection.Next(bag, BlockIds.Sand), "Wraps to the start.");
-            Assert.AreEqual(BlockIds.Sand, BlockSelection.Previous(bag, BlockIds.Dirt), "Wraps to the end.");
-            Assert.AreEqual(BlockIds.Dirt, BlockSelection.Previous(bag, BlockIds.Log));
+            List<ItemStack> bag = Bag((BlockIds.Dirt, 4), (BlockIds.Stone, 0), (BlockIds.Log, 2), (BlockIds.Sand, 1));
+            Assert.AreEqual(BlockIds.Log, ItemSelection.Next(bag, BlockIds.Dirt), "Skips the empty Stone slot.");
+            Assert.AreEqual(BlockIds.Sand, ItemSelection.Next(bag, BlockIds.Log));
+            Assert.AreEqual(BlockIds.Dirt, ItemSelection.Next(bag, BlockIds.Sand), "Wraps to the start.");
+            Assert.AreEqual(BlockIds.Sand, ItemSelection.Previous(bag, BlockIds.Dirt), "Wraps to the end.");
+            Assert.AreEqual(BlockIds.Dirt, ItemSelection.Previous(bag, BlockIds.Log));
         }
 
         [Test]
         public void Selection_MovesOn_WhenItsStackRunsOut()
         {
-            List<BlockStack> bag = Bag((BlockIds.Dirt, 4), (BlockIds.Stone, 0), (BlockIds.Log, 2));
-            Assert.AreEqual(BlockIds.Dirt, BlockSelection.Fix(bag, BlockIds.Dirt), "Still has some.");
-            Assert.AreEqual(BlockIds.Log, BlockSelection.Fix(bag, BlockIds.Stone), "Ran out: the next one along.");
-            Assert.AreEqual(BlockIds.Dirt, BlockSelection.Fix(bag, BlockIds.Air), "Nothing yet: the first one.");
+            List<ItemStack> bag = Bag((BlockIds.Dirt, 4), (BlockIds.Stone, 0), (BlockIds.Log, 2));
+            Assert.AreEqual(BlockIds.Dirt, ItemSelection.Fix(bag, BlockIds.Dirt), "Still has some.");
+            Assert.AreEqual(BlockIds.Log, ItemSelection.Fix(bag, BlockIds.Stone), "Ran out: the next one along.");
+            Assert.AreEqual(BlockIds.Dirt, ItemSelection.Fix(bag, BlockIds.Air), "Nothing yet: the first one.");
         }
 
         [Test]
         public void Selection_OfAnEmptyBag_IsNothing()
         {
-            Assert.AreEqual(BlockIds.Air, BlockSelection.Fix(Bag(), BlockIds.Air));
-            Assert.AreEqual(BlockIds.Air, BlockSelection.Fix(Bag((BlockIds.Dirt, 0)), BlockIds.Dirt));
-            Assert.AreEqual(BlockIds.Air, BlockSelection.Next(Bag((BlockIds.Dirt, 0)), BlockIds.Dirt));
-            Assert.AreEqual(BlockIds.Air, BlockSelection.Previous(Bag(), BlockIds.Air));
+            Assert.AreEqual(BlockIds.Air, ItemSelection.Fix(Bag(), BlockIds.Air));
+            Assert.AreEqual(BlockIds.Air, ItemSelection.Fix(Bag((BlockIds.Dirt, 0)), BlockIds.Dirt));
+            Assert.AreEqual(BlockIds.Air, ItemSelection.Next(Bag((BlockIds.Dirt, 0)), BlockIds.Dirt));
+            Assert.AreEqual(BlockIds.Air, ItemSelection.Previous(Bag(), BlockIds.Air));
         }
 
         [Test]
         public void Selection_WithOneBlockType_StaysOnIt()
         {
-            List<BlockStack> bag = Bag((BlockIds.Dirt, 3));
-            Assert.AreEqual(BlockIds.Dirt, BlockSelection.Next(bag, BlockIds.Dirt));
-            Assert.AreEqual(BlockIds.Dirt, BlockSelection.Previous(bag, BlockIds.Dirt));
+            List<ItemStack> bag = Bag((BlockIds.Dirt, 3));
+            Assert.AreEqual(BlockIds.Dirt, ItemSelection.Next(bag, BlockIds.Dirt));
+            Assert.AreEqual(BlockIds.Dirt, ItemSelection.Previous(bag, BlockIds.Dirt));
         }
     }
 }

@@ -128,6 +128,87 @@ namespace Voxelforge.Tests
             Assert.AreEqual(32 * 32 - 1 + 1, instances.Length, "Every grass top but the one under the trunk, plus the tree.");
         }
 
+        [Test]
+        public void Torch_OnAFloor_StandsUp_AndAgainstAWall_HangsFacingAway()
+        {
+            BlockDefinition torch = BlockDefinition.Create(BlockIds.Torch, "Torch", isSolid: false, isTransparent: true,
+                isProp: true, needsSupport: true);
+            DecorationDefinition floor = DecorationDefinition.CreateProp(torch, PropAttach.Floor);
+            DecorationDefinition wall = DecorationDefinition.CreateProp(torch, PropAttach.Wall);
+            try
+            {
+                _padded[PaddedIndex(5, 5, 5)] = BlockIds.Stone; // Floor under the first torch.
+                _padded[PaddedIndex(5, 6, 5)] = BlockIds.Torch;
+                _padded[PaddedIndex(11, 6, 10)] = BlockIds.Stone; // A wall east (+X) of the second torch, nothing below.
+                _padded[PaddedIndex(10, 6, 10)] = BlockIds.Torch;
+
+                using NativeList<DecorationInstance> instances = Decorate(TestSeed, floor, wall);
+
+                Assert.AreEqual(2, instances.Length, "Stone blocks have no ground plants here, so just the two torches.");
+                DecorationInstance standing = Find(instances, new float3(4.5f, 5f, 4.5f));
+                DecorationInstance hanging = Find(instances, new float3(9.5f, 5f, 9.5f));
+                Assert.AreEqual(0u, standing.Type, "The floor model.");
+                Assert.AreEqual(1u, hanging.Type, "The wall model.");
+                Assert.AreEqual(0.5f * math.PI, hanging.Yaw, 1e-5f, "The mesh's +Z side (its wall side) turned to face east.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(torch);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
+        public void Workbench_GetsItsModel_AndNoGrassGrowsUnderIt()
+        {
+            BlockDefinition bench = BlockDefinition.Create(BlockIds.Workbench, "Workbench", isTransparent: true, isProp: true);
+            DecorationDefinition model = DecorationDefinition.CreateProp(bench, PropAttach.Any);
+            try
+            {
+                FillLayer(10, BlockIds.Grass);
+                _padded[PaddedIndex(3, 12, 3)] = BlockIds.Workbench;
+
+                using NativeList<DecorationInstance> instances = Decorate(TestSeed, _tuft, model);
+
+                DecorationInstance placed = Find(instances, new float3(2.5f, 11f, 2.5f));
+                Assert.AreEqual(1u, placed.Type);
+                Assert.AreEqual(0f, math.fmod(placed.Yaw, 0.5f * math.PI), 1e-5f, "Turned to a whole quarter.");
+                Assert.AreEqual(32 * 32 - 1 + 1, instances.Length, "Every grass top but the one under the bench, plus the bench.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(bench);
+                Object.DestroyImmediate(model);
+            }
+        }
+
+        static DecorationInstance Find(NativeList<DecorationInstance> instances, float3 position)
+        {
+            foreach (DecorationInstance instance in instances)
+            {
+                if (math.distance(instance.Position, position) < 1e-4f)
+                    return instance;
+            }
+            Assert.Fail($"No decoration at {position}.");
+            return default;
+        }
+
+        /// <summary>Block lookups for the IDs these tests use: Air, Grass and Stone, a trunk, a torch and a workbench.</summary>
+        static NativeArray<BlockInfo> Blocks()
+        {
+            var blocks = new NativeArray<BlockInfo>(BlockIds.Workbench + 1, Allocator.Temp);
+            blocks[BlockIds.Air] = new BlockInfo { Flags = BlockFlags.Registered | BlockFlags.Transparent };
+            blocks[BlockIds.Grass] = new BlockInfo { Flags = BlockFlags.Registered | BlockFlags.Solid };
+            blocks[BlockIds.Stone] = new BlockInfo { Flags = BlockFlags.Registered | BlockFlags.Solid };
+            blocks[BlockIds.TreeTrunk] = new BlockInfo { Flags = BlockFlags.Registered | BlockFlags.Solid | BlockFlags.Transparent };
+            blocks[BlockIds.Torch] = new BlockInfo
+                { Flags = BlockFlags.Registered | BlockFlags.Transparent | BlockFlags.Prop | BlockFlags.NeedsSupport };
+            blocks[BlockIds.Workbench] = new BlockInfo
+                { Flags = BlockFlags.Registered | BlockFlags.Solid | BlockFlags.Transparent | BlockFlags.Prop };
+            return blocks;
+        }
+
         void FillLayer(int y, ushort block)
         {
             for (int z = 1; z <= 32; z++)
@@ -154,7 +235,8 @@ namespace Voxelforge.Tests
 
             var output = new NativeList<DecorationInstance>(Allocator.Persistent);
             using var sampler = new TerrainSampler(seed, _terrain, _biomes, Allocator.Temp);
-            Decorator.Build(_padded, new int3(0, 0, 0), seed, sampler, _terrain, infos, weights, output);
+            using NativeArray<BlockInfo> blocks = Blocks();
+            Decorator.Build(_padded, blocks, new int3(0, 0, 0), seed, sampler, _terrain, infos, weights, output);
             infos.Dispose();
             weights.Dispose();
             return output;

@@ -13,6 +13,13 @@ namespace Voxelforge.Voxels
         Solid = 1 << 1,
         /// <summary>Light and neighbouring faces show through (glass, leaves, air).</summary>
         Transparent = 1 << 2,
+        /// <summary>
+        /// Drawn as a model by the decoration layer instead of as a cube (torches, workbenches, Roadmap 3.5). Aim rays
+        /// stop at it even when it isn't solid, so it can be mined. Props should also be transparent.
+        /// </summary>
+        Prop = 1 << 3,
+        /// <summary>Must rest on a solid block below or beside it, and breaks when that block goes (torches).</summary>
+        NeedsSupport = 1 << 4,
     }
 
     /// <summary>
@@ -31,6 +38,8 @@ namespace Voxelforge.Voxels
         /// <summary>Light this block gives off, 0-15.</summary>
         public byte LightEmission;
         public BlockFlags Flags;
+        /// <summary>Which tool mines this block fastest (Roadmap 3.5).</summary>
+        public HarvestKind Harvest;
         /// <summary>Biome colour for the green parts of this block's faces (Roadmap 2.6).</summary>
         public BiomeTint Tint;
         /// <summary>Flat color, shown on faces with no texture.</summary>
@@ -47,6 +56,11 @@ namespace Voxelforge.Voxels
         public bool IsRegistered => (Flags & BlockFlags.Registered) != 0;
         public bool IsSolid => (Flags & BlockFlags.Solid) != 0;
         public bool IsTransparent => (Flags & BlockFlags.Transparent) != 0;
+        public bool IsProp => (Flags & BlockFlags.Prop) != 0;
+        public bool NeedsSupport => (Flags & BlockFlags.NeedsSupport) != 0;
+
+        /// <summary>Aim rays stop here, so it can be mined and built against: solid blocks and props.</summary>
+        public bool IsTargetable => (Flags & (BlockFlags.Solid | BlockFlags.Prop)) != 0;
 
         /// <summary>
         /// A registered block you can't see through. The mesher draws these and hides any face

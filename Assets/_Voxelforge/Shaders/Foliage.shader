@@ -16,6 +16,8 @@ Shader "Voxelforge/Foliage"
         _NormalUp ("Normals Point Up", Range(0, 1)) = 0.5
         _BackFaceFlip ("Flip Back-Face Normals", Range(0, 1)) = 1
         _WindScale ("Wind Scale", Range(0, 2)) = 1
+        [NoScaleOffset] _EmissionMap ("Glow (RGB), e.g. torch flames", 2D) = "black" {}
+        [HDR] _EmissionColor ("Glow Colour", Color) = (0, 0, 0, 1)
     }
 
     SubShader
@@ -37,10 +39,12 @@ Shader "Voxelforge/Foliage"
             half _NormalUp;
             half _BackFaceFlip;
             half _WindScale;
+            half4 _EmissionColor;
         CBUFFER_END
 
         TEXTURE2D(_BaseMap);
         SAMPLER(sampler_BaseMap);
+        TEXTURE2D(_EmissionMap);
 
         struct FoliageAttributes
         {
@@ -123,6 +127,7 @@ Shader "Voxelforge/Foliage"
                 surface.smoothness = _Smoothness;
                 surface.occlusion = 1.0;
                 surface.normalTS = half3(0, 0, 1);
+                surface.emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_BaseMap, input.uv).rgb * _EmissionColor.rgb;
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;

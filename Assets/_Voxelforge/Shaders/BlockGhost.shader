@@ -1,11 +1,13 @@
 // The see-through preview of the block a player is about to place (Roadmap 3.3, D-016). It draws a block item mesh
 // (BlockItemMesh) with the real block textures, see-through, gently pulsing, with a rim in the player's team colour.
 // _Invalid turns it red where the block isn't allowed (inside a character). Unlit and tiny, like Block Crack.
+// _PROP_MODEL (Roadmap 3.5): the mesh is a prop model (a torch) coloured from a plain texture, _PropMap, instead.
 Shader "Voxelforge/Block Ghost"
 {
     Properties
     {
         [NoScaleOffset] _AlbedoHeightArray ("Albedo (RGB) + Height (A)", 2DArray) = "" {}
+        [NoScaleOffset] _PropMap ("Prop Model Albedo (RGB) + Cut-out (A)", 2D) = "white" {}
         _BaseColor ("Team Colour", Color) = (1, 1, 1, 1)
         _InvalidColor ("Not Allowed Colour", Color) = (1, 0.15, 0.1, 1)
         _Invalid ("Not Allowed", Range(0, 1)) = 0
@@ -34,6 +36,7 @@ Shader "Voxelforge/Block Ghost"
             #pragma fragment Frag
             #pragma multi_compile_instancing
             #pragma multi_compile_fog
+            #pragma multi_compile_local _ _PROP_MODEL
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -50,6 +53,8 @@ Shader "Voxelforge/Block Ghost"
 
             TEXTURE2D_ARRAY(_AlbedoHeightArray);
             SAMPLER(sampler_AlbedoHeightArray);
+            TEXTURE2D(_PropMap);
+            SAMPLER(sampler_PropMap);
 
             // Same inputs as the chunk mesh (ChunkVertex): the texture layer rides in TEXCOORD1.
             struct Attributes
@@ -89,7 +94,13 @@ Shader "Voxelforge/Block Ghost"
 
             half4 Frag(Varyings input) : SV_Target
             {
+            #if defined(_PROP_MODEL)
+                half4 prop = SAMPLE_TEXTURE2D(_PropMap, sampler_PropMap, input.uv);
+                clip(prop.a - 0.5h);
+                half3 albedo = prop.rgb;
+            #else
                 half3 albedo = SAMPLE_TEXTURE2D_ARRAY(_AlbedoHeightArray, sampler_AlbedoHeightArray, input.uv, input.layer).rgb;
+            #endif
                 half4 tint = lerp(_BaseColor, _InvalidColor, _Invalid);
                 // Brighten the block a little so it reads as a preview, and wash it red when it isn't allowed.
                 half3 color = lerp(albedo * 1.15h, tint.rgb, 0.2h + 0.5h * _Invalid);

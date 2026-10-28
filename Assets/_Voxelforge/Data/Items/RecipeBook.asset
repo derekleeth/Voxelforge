@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40f4659de3935bb47ab08227e65ed68f, type: 3}
+  m_Name: RecipeBook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeBook
+  recipes:
+  - {fileID: 11400000, guid: 6323dc8207db56647b21510f27946f75, type: 2}
+  - {fileID: 11400000, guid: 1a8630d5733a39f488cb85d90bbf079e, type: 2}
+  - {fileID: 11400000, guid: 311c7f41be5166a44899e076988fe113, type: 2}
+  - {fileID: 11400000, guid: e9a27975f0bd34b4d80dbb85f398770c, type: 2}
+  - {fileID: 11400000, guid: 42b83e42ad9fb7e4ead17d88c7b637a2, type: 2}
+  - {fileID: 11400000, guid: 5658b401571387841a52c9cca7b7cc71, type: 2}

@@ -226,7 +226,7 @@ namespace Voxelforge.Voxels
             if (Decorations != null)
             {
                 // Runs alongside the mesh job: both only read the padded copy.
-                JobHandle decorate = Decorations.Schedule(coord, pending.Padded, pending.GatherHandle, out pending.Decorations);
+                JobHandle decorate = Decorations.Schedule(coord, pending.Padded, _world.Blocks, pending.GatherHandle, out pending.Decorations);
                 pending.HasDecorations = true;
                 pending.MeshHandle = JobHandle.CombineDependencies(pending.MeshHandle, decorate);
             }

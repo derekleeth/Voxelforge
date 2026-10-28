@@ -16,6 +16,9 @@ namespace Voxelforge.Voxels
     /// one decoration, each with chance <c>density × biome weight</c>.</item>
     /// <item><b>Trees</b>: every <see cref="BlockIds.TreeTrunk"/> block with no trunk under it is the bottom of a
     /// tree. The tree look is picked by the biome's tree weights and scaled to the trunk height.</item>
+    /// <item><b>Props</b> (Roadmap 3.5): every prop block (torch, workbench) gets its model, stood on the floor or hung
+    /// on a wall by <see cref="VoxelSupport"/>'s rules. Props are blocks players placed, so they come back from the
+    /// delta log like any other block.</item>
     /// </list>
     /// A decoration belongs to the chunk holding the block it stands on, so it disappears when that block changes.
     /// Each one is tinted with its biome's grass or foliage colour where it stands (Roadmap 2.6).
@@ -24,7 +27,7 @@ namespace Voxelforge.Voxels
     {
         const uint DecorationSalt = 9;
 
-        public static void Build(NativeArray<ushort> padded, int3 origin, WorldSeed seed, in TerrainSampler sampler,
+        public static void Build(NativeArray<ushort> padded, NativeArray<BlockInfo> blocks, int3 origin, WorldSeed seed, in TerrainSampler sampler,
             in TerrainParams terrain, NativeArray<DecorationInfo> decorations, NativeArray<float> biomeWeights,
             NativeList<DecorationInstance> output)
         {
@@ -46,6 +49,13 @@ namespace Voxelforge.Voxels
                     if (block == BlockIds.Air)
                         continue;
                     int wy = origin.y + y;
+
+                    if (block < blocks.Length && blocks[block].IsProp)
+                    {
+                        AddProp(new int3(wx, wy, wz), block, SupportMask(padded, blocks, x + 1, y + 1, z + 1), seedHash,
+                            decorations, output);
+                        continue;
+                    }
 
                     if (block == terrain.TreeTrunkBlock)
                     {
@@ -143,6 +153,57 @@ namespace Voxelforge.Voxels
             });
         }
 
+        /// <summary><see cref="VoxelSupport.SupportMask"/> for padded cell (px, py, pz), from the padded copy.</summary>
+        static int SupportMask(NativeArray<ushort> padded, NativeArray<BlockInfo> blocks, int px, int py, int pz)
+        {
+            int mask = 0;
+            if (IsSolid(blocks, padded[PaddedIndex(px, py - 1, pz)])) mask |= 1 << 0;
+            if (IsSolid(blocks, padded[PaddedIndex(px, py, pz + 1)])) mask |= 1 << 1;
+            if (IsSolid(blocks, padded[PaddedIndex(px + 1, py, pz)])) mask |= 1 << 2;
+            if (IsSolid(blocks, padded[PaddedIndex(px, py, pz - 1)])) mask |= 1 << 3;
+            if (IsSolid(blocks, padded[PaddedIndex(px - 1, py, pz)])) mask |= 1 << 4;
+            return mask;
+        }
+
+        static bool IsSolid(NativeArray<BlockInfo> blocks, ushort id) => id < blocks.Length && blocks[id].IsSolid;
+
+        static void AddProp(int3 w, ushort block, int supportMask, uint seedHash, NativeArray<DecorationInfo> decorations,
+            NativeList<DecorationInstance> output)
+        {
+            int support = VoxelSupport.Choose(supportMask);
+            int chosen = -1, fallback = -1;
+            for (int type = 0; type < decorations.Length && chosen < 0; type++)
+            {
+                DecorationInfo info = decorations[type];
+                if (info.Kind != DecorationKind.Prop || info.PropBlock != block)
+                    continue;
+                if (fallback < 0)
+                    fallback = type;
+                if (info.Attach == PropAttach.Any || (info.Attach == PropAttach.Floor && support == 0) ||
+                    (info.Attach == PropAttach.Wall && support > 0))
+                    chosen = type;
+            }
+            if (chosen < 0)
+                chosen = fallback;
+            if (chosen < 0)
+                return;
+
+            uint h = math.hash(new uint4((uint)w.x, (uint)w.y, (uint)w.z, seedHash ^ 0x9E3779B9u));
+            // Walls: the mesh's +Z side faces the wall (north, east, south, west = support 1-4). Otherwise a random quarter.
+            float yaw = decorations[chosen].Attach == PropAttach.Wall && support > 0
+                ? (support - 1) * 0.5f * math.PI
+                : (h & 3u) * 0.5f * math.PI;
+            output.Add(new DecorationInstance
+            {
+                Position = new float3(w.x + 0.5f, w.y, w.z + 0.5f),
+                Yaw = yaw,
+                Scale = 1f,
+                Type = (uint)chosen,
+                Tint = DecorationInstance.White,
+                Random = math.hash(new uint2(h, 5)),
+            });
+        }
+
         static uint TintAt(in TerrainSampler sampler, float3 position, BiomeTint tint)
         {
             return tint == BiomeTint.None ? DecorationInstance.White : BiomeTints.Pack(sampler.TintAt(position.xz, tint));
@@ -160,6 +221,7 @@ namespace Voxelforge.Voxels
     public struct DecorateChunkJob : IJob
     {
         [ReadOnly] public NativeArray<ushort> Padded;
+        [ReadOnly] public NativeArray<BlockInfo> Blocks;
         public int3 Origin;
         public WorldSeed Seed;
         public TerrainParams Terrain;
@@ -172,7 +234,7 @@ namespace Voxelforge.Voxels
         {
             Output.Clear();
             var sampler = new TerrainSampler(Seed, Terrain, Biomes, Allocator.Temp);
-            Decorator.Build(Padded, Origin, Seed, sampler, Terrain, Decorations, BiomeWeights, Output);
+            Decorator.Build(Padded, Blocks, Origin, Seed, sampler, Terrain, Decorations, BiomeWeights, Output);
             sampler.Dispose();
         }
     }

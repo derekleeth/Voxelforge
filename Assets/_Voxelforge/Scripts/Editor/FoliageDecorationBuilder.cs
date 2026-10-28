@@ -98,6 +98,12 @@ namespace Voxelforge.Editor
                 set = ScriptableObject.CreateInstance<DecorationSet>();
                 AssetDatabase.CreateAsset(set, setPath);
             }
+            // Keep the torch and workbench models (Build Props & Items, Roadmap 3.5) at the end.
+            foreach (DecorationDefinition existing in set.Decorations)
+            {
+                if (existing != null && existing.Kind == DecorationKind.Prop && !decorations.Contains(existing))
+                    decorations.Add(existing);
+            }
             var serializedSet = new SerializedObject(set);
             SerializedProperty list = serializedSet.FindProperty("decorations");
             list.arraySize = decorations.Count;
