@@ -50,7 +50,7 @@
 - To find what's slow, switch one thing off at a time and measure. Our guess (pixels) was wrong: a bigger window didn't change the time at all.
 
 ### Next up
-- [ ] You two: play-test the hero-on-screen fix, then we tick 2.3 off.
+- [x] You two: play-test the hero-on-screen fix, then we tick 2.3 off. Walked apart and turned sharply: the camera corrects and your hero stays in view! ✅ **2.3 done.**
 - [ ] Roadmap **2.4 Multi-Viewer Chunk Loader**: load terrain around *both* players so you can really explore apart, and make extra cameras cheap (GPU Resident Drawer) so split-screen reaches 120+ FPS
 
 ---
