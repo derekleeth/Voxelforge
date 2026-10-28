@@ -42,12 +42,14 @@
 - [ ] **4.5 Class & Spell Design (Creative):** Design first 2 playable classes (e.g., *Runeforged Paladin*, *Geomancer Mage*) with 3 signature abilities each.
 
 ## Phase 5: Monsters, Dungeons & Bosses
-**Goal:** Populate the world with intelligent RPG creatures that can navigate dynamic blocky terrain.
+**Goal:** Populate the world with intelligent RPG creatures that can navigate dynamic blocky terrain, and close the gather → craft → gear-up loop (ores, herbs, mob drops → potions, armor, weapons).
 - [ ] **5.1 Dynamic Voxel NavMesh:** Configure runtime NavMesh rebuilding so monsters recalculate paths when players dig trenches or build walls.
 - [ ] **5.2 RPG Threat & Aggro System:** Implement a *WoW*-style threat table so tank characters can hold boss aggro while ranged characters cast spells.
 - [ ] **5.3 Procedural Dungeon Stamps:** Stamp pre-built boss arenas and ruins into the procedural voxel world during chunk generation.
-- [ ] **5.4 Loot & Equipment System:** Implement armor slots, weapon attachment sockets, and rarity tiers (Common, Rare, Epic, Legendary).
-- [ ] **5.5 Monster & Boss Creation (Creative):** Model and animate 3 overland mobs and 1 multi-phase Dungeon Boss with telegraph attacks.
+- [ ] **5.4 Loot & Equipment System:** Implement armor slots, weapon attachment sockets, and rarity tiers (Common, Rare, Epic, Legendary). Mobs and bosses use data-driven loot tables, rolled on the server, that drop both gear and crafting materials (hides, fangs, elemental essences). Each couch player gets their own loot so co-op partners never fight over drops.
+- [ ] **5.5 Gathering Professions:** Add *Mining* (ore blocks from 3.2 drop ore items; rarer ore tiers by depth and biome), *Herbalism* (special herb nodes from the 2.6 foliage layer that can be harvested, placed by biome, and respawn on a timer kept in a sparse server-side map like D-003's mining damage), and *Skinning/Salvaging* (gather extra materials from defeated mobs). Each profession has a skill level that rises with use and unlocks higher-tier nodes. Every harvest is a server-authoritative request carrying the `InstigatorPlayerID`.
+- [ ] **5.6 Crafting Professions:** Add data-driven `RecipeDefinition` assets (inputs, output, required station and skill level) for *Alchemy* (health/mana potions and elixirs, used through the 4.1 ability framework), *Blacksmithing* (plate armor and weapons from ore), and *Leatherworking* (leather armor from hides). Crafting happens at placeable voxel stations (Alchemy Table, Forge + Anvil, Tanning Rack, extending the 3.5 workbench). Each player has their own split-screen crafting window (4.4). Crafted gear plugs into the 5.4 slots and rarity tiers.
+- [ ] **5.7 Monster, Boss & Crafting Art (Creative):** Model and animate 3 overland mobs and 1 multi-phase Dungeon Boss with telegraph attacks. Create 3+ herb models, 3 ore tiers, crafting-station props, potion bottles, and one craftable armor set + weapon per class.
 
 ## Phase 6: Opening the Portal (Internet Multiplayer)
 **Goal:** Enable online co-op with friends while preserving local Dynamic Split-Screen.
