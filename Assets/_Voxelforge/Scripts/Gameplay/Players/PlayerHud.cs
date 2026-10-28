@@ -7,7 +7,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// A tiny HUD for each player on this PC (Roadmap 3.2, D-015): a reticle in their team colour where they aim, and
-    /// their block bag ("Dirt 12 · Stone 5") under their hero. Everything is placed through <b>that player's own camera
+    /// their block bag ("[Dirt 12] · Stone 5", with the block they build with in brackets, 3.3) under their hero. Everything is placed through <b>that player's own camera
     /// and view</b> (CLAUDE.md Law #5), so it stays on their side of the screen when it's split and follows their hero
     /// when it isn't. Real action bars and inventory windows replace it in 4.4.
     /// </summary>
@@ -59,9 +59,11 @@ namespace Voxelforge.Gameplay
 
             if (player.TryGetComponent(out PlayerBlockBag bag) && TryProject(view, player.VisualRoot.position, out Vector2 under))
             {
-                string line = DescribeBag(bag);
+                ushort selected = player.TryGetComponent(out PlayerBuilder builder) ? builder.SelectedBlock : BlockIds.Air;
+                string line = DescribeBag(bag, selected, player.TeamColor);
                 if (line.Length > 0)
-                    DrawShadowedLabel(new Rect(under.x - 300f * scale, under.y + 6f * scale, 600f * scale, 40f * scale), line, scale);
+                    DrawShadowedLabel(new Rect(under.x - 300f * scale, under.y + 6f * scale, 600f * scale, 40f * scale), line,
+                        DescribeBag(bag, selected, null), scale);
             }
         }
 
@@ -97,7 +99,11 @@ namespace Voxelforge.Gameplay
         static void DrawBar(float x, float y, float width, float height) =>
             GUI.DrawTexture(new Rect(x, y, width, height), Texture2D.whiteTexture);
 
-        string DescribeBag(PlayerBlockBag bag)
+        /// <summary>
+        /// "[Dirt 12]  ·  Stone 5": the block <paramref name="selected"/> for building is bracketed, in
+        /// <paramref name="teamColor"/> if there is one (the drop shadow has none).
+        /// </summary>
+        string DescribeBag(PlayerBlockBag bag, ushort selected, Color? teamColor)
         {
             _text.Clear();
             for (int i = 0; i < bag.SlotCount; i++)
@@ -107,7 +113,18 @@ namespace Voxelforge.Gameplay
                     continue;
                 if (_text.Length > 0)
                     _text.Append("  ·  ");
-                _text.Append(BlockName(stack.BlockId)).Append(' ').Append(stack.Count);
+                if (stack.BlockId == selected)
+                {
+                    if (teamColor.HasValue)
+                        _text.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(teamColor.Value)).Append('>');
+                    _text.Append('[').Append(BlockName(stack.BlockId)).Append(' ').Append(stack.Count).Append(']');
+                    if (teamColor.HasValue)
+                        _text.Append("</color>");
+                }
+                else
+                {
+                    _text.Append(BlockName(stack.BlockId)).Append(' ').Append(stack.Count);
+                }
             }
             return _text.ToString();
         }
@@ -117,12 +134,13 @@ namespace Voxelforge.Gameplay
                 ? block.DisplayName
                 : $"Block {blockId}";
 
-        void DrawShadowedLabel(Rect rect, string text, float scale)
+        /// <param name="shadowText">The same words without colour tags, which would tint the shadow.</param>
+        void DrawShadowedLabel(Rect rect, string text, string shadowText, float scale)
         {
             Color previous = GUI.color;
             GUI.color = new Color(0f, 0f, 0f, 0.75f);
             float offset = Mathf.Max(1f, 2f * scale);
-            GUI.Label(new Rect(rect.x + offset, rect.y + offset, rect.width, rect.height), text, _bagStyle);
+            GUI.Label(new Rect(rect.x + offset, rect.y + offset, rect.width, rect.height), shadowText, _bagStyle);
             GUI.color = previous;
             GUI.Label(rect, text, _bagStyle);
         }

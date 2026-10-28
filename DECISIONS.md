@@ -5,6 +5,41 @@
 
 ---
 
+## D-016: Building With the Block Bag (Ghost Block and Placement Checks)
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **The host aims for building, like mining (D-015).** `PlayerBuilder` (on the player, beside `PlayerMiner`) sends `RequestPlaceRpc(blockId)` with **only the block type**. The host aims with `PlayerController.ServerInput` and `PlayerAim` and works out the cell itself. **No block position ever comes from a PC.**
+  - The reliable RPC goes out after that frame's `SubmitInputRpc`, so the host aims with the frame the player saw.
+  - Host steps: owner check, a **0.15 s** minimum between placements, aim, `VoxelPlacement.Check`, the 8 m `InReach`, `PlayerBlockBag.ServerTryTake(block, 1)`, then `RequestModifyVoxel`. If the edit isn't `Applied`, the block goes **back in the bag**.
+  - Holding Place puts down another block every **0.25 s**, for quick walls.
+- **`VoxelPlacement.Check`** (Voxels assembly, plain C#, tested) returns a `PlacementResult`. The host, the ghost and tests all use it, and 4.5 *Earthen Wall* can too.
+  - **Grid snap:** the cell is `hit.Block + hit.Normal`, the open cell against the face you aim at.
+  - `NoFace` (the aim started inside a block), `ChunkNotLoaded`, `Occupied` (anything but air, including invisible tree trunks), `BlocksCharacter`, `Ok`.
+  - **Characters:** `BodyBounds` boxes for **every player** in `PlayerRegistry`, which `PlayerController` now gets in `ServerInitialize` (no singleton, Law #1). `PlayerController.Bounds` uses the motor's own body on the host, not the smoothed transform.
+  - Boxes that only touch don't count (1 mm skin), so you can **pillar-jump**: jump and place a block under your feet.
+- **Choosing a block:** `BlockSelection` steps through the bag's **non-empty** stacks in slot order. Slots never move, so the order stays put. When the selected block runs out, it moves to the next one. An empty bag selects nothing.
+  - The selection lives on the owner's PC. The host only checks that the bag has the block.
+  - Controls: mouse wheel, LB / RB, split keyboard Z / C (left player) and `.` / `/` (right player).
+  - `DevPlace` became **`Place`** (same bindings: right mouse, left trigger, E, Enter). New `PlayerButtons.SelectNext` / `SelectPrevious`.
+- **Ghost block:** `BlockGhost` draws the selected block's `BlockItemMesh` in the snapped cell with the new `Voxelforge/Block Ghost` shader (`Materials/BlockGhost.mat`).
+  - The shader is unlit and see-through, uses the real block textures, pulses gently and has a team-coloured rim.
+  - It turns **red** where a block would go inside a character. Nothing to build on, or an empty bag, hides it.
+  - Presentation only, on the owning PC. The team outline still marks the block you'd mine, so both show at once.
+  - **Hidden while Mine is held** (asked for in the play-test), so the cracks and the outline are easy to see.
+  - **Toggle Ghost** (`PlayerButtons.ToggleGhost`: G, gamepad Y, `'` for the right split-keyboard player) turns it off and on per player. `PlayerBuilder.ghostOnAtStart` sets where it starts. Placing works either way.
+- **HUD:** the bag line brackets the selected block in your team colour: `[Dirt 12]  ·  Stone 5`.
+- `PlayerVoxelEditor` is now just the target outline. Its dev placement and `RequestModifyVoxelRpc` are gone, and every edit still goes through `VoxelWorldManager.RequestModifyVoxel` (Law #3).
+- Blocks placed on top of a drop push it out (`BlockDrop` already did this), and grass tufts under a new block disappear on remesh (decorations need air above them).
+
+### Deferred on purpose
+- Turning blocks (Logs lying sideways). `Voxel` has facing bits, but no block uses them yet.
+- Tree crowns are meshes, not voxels, so a block placed in leaves clips through them.
+- A real hotbar (4.4), and the ghost on remote clients (Phase 6, no world there yet). A remote PC's ghost would only check its own hero; the host checks everyone anyway.
+
+---
+
 ## D-015: Mining, Cracks, Block Drops and the Block Bag
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

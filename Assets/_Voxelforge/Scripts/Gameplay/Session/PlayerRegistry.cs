@@ -76,7 +76,7 @@ namespace Voxelforge.Gameplay
 
             var playerId = new PlayerId(_nextId++);
             PlayerController player = Instantiate(playerPrefab);
-            player.ServerInitialize(playerId, localSlot, worldManager, spawnColumn, spawnTopY);
+            player.ServerInitialize(playerId, localSlot, worldManager, this, spawnColumn, spawnTopY);
             player.NetworkObject.SpawnWithOwnership(ownerClientId, destroyWithScene: true);
             if (chunkLoader != null)
                 chunkLoader.Register(player);

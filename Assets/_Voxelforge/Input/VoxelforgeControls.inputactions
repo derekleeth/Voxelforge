@@ -42,9 +42,36 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "DevPlace",
+                    "name": "Place",
                     "type": "Button",
                     "id": "32953d25-5678-488e-b188-7c7e743eb1e6",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SelectNext",
+                    "type": "Button",
+                    "id": "0312b466-6745-4544-95bf-c9b4ab66bdd3",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SelectPrevious",
+                    "type": "Button",
+                    "id": "930f048f-15a7-4d70-8012-a3dd6da46946",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleGhost",
+                    "type": "Button",
+                    "id": "af8f9087-aa58-494f-b1df-846e2bb1105f",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -279,7 +306,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardMouse",
-                    "action": "DevPlace",
+                    "action": "Place",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -290,7 +317,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
-                    "action": "DevPlace",
+                    "action": "Place",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -301,7 +328,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardLeft",
-                    "action": "DevPlace",
+                    "action": "Place",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -312,7 +339,139 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardRight",
-                    "action": "DevPlace",
+                    "action": "Place",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0b165e0b-609b-475f-8ec9-1a82006b8e69",
+                    "path": "<Mouse>/scroll/up",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "SelectNext",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "df6bf834-4209-4391-b63a-fef1e44e12aa",
+                    "path": "<Mouse>/scroll/down",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "SelectPrevious",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1eb88b93-d0f5-4f35-90ae-75f643f8899c",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "SelectNext",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ea958c80-fa91-4c09-b1e9-89a102d811ff",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "SelectPrevious",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1658adbb-285f-4560-87bd-e5fd447232b5",
+                    "path": "<Keyboard>/c",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardLeft",
+                    "action": "SelectNext",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "cd26d6f0-8aa1-4fb9-86d4-3b7f7393df26",
+                    "path": "<Keyboard>/z",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardLeft",
+                    "action": "SelectPrevious",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9f92955f-6e10-4383-9750-f14bc540537c",
+                    "path": "<Keyboard>/slash",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardRight",
+                    "action": "SelectNext",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "13061b29-4959-49e4-9043-e4635db4e94f",
+                    "path": "<Keyboard>/period",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardRight",
+                    "action": "SelectPrevious",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0a8468ef-0070-4f09-a0d9-be7129f57c1b",
+                    "path": "<Keyboard>/g",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "ToggleGhost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f65e3b4d-4cca-4741-8ebe-11a6426e24d7",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "ToggleGhost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c36463c3-59cb-4444-98e0-e4de3398e957",
+                    "path": "<Keyboard>/g",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardLeft",
+                    "action": "ToggleGhost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c45e8557-0274-4c6f-8b95-7c2a16afe58e",
+                    "path": "<Keyboard>/quote",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardRight",
+                    "action": "ToggleGhost",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

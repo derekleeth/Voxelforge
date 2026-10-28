@@ -24,7 +24,10 @@ namespace Voxelforge.Gameplay
         readonly InputAction _jump;
         readonly InputAction _look;
         readonly InputAction _mine;
-        readonly InputAction _devPlace;
+        readonly InputAction _place;
+        readonly InputAction _selectNext;
+        readonly InputAction _selectPrevious;
+        readonly InputAction _toggleGhost;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -36,7 +39,10 @@ namespace Voxelforge.Gameplay
             _jump = _actions.FindAction("Player/Jump", throwIfNotFound: true);
             _look = _actions.FindAction("Player/Look", throwIfNotFound: true);
             _mine = _actions.FindAction("Player/Mine", throwIfNotFound: true);
-            _devPlace = _actions.FindAction("Player/DevPlace", throwIfNotFound: true);
+            _place = _actions.FindAction("Player/Place", throwIfNotFound: true);
+            _selectNext = _actions.FindAction("Player/SelectNext", throwIfNotFound: true);
+            _selectPrevious = _actions.FindAction("Player/SelectPrevious", throwIfNotFound: true);
+            _toggleGhost = _actions.FindAction("Player/ToggleGhost", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -93,8 +99,14 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.Jump;
             if (_mine.IsPressed())
                 buttons |= PlayerButtons.Mine;
-            if (_devPlace.IsPressed())
-                buttons |= PlayerButtons.DevPlace;
+            if (_place.IsPressed())
+                buttons |= PlayerButtons.Place;
+            if (_selectNext.IsPressed())
+                buttons |= PlayerButtons.SelectNext;
+            if (_selectPrevious.IsPressed())
+                buttons |= PlayerButtons.SelectPrevious;
+            if (_toggleGhost.IsPressed())
+                buttons |= PlayerButtons.ToggleGhost;
 
             return new PlayerInputFrame
             {

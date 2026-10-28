@@ -53,6 +53,7 @@ namespace Voxelforge.Gameplay
         PlayerId _assignedId;
         byte _assignedSlot;
         VoxelWorldManager _worldManager;
+        PlayerRegistry _registry;
         int2 _spawnColumn;
         int _spawnTopY;
         bool _placed;
@@ -92,6 +93,9 @@ namespace Voxelforge.Gameplay
         /// <summary>Host only: the world this player lives in. Its edits go through here (see <see cref="PlayerVoxelEditor"/>).</summary>
         internal VoxelWorldManager WorldManager => _worldManager;
 
+        /// <summary>Host only: every player in the session, for checks such as "would this block trap someone?".</summary>
+        internal PlayerRegistry Registry => _registry;
+
         /// <summary>This player's team colour (by local slot), for the cloth and anything else that marks them out.</summary>
         public Color TeamColor => slotColors.Length > 0 ? slotColors[LocalSlot % slotColors.Length] : Color.white;
 
@@ -108,14 +112,22 @@ namespace Voxelforge.Gameplay
         public MotorSettings Motor => motor;
 
         /// <summary>
+        /// This hero's collision box. On the host it's the motor's own body; elsewhere it follows the synced transform.
+        /// </summary>
+        public BodyBounds Bounds => BodyBounds.FromFeet(IsServer && _placed ? _body.FeetPosition(motor) : (float3)transform.position,
+            motor.HalfExtents);
+
+        /// <summary>
         /// Host only, called by <see cref="PlayerRegistry"/> just before spawning. The ID and slot are written to
         /// the network in <see cref="OnNetworkSpawn"/>, so clients receive them with the spawn itself.
         /// </summary>
-        internal void ServerInitialize(PlayerId playerId, byte localSlot, VoxelWorldManager worldManager, int2 spawnColumn, int spawnTopY)
+        internal void ServerInitialize(PlayerId playerId, byte localSlot, VoxelWorldManager worldManager, PlayerRegistry registry,
+            int2 spawnColumn, int spawnTopY)
         {
             _assignedId = playerId;
             _assignedSlot = localSlot;
             _worldManager = worldManager;
+            _registry = registry;
             _spawnColumn = spawnColumn;
             _spawnTopY = spawnTopY;
             name = $"Player {playerId}";

@@ -5,7 +5,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// The blocks one player has picked up (Roadmap 3.2, D-015). Only the host changes it (CLAUDE.md Law #2); every PC
-    /// sees it through a <see cref="NetworkList{T}"/>, so a player's HUD can show it. Placing from the bag is 3.3,
+    /// sees it through a <see cref="NetworkList{T}"/>, so a player's HUD can show it. <see cref="PlayerBuilder"/> places from it (3.3),
     /// saving it with the player's profile is 3.4, and real inventory windows are 4.4.
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
@@ -42,7 +42,7 @@ namespace Voxelforge.Gameplay
             return added;
         }
 
-        /// <summary>Host only: takes blocks out of the bag if there are enough (3.3 placement).</summary>
+        /// <summary>Host only: takes blocks out of the bag if there are enough (for <see cref="PlayerBuilder"/>).</summary>
         public bool ServerTryTake(ushort blockId, int amount)
         {
             if (!IsServer)

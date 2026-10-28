@@ -11,8 +11,14 @@ namespace Voxelforge.Gameplay
         Jump = 1 << 0,
         /// <summary>Held: mine the block the hero is aiming at (Roadmap 3.2, <see cref="PlayerMiner"/>).</summary>
         Mine = 1 << 1,
-        /// <summary>Temporary (3.1): place a block in front of the hero. Replaced by ghost-block placement in 3.3.</summary>
-        DevPlace = 1 << 2,
+        /// <summary>Place the selected block where the ghost block shows (Roadmap 3.3, <see cref="PlayerBuilder"/>).</summary>
+        Place = 1 << 2,
+        /// <summary>Pick the next block in the bag to place.</summary>
+        SelectNext = 1 << 3,
+        /// <summary>Pick the previous block in the bag to place.</summary>
+        SelectPrevious = 1 << 4,
+        /// <summary>Turn this player's ghost block preview on or off. Placing still works with it off.</summary>
+        ToggleGhost = 1 << 5,
     }
 
     /// <summary>

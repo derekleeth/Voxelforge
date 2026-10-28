@@ -5,6 +5,70 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 18): Build It Block by Block 🧱 Roadmap 3.3
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **Build with what you mined!** Place (right mouse, left trigger, E or Enter) now puts down a block **from your bag**, one at a time. No more free Dirt. Details in DECISIONS.md **D-016**.
+- **A ghost block shows where it'll go.** A see-through copy of your block, with a glow in your team colour, snaps to the grid against the side you're aiming at.
+  - It turns **red** if the block would go inside a hero (you *or* your partner), and nothing gets placed.
+- **Hold Place** to keep building, one block every quarter second. Great for walls.
+- **Pillar jump:** jump and place a block under your feet to build a tower.
+- **Pick your block:**
+
+| Controls | Previous / next block |
+|---|---|
+| Mouse | Scroll wheel |
+| Gamepad | LB / RB |
+| Split keyboard, left player | Z / C |
+| Split keyboard, right player | `.` / `/` |
+
+  - The block you're building with is in **[brackets] in your team colour** under your hero: `[Dirt 12] · Stone 5 · Log 4`.
+  - When one runs out, it moves on to the next block you have.
+- **No cheating:** your PC only says *which* block. The host works out *where* from your controls, checks that it's empty and that nobody's standing in it, and takes the block from your bag. If something goes wrong, you get the block back.
+
+### Tests: 212 / 212 passing ✅
+- A block snaps to the open cell against the face you aim at.
+- Filled cells (even invisible tree trunks), unloaded chunks and "aiming from inside a block" are refused.
+- A block can't go inside a hero, including the *other* player. Just touching is fine (pillar jump!).
+- Picking blocks: skips empty ones, wraps round both ways, moves on when one runs out, and an empty bag picks nothing.
+
+### Editor test by Claude
+- Two heroes (keyboard + a pretend gamepad). Both ghosts showed up, blue and orange, snapped to the grid, and the HUD showed `[Dirt 5] · Log 3`.
+- Two placements on the host: both landed, the bag went 5 → 3 Dirt, and the F3 overlay showed `edits: 2 blocks`.
+- The host refused the cells where each hero stands (`BlocksCharacter`) and allowed an empty one. The ghost turned red over Player 2.
+
+### Play-test results 🎉
+- **Building walls with the ghost block** looks good ✅
+- Mining and building are **easy to pick up** and quick to do ✅
+- **Blocks in the bag cycle and place correctly** ✅
+- Pillar towers and "can't build inside each other" ✅
+- 105 blocks edited on a snowy mountain, with Dirt, Log, Snow and Stone in the bag.
+- **FPS (F4, in the editor, 2 players, shared camera):** 166 average, 65 1% low, worst frame 25.4 ms. That's the same as 3.2 (168-179 average, 55-61 1% low), so building costs nothing noticeable.
+
+### Added after the play-test
+- **The ghost hides while you mine**, so it's easier to see the block you're cracking.
+- **Toggle Ghost:** each player can turn their ghost block off and on. Placing still works with it off.
+
+| Controls | Toggle Ghost |
+|---|---|
+| Keyboard + mouse | G |
+| Gamepad | Y |
+| Split keyboard, left player | G |
+| Split keyboard, right player | `'` (next to Enter) |
+
+- Checked by Claude in Play Mode with a pretend gamepad:
+  - Y turned Player 2's ghost off and on again, and Player 1's stayed on.
+  - Holding the trigger to mine hid the ghost, and letting go brought it back.
+  - Still 212 / 212 tests passing.
+
+### Next up
+- [x] You two: split-screen play-test ✅
+- [ ] Try the two ghost changes, then tick off **3.3**
+- [ ] Roadmap **3.4 Seed + Delta Save System**: save the world and both players' bags
+
+---
+
 ## 2026-10-28 - Session 1 (part 17): Crack, Crumble, Collect 🪨 Roadmap 3.2
 **Phase:** 3 - "Forge & Carve"
 
