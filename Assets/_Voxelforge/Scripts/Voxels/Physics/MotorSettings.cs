@@ -20,6 +20,9 @@ namespace Voxelforge.Voxels
         [Tooltip("Fastest fall speed, so long falls can't tunnel through floors.")]
         public float MaxFallSpeed;
 
+        [Tooltip("Tallest step, in blocks, a walking body climbs or drops down without jumping or falling.")]
+        public float StepHeight;
+
         [Tooltip("Half the body's size on each axis. 0.3 x 0.9 x 0.3 is a 0.6 m wide, 1.8 m tall hero.")]
         public float3 HalfExtents;
 
@@ -29,6 +32,7 @@ namespace Voxelforge.Voxels
             JumpHeight = 1.25f,
             Gravity = 25f,
             MaxFallSpeed = 50f,
+            StepHeight = 1f,
             HalfExtents = new float3(0.3f, 0.9f, 0.3f),
         };
 

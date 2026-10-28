@@ -11,8 +11,9 @@ namespace Voxelforge.Gameplay
     /// One hero in the world. The host spawns it (see <see cref="PlayerRegistry"/>) and runs all of its movement;
     /// the owning client only reads controls and sends them up with <see cref="SubmitInputRpc"/> (CLAUDE.md Law #2).
     /// <para>
-    /// The transform's position is the player's <b>feet</b>. A server-authority <c>NetworkTransform</c> on the
-    /// same object sends it to every client.
+    /// The transform's position is the player's <b>feet</b>, and its yaw is the way the hero faces. A
+    /// server-authority <c>NetworkTransform</c> on the same object sends both to every client. Animation and foot IK
+    /// are worked out on each PC from that motion plus <see cref="Grounded"/> (see <see cref="HeroAnimator"/>).
     /// </para>
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
@@ -23,14 +24,24 @@ namespace Voxelforge.Gameplay
         [Tooltip("Blocks of open space a spawn point needs above the ground.")]
         [SerializeField, Min(1)] int spawnClearance = 2;
 
-        [Tooltip("Placeholder body, tinted per local slot so players can tell each other apart.")]
-        [SerializeField] Renderer bodyRenderer;
+        [Tooltip("How fast the hero turns to face where they walk, in degrees per second.")]
+        [SerializeField, Min(1f)] float turnSpeed = 720f;
+
+        [Tooltip("The hero model. It follows this object, smoothed over steps, and cameras follow it.")]
+        [SerializeField] Transform visualRoot;
+
+        [Tooltip("Renderer with the team-color cloth, tinted per local slot so players can tell each other apart.")]
+        [SerializeField] Renderer teamColorRenderer;
+
+        [Tooltip("Which of the renderer's materials is the team-color cloth.")]
+        [SerializeField, Min(0)] int teamColorMaterialIndex;
 
         [SerializeField] Color[] slotColors = { new Color(0.25f, 0.55f, 1f), new Color(1f, 0.45f, 0.2f), new Color(0.4f, 0.85f, 0.35f), new Color(0.85f, 0.35f, 0.9f) };
 
         readonly NetworkVariable<byte> _playerId = new NetworkVariable<byte>();
         readonly NetworkVariable<byte> _localSlot = new NetworkVariable<byte>();
         readonly NetworkVariable<bool> _landed = new NetworkVariable<bool>();
+        readonly NetworkVariable<bool> _grounded = new NetworkVariable<bool>();
 
         IPlayerInputSource _inputSource;
         uint _nextSequence;
@@ -44,8 +55,12 @@ namespace Voxelforge.Gameplay
         bool _placed;
         VoxelBody _body;
         float3 _previousPosition;
+        float _yaw;
+        float _previousYaw;
         PlayerInputFrame _latestInput;
         bool _hasInput;
+
+        Material _teamColorMaterial;
 
         /// <summary>Who this player is. Record this as the instigator of anything they do.</summary>
         public PlayerId PlayerId => new PlayerId(_playerId.Value);
@@ -53,14 +68,23 @@ namespace Voxelforge.Gameplay
         /// <summary>Which player on the owning PC this is: 0 = Player 1, 1 = Player 2.</summary>
         public byte LocalSlot => _localSlot.Value;
 
-        /// <summary>Host only: standing on a solid block.</summary>
-        public bool Grounded => _body.Grounded;
+        /// <summary>Standing on a solid block. The host decides it; every PC sees it, for animation.</summary>
+        public bool Grounded => _grounded.Value;
 
         /// <summary>Host only: still waiting for the terrain under the spawn point to generate.</summary>
         public bool IsWaitingForGround => !_placed || _body.WaitingForWorld;
 
         /// <summary>True on every PC once this player has been placed on the ground. Cameras wait for it.</summary>
         public bool HasLanded => _landed.Value;
+
+        /// <summary>The hero model: where the player <i>looks</i> like they are, smoothed over steps. Cameras follow this.</summary>
+        public Transform VisualRoot => visualRoot != null ? visualRoot : transform;
+
+        /// <summary>
+        /// The blocks this PC can see, for presentation such as foot IK. Only the host has it for now; a remote PC
+        /// gets null and skips those effects until it builds its own world in Phase 6.
+        /// </summary>
+        public VoxelWorld World => _worldManager != null ? _worldManager.World : null;
 
         /// <summary>
         /// Host only, called by <see cref="PlayerRegistry"/> just before spawning. The ID and slot are written to
@@ -115,12 +139,7 @@ namespace Voxelforge.Gameplay
             }
             name = $"Player {PlayerId}";
 
-            if (bodyRenderer != null && slotColors.Length > 0)
-            {
-                var block = new MaterialPropertyBlock();
-                block.SetColor("_BaseColor", slotColors[LocalSlot % slotColors.Length]);
-                bodyRenderer.SetPropertyBlock(block);
-            }
+            TintTeamColor();
 
             if (IsOwner)
                 OwnerSpawned?.Invoke(this);
@@ -131,6 +150,33 @@ namespace Voxelforge.Gameplay
             if (IsOwner)
                 OwnerDespawned?.Invoke(this);
             _inputSource = null;
+        }
+
+        public override void OnDestroy()
+        {
+            if (_teamColorMaterial != null)
+                Destroy(_teamColorMaterial);
+            base.OnDestroy();
+        }
+
+        /// <summary>
+        /// Gives the team-color cloth its own copy of the material in this slot's color. A material copy rather
+        /// than a property block keeps the SRP Batcher working.
+        /// </summary>
+        void TintTeamColor()
+        {
+            if (teamColorRenderer == null || slotColors.Length == 0)
+                return;
+
+            Material[] materials = teamColorRenderer.sharedMaterials;
+            if (teamColorMaterialIndex >= materials.Length || materials[teamColorMaterialIndex] == null)
+                return;
+
+            if (_teamColorMaterial == null)
+                _teamColorMaterial = new Material(materials[teamColorMaterialIndex]) { name = $"{materials[teamColorMaterialIndex].name} ({PlayerId})" };
+            _teamColorMaterial.SetColor("_BaseColor", slotColors[LocalSlot % slotColors.Length]);
+            materials[teamColorMaterialIndex] = _teamColorMaterial;
+            teamColorRenderer.sharedMaterials = materials;
         }
 
         /// <summary>
@@ -165,7 +211,8 @@ namespace Voxelforge.Gameplay
             if (IsServer && _placed)
             {
                 float alpha = math.saturate((Time.time - Time.fixedTime) / Time.fixedDeltaTime);
-                transform.position = math.lerp(_previousPosition, _body.FeetPosition(motor), alpha);
+                transform.SetPositionAndRotation(math.lerp(_previousPosition, _body.FeetPosition(motor), alpha),
+                    Quaternion.Euler(0f, Mathf.LerpAngle(_previousYaw, _yaw, alpha), 0f));
             }
         }
 
@@ -178,12 +225,19 @@ namespace Voxelforge.Gameplay
                 return;
 
             _previousPosition = _body.FeetPosition(motor);
+            _previousYaw = _yaw;
             var input = new MotorInput
             {
                 Move = MoveDirection.ToWorld(_latestInput.Move, _latestInput.ViewYaw),
                 Jump = _latestInput.IsPressed(PlayerButtons.Jump),
             };
             VoxelBodyMotor.Step(ref _body, input, motor, _worldManager.World, Time.fixedDeltaTime);
+
+            // Face where we walk. Standing still keeps the last facing.
+            if (math.lengthsq(input.Move) > 0.01f)
+                _yaw = math.fmod(MoveDirection.TurnToward(_yaw, MoveDirection.YawOf(input.Move), turnSpeed * Time.fixedDeltaTime), 360f);
+            if (_grounded.Value != _body.Grounded)
+                _grounded.Value = _body.Grounded;
         }
 
         bool TryPlaceOnGround()
@@ -194,6 +248,7 @@ namespace Voxelforge.Gameplay
 
             _body = new VoxelBody { Position = feet + new float3(0f, motor.HalfExtents.y + 0.001f, 0f) };
             _previousPosition = feet;
+            _yaw = _previousYaw = transform.eulerAngles.y;
             transform.position = feet;
             _placed = true;
             _landed.Value = true;

@@ -1,4 +1,6 @@
+using Unity.Mathematics;
 using UnityEngine;
+using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
@@ -6,12 +8,24 @@ namespace Voxelforge.Gameplay
     /// One local player's camera. <see cref="SplitScreenDirector"/> makes one per slot by copying the overview camera
     /// (so every view shares its render settings), and each frame tells it where to look and where to draw: straight
     /// to the screen, to a rectangle of it, or into a texture for the Voronoi composite.
+    /// <para>
+    /// The camera never goes inside a hill: if blocks are between the focus and the camera, it moves in front of
+    /// them right away, then eases back out once the view is clear.
+    /// </para>
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class PlayerCameraRig : MonoBehaviour
     {
+        /// <summary>How far in front of a block the camera stops.</summary>
+        const float WallGap = 0.3f;
+        /// <summary>Closest the camera gets to its focus, even when squeezed against a wall.</summary>
+        const float MinDistance = 0.5f;
+        /// <summary>How quickly the camera eases back out after the view clears (per second).</summary>
+        const float EaseOutRate = 4f;
+
         Camera _camera;
         RenderTexture _texture;
+        float _clearDistance = float.PositiveInfinity;
 
         public byte LocalSlot { get; private set; }
 
@@ -35,11 +49,29 @@ namespace Voxelforge.Gameplay
             name = $"Player Camera (slot {localSlot})";
         }
 
-        /// <summary>Orbits the camera <paramref name="distance"/> meters back from <paramref name="focus"/>, looking at it.</summary>
-        public void SetPose(Vector3 focus, float yaw, float pitch, float distance)
+        /// <summary>
+        /// Orbits the camera <paramref name="distance"/> meters back from <paramref name="focus"/>, looking at it.
+        /// With a <paramref name="world"/>, it moves closer when blocks are in the way.
+        /// </summary>
+        public void SetPose(Vector3 focus, float yaw, float pitch, float distance, VoxelWorld world = null)
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-            transform.SetPositionAndRotation(focus - rotation * Vector3.forward * distance, rotation);
+            Vector3 back = rotation * Vector3.back;
+            transform.SetPositionAndRotation(focus + back * ClearDistance(focus, back, distance, world), rotation);
+        }
+
+        float ClearDistance(float3 focus, float3 back, float distance, VoxelWorld world)
+        {
+            float allowed = distance;
+            if (world != null && VoxelQueries.Raycast(world, focus, back, distance + WallGap, out VoxelHit hit))
+                allowed = math.max(MinDistance, hit.Distance - WallGap);
+
+            // Snap in at once so the view never shows the inside of a hill, but ease back out.
+            if (allowed < _clearDistance)
+                _clearDistance = allowed;
+            else
+                _clearDistance = math.lerp(_clearDistance, allowed, 1f - math.exp(-EaseOutRate * Time.unscaledDeltaTime));
+            return math.min(_clearDistance, distance);
         }
 
         /// <summary>Draws straight to the screen, in <paramref name="rect"/> (0-1, origin bottom-left).</summary>

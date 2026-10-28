@@ -37,5 +37,28 @@ namespace Voxelforge.Tests
 
             Assert.AreEqual(0.5f, math.length(MoveDirection.ToWorld(move, 37f)), Tolerance);
         }
+
+        [Test]
+        public void YawOf_UndoesToWorld()
+        {
+            Assert.AreEqual(90f, MoveDirection.YawOf(new float2(1f, 0f)), Tolerance);
+            Assert.AreEqual(0f, MoveDirection.YawOf(new float2(0f, 1f)), Tolerance);
+            float2 world = MoveDirection.ToWorld(new float2(0f, 1f), -135f);
+            Assert.AreEqual(0f, SplitScreenMath.DeltaAngle(-135f, MoveDirection.YawOf(world)), 1e-3f);
+        }
+
+        [Test]
+        public void TurnToward_TakesTheShortWayRound()
+        {
+            Assert.AreEqual(370f, MoveDirection.TurnToward(350f, 10f, 90f), Tolerance);
+            Assert.AreEqual(-10f, MoveDirection.TurnToward(10f, 350f, 90f), Tolerance);
+        }
+
+        [Test]
+        public void TurnToward_IsLimitedByTurnSpeed()
+        {
+            Assert.AreEqual(14.4f, MoveDirection.TurnToward(0f, 180f - 0.1f, 14.4f), Tolerance);
+            Assert.AreEqual(30f, MoveDirection.TurnToward(0f, 30f, 45f), Tolerance);
+        }
     }
 }

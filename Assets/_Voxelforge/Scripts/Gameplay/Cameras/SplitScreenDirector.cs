@@ -2,6 +2,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
+using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
@@ -227,7 +228,7 @@ namespace Voxelforge.Gameplay
             rig.OwnYaw += look.x;
             rig.OwnPitch = ClampPitch(rig.OwnPitch - look.y);
 
-            rig.SetPose(FocusPoint(slot), rig.OwnYaw, rig.OwnPitch, baseDistance);
+            rig.SetPose(FocusPoint(slot), rig.OwnYaw, rig.OwnPitch, baseDistance, WorldOf(slot));
             rig.ShowOnScreen(rect);
             _inputs[slot].ViewYaw = rig.OwnYaw;
             _views[slot] = new PlayerView { LocalSlot = (byte)slot, Camera = rig.Camera, ScreenRect = rect };
@@ -277,7 +278,7 @@ namespace Voxelforge.Gameplay
             var fullScreen = new Rect(0f, 0f, 1f, 1f);
             if (!SplitScreenMath.IsSplit(separation, mergeDistance))
             {
-                rigA.SetPose((focusA + focusB) * 0.5f, _sharedYaw, _sharedPitch, distance);
+                rigA.SetPose((focusA + focusB) * 0.5f, _sharedYaw, _sharedPitch, distance, WorldOf(slotA));
                 rigA.ShowOnScreen(fullScreen);
                 rigB.Hide();
                 AttachComposite(null);
@@ -294,8 +295,8 @@ namespace Voxelforge.Gameplay
 
             // The first player draws straight to the screen; the second draws into a texture that the composite
             // camera paints over their side of the line.
-            rigA.SetPose(SplitFocus(rigA, focusA, focusB, -normal, yawA, pitchA, distance, freedom), yawA, pitchA, distance);
-            rigB.SetPose(SplitFocus(rigB, focusB, focusA, normal, yawB, pitchB, distance, freedom), yawB, pitchB, distance);
+            rigA.SetPose(SplitFocus(rigA, focusA, focusB, -normal, yawA, pitchA, distance, freedom), yawA, pitchA, distance, WorldOf(slotA));
+            rigB.SetPose(SplitFocus(rigB, focusB, focusA, normal, yawB, pitchB, distance, freedom), yawB, pitchB, distance, WorldOf(slotB));
             int width = Mathf.Max(1, Mathf.RoundToInt(Screen.width * splitRenderScale));
             int height = Mathf.Max(1, Mathf.RoundToInt(Screen.height * splitRenderScale));
             rigA.ShowOnScreen(fullScreen);
@@ -350,7 +351,10 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>The point a player's camera looks at: a little above their feet.</summary>
-        float3 FocusPoint(int slot) => (float3)_controllers[slot].transform.position + new float3(0f, lookHeight, 0f);
+        float3 FocusPoint(int slot) => (float3)_controllers[slot].VisualRoot.position + new float3(0f, lookHeight, 0f);
+
+        /// <summary>The blocks a player's camera keeps out of, if this PC has them.</summary>
+        VoxelWorld WorldOf(int slot) => _controllers[slot].World;
 
         /// <summary>This frame's look input in degrees: x = turn right, y = tilt up.</summary>
         Vector2 ReadLookDegrees(LocalPlayerInput input)
