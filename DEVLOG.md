@@ -5,6 +5,51 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 15): Our First Real Game! 🎮 Roadmap 2.7 done, Phase 2 complete!
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **Voxelforge is now a real Windows game** you can play without Unity: `Builds/Windows/Voxelforge.exe`. Details in DECISIONS.md **D-013**.
+- **One-click builds:** *Voxelforge → Build Windows Demo* makes the game and writes `build-report.txt` with how long it took and how big it is. There's also a *Development* version that the Unity profiler can connect to.
+- The game is now called **Voxelforge** (it was "VoxelforgeTmp"), version **0.2.7**.
+- **New play-test keys:**
+  - **F4** records the FPS over the last 10 seconds into `frame-stats.txt`, next to the game.
+  - **F12** saves a screenshot into `Screenshots/`.
+  - A message at the bottom of the screen confirms each one.
+  - **Shift+Esc** quits the game.
+- The F3 overlay now shows **average FPS** and **"1% low" FPS**, the speed of the slowest 1% of frames. That's what stutter feels like.
+- **Smoke test:** `Voxelforge.exe -smoketest 20` starts the game, records FPS and a screenshot after 20 seconds, then quits, so Claude can check a new build works before we play it.
+
+### Results 🎉
+| | Average FPS | 1% low | Worst frame |
+|---|---|---|---|
+| Overview (nobody joined) | 310 | 141-169 | 13-20 ms |
+| One player | 252 | 97 | 15 ms |
+| **Two players, split-screen** | **153** ✅ | 87 | 17 ms |
+
+- Tested on an RTX 4060 laptop at 1920×1080. **Split-screen beats the 120 FPS target.** ✅
+- **Build size:** 110 MB. The first build took 4 min 15 s (compiling all the shaders), and later builds take about 15 s.
+- **The game starts cleanly:** no errors from our code. The terrain loads in about 2 seconds.
+- **It looks the same as the editor:** we compared screenshots of terrain, textures, plants, fog, biome colours and shadows.
+- **Play-test passed:** both heroes exploring in split-screen. ✅
+- **Phase 2 is complete!** 🏆
+
+### Tests: 175 / 175 passing ✅
+- New FPS maths tests: average and 1% low, only counting the last 10 seconds, the memory filling up and wrapping around, and ignoring bad frame times.
+
+### Things we learned
+- **F4 and F12 worked the first time, but nothing showed it.** The numbers went into a log file hidden in AppData. Now every key press puts a message on screen and saves next to the game, where you'd look.
+- **The grey "sky" isn't a bug.** The overview camera looks down, so past the edge of the loaded world you see the bottom half of Unity's default sky, which is grey. It's the same in the editor. A real sky could come later.
+- Unity warns that it removed a few post-effect shaders we don't use (depth of field, Panini). That's fine and saves space.
+- The split-screen "1% low" (87 FPS) is under 120 even though the average is fine. We'll keep an eye on it as monsters and spells arrive.
+- In an earlier run, an Xbox controller dropped out twice and the game stuttered for a moment. It didn't happen again, but if you see a stutter, press F4 right after.
+
+### Next up
+- [x] You two: split-screen play-test of the .exe ✅ **2.7 done.**
+- [ ] Roadmap **3.1 Message-Driven Voxel Edits**: start digging and building! `RequestModifyVoxel` with a player ID on every change
+
+---
+
 ## 2026-10-28 - Session 1 (part 14): Colours, Soft Corners & a Smarter Camera 🎨 Roadmap 2.6 done!
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

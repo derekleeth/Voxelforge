@@ -5,6 +5,25 @@
 
 ---
 
+## D-013: The Playable Demo Build
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **Windows x86_64, Mono scripting backend.** Only the Mono player module is installed. The heavy work (noise, meshing, decoration placement) is Burst-compiled native code either way, so IL2CPP would mostly speed up gameplay scripts. We revisit IL2CPP when we ship to other people or when gameplay scripts show up in the profiler.
+- **Graphics: Direct3D 12** (Unity 6's default on Windows), so the GPU Resident Drawer and GPU occlusion culling work the same as in the editor (D-010).
+- **Output:** `Builds/Windows/Voxelforge.exe`, git-ignored. It's built from **Voxelforge → Build Windows Demo** (release) or **… (Development)** (profiler attaches). `DemoBuilder.BuildFromCommandLine` does the same in batch mode. Each build writes `Builds/Windows/build-report.txt` with the result, time, size and errors.
+- **Player settings:** product and company are both `Voxelforge`, version `0.2.7`, Fullscreen Window at native resolution, PC quality level (vsync off). Logs go to `%USERPROFILE%\AppData\LocalLow\Voxelforge\Voxelforge\Player.log`.
+- **Measuring FPS:** `FrameTimeStats` keeps the last 8,192 frame times in a ring buffer. The F3 overlay shows the average and **1% low** (the average FPS of the slowest 1% of frames) over the last 10 s. **F4** saves a snapshot, tagged with camera mode, player count and resolution, to `Player.log` and to `frame-stats.txt`. We judge "120+ FPS" by the average and keep an eye on the 1% low for stutter.
+- **Demo hotkeys:** **F12** saves a screenshot to `Screenshots/`. F4 and F12 both show a confirmation along the bottom of the screen for 4 s, even while the overlay is hidden. The screenshot message waits one frame so it isn't in the picture. **Shift+Esc quits** a build (plain Esc still frees the mouse). A real pause menu comes with the 4.4 UI.
+- **Where demo files go:** builds write next to the `.exe` (`Builds/Windows/frame-stats.txt`, `Builds/Windows/Screenshots/`). The editor writes to `Builds/Editor/`. Both are git-ignored. `build-report.txt` is only written by the build itself.
+- **Smoke test:** `Voxelforge.exe -smoketest <seconds>` logs a stats snapshot and a screenshot after that long, then quits, so Claude can check a fresh build starts cleanly without anyone at the controls.
+- **Results (RTX 4060 Laptop GPU, 1920×1080):** split-screen **153 FPS average** (87 FPS 1% low, worst frame 17 ms); one player 252 average (97 1% low); overview 310 average. The average passes the 120 target. The 1% low in split-screen is below 120, so we watch it as more gameplay is added.
+- **Build-time settings Unity writes:** URP records which shader features the build uses in `PC_RPAsset.asset` and `UniversalRenderPipelineGlobalSettings.asset`, and the Input System adds our input actions to `preloadedAssets`. We commit these with the build changes.
+- **Expected build log noise:** URP strips the post-effect shaders we don't use (depth of field, Panini), and Unity strips the GPU-occlusion *debug* shaders. Both print warnings that are harmless.
+
+---
+
 ## D-012: Foliage, Trees and the Decoration Layer
 - **Date:** 2026-10-28
 - **Status:** Accepted (parts A engine, B art, C tint + corner AO + FPS; all play-tested 2026-10-28)
