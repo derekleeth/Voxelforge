@@ -5,6 +5,43 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 7): Two Heroes Join the World 🎮 Roadmap 2.1
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **The game is now a Host.** Pressing Play starts a tiny server *and* a player connection in the same program, just like an online game, except everything stays on this PC. Details in DECISIONS.md **D-007**.
+- **Two players spawn**: P1 (blue capsule) and P2 (orange capsule). They wait for the ground to generate, then land on the surface near the middle of the world.
+- **The host is the boss.** Your keys don't move your hero directly: they send a message to the host, the host moves the hero, and then tells everyone where it is. That's what lets online play slot in later.
+- **Heroes bump into blocks** with our own box-vs-block collision: walls stop you, you land on the ground, ceilings bonk your head, and you can't fall out of the world.
+- **Temporary controls** (2.2 replaces them):
+  - P1: **WASD** to walk, **Space** to jump
+  - P2: **Arrow keys** to walk, **Right Ctrl** to jump
+- **A debug corner** shows Host status, FPS and each player's position and state. Press **F3** to hide it.
+- The camera follows the middle of both players and pulls back when they split up (2.3 will give each player their own view).
+
+### Results 🎉
+- Host starts, P1 and P2 spawn and land on the grass at about y = 75.
+- P1 walked about 10 blocks east down a slope; P2 jumped up a hill about 10 blocks high.
+- About **144 FPS** in the editor while both players move.
+
+### Tests: 80 / 80 passing ✅
+- Bodies fall and land, walls block, ceilings stop jumps, and jumps reach the right height.
+- A super-fast fall still can't tunnel through a 1-block floor.
+- An ungenerated chunk acts like solid ground, and a player in an unloaded chunk waits instead of falling.
+- The spawn finder picks the surface (not a cave) and skips spots without enough head room.
+- `PlayerId` equality and names (P1, P2).
+
+### Things we learned
+- In this netcode, one program can only have **one** network manager, so both couch players belong to the same connection and get told apart by their **slot** number.
+- Without auto-step, a single block is a wall: you have to **jump** up every 1-block step. Auto-step is coming in 2.5!
+- Unity once "forgot" a new script file (it wasn't being compiled at all). Deleting and re-creating the file fixed it.
+
+### Next up
+- [x] You two: play-test 2.1 (both players on one keyboard), then we tick it off in the roadmap
+- [ ] Roadmap **2.2 Dual Input Binding**: gamepads, and a proper device for each player
+
+---
+
 ## 2026-10-27 - Session 1 (part 6): Painted Blocks & Torchlight 🎨 Roadmap 1.5
 **Phase:** 1 - The Voxel Foundation
 

@@ -17,7 +17,7 @@
 
 ## Phase 2: Dynamic Couch Co-Op & Smooth Heroes
 **Goal:** Get two smooth RPG characters running around the blocky world together on one PC.
-- [ ] **2.1 Local Listen-Server Setup:** Configure game to launch in local `Host Mode` (Server + 2 Local Clients).
+- [x] **2.1 Local Listen-Server Setup:** Configure game to launch in local `Host Mode` (Server + 2 Local Clients). *(One host connection owns both couch players, told apart by local slot; server-authoritative input RPCs and voxel box collision. See DECISIONS.md D-007.)*
 - [ ] **2.2 Dual Input Binding:** Map Player 1 (Keyboard/Mouse or Gamepad 1) and Player 2 (Gamepad 2) via native local player subsystems.
 - [ ] **2.3 Voronoi Dynamic Split-Screen:** Build midpoint shared camera when players are `< 15m` apart; smoothly split via angled screen-space render targets when `> 15m` apart.
 - [ ] **2.4 Multi-Viewer Chunk Loader:** Update Chunk Manager to stream/unload terrain around a `List<ViewerTransform>` so both players can explore independently.

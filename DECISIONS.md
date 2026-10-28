@@ -5,6 +5,36 @@
 
 ---
 
+## D-007: How Couch Co-Op Runs on a Host
+- **Date:** 2026-10-27
+- **Status:** Accepted
+
+### Decisions
+- **Netcode for GameObjects 2.13.3** + Unity Transport. Pressing Play starts a **Host** (server + local client in one program) listening on `127.0.0.1:7777`. `GameSession` starts it; nothing else calls `StartHost`.
+- **One connection, many local players.** NGO allows one `NetworkManager` per program, so the couch can't be "2 clients". Instead the host's own connection **owns several `PlayerController` objects**, told apart by their **local slot** (0 = Player 1, 1 = Player 2). In Phase 6, a remote couch is just another connection with its own slots.
+- **`PlayerId` ≠ connection.** `PlayerId` (in `Voxelforge.Core`, 1 byte, `P1`, `P2`…) is who did something. It's the `InstigatorPlayerID` for voxel edits, damage and the delta log. `PlayerRegistry` (host only, not a singleton) maps each `PlayerId` to its `OwnerClientId` + `LocalSlot`.
+- **NGO's automatic player prefab is off.** `PlayerRegistry.SpawnLocalPlayer` spawns players with `SpawnWithOwnership`. The ID and slot are `NetworkVariable`s, written in `OnNetworkSpawn` so clients get them with the spawn.
+- **Server-authoritative movement.** Every frame, the owning client reads controls from an `IPlayerInputSource` and sends a `PlayerInputFrame` (move, buttons, sequence number) with `SubmitInputRpc`. The host ignores frames from anyone but the owner, and frames older than the newest one it has. The host runs the motor at the fixed rate (50 Hz), blends between ticks for smooth 120+ FPS visuals, and a server-authority `NetworkTransform` sends the position to clients.
+- **Voxel box collision, no Unity physics.** `VoxelBodyMotor` moves a box (0.6 × 1.8 × 0.6 m) through the block grid one axis at a time, in sub-steps under half a block, so fast falls can't skip a floor. It reads blocks straight from `VoxelWorld`:
+  - Block edits (Phase 3) change collision on the very next tick, with no colliders to rebuild.
+  - It's plain C#, cheap enough for the host to run for every player, and unit-tested.
+  - **Chunks that aren't generated yet count as solid**, and a body whose own chunk isn't loaded is held still. Nobody falls out of the world while terrain streams in (2.4).
+- **Spawning waits for terrain.** `SpawnPointFinder` scans a column from the sky down for the first solid block with 2 blocks of head room, and keeps trying each tick until the chunks exist. Scanning from the top finds the surface, never a cave.
+- **New assembly `Voxelforge.Gameplay`** (Core + Voxels + Netcode + Transport + Input System). Voxels and Core still know nothing about networking.
+
+### Temporary on purpose
+- `TempKeyboardInputSource`: P1 = WASD + Space, P2 = Arrows + Right Ctrl on one keyboard. **2.2** replaces it with per-device binding.
+- `TempMidpointCamera`: one camera on the players' midpoint. **2.3** replaces it with per-player Voronoi split-screen.
+- Movement is world-aligned (W = north), not camera-relative, until the cameras exist (2.3).
+
+### Deferred on purpose
+- **1 m auto-step** (walk up one block without jumping): **2.5**. For now, you jump.
+- **Client-side prediction / reconciliation:** not needed on loopback (zero lag). Phase 6, when real network lag appears.
+- **Per-slot authority check:** the host can only check *which connection* sent an input, not which slot. A connection could steer its own other couch players, which is harmless. Phase 6 should check that a connection only sends for its own slots (it already can't steer other connections' players).
+- `Assets/DefaultNetworkPrefabs.asset` is created and kept up to date by NGO itself, so it stays where NGO puts it, outside `_Voxelforge/`.
+
+---
+
 ## D-006: How Blocks Get Their Look
 - **Date:** 2026-10-27
 - **Status:** Accepted
@@ -154,7 +184,7 @@ Every x64 PC should build identical worlds from the same seed. Bit-identical flo
   - `Voxelforge.Voxels`: chunks, meshing, noise (Burst + Collections + Mathematics, unsafe allowed). Plural on purpose: a namespace named `Voxel` would clash with the `Voxel` struct.
   - `Voxelforge.Editor`: editor-only tools
   - `Voxelforge.Tests.EditMode`: unit tests
-- **Packages:** Burst 2.0, Collections 6.6, Mathematics 1.4 and Test Framework 1.8 (all built into Unity 6.6). Netcode for GameObjects waits until Phase 2.1.
+- **Packages:** Burst 2.0, Collections 6.6, Mathematics 1.4 and Test Framework 1.8 (all built into Unity 6.6). Netcode for GameObjects 2.13.3 was added in Phase 2.1 (see D-007).
 - **Removed Unity Version Control (`collab-proxy`)**, because we use Git. Binary art goes through **Git LFS** (see `.gitattributes`).
 - **MCP tools** (project `.mcp.json`):
   - **Unity:** "MCP for Unity" by CoplayDev, pinned to **v10.3.0**. It uses the HTTP transport at `http://127.0.0.1:8080/mcp`; start it from *Window → MCP for Unity → Toggle MCP Window → Start Server*.

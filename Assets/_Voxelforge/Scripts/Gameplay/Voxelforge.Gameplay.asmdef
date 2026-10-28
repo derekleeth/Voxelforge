@@ -1,0 +1,22 @@
+{
+    "name": "Voxelforge.Gameplay",
+    "rootNamespace": "Voxelforge.Gameplay",
+    "references": [
+        "Voxelforge.Core",
+        "Voxelforge.Voxels",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport",
+        "Unity.InputSystem",
+        "Unity.Mathematics",
+        "Unity.Collections"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
