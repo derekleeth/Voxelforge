@@ -21,3 +21,6 @@ MonoBehaviour:
   mapColor:
     serializedVersion: 2
     rgba: 4287416546
+  topTexture: {fileID: 11400000, guid: b3a680ead372d8c459c7027709492e04, type: 2}
+  sideTexture: {fileID: 0}
+  bottomTexture: {fileID: 0}

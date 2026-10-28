@@ -60,10 +60,43 @@ namespace Voxelforge.Voxels
             foreach (BlockDefinition block in blocks)
                 maxId = Math.Max(maxId, block.Id);
 
+            List<BlockTexture> layers = GetTextureLayers();
             var lookup = new NativeArray<BlockInfo>(maxId + 1, allocator);
             foreach (BlockDefinition block in blocks)
-                lookup[block.Id] = block.ToBlockInfo();
+            {
+                BlockInfo info = block.ToBlockInfo();
+                info.TopLayer = LayerOf(layers, block.TopTexture);
+                info.SideLayer = LayerOf(layers, block.SideTexture);
+                info.BottomLayer = LayerOf(layers, block.BottomTexture);
+                lookup[block.Id] = info;
+            }
             return lookup;
+        }
+
+        /// <summary>
+        /// Every texture the blocks use, each once, in a fixed order (blocks in list order; top, side, bottom).
+        /// Its index is the texture array layer, so the array builder and <see cref="CreateLookup"/> always agree.
+        /// </summary>
+        public List<BlockTexture> GetTextureLayers()
+        {
+            var layers = new List<BlockTexture>();
+            foreach (BlockDefinition block in blocks)
+            {
+                if (block == null)
+                    continue;
+                foreach (BlockTexture texture in new[] { block.TopTexture, block.SideTexture, block.BottomTexture })
+                {
+                    if (texture != null && !layers.Contains(texture))
+                        layers.Add(texture);
+                }
+            }
+            return layers;
+        }
+
+        static ushort LayerOf(List<BlockTexture> layers, BlockTexture texture)
+        {
+            int index = texture != null ? layers.IndexOf(texture) : -1;
+            return index >= 0 ? (ushort)index : BlockInfo.NoTexture;
         }
 
         public bool TryGet(ushort id, out BlockDefinition definition)

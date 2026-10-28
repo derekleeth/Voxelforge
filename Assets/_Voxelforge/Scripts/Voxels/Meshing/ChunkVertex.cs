@@ -11,9 +11,9 @@ namespace Voxelforge.Voxels
     /// <list type="bullet">
     /// <item><c>Position</c>: chunk-local, 0-32 on each axis.</item>
     /// <item><c>Normal</c>: which way the face points.</item>
-    /// <item><c>Color</c>: the block's placeholder <see cref="BlockInfo.MapColor"/>.</item>
+    /// <item><c>Color</c>: the block's <see cref="BlockInfo.MapColor"/>, drawn when the face has no texture.</item>
     /// <item><c>UV</c>: measured in blocks, so a 5x3 merged quad runs 0-5 by 0-3 and textures repeat once per block.</item>
-    /// <item><c>BlockId</c>: lets the Roadmap 1.5 shader pick the right texture.</item>
+    /// <item><c>TextureLayer</c>: which texture array layer this face shows (top, side or bottom of its block), or -1 for none.</item>
     /// </list>
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -23,7 +23,7 @@ namespace Voxelforge.Voxels
         public float3 Normal;
         public Color32 Color;
         public float2 UV;
-        public float BlockId;
+        public float TextureLayer;
 
         public const int AttributeCount = 5;
 

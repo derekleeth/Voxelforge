@@ -5,6 +5,49 @@
 
 ---
 
+## D-006: How Blocks Get Their Look
+- **Date:** 2026-10-27
+- **Status:** Accepted
+
+### Decisions
+- **Style:** stylized, hand-painted vanilla-WoW look at **128 × 128 per block face** ("Painted, high detail"). Shading is painted into the colors (light on bumps, dark in cracks), like WoW's textures, on top of real lighting.
+- **All textures are Blender procedural.** No AI image generation, so no outside accounts or credits.
+  - `Tools/Blender/BlockMaterials.blend` holds one node material per texture (`VF_Stone`, `VF_GrassTop`…).
+  - `Tools/Blender/bake_block_textures.py` bakes each one at 512 px into `Art/Textures/Blocks/<Layer>_{Albedo,Height,Normal,Mask}.png`.
+  - Both live **outside `Assets/`**, so Unity doesn't try to import the `.blend` as a model.
+- **Seamless by construction:** noise is sampled on a 4D torus wrapped around the texture square, so every texture tiles on both axes. Grass Side is the exception: it has grass at the top and dirt at the bottom, so it only tiles sideways.
+- **Normal and AO maps come from the height map** (numpy, in the bake script), so all four maps always agree.
+- **Tweak, then re-bake.** The baker keeps hand-edited node graphs (`REBUILD = False`). Set `REBUILD = True` to reset every material to the recipes in the script.
+- **9 texture layers:** GrassTop, GrassSide, Dirt, Stone, ManaCrystalOre, Sand, Snow, Sandstone, RedRock.
+  - Blocks pick a `BlockTexture` asset for their top, sides and bottom. Side falls back to top, and bottom falls back to side.
+  - Grass is GrassTop / GrassSide / Dirt.
+  - A `BlockTexture` asset holds no image references: its **name** links it to the PNGs. That keeps the 512 px sources out of game builds.
+- **Three `Texture2DArray`s**, built by *Voxelforge → Rebuild Block Textures* (`BlockTextureArrayBuilder`):
+
+  | Array | Channels | Format |
+  |---|---|---|
+  | AlbedoHeight | color (sRGB) + height | BC7 |
+  | Normal | X, Y (shader rebuilds Z) | BC5 |
+  | Mask | AO, smoothness, emission | BC7 |
+
+  All three use 8 mip levels, built with a box filter: color is averaged in linear space, and normals are re-normalized. The layer order comes from `BlockRegistry.GetTextureLayers()`, the same function the block lookup uses, so the two can't disagree. A test fails if the arrays are out of date.
+- **Arrays, not an atlas.** UVs are measured in blocks and wrap with Repeat, so one greedy-merged quad shows one texture copy per block. No atlas bleeding, and mipmaps just work.
+- **Vertex format unchanged (40 bytes); `UV1.x` changed meaning.** In D-004 it held the block ID; now it's the face's **texture layer**, picked by the mesher from the facing (top/side/bottom), or −1 for "no texture" (then the block's flat `MapColor` is drawn).
+- **No tangents in the mesh.** Faces are axis-aligned and the mesher lays UVs along fixed axes per facing, so the shader works out the tangent frame from the normal.
+- **Shader `Voxelforge/Voxel Block`:** URP physically based lighting.
+  - Sun + soft shadows, **Forward+ point/spot lights with shadows** (ready for 3.5 torches), SSAO (which also sees the normal maps), fog, ambient light and emission.
+  - **Parallax occlusion** from the height map gives close-up depth: 6–16 steps, 0.03 blocks deep, fading out with distance (32 m) and at grazing angles.
+  - Mana Crystal Ore glows through the emission mask, and the scene's Bloom makes it shine.
+- **Performance:** about 8 ms per frame (~120 FPS in the editor) on the full 512 × 256 × 512 test world. Parallax costs nothing measurable at overview distance, because it has faded out by then.
+
+### Deferred on purpose
+- **Biome color tinting** (e.g. greener grass in Meadows, drier in Desert borders): vertex color is still free for it.
+- **Per-face random rotation/variants** to hide repetition on big flat areas.
+- **Smooth lighting / per-corner AO:** still deferred (see D-004). SSAO + painted AO cover it for now.
+- **Block light from Mana Crystal Ore** (it glows but doesn't light its surroundings yet). Comes with the block-light system.
+
+---
+
 ## D-005: How the World Grows From a Seed
 - **Date:** 2026-10-27
 - **Status:** Accepted

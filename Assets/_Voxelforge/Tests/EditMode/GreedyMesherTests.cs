@@ -218,6 +218,55 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Faces_CarryTheirTextureLayer_ByFacing()
+        {
+            _world.Dispose();
+            var blocks = new NativeArray<BlockInfo>(3, Allocator.Persistent);
+            blocks[BlockIds.Air] = new BlockInfo { Id = BlockIds.Air, Flags = BlockFlags.Registered | BlockFlags.Transparent };
+            BlockInfo grass = Solid(BlockIds.Grass);
+            grass.TopLayer = 4;
+            grass.SideLayer = 5;
+            grass.BottomLayer = 6;
+            blocks[BlockIds.Grass] = grass;
+            _scheduler.Dispose();
+            _world = new VoxelWorld(blocks);
+            _scheduler = new ChunkMeshScheduler(_world, _parent.transform, null);
+
+            _world.CreateChunk(Origin).SetVoxel(new int3(5, 5, 5), new Voxel(BlockIds.Grass));
+
+            using Mesh.MeshDataArray data = Mesh.AcquireReadOnlyMeshData(MeshOf(Origin));
+            NativeArray<ChunkVertex> vertices = data[0].GetVertexData<ChunkVertex>();
+            Assert.AreEqual(24, vertices.Length);
+            foreach (ChunkVertex vertex in vertices)
+            {
+                float expected = vertex.Normal.y > 0.5f ? 4f : vertex.Normal.y < -0.5f ? 6f : 5f;
+                Assert.AreEqual(expected, vertex.TextureLayer, $"Face with normal {vertex.Normal} has the wrong texture layer.");
+            }
+        }
+
+        [Test]
+        public void FaceWithoutTexture_HasLayerMinusOne()
+        {
+            BlockInfo info = Solid(BlockIds.Stone);
+            info.TopLayer = info.SideLayer = info.BottomLayer = BlockInfo.NoTexture;
+            Assert.AreEqual(BlockInfo.NoTexture, info.LayerFor(BlockFacing.North));
+
+            _world.Dispose();
+            var blocks = new NativeArray<BlockInfo>(BlockIds.Stone + 1, Allocator.Persistent);
+            blocks[BlockIds.Air] = new BlockInfo { Id = BlockIds.Air, Flags = BlockFlags.Registered | BlockFlags.Transparent };
+            blocks[BlockIds.Stone] = info;
+            _scheduler.Dispose();
+            _world = new VoxelWorld(blocks);
+            _scheduler = new ChunkMeshScheduler(_world, _parent.transform, null);
+
+            _world.CreateChunk(Origin).SetVoxel(new int3(1, 1, 1), Stone);
+
+            using Mesh.MeshDataArray data = Mesh.AcquireReadOnlyMeshData(MeshOf(Origin));
+            foreach (ChunkVertex vertex in data[0].GetVertexData<ChunkVertex>())
+                Assert.AreEqual(-1f, vertex.TextureLayer);
+        }
+
+        [Test]
         public void ChunkEditedWhileMeshing_DiscardsStaleResult()
         {
             VoxelChunk chunk = _world.CreateChunk(Origin);

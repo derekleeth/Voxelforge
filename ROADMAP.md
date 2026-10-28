@@ -13,7 +13,7 @@
 - [x] **1.2 Chunk Data Architecture:** Create `VoxelChunk` data structures (`16x16x16` or `32x32x32`) storing Block ID, Durability, and Light/State bytes. *(Built as 32³ with 4-byte voxels; max durability lives on the block type and damage is stored sparsely. See DECISIONS.md D-003.)*
 - [x] **1.3 Greedy Meshing & Culling:** Implement background-threaded Greedy Meshing and hidden-face culling so chunks render at 120+ FPS. *(Burst gather + greedy mesh jobs, 140–158 FPS on a 16×4×16-chunk test world. See DECISIONS.md D-004.)*
 - [x] **1.4 Procedural Noise Terrain:** Generate rolling hills, caves, and biomes from a deterministic `WorldSeed` integer. *(4 WoW-zone-style biomes, tunnels + caverns, ore clusters; 2,048 chunks in ~1 s at ~122 FPS. See DECISIONS.md D-005.)*
-- [ ] **1.5 Art & Shaders (Creative):** Create PBR Triplanar/Block materials (Grass, Dirt, Stone, Mana Crystal Ore) with Normal/Height maps and dynamic lighting.
+- [x] **1.5 Art & Shaders (Creative):** Create PBR Triplanar/Block materials (Grass, Dirt, Stone, Mana Crystal Ore) with Normal/Height maps and dynamic lighting. *(Blender-baked painted textures for all 8 blocks in Texture2DArrays, URP PBR shader with parallax, Forward+ lights and glowing ore; ~120 FPS. See DECISIONS.md D-006.)*
 
 ## Phase 2: Dynamic Couch Co-Op & Smooth Heroes
 **Goal:** Get two smooth RPG characters running around the blocky world together on one PC.

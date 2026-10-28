@@ -5,6 +5,45 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 6): Painted Blocks & Torchlight 🎨 Roadmap 1.5
+**Phase:** 1 - The Voxel Foundation
+
+### What we did
+- **Every block has painted textures now**: hand-painted WoW style, 128 × 128 per face, with color, bumps (normal + height maps), shine and glow. Details in DECISIONS.md **D-006**.
+- **Made in Blender with procedural nodes:** 9 node materials, and a bake script that turns each into 4 texture maps in about 40 seconds. Every texture tiles perfectly.
+- **Grass is special:** grassy top, a dirt side with a wavy, dripping grass overhang, and dirt on the bottom.
+- **Mana Crystal Ore glows!** Purple-blue crystal clusters, with Bloom making them shine.
+- **Real lighting:** sun and soft shadows, ambient occlusion, and **point lights with shadows**. We put a test torch light in a cave to prove it, ready for real torches in Roadmap 3.5.
+- **Parallax depth:** up close, cracks and cobbles look carved in, not painted on.
+- **One menu click** (*Voxelforge → Rebuild Block Textures*) packs the Blender textures into the game.
+
+### How to change a texture yourselves 🖌️
+1. Open `Tools/Blender/BlockMaterials.blend` in Blender and switch to the **BlockBake** scene.
+2. Pick a material on the plane (e.g. `VF_RedRock`) and change colors or numbers in the Shader Editor.
+3. Open the **Text Editor**, choose `bake_block_textures.py`, and press **Run Script**.
+4. In Unity: **Voxelforge → Rebuild Block Textures**. Press Play!
+
+### Results 🎉
+- About **120 FPS** in the editor on the full test world.
+- 9 texture layers × 3 arrays = only about 0.6 MB of GPU texture memory.
+
+### Tests: 67 / 67 passing ✅
+- Every solid block has textures for its top, sides and bottom; Grass has a different side; Grass's bottom is Dirt.
+- The texture arrays are up to date (right number of layers, 128 px, 8 mip levels).
+- The mesher gives top, side and bottom faces the right texture, and faces without one fall back to their flat color.
+
+### Things we learned
+- Our first sand looked like **wooden planks**: ripples that line up block after block look like wood grain. Fading ripples in and out fixed it.
+- Grass made of round bumps looked like **bubble wrap**. Swirly "brush stroke" noise looks much more painted.
+- **Too much parallax makes stone look puffy.** A little depth goes a long way.
+- Don't save a `.blend` inside `Assets/`: Unity tries to import it as a 3D model.
+- Running Unity's tests reloads the scene, so **save the scene before running tests**, or unsaved changes vanish.
+
+### Next up
+- [ ] Phase 2! Roadmap **2.1 Local Listen-Server Setup**: start the game in Host mode for couch co-op
+
+---
+
 ## 2026-10-27 - Session 1 (part 5): A Real World Grows From a Seed ✅ Roadmap 1.4
 **Phase:** 1 - The Voxel Foundation
 

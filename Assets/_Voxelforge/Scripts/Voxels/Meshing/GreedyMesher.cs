@@ -231,27 +231,28 @@ namespace Voxelforge.Voxels
             // That holds for (o, o+du, o+du+dv) when cross(u, v) points along the normal; otherwise swap u and v.
             float3 n = normal;
             bool swap = math.dot(math.cross((float3)uAxis, (float3)vAxis), n) < 0;
-            float id = block.Id;
+            ushort layer = block.LayerFor(facing);
+            float textureLayer = layer == BlockInfo.NoTexture ? -1f : layer;
 
             if (!swap)
             {
-                vertices.Add(Vertex(o, n, block.MapColor, new float2(0, 0), id));
-                vertices.Add(Vertex(o + du, n, block.MapColor, new float2(width, 0), id));
-                vertices.Add(Vertex(o + du + dv, n, block.MapColor, new float2(width, height), id));
-                vertices.Add(Vertex(o + dv, n, block.MapColor, new float2(0, height), id));
+                vertices.Add(Vertex(o, n, block.MapColor, new float2(0, 0), textureLayer));
+                vertices.Add(Vertex(o + du, n, block.MapColor, new float2(width, 0), textureLayer));
+                vertices.Add(Vertex(o + du + dv, n, block.MapColor, new float2(width, height), textureLayer));
+                vertices.Add(Vertex(o + dv, n, block.MapColor, new float2(0, height), textureLayer));
             }
             else
             {
-                vertices.Add(Vertex(o, n, block.MapColor, new float2(0, 0), id));
-                vertices.Add(Vertex(o + dv, n, block.MapColor, new float2(0, height), id));
-                vertices.Add(Vertex(o + du + dv, n, block.MapColor, new float2(width, height), id));
-                vertices.Add(Vertex(o + du, n, block.MapColor, new float2(width, 0), id));
+                vertices.Add(Vertex(o, n, block.MapColor, new float2(0, 0), textureLayer));
+                vertices.Add(Vertex(o + dv, n, block.MapColor, new float2(0, height), textureLayer));
+                vertices.Add(Vertex(o + du + dv, n, block.MapColor, new float2(width, height), textureLayer));
+                vertices.Add(Vertex(o + du, n, block.MapColor, new float2(width, 0), textureLayer));
             }
         }
 
-        static ChunkVertex Vertex(float3 position, float3 normal, Color32 color, float2 uv, float blockId)
+        static ChunkVertex Vertex(float3 position, float3 normal, Color32 color, float2 uv, float textureLayer)
         {
-            return new ChunkVertex { Position = position, Normal = normal, Color = color, UV = uv, BlockId = blockId };
+            return new ChunkVertex { Position = position, Normal = normal, Color = color, UV = uv, TextureLayer = textureLayer };
         }
 
         public static bool IsPositive(BlockFacing facing)

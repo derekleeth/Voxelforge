@@ -42,6 +42,38 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void ProjectRegistry_EveryOpaqueBlockHasTextures_AndArraysMatch()
+        {
+            var registry = AssetDatabase.LoadAssetAtPath<BlockRegistry>(RegistryAssetPath);
+            List<BlockTexture> layers = registry.GetTextureLayers();
+            using NativeArray<BlockInfo> lookup = registry.CreateLookup(Allocator.Temp);
+
+            foreach (BlockInfo info in lookup)
+            {
+                if (!info.IsOpaque)
+                    continue;
+                foreach (ushort layer in new[] { info.TopLayer, info.SideLayer, info.BottomLayer })
+                    Assert.Less(layer, layers.Count, $"Block {info.Id} is missing a texture.");
+            }
+
+            BlockInfo grass = lookup[BlockIds.Grass];
+            Assert.AreNotEqual(grass.TopLayer, grass.SideLayer, "Grass needs a different texture on its sides.");
+            Assert.AreEqual(lookup[BlockIds.Dirt].TopLayer, grass.BottomLayer, "The bottom of Grass is Dirt.");
+
+            // The texture arrays must have been rebuilt since the last texture change (Voxelforge > Rebuild Block Textures).
+            var material = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Voxelforge/Materials/VoxelBlocks.mat");
+            Assert.IsNotNull(material);
+            foreach (string property in new[] { "_AlbedoHeightArray", "_NormalArray", "_MaskArray" })
+            {
+                var array = material.GetTexture(property) as Texture2DArray;
+                Assert.IsNotNull(array, $"{property} is not set on the block material.");
+                Assert.AreEqual(layers.Count, array.depth, $"{property} is out of date. Run Voxelforge > Rebuild Block Textures.");
+                Assert.AreEqual(128, array.width);
+                Assert.AreEqual(8, array.mipmapCount);
+            }
+        }
+
+        [Test]
         public void CreateLookup_IndexesByIdAndLeavesGapsUnregistered()
         {
             BlockRegistry registry = MakeRegistry(

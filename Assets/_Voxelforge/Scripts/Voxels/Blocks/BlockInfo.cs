@@ -27,8 +27,16 @@ namespace Voxelforge.Voxels
         /// <summary>Light this block gives off, 0-15.</summary>
         public byte LightEmission;
         public BlockFlags Flags;
-        /// <summary>Placeholder color used until block textures arrive (Roadmap 1.5).</summary>
+        /// <summary>Flat color, shown on faces with no texture.</summary>
         public Color32 MapColor;
+
+        /// <summary>Texture array layers for each face (see <see cref="BlockRegistry.GetTextureLayers"/>), or <see cref="NoTexture"/>.</summary>
+        public ushort TopLayer;
+        public ushort SideLayer;
+        public ushort BottomLayer;
+
+        /// <summary>Layer value for a face with no texture. The shader draws <see cref="MapColor"/> instead.</summary>
+        public const ushort NoTexture = ushort.MaxValue;
 
         public bool IsRegistered => (Flags & BlockFlags.Registered) != 0;
         public bool IsSolid => (Flags & BlockFlags.Solid) != 0;
@@ -39,5 +47,19 @@ namespace Voxelforge.Voxels
         /// that touches one. Air, glass and unused IDs are not opaque.
         /// </summary>
         public bool IsOpaque => (Flags & (BlockFlags.Registered | BlockFlags.Transparent)) == BlockFlags.Registered;
+
+        /// <summary>The texture layer drawn on a face pointing <paramref name="facing"/>.</summary>
+        public ushort LayerFor(BlockFacing facing)
+        {
+            switch (facing)
+            {
+                case BlockFacing.Up:
+                    return TopLayer;
+                case BlockFacing.Down:
+                    return BottomLayer;
+                default:
+                    return SideLayer;
+            }
+        }
     }
 }

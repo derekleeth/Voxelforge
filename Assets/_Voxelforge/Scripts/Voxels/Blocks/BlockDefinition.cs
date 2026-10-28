@@ -26,8 +26,18 @@ namespace Voxelforge.Voxels
         [Tooltip("Light the block gives off, 0-15.")]
         [SerializeField, Range(0, Voxel.MaxLight)] int lightEmission;
 
-        [Tooltip("Placeholder color until block textures arrive (Roadmap 1.5).")]
+        [Tooltip("Flat color for maps, and shown on faces that have no texture.")]
         [SerializeField] Color32 mapColor = new Color32(255, 0, 255, 255);
+
+        [Header("Textures")]
+        [Tooltip("Texture on the top face, and on every face unless Side/Bottom are set.")]
+        [SerializeField] BlockTexture topTexture;
+
+        [Tooltip("Texture on the 4 side faces. Empty = same as Top.")]
+        [SerializeField] BlockTexture sideTexture;
+
+        [Tooltip("Texture on the bottom face. Empty = same as Side.")]
+        [SerializeField] BlockTexture bottomTexture;
 
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
@@ -36,6 +46,9 @@ namespace Voxelforge.Voxels
         public bool IsTransparent => isTransparent;
         public int LightEmission => lightEmission;
         public Color32 MapColor => mapColor;
+        public BlockTexture TopTexture => topTexture;
+        public BlockTexture SideTexture => sideTexture != null ? sideTexture : topTexture;
+        public BlockTexture BottomTexture => bottomTexture != null ? bottomTexture : SideTexture;
 
         public BlockInfo ToBlockInfo()
         {
@@ -52,6 +65,10 @@ namespace Voxelforge.Voxels
                 LightEmission = (byte)Mathf.Clamp(lightEmission, 0, Voxel.MaxLight),
                 Flags = flags,
                 MapColor = mapColor,
+                // BlockRegistry.CreateLookup fills in real layers; a definition alone doesn't know the array order.
+                TopLayer = BlockInfo.NoTexture,
+                SideLayer = BlockInfo.NoTexture,
+                BottomLayer = BlockInfo.NoTexture,
             };
         }
 
