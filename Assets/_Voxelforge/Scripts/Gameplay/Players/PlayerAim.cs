@@ -44,10 +44,14 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>The solid block a hero standing at <paramref name="feet"/> aims at with <paramref name="input"/>.</summary>
-        public bool TryAim(VoxelWorld world, float3 feet, PlayerInputFrame input, out VoxelHit hit)
+        public bool TryAim(VoxelWorld world, float3 feet, PlayerInputFrame input, out VoxelHit hit) =>
+            TryAim(world, feet, input, reach, out hit);
+
+        /// <summary>The same aim out to <paramref name="maxDistance"/>, for things that reach further (the M.G.R.S., 3.6).</summary>
+        public bool TryAim(VoxelWorld world, float3 feet, PlayerInputFrame input, float maxDistance, out VoxelHit hit)
         {
             hit = default;
-            return world != null && VoxelQueries.Raycast(world, Eyes(feet), Direction(input), reach, out hit);
+            return world != null && VoxelQueries.Raycast(world, Eyes(feet), Direction(input), maxDistance, out hit);
         }
 
         /// <summary>Host check: is <paramref name="block"/> close enough to a hero standing at <paramref name="feet"/> to edit?</summary>

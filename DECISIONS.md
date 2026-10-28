@@ -5,6 +5,30 @@
 
 ---
 
+## D-019: Kian's M.G.R.S. and the Crafting Window
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **A ranged item is an item with `ProjectileStats`** (damage, cooldown, speed, range, muzzle point, glow colour) on its `ItemDefinition`. Damage 0 means not ranged. `ItemRegistry.TryGetProjectile` reads it, and the registry check flags a ranged item without a cooldown, speed and range above 0. In Phase 4 these numbers move into the 4.1 ability templates (mana cost, damage to creatures).
+  - **The M.G.R.S. (`ItemIds.Mgrs`):** 45 damage, 0.5 s cooldown, 40 m/s, 24 m. Dirt, sand and logs break in 1 shot, stone in 2, Mana Crystal Ore in 4; bedrock never. Recipe: 3 Log + 2 Stone + 5 Mana Crystal Ore at a Workbench, added **at the end** of the `RecipeBook` (recipes are sent by index, D-018).
+- **Mine fires it.** While the held item is ranged, `PlayerMiner` does nothing and `PlayerStaff` fires instead, so no new button and no new input field.
+- **The host owns every bolt (Laws #1-#3).** `PlayerStaff.FixedUpdate` runs on the host only: it fires only while `PlayerHands` agrees the staff is in the bag, from the hero's eyes along the aim the host received (`PlayerAim`), the same as mining. No position or direction is ever sent from a PC.
+  - `ManaBoltFlight` (plain C#, tested without a scene) keeps the cooldown and moves each bolt. Each step sweeps a voxel ray (`VoxelQueries.Raycast`) over the distance moved, so a fast bolt can't skip through a block, and it stops at the same blocks aiming does (solid blocks and props like torches).
+  - A hit calls `VoxelWorldManager.RequestDamageVoxel(block, damage, shooter)`, so cracks, drops, falling trees and torches losing support all work exactly as with mining. Damage is fixed when the bolt leaves.
+  - Two RPCs to every PC: `BoltFiredRpc` (id, start, direction, item) and `BoltEndedRpc` (id, end point, face normal, hit, block it hit).
+- **Looks (`ManaBoltView`, every PC, presentation only).** Muzzle flash, a gem-shaped glowing bolt with a trail and a point light, and sparks tinted by the hit block's colour. The drawn bolt starts at the staff's muzzle and eases onto the host's line, then ends wherever the host says. Each hero has its own small pool: nothing global, and Forward+ only shades the bolt lights each split-screen camera sees.
+  - `HeldItemView` holds a ranged item aimed forward instead of like a pickaxe, with a kick-back on each shot (`PlayerStaff.LastShotTime`).
+  - The reticle reaches the full 24 m while the staff is picked, with a small recharge bar under it (`PlayerAim.TryAim(…, maxDistance, …)`).
+- **The crafting window (`CraftingWindow`).** D-018's text list became a framed panel: every recipe on the left with a picture and a status ("Ready", "Needs a Workbench", "Missing items"), the chosen recipe large on the right with each input as have / need in green or red. It's laid out inside **that player's own view rect** (Law #5), so two players never get a menu in the same place, whatever the camera does.
+  - **`ItemIcons`:** a hidden camera on an unnamed layer (31), far below the world, draws each item's model or block cube once into a small texture and keeps it. Nothing per player, so one cache serves every view.
+
+### Deferred on purpose
+- Damage to creatures, mana cost and a real cast animation: 4.1 / 4.2.
+- Firing sounds and impact sounds: 3.7.
+
+---
+
 ## D-018: Items, Tools, Torches and the Workbench (Props & Crafting)
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

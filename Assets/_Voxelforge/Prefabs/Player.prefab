@@ -19,6 +19,8 @@ GameObject:
   - component: {fileID: 2704019694644262209}
   - component: {fileID: 4889235506312742568}
   - component: {fileID: 7809432373712665520}
+  - component: {fileID: 232346518821036264}
+  - component: {fileID: 6004430841717266802}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -265,6 +267,44 @@ MonoBehaviour:
   swingAngle: 55
   swingRate: 2.5
   swingAxis: {x: 0.589, y: -0.009, z: -0.808}
+  recoilAngle: 14
+  recoilSettle: 14
+--- !u!114 &232346518821036264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a9c2a6ade9da634d9f76bbbf0aefd20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerStaff
+  ShowTopMostFoldoutHeaderGroup: 1
+  logHits: 0
+--- !u!114 &6004430841717266802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39fcadba7b9c2b84fa0213c33a3a49b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ManaBoltView
+  glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  boltSize: 0.22
+  glowBoost: 5
+  trailTime: 0.18
+  boltLightIntensity: 4
+  boltLightRange: 7
+  converge: 0.1
+  flashTime: 0.12
+  burstSparks: 28
+  muzzleSparks: 8
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

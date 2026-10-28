@@ -16,6 +16,8 @@ namespace Voxelforge.Editor
     /// <item>Prop decorations (floor torch with a light, wall torch with a light, workbench) added to the <see cref="DecorationSet"/>.</item>
     /// <item>Items (the tools, plus models for held and dropped torches and workbenches), the <see cref="ItemRegistry"/>,
     /// the recipes and the <see cref="RecipeBook"/>.</item>
+    /// <item>Kian's M.G.R.S. (Roadmap 3.6): its item with what it shoots, its recipe, and <c>ManaBolt.mat</c>, the additive
+    /// glow for its bolts, trails and sparks.</item>
     /// </list>
     /// </summary>
     public static class PropsBuilder
@@ -36,7 +38,17 @@ namespace Voxelforge.Editor
         static readonly Vector3 Grip = new Vector3(0f, 0.08f, 0f);
         static readonly Vector3 ToolPose = new Vector3(352f, 314f, 70.8f);
         static readonly Vector3 UprightPose = new Vector3(359.5f, 323.9f, 148f);
+        // The M.G.R.S. (3.6) is aimed, not swung: its barrel points ahead of the hero and a little up.
+        static readonly Vector3 StaffPose = new Vector3(72.3f, 233.3f, 350.7f);
         static readonly Color TorchLight = new Color(1f, 0.64f, 0.32f);
+
+        // The M.G.R.S. (3.6, D-019): 45 damage (Stone in 2 shots), 0.5 s apart, 40 m/s out to 24 m. Its muzzle is the top
+        // of the gold barrel crown in build_props.py (z 1.15 in Blender, +Y in Unity).
+        static readonly ProjectileStats ManaBolt = new ProjectileStats
+        {
+            damage = 45f, cooldown = 0.5f, speed = 40f, range = 24f,
+            muzzle = new Vector3(0f, 1.16f, 0f), glow = new Color(0.35f, 0.85f, 1f),
+        };
 
         [MenuItem("Voxelforge/Build Props & Items")]
         public static void Build()
@@ -87,12 +99,13 @@ namespace Voxelforge.Editor
             ItemDefinition stonePickaxe = MakeItem("StonePickaxe", ItemIds.StonePickaxe, "Stone Pickaxe", held, new ToolPower(3f, 1f, 2f));
             ItemDefinition stoneAxe = MakeItem("StoneAxe", ItemIds.StoneAxe, "Stone Axe", held, new ToolPower(1f, 3f, 1.5f));
             ItemDefinition destiny = MakeItem("PickOfDestiny", ItemIds.PickOfDestiny, "The Pick of Destiny", held, new ToolPower(5f, 5f, 3f));
+            ItemDefinition mgrs = MakeItem("Mgrs", ItemIds.Mgrs, "M.G.R.S.", held, default, projectile: ManaBolt, pose: StaffPose);
             ItemDefinition torchItem = MakeItem("TorchFloor", BlockIds.Torch, "Torch", held, default, "Torch", dropSize: 1.6f,
                 heldScale: 0.7f, upright: true);
             ItemDefinition benchItem = MakeItem("Workbench", BlockIds.Workbench, "Workbench", held, default, "WorkbenchItem", dropSize: 1.3f,
                 heldScale: 0.3f, upright: true);
             var items = LoadOrCreate<ItemRegistry>($"{ItemDir}/ItemRegistry.asset");
-            AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem);
+            AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs);
 
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
@@ -106,7 +119,10 @@ namespace Voxelforge.Editor
                 MakeRecipe("StonePickaxe", new ItemAmount(stonePickaxe, 1), true, new ItemAmount(log, 2), new ItemAmount(stone, 3)),
                 MakeRecipe("StoneAxe", new ItemAmount(stoneAxe, 1), true, new ItemAmount(log, 2), new ItemAmount(stone, 3)),
                 MakeRecipe("PickOfDestiny", new ItemAmount(destiny, 1), true,
-                    new ItemAmount(stonePickaxe, 1), new ItemAmount(stoneAxe, 1), new ItemAmount(mana, 3)));
+                    new ItemAmount(stonePickaxe, 1), new ItemAmount(stoneAxe, 1), new ItemAmount(mana, 3)),
+                MakeRecipe("Mgrs", new ItemAmount(mgrs, 1), true,
+                    new ItemAmount(log, 3), new ItemAmount(stone, 2), new ItemAmount(mana, 5)));
+            MakeBoltMaterial();
 
             AssetDatabase.SaveAssets();
 
@@ -162,6 +178,23 @@ namespace Voxelforge.Editor
             material.SetColor("_EmissionColor", Glow);
             material.EnableKeyword("_EMISSION");
             material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        /// <summary>URP Particles/Unlit, additive: the Mana Bolt's core, trail and sparks (tinted per renderer and particle).</summary>
+        static Material MakeBoltMaterial()
+        {
+            Material material = LoadOrCreateMaterial($"{MaterialDir}/ManaBolt.mat", Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            material.SetColor("_BaseColor", Color.white);
+            material.SetFloat("_Surface", 1f); // Transparent
+            material.SetFloat("_Blend", 2f); // Additive
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat("_ZWrite", 0f);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.SetOverrideTag("RenderType", "Transparent");
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -270,7 +303,8 @@ namespace Voxelforge.Editor
         }
 
         static ItemDefinition MakeItem(string model, ushort id, string displayName, Material material, ToolPower power,
-            string assetName = null, float dropSize = 2f, float heldScale = 1f, bool upright = false)
+            string assetName = null, float dropSize = 2f, float heldScale = 1f, bool upright = false, ProjectileStats projectile = default,
+            Vector3? pose = null)
         {
             Mesh mesh = LoadMesh(model);
             var item = LoadOrCreate<ItemDefinition>($"{ItemDir}/{assetName ?? model}.asset");
@@ -280,13 +314,20 @@ namespace Voxelforge.Editor
             serialized.FindProperty("mesh").objectReferenceValue = mesh;
             serialized.FindProperty("material").objectReferenceValue = material;
             serialized.FindProperty("heldPosition").vector3Value = Grip;
-            serialized.FindProperty("heldRotation").vector3Value = upright ? UprightPose : ToolPose;
+            serialized.FindProperty("heldRotation").vector3Value = pose ?? (upright ? UprightPose : ToolPose);
             serialized.FindProperty("heldScale").floatValue = heldScale;
             serialized.FindProperty("dropSize").floatValue = dropSize;
             SerializedProperty tool = serialized.FindProperty("toolPower");
             tool.FindPropertyRelative("pick").floatValue = power.pick;
             tool.FindPropertyRelative("axe").floatValue = power.axe;
             tool.FindPropertyRelative("any").floatValue = power.any;
+            SerializedProperty shot = serialized.FindProperty("projectile");
+            shot.FindPropertyRelative("damage").floatValue = projectile.damage;
+            shot.FindPropertyRelative("cooldown").floatValue = projectile.cooldown;
+            shot.FindPropertyRelative("speed").floatValue = projectile.speed;
+            shot.FindPropertyRelative("range").floatValue = projectile.range;
+            shot.FindPropertyRelative("muzzle").vector3Value = projectile.muzzle;
+            shot.FindPropertyRelative("glow").colorValue = projectile.glow;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return item;
         }

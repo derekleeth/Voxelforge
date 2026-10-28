@@ -37,6 +37,10 @@ namespace Voxelforge.Gameplay
         [Tooltip("Mining power multipliers while it's held. All 0 = not a tool (bare-hands power).")]
         [SerializeField] ToolPower toolPower;
 
+        [Header("Ranged")]
+        [Tooltip("What it shoots while Mine is held (Roadmap 3.6). Damage 0 = it doesn't shoot.")]
+        [SerializeField] ProjectileStats projectile;
+
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public Mesh Mesh => mesh;
@@ -52,14 +56,21 @@ namespace Voxelforge.Gameplay
         /// <summary>Its multipliers, or <see cref="ToolPower.Hands"/> if it isn't a tool.</summary>
         public ToolPower ToolPower => IsTool ? toolPower : ToolPower.Hands;
 
+        /// <summary>True if it shoots (the M.G.R.S.). Holding it, Mine fires instead of mining.</summary>
+        public bool IsRanged => projectile.IsRanged;
+
+        public ProjectileStats Projectile => projectile;
+
         /// <summary>Builds a definition in code, for tests and tools.</summary>
-        internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default)
+        internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default,
+            ProjectileStats projectile = default)
         {
             var definition = CreateInstance<ItemDefinition>();
             definition.name = displayName;
             definition.id = id;
             definition.displayName = displayName;
             definition.toolPower = toolPower;
+            definition.projectile = projectile;
             return definition;
         }
     }

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27dcee36aa6d030498f13f390444dd34, type: 3}
+  m_Name: Mgrs
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
+  id: 1004
+  displayName: M.G.R.S.
+  mesh: {fileID: -2718890655765237734, guid: 87abdbd0539fa924888297db09e784a3, type: 3}
+  material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
+  heldPosition: {x: 0, y: 0.08, z: 0}
+  heldRotation: {x: 72.3, y: 233.3, z: 350.7}
+  heldScale: 1
+  dropSize: 2
+  toolPower:
+    pick: 0
+    axe: 0
+    any: 0
+  projectile:
+    damage: 45
+    cooldown: 0.5
+    speed: 40
+    range: 24
+    muzzle: {x: 0, y: 1.16, z: 0}
+    glow: {r: 0.35, g: 0.85, b: 1, a: 1}

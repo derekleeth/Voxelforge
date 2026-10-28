@@ -15,6 +15,8 @@ namespace Voxelforge.Gameplay
         public const ushort StoneAxe = 1002;
         /// <summary>Kian's axe on one side and pick on the other: the best tool for mining and chopping.</summary>
         public const ushort PickOfDestiny = 1003;
+        /// <summary>Kian's M.G.R.S. (Magic Gun Rifle Staff, Roadmap 3.6): shoots Mana Bolts that break blocks.</summary>
+        public const ushort Mgrs = 1004;
 
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;

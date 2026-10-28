@@ -34,6 +34,13 @@ namespace Voxelforge.Gameplay
         /// <summary>What the item multiplies mining power by while held. Bare hands for blocks and unknown IDs.</summary>
         public ToolPower ToolPowerOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.ToolPower : ToolPower.Hands;
 
+        /// <summary>What the item shoots, if it's ranged (the M.G.R.S., Roadmap 3.6).</summary>
+        public bool TryGetProjectile(ushort id, out ProjectileStats projectile)
+        {
+            projectile = TryGet(id, out ItemDefinition item) ? item.Projectile : default;
+            return projectile.IsRanged;
+        }
+
         /// <summary>The item's name: its definition's, else its block's, else "Item 1234".</summary>
         public string DisplayName(ushort id, BlockRegistry blocks)
         {
@@ -63,6 +70,9 @@ namespace Voxelforge.Gameplay
                     errors.Add($"'{item.DisplayName}' uses ID {item.Id}, below {ItemIds.FirstNonBlock}, but no block has it.");
                 if (!ItemIds.IsBlock(item.Id) && (item.Mesh == null || item.Material == null))
                     errors.Add($"'{item.DisplayName}' needs a mesh and a material.");
+                ProjectileStats p = item.Projectile;
+                if (p.IsRanged && !(p.cooldown > 0f && p.speed > 0f && p.range > 0f))
+                    errors.Add($"'{item.DisplayName}' shoots, so it needs a cooldown, speed and range above 0.");
             }
             return errors;
         }

@@ -53,6 +53,8 @@ namespace Voxelforge.Gameplay
             VoxelWorldManager world = _player.WorldManager;
             if (!input.IsPressed(PlayerButtons.Mine) || world == null)
                 return VoxelDamageResult.NoDamage;
+            if (_hands != null && _hands.TryGetHeldProjectile(out _))
+                return VoxelDamageResult.NoDamage; // Mine fires the M.G.R.S. instead (PlayerStaff, 3.6).
             if (!_player.Aim.TryAim(world.World, transform.position, input, out VoxelHit hit))
                 return VoxelDamageResult.NoDamage;
 

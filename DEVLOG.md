@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 21): Kian's M.G.R.S. 🪄💥 Roadmap 3.6
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **The M.G.R.S. (Magic Gun Rifle Staff) works!** A wizard's staff that shoots glowing Mana Bolts that break blocks from far away. Details in DECISIONS.md **D-019**.
+  - **Craft it** at a Workbench: 3 Log + 2 Stone + 5 Mana Crystal Ore.
+  - **Fire it:** hold the staff and press Mine. Keep holding to keep firing, one bolt every half second.
+  - **Power:** reaches 24 m. Dirt, sand and logs break in 1 shot, stone in 2, Mana Crystal Ore in 4. Bedrock can't be broken.
+  - **Looks:** a muzzle flash, a glowing gem-shaped bolt with a trail and its own light, sparks the colour of the block it hits, and the staff kicks back when it fires.
+  - The host moves every bolt, so it's fair and ready for online play later.
+- **New crafting window!** A proper framed window with a picture of every item, which recipes are ready, and "have / need" for each ingredient in green or red. It always opens in your own part of the screen.
+
+### Tests: 250 / 250 passing ✅
+- A fast bolt still hits the first block in its way, fizzles at its range and stops at torches.
+- The cooldown works. Dirt breaks in one shot and stone in two, but bedrock never breaks.
+- The M.G.R.S. is a ranged item (not a tool) and needs a Workbench.
+
+### Editor test by Claude
+- Crafted the M.G.R.S. with real button presses; the host took exactly 3 Log, 2 Stone and 5 Ore.
+- A stone 12 m away: "Damaged" on the first shot, "Broken" on the second.
+- Player 2, without a staff, couldn't hold one.
+
+### Play-test results 🎉
+- **Kian loves it!** Every part of it works and looks good ✅
+- The new crafting window makes it much easier to see items and figure out how to make them ✅
+- Found: inside tunnels the camera shows mostly your own body, so it's hard to put a torch on a wall. Worse in split-screen. Plan coming next.
+
+### Next up
+- [x] Play-test 3.6
+- [ ] Better camera in tunnels, and a button to switch to a plain split-screen
+- [ ] A Home Totem you can teleport back to
+- [ ] Roadmap **3.7 Split-Screen Spatial Audio & Voxel Foley**
+
+---
+
 ## 2026-10-28 - Session 1 (part 20): The Pick of Destiny ⛏️🪓 Roadmap 3.5
 **Phase:** 3 - "Forge & Carve"
 

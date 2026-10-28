@@ -7,7 +7,8 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// Shows what a player holds (<see cref="PlayerHands.HeldItem"/>, Roadmap 3.5) in their hero's right hand, on every
     /// PC: a tool or prop model where its <see cref="ItemDefinition"/> says, or a small block. While the host says they're
-    /// mining (<see cref="PlayerMiner.IsMining"/>) it swings. Presentation only.
+    /// mining (<see cref="PlayerMiner.IsMining"/>) it swings, and when a ranged item shoots (<see cref="PlayerStaff"/>,
+    /// Roadmap 3.6) it kicks back. Presentation only.
     /// </summary>
     [RequireComponent(typeof(PlayerHands))]
     public sealed class HeldItemView : MonoBehaviour
@@ -30,9 +31,16 @@ namespace Voxelforge.Gameplay
         [Tooltip("The axis, in the hand bone's space, the tool swings around: the hero's right, measured on the Wayfarer's idle pose.")]
         [SerializeField] Vector3 swingAxis = new Vector3(0.589f, -0.009f, -0.808f);
 
+        [Tooltip("How far a ranged item kicks up when it shoots, in degrees.")]
+        [SerializeField, Range(0f, 45f)] float recoilAngle = 14f;
+
+        [Tooltip("How fast the kick settles: higher is snappier.")]
+        [SerializeField, Range(1f, 40f)] float recoilSettle = 14f;
+
         PlayerHands _hands;
         PlayerMiner _miner;
         PlayerController _player;
+        PlayerStaff _staff;
         Transform _hand;
         Transform _pivot;
         MeshFilter _filter;
@@ -40,12 +48,14 @@ namespace Voxelforge.Gameplay
         ushort _shown = ushort.MaxValue;
         float _swingTime;
         float _swingWeight;
+        ItemDefinition _shownDefinition;
 
         void Awake()
         {
             _hands = GetComponent<PlayerHands>();
             _miner = GetComponent<PlayerMiner>();
             _player = GetComponent<PlayerController>();
+            _staff = GetComponent<PlayerStaff>();
         }
 
         void Start()
@@ -87,12 +97,30 @@ namespace Voxelforge.Gameplay
             if (mining)
                 _swingTime += Time.deltaTime;
             float swing = Mathf.Sin(_swingTime * swingRate * Mathf.PI * 2f) * 0.5f + 0.5f;
-            _pivot.localRotation = Quaternion.AngleAxis(-swing * swingAngle * _swingWeight, swingAxis);
+            float sinceShot = _staff != null ? Time.time - _staff.LastShotTime : float.PositiveInfinity;
+            float recoil = recoilAngle * Mathf.Exp(-sinceShot * recoilSettle);
+            _pivot.localRotation = Quaternion.AngleAxis(-swing * swingAngle * _swingWeight + recoil, swingAxis);
+        }
+
+        /// <summary>
+        /// Where a ranged item's bolt leaves the model in the world (<see cref="ProjectileStats.muzzle"/>), and which way the
+        /// barrel points. False when nothing ranged is shown.
+        /// </summary>
+        public bool TryGetMuzzle(out Vector3 position, out Vector3 forward)
+        {
+            position = forward = default;
+            if (_filter == null || !_filter.gameObject.activeInHierarchy || _shownDefinition == null || !_shownDefinition.IsRanged)
+                return false;
+            Transform t = _filter.transform;
+            position = t.TransformPoint(_shownDefinition.Projectile.muzzle);
+            forward = t.TransformDirection(Vector3.up);
+            return true;
         }
 
         void Show(ushort held)
         {
             _shown = held;
+            _shownDefinition = null;
             VoxelWorld world = _player != null ? _player.World : null;
             GameObject model = _filter.gameObject;
             if (held == BlockIds.Air || !_hands.Looks.TryGet(held, world != null ? world.Blocks : default, out ItemLook look))
@@ -106,6 +134,7 @@ namespace Voxelforge.Gameplay
             Transform t = model.transform;
             if (look.IsModel)
             {
+                _shownDefinition = look.Definition;
                 t.localPosition = look.Definition.HeldPosition;
                 t.localRotation = look.Definition.HeldRotation;
                 t.localScale = Vector3.one * look.Definition.HeldScale;
