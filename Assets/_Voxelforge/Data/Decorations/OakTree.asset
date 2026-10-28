@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: OakTree
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 1
+  mesh: {fileID: 4300000, guid: 4dcd42f10ea5b06419320dae794f0cd2, type: 2}
+  lodMesh: {fileID: 0}
+  material: {fileID: 2100000, guid: c53e2e08985e1da4685bee1ecd47d44f, type: 2}
+  tint: 2
+  castShadows: 1
+  lodDistance: 120
+  maxDistance: 240
+  surfaces: []
+  density: 0
+  biomes:
+  - biome: Meadows (Elwynn style)
+    weight: 1
+  - biome: Red Crags (Redridge style)
+    weight: 1
+  - biome: Desert (Tanaris style)
+    weight: 1
+  minScale: 1
+  maxScale: 1
+  modelTrunkHeight: 5

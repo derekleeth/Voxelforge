@@ -86,6 +86,8 @@ namespace Voxelforge.Gameplay
                     _text.Append($" ({chunkLoader.Streamer.UnloadingCount} unloading)");
                 _text.Append($"   viewers: {chunkLoader.Viewers.Count}");
             }
+            if (world.Decorations != null)
+                _text.Append($"\ndecorations: {world.Decorations.InstanceCount} in {world.Decorations.ChunkCount} chunks");
         }
 
         /// <summary>One line per joined slot on this PC, plus a join prompt for the next free one.</summary>

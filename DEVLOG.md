@@ -5,6 +5,43 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 12): Trees and Grass 🌳 Roadmap 2.6, part A
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **The world grows plants!** Grass tufts, flowers, bushes and trees now cover the terrain. The world seed picks where they go, so the same seed always grows the same forest. Details in DECISIONS.md **D-012**.
+- **Trees you can bump into.** Each trunk is filled with a new invisible but solid **Tree Trunk** block, so heroes bump into trunks but walk straight through leaves. Later (3.1) you'll chop them down.
+- **Trees never touch:** at most one tree grows in each 6×6 patch of ground. Oaks grow in meadows and red crags, pines on snowy mountains, and only a few in the desert.
+- **Plants follow the blocks.** They're worked out at the same time as each chunk's mesh, on the worker threads. Dig out the block under a flower and the flower goes too, with no save data or network messages needed.
+- **Cheap to draw:** there's no Unity object per plant. Before each camera draws, the graphics card itself picks the plants that camera can see, so each split-screen view gets its own list.
+- **A wind shader** sways the tips of grass and leaves, and plants fade in softly as you walk toward them.
+- **No more spawning on a tree:** if the spawn point lands on a trunk, the hero moves one block over.
+- The debug corner (F3) shows how many decorations are loaded.
+- The plants are **simple stand-in shapes for now** (green cards and boxes). Part B builds the real art in Blender.
+
+### Results 🎉
+- About **25,000 decorations** around spawn, including **766 trees**.
+- Overview camera at **~181 FPS** in the editor.
+- **Play-test passed:** trunks block the hero, and the wind sways the plants. ✅
+
+### Tests: 157 / 157 passing ✅
+- Trees never sit next to each other, and their heights stay in range.
+- Plants only grow on open grass tops, and the same seed always gives the same plants.
+- The slot bookkeeping for the graphics card's plant lists hands out, frees and reuses space correctly.
+- Spawning next to a tree trunk moves you one column over.
+- Removing the block under a plant removes exactly that plant, and unloading a chunk removes its plants.
+
+### Things we learned
+- Adding trees changed the world on purpose, so we bumped the **terrain version to 2** and updated the recorded terrain fingerprint that the tests check against.
+- A screen-door fade (dropping some pixels in a pattern) can poke tiny holes in fully faded-in plants. The fix: only drop pixels while a plant is actually fading.
+
+### Next up
+- [x] You two: play-test part A. Trunks block, wind works! ✅
+- [ ] Roadmap **2.6 part B**: real grass, flower, bush and tree models built by a Blender script
+- [ ] Roadmap **2.6 part C**: biome colours, soft shadows in block corners (corner AO), and the split-screen 120 FPS check
+
+---
+
 ## 2026-10-28 - Session 1 (part 11): Meet the Wayfarer 🧙 Roadmap 2.5
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

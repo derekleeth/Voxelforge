@@ -12,9 +12,13 @@ namespace Voxelforge.Tests
         [SetUp]
         public void SetUp()
         {
-            var blocks = new NativeArray<BlockInfo>(4, Allocator.Persistent);
+            var blocks = new NativeArray<BlockInfo>(BlockIds.TreeTrunk + 1, Allocator.Persistent);
             blocks[BlockIds.Air] = new BlockInfo { Id = BlockIds.Air, Flags = BlockFlags.Registered | BlockFlags.Transparent };
             blocks[BlockIds.Stone] = new BlockInfo { Id = BlockIds.Stone, Flags = BlockFlags.Registered | BlockFlags.Solid };
+            blocks[BlockIds.TreeTrunk] = new BlockInfo
+            {
+                Id = BlockIds.TreeTrunk, Flags = BlockFlags.Registered | BlockFlags.Solid | BlockFlags.Transparent,
+            };
             _world = new VoxelWorld(blocks);
         }
 
@@ -56,6 +60,20 @@ namespace Voxelforge.Tests
                 "Starting under the roof, the ground below has only 1 block of head room.");
             Assert.IsTrue(SpawnPointFinder.TryFindSurface(_world, 4, 4, 31, 2, out float3 feet));
             Assert.AreEqual(13f, feet.y, "Should stand on the roof instead.");
+        }
+
+        [Test]
+        public void NeverSpawnsOnATreeTrunk_MovesOneColumnOver()
+        {
+            _world.CreateChunk(new ChunkCoord(0, 0, 0));
+            for (int x = 3; x <= 5; x++)
+            for (int y = 0; y <= 10; y++)
+                _world.SetVoxel(new int3(x, y, 4), new Voxel(BlockIds.Stone));
+            for (int y = 11; y <= 15; y++)
+                _world.SetVoxel(new int3(4, y, 4), new Voxel(BlockIds.TreeTrunk));
+
+            Assert.IsTrue(SpawnPointFinder.TryFindSurface(_world, 4, 4, 31, 2, out float3 feet));
+            Assert.AreEqual(new float3(5.5f, 11f, 4.5f), feet, "Should stand on the ground next to the trunk, not on top of it.");
         }
     }
 }

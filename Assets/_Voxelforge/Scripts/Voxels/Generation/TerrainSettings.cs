@@ -72,6 +72,18 @@ namespace Voxelforge.Voxels
         [Tooltip("Ore only forms below this height.")]
         [SerializeField] int oreMaxY = 80;
 
+        [Header("Trees")]
+        [Tooltip("Invisible solid block that fills tree trunks, so trees block building and collide.")]
+        [SerializeField] BlockDefinition treeTrunkBlock;
+
+        [Tooltip("Each square of this many blocks has one spot where a tree may grow. Smaller = denser forests. Trees never touch.")]
+        [SerializeField, Range(3, 32)] int treeCellSize = 6;
+
+        [Tooltip("Shortest and tallest trunk, in blocks.")]
+        [SerializeField, Range(1, 16)] int treeMinHeight = 4;
+
+        [SerializeField, Range(1, 16)] int treeMaxHeight = 6;
+
         public IReadOnlyList<BiomeSettings> Biomes => biomes;
 
         /// <summary>Returns every problem with these settings. An empty list means they're valid.</summary>
@@ -84,6 +96,9 @@ namespace Voxelforge.Voxels
             CheckBlock(registry, stoneBlock, "Stone Block", errors);
             CheckBlock(registry, snowBlock, "Snow Block", errors);
             CheckBlock(registry, oreBlock, "Ore Block", errors);
+            CheckBlock(registry, treeTrunkBlock, "Tree Trunk Block", errors);
+            if (treeMaxHeight < treeMinHeight)
+                errors.Add("Tree Max Height is lower than Tree Min Height.");
             for (int i = 0; i < biomes.Count; i++)
             {
                 BiomeSettings biome = biomes[i];
@@ -119,6 +134,10 @@ namespace Voxelforge.Voxels
                 OreFrequency = oreFrequency,
                 OreThreshold = oreThreshold,
                 OreMaxY = oreMaxY,
+                TreeTrunkBlock = treeTrunkBlock != null ? treeTrunkBlock.Id : BlockIds.TreeTrunk,
+                TreeCellSize = treeCellSize,
+                TreeMinHeight = treeMinHeight,
+                TreeMaxHeight = math.max(treeMaxHeight, treeMinHeight),
             };
         }
 
@@ -181,9 +200,14 @@ namespace Voxelforge.Voxels
         [Tooltip("How much Mana Crystal Ore grows underneath. 1 = normal.")]
         [SerializeField, Range(0f, 2f)] float oreRichness = 1f;
 
+        [Header("Trees")]
+        [Tooltip("Chance that each tree spot grows a tree. 0 = no trees, 1 = a tree in every spot.")]
+        [SerializeField, Range(0f, 1f)] float treeChance;
+
         public string Name => name;
         public BlockDefinition SurfaceBlock => surfaceBlock;
         public BlockDefinition SubsurfaceBlock => subsurfaceBlock;
+        public float TreeChance => treeChance;
 
         public BiomeInfo ToBiomeInfo()
         {
@@ -201,6 +225,7 @@ namespace Voxelforge.Voxels
                 SubsurfaceBlock = subsurfaceBlock != null ? subsurfaceBlock.Id : BlockIds.Stone,
                 SubsurfaceDepth = subsurfaceDepth,
                 OreRichness = oreRichness,
+                TreeChance = treeChance,
             };
         }
     }
@@ -228,6 +253,11 @@ namespace Voxelforge.Voxels
         public float OreFrequency;
         public float OreThreshold;
         public int OreMaxY;
+
+        public ushort TreeTrunkBlock;
+        public int TreeCellSize;
+        public int TreeMinHeight;
+        public int TreeMaxHeight;
     }
 
     /// <summary>Job-friendly copy of a <see cref="BiomeSettings"/>.</summary>
@@ -245,5 +275,6 @@ namespace Voxelforge.Voxels
         public ushort SubsurfaceBlock;
         public int SubsurfaceDepth;
         public float OreRichness;
+        public float TreeChance;
     }
 }

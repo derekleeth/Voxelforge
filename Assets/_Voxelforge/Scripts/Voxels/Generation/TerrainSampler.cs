@@ -13,6 +13,8 @@ namespace Voxelforge.Voxels
         public int Biome;
         /// <summary>Blended ore richness of the biomes here. 1 = normal.</summary>
         public float OreRichness;
+        /// <summary>Trunk blocks stacked on the ground here (see <see cref="TreePlacement"/>). 0 = no tree.</summary>
+        public int TreeHeight;
     }
 
     /// <summary>
@@ -29,7 +31,7 @@ namespace Voxelforge.Voxels
         /// Bump this whenever terrain output changes on purpose (new rules or new settings values).
         /// Saves (Roadmap 3.4) record it, so an old save can tell it was made by a different generator.
         /// </summary>
-        public const int GeneratorVersion = 1;
+        public const int GeneratorVersion = 2; // 2: trees (Roadmap 2.6).
 
         /// <summary>Spreads climate noise (which mostly stays near 0) across the whole -1..1 climate map.</summary>
         const float ClimateStretch = 1.6f;
@@ -55,6 +57,7 @@ namespace Voxelforge.Voxels
         float3 _cavernOffset;
         float3 _oreOffset;
         uint _jitterHash;
+        uint _treeHash;
 
         /// <param name="biomes">Read, not owned: the caller keeps it alive and disposes it.</param>
         public TerrainSampler(WorldSeed seed, TerrainParams terrain, NativeArray<BiomeInfo> biomes, Allocator allocator)
@@ -73,6 +76,7 @@ namespace Voxelforge.Voxels
             _cavernOffset = seed.NoiseOffset(CavernSalt);
             _oreOffset = seed.NoiseOffset(OreSalt);
             _jitterHash = seed.Hash(JitterSalt);
+            _treeHash = TreePlacement.SeedHash(seed);
         }
 
         public int BiomeCount => _biomes.Length;
@@ -150,30 +154,65 @@ namespace Voxelforge.Voxels
                 oreRichness += w * _biomes[i].OreRichness;
             }
 
+            var column = new TerrainColumn
+            {
+                Height = math.max((int)math.floor(height), 1),
+                Biome = SurfaceBiome(climate, x, z),
+                OreRichness = oreRichness,
+            };
+            column.TreeHeight = TreeHeightAt(x, z, column);
+            return column;
+        }
+
+        /// <summary>
+        /// The biome whose blocks cover column (<paramref name="x"/>, <paramref name="z"/>), the same as
+        /// <see cref="SampleColumn"/>'s <see cref="TerrainColumn.Biome"/>, but without working out the ground height.
+        /// Decorations (Roadmap 2.6) use it to pick their plants.
+        /// </summary>
+        public int SurfaceBiome(int x, int z) => SurfaceBiome(Climate(new float2(x, z)), x, z);
+
+        int SurfaceBiome(float2 climate, int x, int z)
+        {
             // Nudge the climate a little per column so the line between two biomes' surface blocks is ragged, not straight.
             uint h = math.hash(new uint3((uint)x, (uint)z, _jitterHash));
             float2 jitter = new float2(h & 0xFFFF, h >> 16) * (1f / 65535f) - 0.5f;
+            return NearestBiome(climate + jitter * _params.SurfaceJitter);
+        }
 
-            return new TerrainColumn
-            {
-                Height = math.max((int)math.floor(height), 1),
-                Biome = NearestBiome(climate + jitter * _params.SurfaceJitter),
-                OreRichness = oreRichness,
-            };
+        /// <summary>
+        /// How tall the tree growing out of this column is, or 0. A tree needs its cell's tree spot, a lucky roll for
+        /// its biome, the biome's own surface block on top (not snow above the snow line), and ground a cave hasn't eaten.
+        /// </summary>
+        int TreeHeightAt(int x, int z, in TerrainColumn column)
+        {
+            if (!TreePlacement.IsCandidate(_treeHash, x, z, _params.TreeCellSize))
+                return 0;
+
+            BiomeInfo biome = _biomes[column.Biome];
+            if (TreePlacement.Roll(_treeHash, x, z) >= biome.TreeChance)
+                return 0;
+            if (SurfaceBlock(column) != biome.SurfaceBlock || IsCave(new int3(x, column.Height, z), column.Height))
+                return 0;
+            return TreePlacement.TrunkHeight(_treeHash, x, z, _params.TreeMinHeight, _params.TreeMaxHeight);
+        }
+
+        ushort SurfaceBlock(in TerrainColumn column)
+        {
+            return column.Height >= _params.SnowLine ? _params.SnowBlock : _biomes[column.Biome].SurfaceBlock;
         }
 
         /// <summary>The block at world position <paramref name="w"/>, inside the column <paramref name="column"/>.</summary>
         public ushort BlockAt(int3 w, in TerrainColumn column)
         {
             if (w.y > column.Height)
-                return BlockIds.Air;
+                return w.y <= column.Height + column.TreeHeight ? _params.TreeTrunkBlock : BlockIds.Air;
             if (IsCave(w, column.Height))
                 return BlockIds.Air;
 
             BiomeInfo biome = _biomes[column.Biome];
             int depth = column.Height - w.y;
             if (depth == 0)
-                return column.Height >= _params.SnowLine ? _params.SnowBlock : biome.SurfaceBlock;
+                return SurfaceBlock(column);
             if (depth <= biome.SubsurfaceDepth)
                 return biome.SubsurfaceBlock;
             return IsOre(w, column.OreRichness) ? _params.OreBlock : _params.StoneBlock;

@@ -38,9 +38,27 @@ namespace Voxelforge.Voxels
         [Tooltip("Log how long the first full meshing pass took.")]
         [SerializeField] bool logMeshingTime = true;
 
+        [Header("Decorations (Roadmap 2.6)")]
+        [Tooltip("Grass, flowers, bushes and trees. Empty = a bare world.")]
+        [SerializeField] DecorationSet decorationSet;
+
+        [Tooltip("Shaders/DecorationCull.compute: culls decorations for each camera on the GPU.")]
+        [SerializeField] ComputeShader decorationCullShader;
+
+        [Tooltip("Which way the wind blows, as a compass angle (0 = north/+Z, 90 = east/+X).")]
+        [SerializeField, Range(0f, 360f)] float windAngle = 60f;
+
+        [Tooltip("How far plant tips bend in the wind, in metres.")]
+        [SerializeField, Range(0f, 1f)] float windStrength = 0.12f;
+
+        [Tooltip("How quickly plants sway.")]
+        [SerializeField, Range(0f, 5f)] float windSpeed = 1.6f;
+
         VoxelWorld _world;
         ChunkGenerationScheduler _generator;
         ChunkMeshScheduler _scheduler;
+        DecorationLayer _decorations;
+        DecorationRenderer _decorationRenderer;
         float _meshingStartTime = -1f;
 
         /// <summary>The block data. Only this assembly can edit it.</summary>
@@ -52,6 +70,9 @@ namespace Voxelforge.Voxels
         public ChunkGenerationScheduler Generator => _generator;
 
         public ChunkMeshScheduler Scheduler => _scheduler;
+
+        /// <summary>Every loaded chunk's decorations, or null when there is no decoration set.</summary>
+        public DecorationLayer Decorations => _decorations;
 
         void Awake()
         {
@@ -80,6 +101,29 @@ namespace Voxelforge.Voxels
             {
                 IsChunkIncoming = _generator.IsRequested,
             };
+            CreateDecorations();
+        }
+
+        void CreateDecorations()
+        {
+            if (decorationSet == null)
+                return;
+
+            List<string> errors = decorationSet.Validate(terrainSettings, blockRegistry);
+            if (errors.Count > 0)
+            {
+                Debug.LogError($"Decoration set '{decorationSet.name}' is invalid, so the world has no decorations:\n" +
+                               string.Join("\n", errors), decorationSet);
+                return;
+            }
+
+            _decorations = new DecorationLayer(decorationSet, terrainSettings, blockRegistry, _generator.Seed,
+                _generator.Terrain, _generator.Biomes);
+            _scheduler.Decorations = _decorations;
+            if (decorationCullShader != null && SystemInfo.supportsComputeShaders)
+                _decorationRenderer = new DecorationRenderer(_decorations, decorationCullShader);
+            else
+                Debug.LogWarning("Decorations are placed but not drawn: no cull compute shader, or no compute support.", this);
         }
 
         void Update()
@@ -90,6 +134,12 @@ namespace Voxelforge.Voxels
                 _meshingStartTime = Time.realtimeSinceStartup;
 
             _scheduler.Update();
+            if (_decorationRenderer != null)
+            {
+                float radians = windAngle * Mathf.Deg2Rad;
+                _decorationRenderer.SetWind(new Vector3(Mathf.Sin(radians), 0f, Mathf.Cos(radians)), windStrength, windSpeed);
+                _decorationRenderer.Update();
+            }
 
             if (_meshingStartTime >= 0f && _generator.IsIdle && _world.DirtyCount == 0 && _scheduler.PendingCount == 0)
             {
@@ -105,6 +155,8 @@ namespace Voxelforge.Voxels
         {
             // Jobs read world memory, so stop them before freeing it.
             _scheduler?.Dispose();
+            _decorationRenderer?.Dispose();
+            _decorations?.Dispose(); // Borrows the generator's biome list, so it goes first.
             _generator?.Dispose();
             _world?.Dispose();
         }

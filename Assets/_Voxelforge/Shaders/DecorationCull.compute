@@ -1,0 +1,50 @@
+// Per-camera culling for decorations (Roadmap 2.6). For one decoration type, tests every instance slot against the
+// camera's frustum and draw distance and appends the visible ones to the near (LOD0) or far (LOD1) list.
+// DecorationRenderer then copies each list's length into the indirect draw arguments.
+#pragma kernel Cull
+
+#define DECORATION_COMPUTE
+#include "Decoration.hlsl"
+
+StructuredBuffer<DecorationInstance> _Instances;
+AppendStructuredBuffer<uint> _VisibleNear;
+AppendStructuredBuffer<uint> _VisibleFar;
+
+uint   _SlotCount;       // Slots to test (the allocator's used end).
+float4 _FrustumPlanes[6]; // Unity planes: dot(normal, p) + distance >= 0 inside.
+float3 _CameraPosition;
+float  _LodDistance;
+float  _MaxDistance;
+float  _BoundsCenterY;   // Mesh bounds centre height and radius, at scale 1.
+float  _BoundsRadius;
+float  _PlaneMargin;     // Extra room outside the frustum, so off-screen shadow casters still cast.
+
+[numthreads(64, 1, 1)]
+void Cull(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x;
+    if (index >= _SlotCount)
+        return;
+
+    DecorationInstance d = _Instances[index];
+    if (d.scale <= 0.0)
+        return; // Empty slot.
+
+    float3 center = d.position + float3(0.0, _BoundsCenterY * d.scale, 0.0);
+    float radius = _BoundsRadius * d.scale;
+    float distanceToCamera = distance(d.position, _CameraPosition);
+    if (distanceToCamera > _MaxDistance)
+        return;
+
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        if (dot(_FrustumPlanes[i].xyz, center) + _FrustumPlanes[i].w < -(radius + _PlaneMargin))
+            return;
+    }
+
+    if (distanceToCamera < _LodDistance)
+        _VisibleNear.Append(index);
+    else
+        _VisibleFar.Append(index);
+}

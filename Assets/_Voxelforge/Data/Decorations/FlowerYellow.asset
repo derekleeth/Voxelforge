@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: FlowerYellow
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 0
+  mesh: {fileID: 4300000, guid: df7494ebc3af8a343964805b36e1e354, type: 2}
+  lodMesh: {fileID: 0}
+  material: {fileID: 2100000, guid: 3402051c418a2c249a21e26c0afbbb28, type: 2}
+  tint: 0
+  castShadows: 0
+  lodDistance: 50
+  maxDistance: 60
+  surfaces:
+  - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+  density: 0.04
+  biomes:
+  - biome: Meadows (Elwynn style)
+    weight: 1
+  - biome: Red Crags (Redridge style)
+    weight: 0.4
+  minScale: 0.8
+  maxScale: 1.2
+  modelTrunkHeight: 5

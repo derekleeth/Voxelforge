@@ -5,6 +5,51 @@
 
 ---
 
+## D-012: Foliage, Trees and the Decoration Layer
+- **Date:** 2026-10-28
+- **Status:** Accepted for part A (engine + placeholder art, play-tested 2026-10-28). Parts B (art) and C (tint, corner AO, FPS) follow.
+
+### Decisions
+- **Trees live in the terrain; everything else lives in the mesh job.**
+  - Trunks must be real voxels to block and collide, so tree placement happens during **generation** (`TerrainSampler`).
+  - Grass, flowers and bushes are placed during **meshing**, from the gathered blocks only. They rebuild whenever their chunk remeshes, so they need **no save data and no network sync**.
+- **`TreeTrunk` block (ID 9):** `Solid` + `Transparent`, with no texture. The greedy mesher already skips non-opaque blocks, so the trunk is invisible, yet `VoxelBodyMotor.IsSolid` collides with it. No physics changes were needed. Trees collide on the **trunk only**; heroes walk through leaves.
+- **`TreePlacement`** (Burst-safe static, used by the generator and the decorator so they always agree):
+  - A **jittered grid**, one candidate per `treeCellSize` (6) cell. Offsets stay inside `cellSize - 1`, so trees are never adjacent.
+  - Per biome `treeChance` (Meadows 0.35, Desert 0.03, Red Crags 0.2, Snowy 0.3) decides whether a candidate grows.
+  - A tree needs the biome's own surface block on top (not snow above the snow line) and ground that a cave hasn't carved.
+  - Trunk height (4-6) comes from `hash(seed, x, z)`.
+  - **`GeneratorVersion` -> 2**, and the golden terrain hash was updated on purpose.
+- **`SpawnPointFinder`** only accepts opaque solid ground. If the column holds a trunk, it tries up to 3 columns east.
+- **`DecorateChunkJob`** (Burst, strict floats) runs after the gather job, **in parallel with `GreedyMeshJob`**; both only read the padded block buffer.
+  - **Ground decorations:** one hash roll per open block top (Air above) picks at most one type, weighted by density × biome weight.
+  - **Trees:** a tree instance goes on each trunk's bottom voxel, scaled by trunk height ÷ the model's trunk height (5).
+  - The biome per column comes from `TerrainSampler.SurfaceBiome(x, z)` (2D climate noise only, cheap).
+  - The existing stale-version check throws away decorations together with the mesh (D-004).
+- **Data-driven:** `DecorationDefinition` (ScriptableObject) holds the kind, LOD0/LOD1 meshes, material, allowed surface blocks, density, biome weights, scale range, LOD/max distance, shadows and tint source. `DecorationSet` lists them, is validated at startup (every biome that grows trees must have a tree type), and builds the Burst lookups.
+- **Instances are 32 bytes** (`DecorationInstance`: position, yaw, scale, type, RGBA8 tint, random). Scale 0 marks an empty slot.
+- **`DecorationLayer`** keeps one CPU array per type. `InstanceRangeAllocator` (first-fit, merges freed ranges, grows by doubling) gives each chunk a range. Only dirty ranges are uploaded, or the whole buffer after it grows.
+- **`DecorationRenderer`** (plain C#, owned by `VoxelWorldManager`, no `Camera.main`):
+  - One `GraphicsBuffer` per type.
+  - On `RenderPipelineManager.beginCameraRendering`, **for each camera**, `DecorationCull.compute` tests distance and frustum and appends visible indices into near (LOD0) and far (LOD1) lists. `CopyCount` writes the counts into indirect args, and `Graphics.RenderMeshIndirect` draws them for that camera only.
+  - Shadow-casting types (bushes, trees) use a 12 m frustum margin so shadows from just off-screen still land.
+  - Streaming (D-010) comes for free: chunks add and remove their ranges when they mesh or are released.
+- **`Voxelforge/Foliage` shader** (URP): PBR lighting, alpha cut-out, double-sided, optional up-facing normals for grass cards.
+  - **Wind:** global `_VF_Wind` (direction, strength, speed, set on `VoxelWorldManager`). Each vertex bends by its sway weight from vertex colour alpha (0 at the root, 1 at the tips), with a per-plant phase so fields ripple. Presentation only.
+  - **Distance fade:** a dithered screen-door fade from 80% to 100% of the type's max distance, which also works in shadows. It only drops pixels while actually fading.
+  - Passes: ForwardLit, ShadowCaster, DepthOnly (SSAO reads depth, D-009).
+- **Placeholder art** comes from ***Voxelforge -> Build Placeholder Decorations*** (`PlaceholderDecorationBuilder`), which writes meshes, materials and decoration assets. Part B replaces the meshes and materials with Blender-built art.
+
+### Measured (part A, editor)
+- ~25k decorations in 193 chunks around spawn, 766 trees. Overview camera ~181 FPS. 157/157 EditMode tests pass.
+
+### Deferred on purpose
+- **Chopping trees (3.1/3.2):** removing a trunk voxel through `RequestModifyVoxel` should clear the whole trunk column and its tree visual, and drop wood.
+- **Herb nodes (5.5)** build on `DecorationDefinition`.
+- Water and other transparent blocks aren't part of 2.6.
+
+---
+
 ## D-011: How Heroes Move and Look
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested 2026-10-28)

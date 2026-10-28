@@ -22,7 +22,7 @@ namespace Voxelforge.Tests
         /// Recorded output of <see cref="GoldenChunk_MatchesRecordedHash"/>. If this test fails, terrain output changed:
         /// that's fine on purpose (update this and bump <see cref="TerrainSampler.GeneratorVersion"/>), a bug otherwise.
         /// </summary>
-        const uint GoldenHash = 3139149843u;
+        const uint GoldenHash = 1617711878u; // GeneratorVersion 2: trees.
 
         TerrainSettings _settings;
         BlockRegistry _registry;

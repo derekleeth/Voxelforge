@@ -50,6 +50,12 @@ namespace Voxelforge.Voxels
 
         public WorldSeed Seed { get; }
 
+        /// <summary>The terrain values every chunk is built with. Decorations read them too.</summary>
+        public TerrainParams Terrain => _terrain;
+
+        /// <summary>The biome list, owned by this scheduler. Other jobs may read it while the scheduler is alive.</summary>
+        public NativeArray<BiomeInfo> Biomes => _biomes;
+
         /// <summary>Chunks waiting for a free job slot.</summary>
         public int QueuedCount => _requests.Count;
 

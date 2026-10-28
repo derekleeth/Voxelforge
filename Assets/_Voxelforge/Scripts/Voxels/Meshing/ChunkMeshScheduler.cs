@@ -32,7 +32,9 @@ namespace Voxelforge.Voxels
             public NativeArray<ushort> Padded;
             public Mesh.MeshDataArray MeshData;
             public JobHandle GatherHandle;
-            public JobHandle MeshHandle;
+            public JobHandle MeshHandle; // Also covers the decoration job, when there is one.
+            public NativeList<DecorationInstance> Decorations;
+            public bool HasDecorations;
         }
 
         readonly VoxelWorld _world;
@@ -74,6 +76,12 @@ namespace Voxelforge.Voxels
         /// Chunks next to one wait for it, instead of meshing now and again when it arrives.
         /// </summary>
         public Func<ChunkCoord, bool> IsChunkIncoming { get; set; }
+
+        /// <summary>
+        /// Optional (Roadmap 2.6): places each chunk's grass, flowers and trees in a job next to its mesh job, so
+        /// decorations stream and rebuild together with the terrain.
+        /// </summary>
+        public DecorationLayer Decorations { get; set; }
 
         /// <summary>Chunks that currently have a renderer (visible or empty).</summary>
         public int RendererCount => _renderers.Count;
@@ -171,6 +179,7 @@ namespace Voxelforge.Voxels
             {
                 if (_renderers.TryGetValue(coord, out ChunkRenderer emptyRenderer))
                     emptyRenderer.Clear();
+                Decorations?.RemoveChunk(coord);
                 return;
             }
 
@@ -198,6 +207,14 @@ namespace Voxelforge.Voxels
                 Blocks = _world.Blocks,
                 MeshData = pending.MeshData[0],
             }.Schedule(pending.GatherHandle);
+
+            if (Decorations != null)
+            {
+                // Runs alongside the mesh job: both only read the padded copy.
+                JobHandle decorate = Decorations.Schedule(coord, pending.Padded, pending.GatherHandle, out pending.Decorations);
+                pending.HasDecorations = true;
+                pending.MeshHandle = JobHandle.CombineDependencies(pending.MeshHandle, decorate);
+            }
 
             _pending.Add(pending);
             _pendingCoords.Add(coord);
@@ -259,6 +276,8 @@ namespace Voxelforge.Voxels
             if (IsStale(pending))
             {
                 pending.MeshData.Dispose();
+                if (pending.HasDecorations)
+                    Decorations.Discard(pending.Decorations);
                 DiscardedCount++;
                 _world.MarkDirty(pending.Coord); // Does nothing if the chunk was unloaded.
                 if (!_world.TryGetChunk(pending.Coord, out _))
@@ -276,6 +295,9 @@ namespace Voxelforge.Voxels
             {
                 GetOrCreateRenderer(pending.Coord).ApplyMesh(pending.MeshData);
             }
+            // A chunk can have decorations but no mesh: e.g. only the top of a tree trunk, which is invisible.
+            if (pending.HasDecorations)
+                Decorations.SetChunk(pending.Coord, pending.Decorations);
             MeshedCount++;
         }
 
@@ -311,6 +333,7 @@ namespace Voxelforge.Voxels
 
         void RemoveRenderer(ChunkCoord coord)
         {
+            Decorations?.RemoveChunk(coord);
             if (_renderers.Remove(coord, out ChunkRenderer chunkRenderer))
             {
                 chunkRenderer.Release();
@@ -338,6 +361,8 @@ namespace Voxelforge.Voxels
                 pending.MeshHandle.Complete();
                 pending.MeshData.Dispose();
                 pending.Padded.Dispose();
+                if (pending.HasDecorations)
+                    Decorations.Discard(pending.Decorations);
             }
             _pending.Clear();
             _pendingCoords.Clear();

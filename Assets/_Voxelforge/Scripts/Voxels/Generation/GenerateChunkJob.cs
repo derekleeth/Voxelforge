@@ -36,7 +36,7 @@ namespace Voxelforge.Voxels
             {
                 TerrainColumn column = sampler.SampleColumn(Origin.x + x, Origin.z + z);
                 columns[z * ChunkSize + x] = column;
-                top = math.max(top, column.Height);
+                top = math.max(top, column.Height + column.TreeHeight);
             }
 
             // Sky chunk: nothing to carve, so skip the 3D noise entirely.

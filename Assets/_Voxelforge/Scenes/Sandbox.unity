@@ -757,6 +757,11 @@ MonoBehaviour:
   maxGenerationJobsInFlight: 32
   maxJobsInFlight: 32
   logMeshingTime: 1
+  decorationSet: {fileID: 11400000, guid: 53272a4472a044d48907df61b8552f9a, type: 2}
+  decorationCullShader: {fileID: 7200000, guid: 0c6f4184b73d9b143ac02e27026bf520, type: 3}
+  windAngle: 60
+  windStrength: 0.12
+  windSpeed: 1.6
 --- !u!4 &1325734896
 Transform:
   m_ObjectHideFlags: 0
