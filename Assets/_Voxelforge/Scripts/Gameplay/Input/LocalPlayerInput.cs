@@ -42,6 +42,15 @@ namespace Voxelforge.Gameplay
 
         public InputUser User => _user;
 
+        /// <summary>
+        /// Which way this player's camera faces (degrees clockwise from north). Their camera rig sets it every frame,
+        /// and it's sent with each input frame so "forward" means "away from my camera".
+        /// </summary>
+        public float ViewYaw { get; set; }
+
+        /// <summary>True for the keyboard + mouse scheme, where look input is mouse movement rather than a stick.</summary>
+        public bool UsesMouse => ControlScheme == "KeyboardMouse";
+
         /// <summary>Set by the roster while this player's device is unplugged.</summary>
         public bool IsDisconnected { get; internal set; }
 
@@ -75,11 +84,15 @@ namespace Voxelforge.Gameplay
             return new PlayerInputFrame
             {
                 Move = (float2)_move.ReadValue<Vector2>(),
+                ViewYaw = ViewYaw,
                 Buttons = _jump.IsPressed() ? PlayerButtons.Jump : PlayerButtons.None,
             };
         }
 
-        /// <summary>Camera look input. Not sent to the host yet; the per-player cameras in Roadmap 2.3 use it.</summary>
+        /// <summary>
+        /// Camera look input: mouse movement in pixels this frame, or the right stick (-1 to 1). Stays on this PC; the
+        /// host only hears the resulting <see cref="ViewYaw"/>.
+        /// </summary>
         public Vector2 ReadLook() => IsDisconnected || !_user.valid ? Vector2.zero : _look.ReadValue<Vector2>();
 
         void Unpair()

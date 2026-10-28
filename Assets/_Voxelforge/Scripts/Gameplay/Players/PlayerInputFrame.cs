@@ -19,6 +19,8 @@ namespace Voxelforge.Gameplay
     {
         /// <summary>Stick or WASD direction: x = right, y = forward. Length 0-1.</summary>
         public float2 Move;
+        /// <summary>Which way this player's camera faces, in degrees clockwise from north. The host turns <see cref="Move"/> by it.</summary>
+        public float ViewYaw;
         public PlayerButtons Buttons;
         /// <summary>Counts up every frame, so the host can ignore frames that arrive late and out of order.</summary>
         public uint Sequence;

@@ -5,6 +5,48 @@
 
 ---
 
+## D-009: Cameras and Voronoi Split-Screen
+- **Date:** 2026-10-27
+- **Status:** Accepted
+
+### Decisions
+- **One camera rig per local player**, made at runtime by `SplitScreenDirector` (a scene component, not a singleton) as a copy of the **Overview Camera**, so every view shares its render settings. The overview camera shows the world before anyone joins. Nothing uses `Camera.main` (the `MainCamera` tag is gone).
+- **How the screen is shared** (`SplitMode`):
+
+  | Players | Layout |
+  |---|---|
+  | 0 | Overview camera |
+  | 1 | One full-screen camera |
+  | 2, within **15 m** | **Merged:** one shared camera on the midpoint. It pulls back as they spread (`7 m + 0.6 × separation`) |
+  | 2, beyond 15 m | **Voronoi:** an angled split line at right angles to the on-screen direction between them |
+  | 3–4 | **Grid** of quarters (top-left, top-right, bottom-left, bottom-right). With 3 players the 4th quarter shows the overview |
+
+- **Seamless split.** While split, each camera looks at `player + toward-midpoint × min(half the separation, 7.5 m)` from the distance it had at 15 m. Exactly at 15 m that point *is* the midpoint, so the two split views equal the shared view and the line appears with no jump. The divider fades in over the first metre. The math lives in `SplitScreenMath` and is unit-tested.
+- **Turning the camera:** mouse (0.15°/px, while the cursor is locked) or right stick (180°/s).
+  - **Together**, either player turns the shared camera.
+  - **Apart**, each player turns their own view.
+  - From 15 to 22 m, each view eases between the shared angle and the player's own (`smoothstep`). While split, the shared angle drifts to the middle of the two views, so they meet halfway when the players come back together.
+  - Pitch is clamped to 10°–70°.
+- **How it's drawn (cheapest way we found):** the first player's camera draws straight to the screen, and the second player's camera draws into a `RenderTexture`. The **Composite Camera** is a URP *overlay* camera stacked on the first player's camera. It draws only a full-screen quad (on the `Compositor` layer) with `SplitScreenComposite.shader`, which paints the texture over the second player's side of the line and draws the divider. This replaced a first version where both views went into textures and a separate base camera combined them. That version cost about 1.3 ms more per frame, plus a second full-screen texture.
+- **Camera-relative movement, still host-authoritative.** `PlayerInputFrame` carries `ViewYaw` (which way the player's camera faces). The host turns `Move` by it (`MoveDirection.ToWorld`) before running the motor. The host never sees cameras, only the yaw, and Phase 4 aiming can reuse it.
+- **`PlayerController.HasLanded`** is a `NetworkVariable`, so cameras on any PC know when a hero is on the ground. The old `IsWaitingForGround` is host-only.
+- **HUDs (4.4) ask `SplitScreenDirector.TryGetView(slot)`** for their player's camera, screen rectangle and Voronoi side, never the whole screen (CLAUDE.md Law #5).
+- **Mouse lock:** the cursor locks while a keyboard + mouse player is in. Esc frees it, and a click takes it back.
+- **One `AudioListener`** follows the middle of the players.
+
+### Performance (editor, 1304×548 Game view, measured while the editor wasn't focused)
+- Merged: about 143 FPS. Split: about 100–111 FPS (both-textures version, before the overlay change).
+- The cost is per-camera CPU and render-thread work (culling, draw submission, shadows: about 2 ms per player camera), not pixels. Half-resolution split views made no difference, but `splitRenderScale` is kept as a knob. Turning shadows off for the second camera saved about 1.3 ms.
+- **The real number comes from the 2.7 Windows build.** If split-screen is under 120 FPS there, the next steps are fewer, larger chunk renderers (fewer draw calls per camera), and sharing or reducing shadow cascades for split cameras.
+
+### Deferred on purpose
+- Voronoi for 3–4 players (merging in groups).
+- Per-player audio listeners.
+- Camera collision with terrain (the camera passing through hills): 2.5, with the character work.
+- Heroes turning to face where they walk: 2.5.
+
+---
+
 ## D-008: How Each Player Gets Their Controller
 - **Date:** 2026-10-27
 - **Status:** Accepted

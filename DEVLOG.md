@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-10-27 - Session 1 (part 9): Your Own Camera, and a Screen That Splits 🎥 Roadmap 2.3
+**Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
+
+### What we did
+- **Every hero has their own camera now!** Details in DECISIONS.md **D-009**.
+- **Stick together** (closer than 15 m): you share one camera that floats over both of you and zooms out as you spread apart.
+- **Walk apart** (more than 15 m): the screen **splits along a slanted line**, and the line always points between you. If your friend is up and to the right, their half is up and to the right. Walk back together and the halves melt into one picture again.
+- **Turn the camera** with the **mouse** (keyboard player) or the **right stick** (gamepad). When you're together, either of you can turn the shared camera. When you're apart, you each turn your own.
+- **W / stick-up now means "away from my camera"**, not "north". The host still decides where you actually go.
+- **3 or 4 players** get a quarter of the screen each. With 3 players, the spare quarter shows the whole world from above.
+- Before anyone joins, the **Overview Camera** shows the whole world floating in space.
+- The mouse is locked to the game while you play. Press **Esc** to get it back, and click the game to lock it again.
+- The debug corner (F3) shows the camera mode and how far apart you are.
+
+### Results 🎉
+- Split exactly at 15 m: the two halves lined up perfectly, with no jump, and the divider line faded in.
+- Far apart: a slanted line with P1 on one side and P2 on the other.
+- 3 players: three quarters plus the overview.
+- **FPS (editor):** about 143 merged and about 100–111 split. Drawing the world twice costs about 2 ms per camera, so we made the split cheaper (the second camera's picture is painted on top of the first instead of both being combined by a third camera). The real FPS test is the 2.7 build.
+
+### Tests: 109 / 109 passing ✅
+- The split math: merged under 15 m, split over it, and both cameras look at the midpoint at exactly 15 m (that's what makes it seamless).
+- Angles turn the short way round (350° → 10° is +20°, not −340°).
+- The split line points from P1 to P2 on screen, even when the camera is turned.
+- Grid quarters cover the whole screen.
+- Camera-relative walking: facing east, W walks east and D walks south.
+
+### Things we learned
+- A "Voronoi" split means each player owns the part of the screen that's closer to them. With two players that's just a straight line halfway between them.
+- Making the split invisible at the moment it happens is all about both cameras seeing *the same thing* at that instant.
+- Two cameras cost twice the *work*, not twice the *pixels*. Making the pictures smaller didn't help at all, which told us where the cost really is.
+
+### Next up
+- [ ] You two: play-test 2.3 with the **Game view clicked** (so Unity runs at full speed). Walk apart and back together, turn the cameras, and read the FPS in the corner while split. Then we tick it off.
+- [ ] Roadmap **2.4 Multi-Viewer Chunk Loader**: load terrain around *both* players so you can really explore apart
+
+---
+
 ## 2026-10-27 - Session 1 (part 8): Grab a Controller and Press Start 🕹️ Roadmap 2.2
 **Phase:** 2 - Dynamic Couch Co-Op & Smooth Heroes
 

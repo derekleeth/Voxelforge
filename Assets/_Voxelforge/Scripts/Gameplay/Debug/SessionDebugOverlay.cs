@@ -8,6 +8,9 @@ namespace Voxelforge.Gameplay
     {
         [SerializeField] GameSession session;
 
+        [Tooltip("Optional: shows the split-screen mode.")]
+        [SerializeField] SplitScreenDirector cameras;
+
         [SerializeField] bool visible = true;
 
         readonly StringBuilder _text = new StringBuilder();
@@ -34,6 +37,13 @@ namespace Voxelforge.Gameplay
             if (network.IsListening)
                 _text.Append($"  client {network.LocalClientId}");
             _text.Append($"   {1f / _smoothedDeltaTime:F0} FPS");
+            if (cameras != null)
+            {
+                SplitLayout layout = cameras.Layout;
+                _text.Append($"   camera: {layout.Mode}");
+                if (layout.Mode == SplitMode.Merged || layout.Mode == SplitMode.Voronoi)
+                    _text.Append($" ({layout.Separation:F1} m apart)");
+            }
 
             foreach (PlayerController player in session.Players.Players)
             {

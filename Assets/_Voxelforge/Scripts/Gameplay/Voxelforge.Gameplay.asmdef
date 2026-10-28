@@ -8,7 +8,8 @@
         "Unity.Networking.Transport",
         "Unity.InputSystem",
         "Unity.Mathematics",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

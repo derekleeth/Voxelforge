@@ -30,6 +30,7 @@ namespace Voxelforge.Gameplay
 
         readonly NetworkVariable<byte> _playerId = new NetworkVariable<byte>();
         readonly NetworkVariable<byte> _localSlot = new NetworkVariable<byte>();
+        readonly NetworkVariable<bool> _landed = new NetworkVariable<bool>();
 
         IPlayerInputSource _inputSource;
         uint _nextSequence;
@@ -57,6 +58,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Host only: still waiting for the terrain under the spawn point to generate.</summary>
         public bool IsWaitingForGround => !_placed || _body.WaitingForWorld;
+
+        /// <summary>True on every PC once this player has been placed on the ground. Cameras wait for it.</summary>
+        public bool HasLanded => _landed.Value;
 
         /// <summary>
         /// Host only, called by <see cref="PlayerRegistry"/> just before spawning. The ID and slot are written to
@@ -166,7 +170,7 @@ namespace Voxelforge.Gameplay
             _previousPosition = _body.FeetPosition(motor);
             var input = new MotorInput
             {
-                Move = _latestInput.Move,
+                Move = MoveDirection.ToWorld(_latestInput.Move, _latestInput.ViewYaw),
                 Jump = _latestInput.IsPressed(PlayerButtons.Jump),
             };
             VoxelBodyMotor.Step(ref _body, input, motor, _worldManager.World, Time.fixedDeltaTime);
@@ -182,6 +186,7 @@ namespace Voxelforge.Gameplay
             _previousPosition = feet;
             transform.position = feet;
             _placed = true;
+            _landed.Value = true;
             Debug.Log($"[Voxelforge] {PlayerId} (slot {LocalSlot}) landed at {feet}.", this);
             return true;
         }

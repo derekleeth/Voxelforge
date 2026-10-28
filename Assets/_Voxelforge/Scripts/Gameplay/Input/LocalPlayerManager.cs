@@ -27,6 +27,19 @@ namespace Voxelforge.Gameplay
         /// <summary>Null until this component is enabled.</summary>
         public LocalPlayerRoster Roster => _roster;
 
+        /// <summary>
+        /// The player spawned for <paramref name="slot"/> on this PC, and that slot's controls.
+        /// False if nobody has joined that slot or their hero hasn't spawned yet.
+        /// </summary>
+        public bool TryGetLocalPlayer(int slot, out PlayerController controller, out LocalPlayerInput input)
+        {
+            controller = slot >= 0 && slot < _controllers.Length ? _controllers[slot] : null;
+            input = controller != null && _roster != null && slot < _roster.MaxSlots ? _roster.GetInput(slot) : null;
+            if (input == null)
+                controller = null;
+            return controller != null;
+        }
+
         void OnEnable()
         {
             if (actions == null || joinService == null)
