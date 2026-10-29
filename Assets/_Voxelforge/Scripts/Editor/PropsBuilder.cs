@@ -16,8 +16,8 @@ namespace Voxelforge.Editor
     /// <item>Prop decorations (floor torch with a light, wall torch with a light, workbench) added to the <see cref="DecorationSet"/>.</item>
     /// <item>Items (the tools, plus models for held and dropped torches and workbenches), the <see cref="ItemRegistry"/>,
     /// the recipes and the <see cref="RecipeBook"/>.</item>
-    /// <item>Kian's M.G.R.S. (Roadmap 3.6): its item with what it shoots, its recipe, and <c>ManaBolt.mat</c>, the additive
-    /// glow for its bolts, trails and sparks.</item>
+    /// <item>Kian's M.G.R.S. (Roadmap 3.6): its item, pointing at the Mana Bolt ability (<see cref="AbilityBuilder"/>, 4.1),
+    /// its recipe, and <c>ManaBolt.mat</c>, the additive glow for its bolts, trails and sparks.</item>
     /// <item>The Home Totem (Roadmap 3.8): block 13, its prop with a soft green light, its item and its recipe.</item>
     /// </list>
     /// </summary>
@@ -44,13 +44,9 @@ namespace Voxelforge.Editor
         static readonly Color TorchLight = new Color(1f, 0.64f, 0.32f);
         static readonly Color HomeGlow = new Color(0.35f, 1f, 0.45f);
 
-        // The M.G.R.S. (3.6, D-019): 45 damage (Stone in 2 shots), 0.5 s apart, 40 m/s out to 24 m. Its muzzle is the top
-        // of the gold barrel crown in build_props.py (z 1.15 in Blender, +Y in Unity).
-        static readonly ProjectileStats ManaBolt = new ProjectileStats
-        {
-            damage = 45f, cooldown = 0.5f, speed = 40f, range = 24f,
-            muzzle = new Vector3(0f, 1.16f, 0f), glow = new Color(0.35f, 0.85f, 1f),
-        };
+        // The M.G.R.S.'s muzzle (3.6) is the top of the gold barrel crown in build_props.py (z 1.15 in Blender, +Y in
+        // Unity). What it shoots is the Mana Bolt ability (4.1, AbilityBuilder).
+        static readonly Vector3 StaffMuzzle = new Vector3(0f, 1.16f, 0f);
 
         [MenuItem("Voxelforge/Build Props & Items")]
         public static void Build()
@@ -108,7 +104,9 @@ namespace Voxelforge.Editor
             ItemDefinition stonePickaxe = MakeItem("StonePickaxe", ItemIds.StonePickaxe, "Stone Pickaxe", held, new ToolPower(3f, 1f, 2f));
             ItemDefinition stoneAxe = MakeItem("StoneAxe", ItemIds.StoneAxe, "Stone Axe", held, new ToolPower(1f, 3f, 1.5f));
             ItemDefinition destiny = MakeItem("PickOfDestiny", ItemIds.PickOfDestiny, "The Pick of Destiny", held, new ToolPower(5f, 5f, 3f));
-            ItemDefinition mgrs = MakeItem("Mgrs", ItemIds.Mgrs, "M.G.R.S.", held, default, projectile: ManaBolt, pose: StaffPose);
+            AbilityDefinition manaBolt = AbilityBuilder.Build();
+            ItemDefinition mgrs = MakeItem("Mgrs", ItemIds.Mgrs, "M.G.R.S.", held, default, ability: manaBolt, muzzle: StaffMuzzle,
+                pose: StaffPose);
             ItemDefinition torchItem = MakeItem("TorchFloor", BlockIds.Torch, "Torch", held, default, "Torch", dropSize: 1.6f,
                 heldScale: 0.7f, upright: true);
             ItemDefinition benchItem = MakeItem("Workbench", BlockIds.Workbench, "Workbench", held, default, "WorkbenchItem", dropSize: 1.3f,
@@ -316,8 +314,8 @@ namespace Voxelforge.Editor
         }
 
         static ItemDefinition MakeItem(string model, ushort id, string displayName, Material material, ToolPower power,
-            string assetName = null, float dropSize = 2f, float heldScale = 1f, bool upright = false, ProjectileStats projectile = default,
-            Vector3? pose = null)
+            string assetName = null, float dropSize = 2f, float heldScale = 1f, bool upright = false, AbilityDefinition ability = null,
+            Vector3 muzzle = default, Vector3? pose = null)
         {
             Mesh mesh = LoadMesh(model);
             var item = LoadOrCreate<ItemDefinition>($"{ItemDir}/{assetName ?? model}.asset");
@@ -334,13 +332,8 @@ namespace Voxelforge.Editor
             tool.FindPropertyRelative("pick").floatValue = power.pick;
             tool.FindPropertyRelative("axe").floatValue = power.axe;
             tool.FindPropertyRelative("any").floatValue = power.any;
-            SerializedProperty shot = serialized.FindProperty("projectile");
-            shot.FindPropertyRelative("damage").floatValue = projectile.damage;
-            shot.FindPropertyRelative("cooldown").floatValue = projectile.cooldown;
-            shot.FindPropertyRelative("speed").floatValue = projectile.speed;
-            shot.FindPropertyRelative("range").floatValue = projectile.range;
-            shot.FindPropertyRelative("muzzle").vector3Value = projectile.muzzle;
-            shot.FindPropertyRelative("glow").colorValue = projectile.glow;
+            serialized.FindProperty("ability").objectReferenceValue = ability;
+            serialized.FindProperty("muzzle").vector3Value = muzzle;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return item;
         }

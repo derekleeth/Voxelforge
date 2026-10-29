@@ -5,6 +5,31 @@
 
 ---
 
+## D-024: The Ability Framework (Spells, Mana, Cooldowns, Cast Times)
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-29)
+
+### Decisions
+- **An ability is an `AbilityDefinition` asset** (*Create > Voxelforge > Ability*) in `Data/Abilities/`: permanent `id` (`AbilityIds`, sent over the network), name, description, icon (for 4.4), `AbilityElement` (Physical, Arcane, Fire, Frost, Earth, Nature, Lightning, Holy), **mana cost, cooldown, cast time** (0 = instant), cast-while-moving, **range, AoE radius**, delivery, projectile speed, block damage, creature damage and glow colour. `AbilityBook` lists them by ID and validates them; *Voxelforge > Build Abilities* writes them.
+  - **AoE radius and creature damage are stored but not used yet:** craters come in 4.3, creatures with health in Phase 5.
+  - Only one delivery so far: **Projectile** (flies from the eyes along the aim). Self, ground and totem deliveries come with 4.3/4.6.
+- **The rules live in `AbilityCaster`** (plain C#, tested without a scene): mana with regen, per-ability cooldowns, one cast at a time.
+  - **WoW-style timing:** mana is spent and the cooldown starts when the cast *finishes*, and both are checked again then. Instant abilities finish the moment they start.
+  - Moving, jumping or drifting 0.35 m cancels a cast (same rule as hearthing, 3.8) unless the ability can be cast on the move. A cancelled cast costs nothing.
+- **The host runs it (Laws #1-#2).** `PlayerCaster` (on the Player prefab) owns one `AbilityCaster` per hero on the host and reads only the input the host received. A finished projectile goes to `PlayerStaff.ServerLaunch`, which still launches from the eyes along the host's aim, so no position comes from a PC.
+  - Network: mana and max mana are `NetworkVariable`s (sent when mana moves 0.5 or reaches full); `CastStartedRpc` / `CastFinishedRpc` / `CastStoppedRpc` go to every PC, which time cast bars and cooldowns on their own clock (like `PlayerHearth`); refusals ("Not enough mana") go only to the owner.
+  - Mana isn't saved: heroes start full.
+- **The M.G.R.S. now casts the Mana Bolt ability.** D-019's `ProjectileStats` is gone: the item points at an `AbilityDefinition` and keeps only its muzzle point (a look). Same numbers (45 damage, 0.5 s, 40 m/s, 24 m), now **8 mana** from a **100 mana** pool that regenerates **10 a second**: about 16 s of nonstop fire. Holding Mine keeps firing; "Not enough mana" is said once per press.
+- **A temporary Ability 1 button** (keyboard `1`, right-side keyboard `]`, gamepad **B**) casts the **Arcane Orb** test spell: 30 mana, 1.5 s cast, 6 s cooldown, 18 m/s, 30 m, 120 block damage. `PlayerButtons` grew from 8 to 16 bits for it, which 4.4's action bar needs anyway.
+- **HUD (in each player's own view, Law #5):** a blue mana bar under the hero, a cast bar with the spell's name low in their area, and a short red message above it. The reticle's recharge bar now reads the cooldown from `PlayerCaster`. 4.4 replaces these with real action and cast bars.
+
+### Deferred on purpose
+- A global cooldown, the 4.4 action bar and real hotkeys (Ability 1 is a stand-in).
+- Health, creature damage and healing: Phase 5 (or 4.2 if we need it sooner).
+- Splitting the effects into logic and visual cues: 4.2. AoE craters: 4.3.
+
+---
+
 ## D-023: The 0.3.10 Demo Build (Forge & Carve)
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-28)

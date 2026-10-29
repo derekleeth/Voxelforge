@@ -5,7 +5,7 @@ using Unity.Netcode;
 namespace Voxelforge.Gameplay
 {
     [Flags]
-    public enum PlayerButtons : byte
+    public enum PlayerButtons : ushort
     {
         None = 0,
         Jump = 1 << 0,
@@ -23,6 +23,11 @@ namespace Voxelforge.Gameplay
         Interact = 1 << 6,
         /// <summary>Ask to hearth back to this player's Home Totem (Roadmap 3.8, <see cref="PlayerHearth"/>). Place confirms.</summary>
         Home = 1 << 7,
+        /// <summary>
+        /// Cast the test spell (Roadmap 4.1, <see cref="PlayerCaster"/>). Temporary: the 4.4 action bar replaces it with
+        /// real ability slots.
+        /// </summary>
+        Ability1 = 1 << 8,
     }
 
     /// <summary>

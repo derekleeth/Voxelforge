@@ -8,14 +8,14 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// Kian's M.G.R.S. (Magic Gun Rifle Staff, Roadmap 3.6). While this player holds a ranged item and Mine,
-    /// <b>the host</b> launches a Mana Bolt from the hero's eyes along their aim (<see cref="PlayerController.Aim"/>),
-    /// moves it (<see cref="ManaBoltFlight"/>), and damages the block it hits through
-    /// <see cref="VoxelWorldManager.RequestDamageVoxel"/> in this player's name. The held item is the one the host agreed
-    /// is in the bag (<see cref="PlayerHands"/>), and no position ever comes from a PC (CLAUDE.md Laws #1-#3).
+    /// This player's projectiles (Roadmap 3.6, 4.1): the M.G.R.S.'s Mana Bolts and any other projectile ability.
+    /// <see cref="PlayerCaster"/> decides <i>when</i> one goes off; then <b>the host</b> launches it from the hero's eyes
+    /// along their aim (<see cref="PlayerController.Aim"/>), moves it (<see cref="ManaBoltFlight"/>), and damages the block
+    /// it hits through <see cref="VoxelWorldManager.RequestDamageVoxel"/> in this player's name. No position ever comes
+    /// from a PC (CLAUDE.md Laws #1-#3).
     /// <para>Every PC hears when a bolt starts and ends, and draws it (<see cref="ManaBoltView"/>).</para>
     /// </summary>
-    [RequireComponent(typeof(PlayerController), typeof(PlayerHands))]
+    [RequireComponent(typeof(PlayerController))]
     public sealed class PlayerStaff : NetworkBehaviour
     {
         [Tooltip("Log every bolt that hits, on the host.")]
@@ -25,10 +25,10 @@ namespace Voxelforge.Gameplay
         readonly List<ManaBoltEnd> _ended = new List<ManaBoltEnd>();
 
         PlayerController _player;
-        PlayerHands _hands;
+        PlayerCaster _caster;
 
-        /// <summary>Every PC: a bolt left the staff (start, direction, speed and range).</summary>
-        public event Action<ManaBolt, ProjectileStats> Fired;
+        /// <summary>Every PC: a bolt left the hero (start, direction, speed and range), and the ability it is.</summary>
+        public event Action<ManaBolt, AbilityDefinition> Fired;
 
         /// <summary>Every PC: a bolt hit a block or fizzled. The block ID is what it hit, as it was before the hit.</summary>
         public event Action<ManaBoltEnd, ushort> Ended;
@@ -39,7 +39,7 @@ namespace Voxelforge.Gameplay
         void Awake()
         {
             _player = GetComponent<PlayerController>();
-            _hands = GetComponent<PlayerHands>();
+            _caster = GetComponent<PlayerCaster>();
         }
 
         public override void OnNetworkDespawn()
@@ -48,19 +48,16 @@ namespace Voxelforge.Gameplay
             base.OnNetworkDespawn();
         }
 
+        /// <summary>Host only: launches a bolt of <paramref name="ability"/> (a finished cast, <see cref="PlayerCaster"/>).</summary>
+        public void ServerLaunch(AbilityDefinition ability, float3 origin, float3 direction)
+        {
+            if (IsServer && IsSpawned && _flight.TryLaunch(origin, direction, ability, out ManaBolt bolt))
+                BoltFiredRpc(bolt.Id, bolt.Position, bolt.Direction, bolt.AbilityId);
+        }
+
         void FixedUpdate()
         {
-            if (!IsServer || !IsSpawned)
-                return;
-
-            PlayerInputFrame input = _player.ServerInput;
-            if (_player.HasLanded && input.IsPressed(PlayerButtons.Mine) && _hands.TryGetHeldProjectile(out ProjectileStats stats) &&
-                _flight.TryLaunch(Time.time, _player.Aim.Eyes(transform.position), _player.Aim.Direction(input), stats, out ManaBolt bolt))
-            {
-                BoltFiredRpc(bolt.Id, bolt.Position, bolt.Direction, _hands.HeldItem);
-            }
-
-            if (_flight.Count == 0)
+            if (!IsServer || !IsSpawned || _flight.Count == 0)
                 return;
             VoxelWorldManager world = _player.WorldManager;
             _ended.Clear();
@@ -77,21 +74,23 @@ namespace Voxelforge.Gameplay
                 blockId = world.World.GetVoxel(end.Hit.Block).BlockId;
                 VoxelDamageResult result = world.RequestDamageVoxel(end.Hit.Block, end.Damage, _player.PlayerId);
                 if (logHits)
-                    Debug.Log($"[Voxelforge] {_player.PlayerId}'s Mana Bolt hit {end.Hit.Block}: {result}.", this);
+                    Debug.Log($"[Voxelforge] {_player.PlayerId}'s bolt hit {end.Hit.Block}: {result}.", this);
             }
             BoltEndedRpc(end.Id, end.Point, end.Normal, end.HitBlock, blockId);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        void BoltFiredRpc(ushort boltId, Vector3 origin, Vector3 direction, ushort itemId)
+        void BoltFiredRpc(ushort boltId, Vector3 origin, Vector3 direction, ushort abilityId)
         {
-            if (_hands.Items == null || !_hands.Items.TryGetProjectile(itemId, out ProjectileStats stats))
+            AbilityBook book = _caster != null ? _caster.Book : null;
+            if (book == null || !book.TryGet(abilityId, out AbilityDefinition ability))
                 return;
             LastShotTime = Time.time;
             Fired?.Invoke(new ManaBolt
             {
-                Id = boltId, Position = origin, Direction = direction, Speed = stats.speed, Remaining = stats.range, Damage = stats.damage,
-            }, stats);
+                Id = boltId, AbilityId = abilityId, Position = origin, Direction = direction, Speed = ability.ProjectileSpeed,
+                Remaining = ability.Range, Damage = ability.BlockDamage,
+            }, ability);
         }
 
         [Rpc(SendTo.ClientsAndHost)]

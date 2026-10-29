@@ -120,7 +120,7 @@ namespace Voxelforge.Gameplay
                 Destroy(_coreMesh);
         }
 
-        void OnFired(ManaBolt shot, ProjectileStats stats)
+        void OnFired(ManaBolt shot, AbilityDefinition ability)
         {
             EnsureShared();
             Bolt bolt = Take();
@@ -137,7 +137,7 @@ namespace Voxelforge.Gameplay
             bolt.Range = shot.Remaining;
             bolt.Age = 0f;
             bolt.Fade = 0f;
-            bolt.Glow = stats.glow.a > 0f ? stats.glow : new Color(0.35f, 0.85f, 1f);
+            bolt.Glow = ability.Glow.a > 0f ? ability.Glow : new Color(0.35f, 0.85f, 1f);
 
             bolt.Root.transform.position = muzzle;
             bolt.Trail.Clear();

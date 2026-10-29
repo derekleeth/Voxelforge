@@ -9,6 +9,8 @@ namespace Voxelforge.Gameplay
     {
         /// <summary>Counts up per shooter, so every PC can match the end of a bolt to its start.</summary>
         public ushort Id;
+        /// <summary>The ability that launched it (<see cref="AbilityIds"/>).</summary>
+        public ushort AbilityId;
         public float3 Position;
         /// <summary>Normalized.</summary>
         public float3 Direction;
@@ -42,30 +44,29 @@ namespace Voxelforge.Gameplay
     {
         readonly List<ManaBolt> _bolts = new List<ManaBolt>();
         ushort _nextId;
-        float _lastShot = float.NegativeInfinity;
 
         public int Count => _bolts.Count;
 
         /// <summary>
-        /// Launches a bolt from <paramref name="origin"/> unless the last one left less than
-        /// <see cref="ProjectileStats.cooldown"/> seconds before <paramref name="now"/>.
+        /// Launches a bolt of <paramref name="ability"/> from <paramref name="origin"/>. Cooldowns and mana are the
+        /// caster's job (<see cref="AbilityCaster"/>), so this only refuses a missing ability or direction.
         /// </summary>
-        public bool TryLaunch(float now, float3 origin, float3 direction, ProjectileStats stats, out ManaBolt bolt)
+        public bool TryLaunch(float3 origin, float3 direction, AbilityDefinition ability, out ManaBolt bolt)
         {
             bolt = default;
             float length = math.length(direction);
-            if (!stats.IsRanged || length < 1e-6f || now - _lastShot < stats.cooldown)
+            if (ability == null || ability.ProjectileSpeed <= 0f || ability.Range <= 0f || length < 1e-6f)
                 return false;
 
-            _lastShot = now;
             bolt = new ManaBolt
             {
                 Id = _nextId++,
+                AbilityId = ability.Id,
                 Position = origin,
                 Direction = direction / length,
-                Speed = stats.speed,
-                Remaining = stats.range,
-                Damage = stats.damage,
+                Speed = ability.ProjectileSpeed,
+                Remaining = ability.Range,
+                Damage = ability.BlockDamage,
             };
             _bolts.Add(bolt);
             return true;

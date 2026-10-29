@@ -50,18 +50,18 @@ namespace Voxelforge.Gameplay
         /// <summary>Mining power multipliers of the held item (<see cref="ToolPower.Hands"/> for blocks and empty hands).</summary>
         public ToolPower HeldPower => items != null ? items.ToolPowerOf(_held.Value) : ToolPower.Hands;
 
-        /// <summary>Every PC: what the held item shoots, if it's ranged (the M.G.R.S., Roadmap 3.6). Mine fires it.</summary>
-        public bool TryGetHeldProjectile(out ProjectileStats projectile)
+        /// <summary>Every PC: what Mine casts with the held item, if it's ranged (the M.G.R.S., Roadmap 3.6/4.1).</summary>
+        public bool TryGetHeldAbility(out AbilityDefinition ability)
         {
-            projectile = default;
-            return items != null && items.TryGetProjectile(_held.Value, out projectile);
+            ability = null;
+            return items != null && items.TryGetAbility(_held.Value, out ability);
         }
 
-        /// <summary>Owner only: what the picked item shoots, before the host has agreed it's in hand (for the HUD).</summary>
-        public bool TryGetSelectedProjectile(out ProjectileStats projectile)
+        /// <summary>Owner only: what the picked item casts, before the host has agreed it's in hand (for the HUD).</summary>
+        public bool TryGetSelectedAbility(out AbilityDefinition ability)
         {
-            projectile = default;
-            return items != null && items.TryGetProjectile(_selected, out projectile);
+            ability = null;
+            return items != null && items.TryGetAbility(_selected, out ability);
         }
 
         void Awake()

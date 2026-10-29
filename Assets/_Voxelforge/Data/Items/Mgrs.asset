@@ -24,10 +24,5 @@ MonoBehaviour:
     pick: 0
     axe: 0
     any: 0
-  projectile:
-    damage: 45
-    cooldown: 0.5
-    speed: 40
-    range: 24
-    muzzle: {x: 0, y: 1.16, z: 0}
-    glow: {r: 0.35, g: 0.85, b: 1, a: 1}
+  ability: {fileID: 11400000, guid: ccb4c5806064b274f8dd3b7ca85b4eda, type: 2}
+  muzzle: {x: 0, y: 1.16, z: 0}

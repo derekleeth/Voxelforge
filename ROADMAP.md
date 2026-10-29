@@ -40,7 +40,7 @@
 
 ## Phase 4: The Warcraft Injection (Classes, Races, Spells & RPG UI)
 **Goal:** Layer *World of Warcraft* combat, mana, cooldowns, and talent trees onto the voxel world.
-- [ ] **4.1 Data-Driven Ability Framework:** Build ScriptableObject/DataAsset spell templates (Mana Cost, Cooldown, Cast Time, Element, Range, AoE Radius).
+- [x] **4.1 Data-Driven Ability Framework:** Build ScriptableObject/DataAsset spell templates (Mana Cost, Cooldown, Cast Time, Element, Range, AoE Radius). *(`AbilityDefinition` assets in an `AbilityBook`, run by the host: each hero has 100 mana (10/s back), per-spell cooldowns and one cast at a time, WoW-style (mana and cooldown are spent when the cast finishes; moving cancels it for free). The M.G.R.S. now casts the Mana Bolt ability (8 mana), and a temporary Ability 1 button (`1`, `]`, pad B) casts the 1.5 s Arcane Orb test spell. Mana bar and cast bar in each player's own view. Play-tested in split-screen. See DECISIONS.md D-024.)*
 - [ ] **4.2 Spell Logic vs. Visual Cue Split:** Separate authoritative damage/terrain destruction math from client-side particle VFX and audio.
 - [ ] **4.3 Destructive Spell Mechanics:** Allow explosive spells (e.g., *Pyroblast*, *EarthShatter*) to batch-modify voxel chunks and carve real craters.
 - [ ] **4.4 Per-Player Split-Screen HUD:** Build independent Action Bars (1-9 hotkeys/d-pad), cast bars, and floating combat text confined to each player's viewport.

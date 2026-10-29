@@ -110,7 +110,7 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
-        /// Where a ranged item's bolt leaves the model in the world (<see cref="ProjectileStats.muzzle"/>), and which way the
+        /// Where a ranged item's bolt leaves the model in the world (<see cref="ItemDefinition.Muzzle"/>), and which way the
         /// barrel points. False when nothing ranged is shown.
         /// </summary>
         public bool TryGetMuzzle(out Vector3 position, out Vector3 forward)
@@ -119,7 +119,7 @@ namespace Voxelforge.Gameplay
             if (_filter == null || !_filter.gameObject.activeInHierarchy || _shownDefinition == null || !_shownDefinition.IsRanged)
                 return false;
             Transform t = _filter.transform;
-            position = t.TransformPoint(_shownDefinition.Projectile.muzzle);
+            position = t.TransformPoint(_shownDefinition.Muzzle);
             forward = t.TransformDirection(Vector3.up);
             return true;
         }

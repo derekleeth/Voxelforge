@@ -15,8 +15,7 @@ namespace Voxelforge.Tests
         static readonly PlayerId P1 = new PlayerId(1);
         const ushort Bedrock = BlockIds.Workbench + 1; // A test-only unbreakable block.
 
-        static readonly ProjectileStats Bolt = new ProjectileStats { damage = 45f, cooldown = 0.5f, speed = 40f, range = 24f };
-
+        AbilityDefinition _bolt;
         VoxelWorld _world;
         VoxelWorldEditor _editor;
         readonly List<ManaBoltEnd> _ended = new List<ManaBoltEnd>();
@@ -40,10 +39,17 @@ namespace Voxelforge.Tests
             _world.CreateChunk(new ChunkCoord(0, 1, 0));
             _editor = new VoxelWorldEditor(_world, new VoxelDeltaLog(), null);
             _ended.Clear();
+            // The Mana Bolt (4.1) with D-019's numbers.
+            _bolt = AbilityDefinition.Create(AbilityIds.ManaBolt, "Mana Bolt", manaCost: 8f, cooldown: 0.5f, range: 24f,
+                projectileSpeed: 40f, blockDamage: 45f);
         }
 
         [TearDown]
-        public void TearDown() => _world.Dispose();
+        public void TearDown()
+        {
+            _world.Dispose();
+            Object.DestroyImmediate(_bolt);
+        }
 
         /// <summary>Steps <paramref name="flight"/> at 50 Hz until a bolt ends, for at most two seconds.</summary>
         ManaBoltEnd FlyUntilEnd(ManaBoltFlight flight)
@@ -63,14 +69,15 @@ namespace Voxelforge.Tests
             _editor.RequestModifyVoxel(new int3(12, 34, 2), BlockIds.Stone, P1);
             _editor.RequestModifyVoxel(new int3(13, 34, 2), BlockIds.Dirt, P1);
             var flight = new ManaBoltFlight();
-            Assert.IsTrue(flight.TryLaunch(0f, Muzzle, East * 5f, Bolt, out ManaBolt bolt));
+            Assert.IsTrue(flight.TryLaunch(Muzzle, East * 5f, _bolt, out ManaBolt bolt));
             Assert.AreEqual(1f, math.length(bolt.Direction), 1e-5f, "Direction is normalized.");
+            Assert.AreEqual(AbilityIds.ManaBolt, bolt.AbilityId);
 
             // One huge step (60 m/s x 0.1 s = 4 blocks a step): the sweep still finds the block between steps.
-            var fast = Bolt;
-            fast.speed = 60f;
+            AbilityDefinition fast = AbilityDefinition.Create(AbilityIds.ManaBolt, "Fast Bolt", projectileSpeed: 60f);
             var fastFlight = new ManaBoltFlight();
-            fastFlight.TryLaunch(0f, Muzzle, East, fast, out _);
+            fastFlight.TryLaunch(Muzzle, East, fast, out _);
+            Object.DestroyImmediate(fast);
             for (int i = 0; i < 10 && _ended.Count == 0; i++)
                 fastFlight.Step(_world, 0.1f, _ended);
             Assert.AreEqual(1, _ended.Count);
@@ -85,7 +92,7 @@ namespace Voxelforge.Tests
         public void Bolt_FizzlesAtItsRange_AndStopsAtTorches()
         {
             var flight = new ManaBoltFlight();
-            flight.TryLaunch(0f, Muzzle, East, Bolt, out _);
+            flight.TryLaunch(Muzzle, East, _bolt, out _);
             ManaBoltEnd end = FlyUntilEnd(flight);
             Assert.IsFalse(end.HitBlock, "Nothing in the way: it flies its range and fizzles.");
             Assert.AreEqual(Muzzle.x + 24f, end.Point.x, 1e-3f);
@@ -93,24 +100,24 @@ namespace Voxelforge.Tests
             // A torch on the ground in its path stops it, like it stops aiming.
             _ended.Clear();
             _editor.RequestModifyVoxel(new int3(8, 32, 2), BlockIds.Torch, P1);
-            flight.TryLaunch(1f, new float3(2.5f, 32.5f, 2.5f), East, Bolt, out _);
+            flight.TryLaunch(new float3(2.5f, 32.5f, 2.5f), East, _bolt, out _);
             end = FlyUntilEnd(flight);
             Assert.IsTrue(end.HitBlock);
             Assert.AreEqual(new int3(8, 32, 2), end.Hit.Block);
         }
 
         [Test]
-        public void Launch_WaitsForTheCooldown()
+        public void Launch_GivesEachBoltItsOwnId_AndNeedsAnAbilityAndADirection()
         {
+            // Cooldowns are the caster's job now (AbilityTests); the flight launches whatever it's handed.
             var flight = new ManaBoltFlight();
-            Assert.IsTrue(flight.TryLaunch(10f, Muzzle, East, Bolt, out ManaBolt first));
-            Assert.IsFalse(flight.TryLaunch(10.3f, Muzzle, East, Bolt, out _), "0.3 s later: still recharging.");
-            Assert.IsTrue(flight.TryLaunch(10.5f, Muzzle, East, Bolt, out ManaBolt second), "0.5 s later: ready.");
+            Assert.IsTrue(flight.TryLaunch(Muzzle, East, _bolt, out ManaBolt first));
+            Assert.IsTrue(flight.TryLaunch(Muzzle, East, _bolt, out ManaBolt second));
             Assert.AreNotEqual(first.Id, second.Id);
             Assert.AreEqual(2, flight.Count);
 
-            Assert.IsFalse(new ManaBoltFlight().TryLaunch(0f, Muzzle, East, default, out _), "Not a ranged item.");
-            Assert.IsFalse(new ManaBoltFlight().TryLaunch(0f, Muzzle, float3.zero, Bolt, out _), "No direction.");
+            Assert.IsFalse(new ManaBoltFlight().TryLaunch(Muzzle, East, null, out _), "No ability.");
+            Assert.IsFalse(new ManaBoltFlight().TryLaunch(Muzzle, float3.zero, _bolt, out _), "No direction.");
         }
 
         [Test]
@@ -122,7 +129,7 @@ namespace Voxelforge.Tests
                 _ended.Clear();
                 var flight = new ManaBoltFlight();
                 float3 from = new float3(2.5f, target.y + 0.5f, target.z + 0.5f);
-                flight.TryLaunch(time, from, East, Bolt, out _);
+                flight.TryLaunch(from, East, _bolt, out _);
                 ManaBoltEnd end = FlyUntilEnd(flight);
                 Assert.AreEqual(target, end.Hit.Block);
                 return _editor.RequestDamageVoxel(end.Hit.Block, end.Damage, P1, time);
@@ -146,7 +153,7 @@ namespace Voxelforge.Tests
         [Test]
         public void Mgrs_IsRangedNotATool_AndIsCraftedAtAWorkbench()
         {
-            ItemDefinition mgrs = ItemDefinition.Create(ItemIds.Mgrs, "M.G.R.S.", projectile: Bolt);
+            ItemDefinition mgrs = ItemDefinition.Create(ItemIds.Mgrs, "M.G.R.S.", ability: _bolt);
             ItemDefinition pickaxe = ItemDefinition.Create(ItemIds.StonePickaxe, "Stone Pickaxe", new ToolPower(3f, 1f, 2f));
             ItemRegistry registry = ItemRegistry.Create(new[] { mgrs, pickaxe });
             BlockDefinition log = BlockDefinition.Create(BlockIds.Log, "Log");
@@ -159,10 +166,10 @@ namespace Voxelforge.Tests
             {
                 Assert.IsTrue(mgrs.IsRanged);
                 Assert.IsFalse(mgrs.IsTool, "Mining with it is bare hands; Mine fires it instead.");
-                Assert.IsTrue(registry.TryGetProjectile(ItemIds.Mgrs, out ProjectileStats stats));
-                Assert.AreEqual(45f, stats.damage);
-                Assert.IsFalse(registry.TryGetProjectile(ItemIds.StonePickaxe, out _));
-                Assert.IsFalse(registry.TryGetProjectile(BlockIds.Stone, out _));
+                Assert.IsTrue(registry.TryGetAbility(ItemIds.Mgrs, out AbilityDefinition ability));
+                Assert.AreEqual(45f, ability.BlockDamage);
+                Assert.IsFalse(registry.TryGetAbility(ItemIds.StonePickaxe, out _));
+                Assert.IsFalse(registry.TryGetAbility(BlockIds.Stone, out _));
 
                 var bag = new List<ItemStack>
                 {
@@ -193,9 +200,8 @@ namespace Voxelforge.Tests
         [Test]
         public void Registry_FlagsARangedItemWithNoSpeed()
         {
-            var broken = Bolt;
-            broken.speed = 0f;
-            ItemDefinition item = ItemDefinition.Create(ItemIds.Mgrs, "Broken Staff", projectile: broken);
+            AbilityDefinition broken = AbilityDefinition.Create(AbilityIds.ManaBolt, "Broken Bolt", projectileSpeed: 0f);
+            ItemDefinition item = ItemDefinition.Create(ItemIds.Mgrs, "Broken Staff", ability: broken);
             ItemRegistry registry = ItemRegistry.Create(new[] { item });
             try
             {
@@ -205,6 +211,7 @@ namespace Voxelforge.Tests
             {
                 Object.DestroyImmediate(item);
                 Object.DestroyImmediate(registry);
+                Object.DestroyImmediate(broken);
             }
         }
     }

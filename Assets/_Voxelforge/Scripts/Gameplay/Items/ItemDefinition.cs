@@ -38,8 +38,11 @@ namespace Voxelforge.Gameplay
         [SerializeField] ToolPower toolPower;
 
         [Header("Ranged")]
-        [Tooltip("What it shoots while Mine is held (Roadmap 3.6). Damage 0 = it doesn't shoot.")]
-        [SerializeField] ProjectileStats projectile;
+        [Tooltip("The ability Mine casts while it's held (the M.G.R.S.'s Mana Bolt, Roadmap 4.1). None = it doesn't shoot.")]
+        [SerializeField] AbilityDefinition ability;
+
+        [Tooltip("Where its bolts leave the model, in the model's own space (the top of the barrel). Looks only.")]
+        [SerializeField] Vector3 muzzle;
 
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
@@ -56,21 +59,24 @@ namespace Voxelforge.Gameplay
         /// <summary>Its multipliers, or <see cref="ToolPower.Hands"/> if it isn't a tool.</summary>
         public ToolPower ToolPower => IsTool ? toolPower : ToolPower.Hands;
 
-        /// <summary>True if it shoots (the M.G.R.S.). Holding it, Mine fires instead of mining.</summary>
-        public bool IsRanged => projectile.IsRanged;
+        /// <summary>True if it shoots (the M.G.R.S.). Holding it, Mine casts <see cref="Ability"/> instead of mining.</summary>
+        public bool IsRanged => ability != null;
 
-        public ProjectileStats Projectile => projectile;
+        /// <summary>What Mine casts while it's held, or null.</summary>
+        public AbilityDefinition Ability => ability;
+
+        public Vector3 Muzzle => muzzle;
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default,
-            ProjectileStats projectile = default)
+            AbilityDefinition ability = null)
         {
             var definition = CreateInstance<ItemDefinition>();
             definition.name = displayName;
             definition.id = id;
             definition.displayName = displayName;
             definition.toolPower = toolPower;
-            definition.projectile = projectile;
+            definition.ability = ability;
             return definition;
         }
     }

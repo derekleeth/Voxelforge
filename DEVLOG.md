@@ -5,6 +5,32 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 26): Spells Are Real Now! ✨ Roadmap 4.1
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Spells are made of data now.** Each spell is a Unity asset with its mana cost, cooldown, cast time, element (Arcane, Fire, Frost, Earth...), range and how big an area it hits. They live in `Data/Abilities/`. Details in DECISIONS.md **D-024**.
+- **Every hero has mana!** A blue bar under your hero: 100 mana, and it fills back up 10 a second.
+- **The M.G.R.S. costs mana now:** 8 per bolt. Hold fire for about 16 seconds and you run dry ("Not enough mana"), then wait a moment and keep blasting.
+- **Our first spell with a cast time, the Arcane Orb!** Press **1** (Player 2 on the right of the keyboard: **]**, gamepad: **B**). A cast bar fills for 1.5 seconds, then a slow purple orb flies out and smashes blocks. Walk or jump while casting and it's interrupted. Then it needs 6 seconds to recharge.
+- The host decides everything: whether you have enough mana, if the spell is ready, and where it flies. Your PC only shows it.
+
+### Tests: 277 / 277 passing ✅
+- Mana is spent when the spell goes off, never more than full, and refills over time.
+- Cooldowns block a spell, then free it at exactly the right time.
+- Cast times finish on time; moving cancels them and costs nothing.
+- The spell list catches broken spells (two with the same ID, a bolt with no speed).
+- The M.G.R.S. still breaks stone in 2 shots.
+
+### Things we learned
+- In *World of Warcraft* you pay for a spell when it **finishes**, not when you start it. That's why getting interrupted doesn't waste mana. We do the same.
+
+### Next up
+- [x] Play-test 4.1 in split-screen: mana bar, running dry, the Arcane Orb's cast bar, getting interrupted ✅
+- [ ] Roadmap **4.2 Spell Logic vs. Visual Cue Split**
+
+---
+
 ## 2026-10-28 - Session 1 (part 25): Forge & Carve, the Real Game! 🏆 Roadmap 3.10 done, Phase 3 complete!
 **Phase:** 3 - "Forge & Carve"
 
