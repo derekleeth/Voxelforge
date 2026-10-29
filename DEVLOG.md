@@ -39,7 +39,12 @@
 
 ### Next up
 - [x] Play-test 3.10 ✅
-- [ ] Find the slow frames behind the 1% low (Development build + profiler)
+- [ ] ⏸️ **Pending (needs both players):** find the slow frames behind the 1% low. In Classic split, wait 10+ s before each F4:
+  1. Both standing still in the open, no torches → F4 (baseline)
+  2. Both digging non-stop → F4 (remeshing?)
+  3. Both standing still next to 4-6 torches → F4 (lights / sounds?)
+  4. F11 to a window, standing still in the open → F4 (the 1440p resolution?)
+  - If that doesn't show the cause: a Development build with the Unity profiler.
 - [ ] Roadmap **Phase 4: The Warcraft Injection**: classes, races and spells!
 
 ---
