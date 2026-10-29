@@ -15,7 +15,6 @@ MonoBehaviour:
   id: 2
   displayName: Arcane Orb
   description: Gather your mana into a slow, heavy orb. Stand still while you cast it.
-  icon: {fileID: 0}
   element: 1
   manaCost: 30
   cooldown: 6

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using Unity.Netcode;
@@ -12,7 +13,7 @@ namespace Voxelforge.Gameplay
     /// delivery, <see cref="PlayerStaff"/> for projectiles and ground slams (CLAUDE.md Laws #1 and #2).
     /// <list type="bullet">
     /// <item>Holding Mine with a ranged item (the M.G.R.S.) casts that item's ability, as in D-019.</item>
-    /// <item>The temporary Ability 1-3 buttons cast <c>testAbilities</c> until the 4.4 action bar.</item>
+    /// <item>The action bar buttons cast the slots of <see cref="PlayerActionBar"/> (4.4).</item>
     /// </list>
     /// <para>Rules only (Roadmap 4.2): casts starting, going off and stopping go to every PC as <see cref="AbilityCue"/>s
     /// (<see cref="PlayerAbilityCues"/>). Each PC times the cast bar and cooldowns in that player's own view from them.</para>
@@ -24,24 +25,17 @@ namespace Voxelforge.Gameplay
         [Tooltip("Data/Abilities/AbilityBook.asset: every ability, by ID.")]
         [SerializeField] AbilityBook abilities;
 
-        [Tooltip("Cast by the temporary Ability 1, 2 and 3 buttons, in that order, until the 4.4 action bar.")]
-        [SerializeField] AbilityDefinition[] testAbilities = new AbilityDefinition[3];
-
         [Tooltip("Mana when full. Classes and races (4.6/4.7) will set this.")]
         [SerializeField, Min(0f)] float maxMana = 100f;
 
         [Tooltip("Mana back per second.")]
         [SerializeField, Min(0f)] float manaRegen = 10f;
 
-        [Tooltip("How long a message (\"Not enough mana\") stays up, in seconds.")]
-        [SerializeField, Range(0.5f, 6f)] float messageSeconds = 1.5f;
-
         // Moving the stick further than this, or stepping this far, cancels a cast (the same as hearthing, 3.8).
         const float MoveDeadzone = 0.2f;
         const float DriftAllowed = 0.35f;
         // The host only sends mana when it changed by at least this much, or reached full.
         const float ManaSendStep = 0.5f;
-        static readonly PlayerButtons[] AbilityButtons = { PlayerButtons.Ability1, PlayerButtons.Ability2, PlayerButtons.Ability3 };
 
         readonly NetworkVariable<float> _mana = new NetworkVariable<float>();
         readonly NetworkVariable<float> _maxMana = new NetworkVariable<float>();
@@ -50,6 +44,7 @@ namespace Voxelforge.Gameplay
         PlayerHands _hands;
         PlayerStaff _staff;
         PlayerAbilityCues _cues;
+        PlayerActionBar _actionBar;
 
         // Host state.
         AbilityCaster _caster;
@@ -62,10 +57,6 @@ namespace Voxelforge.Gameplay
         readonly Dictionary<ushort, float> _readyAtLocal = new Dictionary<ushort, float>();
         AbilityDefinition _castingLocal;
         float _castStartLocal;
-
-        // Owner state.
-        string _message;
-        float _messageUntil;
 
         public AbilityBook Book => abilities;
 
@@ -82,8 +73,8 @@ namespace Voxelforge.Gameplay
             ? Mathf.Clamp01((Time.time - _castStartLocal) / Mathf.Max(_castingLocal.CastTime, 0.01f))
             : 0f;
 
-        /// <summary>Owner only: a short message ("Not enough mana"), or null.</summary>
-        public string Message => Time.time < _messageUntil ? _message : null;
+        /// <summary>Owner only: the host refused a cast ("Not enough mana"), for the combat text (4.4).</summary>
+        public event Action<CastCheck> Refused;
 
         void Awake()
         {
@@ -91,6 +82,7 @@ namespace Voxelforge.Gameplay
             _hands = GetComponent<PlayerHands>();
             _staff = GetComponent<PlayerStaff>();
             _cues = GetComponent<PlayerAbilityCues>();
+            _actionBar = GetComponent<PlayerActionBar>();
         }
 
         void OnEnable() => _cues.Received += OnCue;
@@ -159,11 +151,11 @@ namespace Voxelforge.Gameplay
                         RefusedRpc(check);
                     }
                 }
-                for (int i = 0; i < AbilityButtons.Length && i < testAbilities.Length; i++)
+                for (int i = 0; i < PlayerActionBar.SlotCount && _actionBar != null; i++)
                 {
-                    if ((pressed & AbilityButtons[i]) == 0 || testAbilities[i] == null)
+                    if ((pressed & ActionSlotButtons.For(i)) == 0 || !_actionBar.TryGet(i, out AbilityDefinition ability))
                         continue;
-                    CastCheck check = TryCast(testAbilities[i], now, input);
+                    CastCheck check = TryCast(ability, now, input);
                     if (check != CastCheck.Ok)
                         RefusedRpc(check);
                 }
@@ -246,29 +238,6 @@ namespace Voxelforge.Gameplay
         }
 
         [Rpc(SendTo.Owner)]
-        void RefusedRpc(CastCheck reason)
-        {
-            _message = Explain(reason);
-            _messageUntil = Time.time + messageSeconds;
-        }
-
-        static string Explain(CastCheck reason)
-        {
-            switch (reason)
-            {
-                case CastCheck.NotEnoughMana:
-                    return "Not enough mana";
-                case CastCheck.OnCooldown:
-                    return "Not ready yet";
-                case CastCheck.Busy:
-                    return "Already casting";
-                case CastCheck.Interrupted:
-                    return "Interrupted: stand still while you cast";
-                case CastCheck.NoTarget:
-                    return "Nothing in range";
-                default:
-                    return "Can't cast that";
-            }
-        }
+        void RefusedRpc(CastCheck reason) => Refused?.Invoke(reason);
     }
 }

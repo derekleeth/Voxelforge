@@ -5,6 +5,56 @@
 
 ---
 
+## D-027: The Per-Player Comic-Book HUD (Action Bars, Cast Bars, Combat Text)
+- **Date:** 2026-10-29
+- **Status:** Accepted (play-tested 2026-10-29)
+
+### Decisions
+- **uGUI + TextMeshPro for the new HUD; IMGUI stays for the rest.**
+  - TMP gives real ink outlines and drop shadows on lettering, and `Image` fill modes give cooldown sweeps for free.
+  - One Screen Space Overlay canvas (`CombatHud`) holds a `PlayerHudPanel` per local player. Each panel is fitted every frame to that player's own area (Law #5): their grid cell, their Voronoi side, or their half of a merged view.
+  - The area maths moved out of `PlayerHud` into `PlayerScreenArea`, so IMGUI and uGUI always agree.
+  - Each panel's bar and combat text sit on their own nested canvases, so ticking cooldowns and floating numbers don't rebuild the frames around them.
+  - The reticle, bag line, crafting window and hearth prompt stay in IMGUI `PlayerHud` until 4.5.
+- **Action bar slots are host-authoritative.**
+  - `PlayerActionBar` (on the Player prefab) shares `ActionBarSlots` (9 ability IDs, memcpy) through a `NetworkVariable`. The host fills it from `Data/Abilities/DefaultLoadout.asset`: Arcane Orb, Pyroblast, EarthShatter; slots 4-9 are empty until 4.6 classes.
+  - `PlayerCaster` casts the slot whose button was pressed, looked up on the host. `testAbilities` and the Ability1-3 buttons are gone.
+  - The loadout isn't saved yet; that comes with 4.6.
+- **Input:** `PlayerButtons` grew to `uint`, with `ActionSlot1-9` in bits 8-16 (`ActionSlotButtons.For(slot)`).
+
+  | Controls | Slots |
+  |---|---|
+  | KeyboardMouse and KeyboardLeft | `1`-`9` |
+  | KeyboardRight | Numpad 1-9 (frees `]`, `-`, `=`) |
+  | Gamepad | D-pad up/right/down/left = 1-4; hold B + d-pad = 5-8; tap B alone = 9 |
+
+  - The gamepad chord is the pure `PadSlotChord`. A B tap is held as slot 9 for 0.1 s, because input frames go out every frame but the host reads them on its fixed step.
+- **Combat text is built on each PC from what the host already said.** It's never networked (D-025's split). `PlayerCombatText` raises a `CombatTextEvent` for:
+  - **spell hits:** the `Impact` cue plus the definition's block damage;
+  - **craters:** the `Impact` cue gained `BlocksBroken`, which `PlayerStaff` fills from `VoxelBatchResult`;
+  - **mana spent:** the `Released` cue plus the mana cost. Spells under 10 mana stay quiet, so the M.G.R.S. doesn't flood the view;
+  - **refusals:** `PlayerCaster.Refused`, an owner-only event that replaced the red IMGUI message;
+  - **pickups:** a new owner-only `PlayerBlockBag.PickedUpRpc`.
+
+  Only the local player it's about sees it, in their own panel. Merged views clip to the whole shared picture.
+- `CombatTextFeed` (plain C#) owns lifetimes, a 24-label pool per player (the oldest line gives way) and merging pickups of the same item within 0.3 s.
+- **Looks stay out of rules:** the spell icon moved from `AbilityDefinition` to `AbilityLook.icon` (Sprite). `HudSkin` holds every sprite, font and colour. The guard test now also covers `PlayerActionBar` and `ActionBarLoadout`, and bans sprites, textures and `HudSkin` in rules classes.
+- **Comic-book fantasy art, all rebuildable:**
+  - *Voxelforge > Build HUD Art* (`HudArtBuilder`) paints the HUD sprites in code: a parchment panel, wooden ink-outlined slot and bar frames with brass rivets, halftone shading, a glow flash and a starburst.
+  - It also makes the TMP font assets with the ink outline and hard drop shadow baked into the material, plus a "Crisp" preset (thin outline, no shadow) for small numbers, which the big style smeared.
+  - Fonts: **Bangers** for comic numbers and pop-ups, **MedievalSharp** for spell names. Both are OFL, with their licence files beside them.
+  - Spell icons come from `Tools/Blender/build_spell_icons.py` (`SpellIcons.blend`): toon-shaded models with inverted-hull ink outlines over halftone action rays. *Build Abilities* hooks them up by name.
+  - TMP Essential Resources were imported (`Assets/TextMesh Pro/`).
+- **Crater pop-ups** say a comic word by element: Fire "KA-BOOM!", Earth "KRAKA-THOOM!", Arcane "ZA-POW!" and so on, on a pale starburst.
+- **Reticle fix:** the aim ray starts at the hero's eyes, and the reticle used to stop at mining reach (5 m). Past that it floated in mid-air, and the camera above and behind the hero showed it below where spells really land. It now follows the ray out to the longest range of the spells on the bar, or the held item. Mining still uses 5 m and the block outline.
+
+### Deferred on purpose
+- Rearranging the action bar and saving loadouts: 4.6 (classes and talents).
+- Tooltips, out-of-range tinting and a global cooldown sweep: when there are enough spells to need them.
+- Moving the bag, crafting and hearth windows to uGUI: 4.5 (inventory) and 6.3 (settings).
+
+---
+
 ## D-026: Craters and Area Spells (Destructive Spell Mechanics)
 - **Date:** 2026-10-29
 - **Status:** Accepted (play-tested in split-screen 2026-10-29)

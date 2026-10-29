@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: EarthShatterLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: e41f2045986f9624ead6b234eaa2887f, type: 2}
+  icon: {fileID: 21300000, guid: 34f59ba118f44614396a5846f76fd662, type: 3}
   glow: {r: 0.75, g: 0.55, b: 0.3, a: 1}
   coreShape: 0
   coreSize: 0.3

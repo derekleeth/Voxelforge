@@ -18,9 +18,6 @@ namespace Voxelforge.Gameplay
 
         [SerializeField, TextArea] string description;
 
-        [Tooltip("Its picture on the action bar (4.4). Optional for now.")]
-        [SerializeField] Texture2D icon;
-
         [SerializeField] AbilityElement element = AbilityElement.Arcane;
 
         [Header("Cost & timing")]
@@ -66,7 +63,6 @@ namespace Voxelforge.Gameplay
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public string Description => description;
-        public Texture2D Icon => icon;
         public AbilityElement Element => element;
         public float ManaCost => manaCost;
         public float Cooldown => cooldown;

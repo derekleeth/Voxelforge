@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: PyroblastLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 5c32efa60f6f1734e905b8384bd2ad84, type: 2}
+  icon: {fileID: 21300000, guid: 0369b484628b3e64da4667fe038b515d, type: 3}
   glow: {r: 1, g: 0.45, b: 0.1, a: 1}
   coreShape: 1
   coreSize: 0.6

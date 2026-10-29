@@ -38,6 +38,8 @@ namespace Voxelforge.Gameplay
         public Vector3 Direction;
         /// <summary>The block a projectile hit, as it was before the hit, to tint the burst.</summary>
         public ushort BlockId;
+        /// <summary>How many blocks an <see cref="AbilityCueKind.Impact"/> broke, for the combat text (Roadmap 4.4).</summary>
+        public ushort BlocksBroken;
         /// <summary>Why a cast stopped (<see cref="AbilityCueKind.CastStopped"/>).</summary>
         public CastCheck Reason;
 
@@ -52,15 +54,21 @@ namespace Voxelforge.Gameplay
             };
 
         /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> hit <paramref name="blockId"/> at <paramref name="point"/>, on the face <paramref name="normal"/>.</summary>
-        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId) =>
-            new AbilityCue { Kind = AbilityCueKind.Impact, AbilityId = abilityId, Position = point, Direction = normal, BlockId = blockId };
+        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId, int blocksBroken = 0) =>
+            new AbilityCue
+            {
+                Kind = AbilityCueKind.Impact, AbilityId = abilityId, Position = point, Direction = normal, BlockId = blockId,
+                BlocksBroken = ClampCount(blocksBroken),
+            };
 
-        public static AbilityCue End(in ManaBoltEnd end, ushort blockId) =>
+        public static AbilityCue End(in ManaBoltEnd end, ushort blockId, int blocksBroken = 0) =>
             new AbilityCue
             {
                 Kind = end.HitBlock ? AbilityCueKind.Impact : AbilityCueKind.Fizzled, AbilityId = end.AbilityId, ShotId = end.Id,
-                Position = end.Point, Direction = end.Normal, BlockId = blockId,
+                Position = end.Point, Direction = end.Normal, BlockId = blockId, BlocksBroken = ClampCount(blocksBroken),
             };
+
+        static ushort ClampCount(int count) => (ushort)Mathf.Clamp(count, 0, ushort.MaxValue);
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -81,6 +89,7 @@ namespace Voxelforge.Gameplay
                 case AbilityCueKind.Impact:
                     serializer.SerializeValue(ref Direction);
                     serializer.SerializeValue(ref BlockId);
+                    serializer.SerializeValue(ref BlocksBroken);
                     break;
             }
         }

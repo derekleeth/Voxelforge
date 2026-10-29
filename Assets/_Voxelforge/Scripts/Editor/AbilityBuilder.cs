@@ -11,12 +11,13 @@ namespace Voxelforge.Editor
     /// <list type="bullet">
     /// <item><b>Mana Bolt</b>: what Kian's M.G.R.S. shoots (D-019's numbers: 45 damage, 0.5 s, 40 m/s, 24 m), now
     /// costing 8 mana.</item>
-    /// <item><b>Arcane Orb</b>: a slow, heavy test spell with a 1.5 s cast and a small crater, on the temporary Ability 1
-    /// button.</item>
-    /// <item><b>Pyroblast</b> (Roadmap 4.3): a fire orb with a 2.5 s cast that blasts a deep, round crater, on Ability 2.</item>
+    /// <item><b>Arcane Orb</b>: a slow, heavy test spell with a 1.5 s cast and a small crater, in action bar slot 1.</item>
+    /// <item><b>Pyroblast</b> (Roadmap 4.3): a fire orb with a 2.5 s cast that blasts a deep, round crater, in slot 2.</item>
     /// <item><b>EarthShatter</b> (Roadmap 4.3): an instant slam on the ground you aim at that blasts a wide, shallow
-    /// crater, on Ability 3.</item>
+    /// crater, in slot 3.</item>
     /// </list>
+    /// The slots are the default <see cref="ActionBarLoadout"/> (Roadmap 4.4). Each look picks up its action bar icon from
+    /// <c>Art/Textures/UI/Icons/&lt;Ability&gt;.png</c> when there is one.
     /// It also writes how each looks and sounds (<see cref="AbilityLook"/>, Roadmap 4.2) in <c>Looks/</c>, using the
     /// sounds from <i>Voxelforge → Build Sound Effects</i>, so build those first.
     /// </summary>
@@ -28,6 +29,8 @@ namespace Voxelforge.Editor
         public const string PyroblastPath = AbilityDir + "/Pyroblast.asset";
         public const string EarthShatterPath = AbilityDir + "/EarthShatter.asset";
         public const string BookPath = AbilityDir + "/AbilityBook.asset";
+        public const string LoadoutPath = AbilityDir + "/DefaultLoadout.asset";
+        const string IconDir = "Assets/_Voxelforge/Art/Textures/UI/Icons";
         const string LookDir = AbilityDir + "/Looks";
         public const string LookBookPath = LookDir + "/AbilityLookBook.asset";
         const string SfxDir = "Assets/_Voxelforge/Art/Audio/Sfx";
@@ -73,6 +76,19 @@ namespace Voxelforge.Editor
             list.GetArrayElementAtIndex(3).objectReferenceValue = earthShatter;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(book);
+
+            // What every hero starts with on their action bar (Roadmap 4.4). The Mana Bolt stays on the M.G.R.S.
+            var loadout = LoadOrCreate<ActionBarLoadout>(LoadoutPath);
+            serialized = new SerializedObject(loadout);
+            list = serialized.FindProperty("slots");
+            list.arraySize = PlayerActionBar.SlotCount;
+            for (int i = 0; i < PlayerActionBar.SlotCount; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = null;
+            list.GetArrayElementAtIndex(0).objectReferenceValue = arcaneOrb;
+            list.GetArrayElementAtIndex(1).objectReferenceValue = pyroblast;
+            list.GetArrayElementAtIndex(2).objectReferenceValue = earthShatter;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(loadout);
 
             // The Mana Bolt keeps D-019's look and sounds; the orb is bigger, purple, slower to fade and louder.
             AbilityLook manaBoltLook = MakeLook($"{LookDir}/ManaBoltLook.asset", manaBolt, new Color(0.35f, 0.85f, 1f),
@@ -122,6 +138,9 @@ namespace Voxelforge.Editor
             var look = LoadOrCreate<AbilityLook>(path);
             var serialized = new SerializedObject(look);
             serialized.FindProperty("ability").objectReferenceValue = ability;
+            var icon = AssetDatabase.LoadAssetAtPath<Sprite>($"{IconDir}/{ability.name}.png");
+            if (icon != null)
+                serialized.FindProperty("icon").objectReferenceValue = icon;
             serialized.FindProperty("glow").colorValue = glow;
             serialized.FindProperty("coreShape").enumValueIndex = (int)shape;
             serialized.FindProperty("coreSize").floatValue = coreSize;

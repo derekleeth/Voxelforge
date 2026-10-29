@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 83969904}
   - component: {fileID: 83969903}
+  - component: {fileID: 83969905}
   m_Layer: 0
   m_Name: Player HUD
   m_TagString: Untagged
@@ -155,8 +156,6 @@ MonoBehaviour:
   blockMaterial: {fileID: 2100000, guid: 5ee5e8c52c9196249955d2e268fc5f7d, type: 2}
   visible: 1
   reticleSize: {x: 9, y: 2}
-  manaColor: {r: 0.25, g: 0.55, b: 1, a: 1}
-  castColor: {r: 1, g: 0.8, b: 0.3, a: 1}
 --- !u!4 &83969904
 Transform:
   m_ObjectHideFlags: 0
@@ -172,6 +171,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &83969905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 83969902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80b79e52eab544f46a1e015c093d2dde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.CombatHud
+  localPlayers: {fileID: 2147055201}
+  cameras: {fileID: 1604232797}
+  skin: {fileID: 11400000, guid: 3f58f1fc7d2f9814fb4918af15a97a19, type: 2}
+  items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
+  world: {fileID: 1325734895}
+  visible: 1
+  sortingOrder: 10
 --- !u!1 &122390141
 GameObject:
   m_ObjectHideFlags: 0

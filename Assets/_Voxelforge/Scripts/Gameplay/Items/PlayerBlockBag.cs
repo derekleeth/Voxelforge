@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -15,6 +16,9 @@ namespace Voxelforge.Gameplay
         readonly NetworkList<ItemStack> _synced = new NetworkList<ItemStack>();
         readonly ItemStacks _server = new ItemStacks();
         readonly List<int> _changed = new List<int>();
+
+        /// <summary>Owner only: the host put a picked-up stack in this bag (item, count), for the combat text (4.4).</summary>
+        public event Action<ushort, int> PickedUp;
 
         /// <summary>How many slots the bag has. Some may be empty (count 0).</summary>
         public int SlotCount => _synced.Count;
@@ -43,6 +47,16 @@ namespace Voxelforge.Gameplay
             Sync(index);
             return added;
         }
+
+        /// <summary>Host only: tells the owner that <paramref name="count"/> <paramref name="itemId"/> were picked up into this bag.</summary>
+        public void ServerTellPickedUp(ushort itemId, int count)
+        {
+            if (IsServer && IsSpawned && count > 0)
+                PickedUpRpc(itemId, count);
+        }
+
+        [Rpc(SendTo.Owner)]
+        void PickedUpRpc(ushort itemId, int count) => PickedUp?.Invoke(itemId, count);
 
         /// <summary>Host only: takes items out of the bag if there are enough (for <see cref="PlayerBuilder"/>).</summary>
         public bool ServerTryTake(ushort itemId, int amount)

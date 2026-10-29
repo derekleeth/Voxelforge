@@ -15,7 +15,6 @@ MonoBehaviour:
   id: 3
   displayName: Pyroblast
   description: Hurl a huge ball of fire that blasts a crater out of the ground. Stand still while you cast it.
-  icon: {fileID: 0}
   element: 2
   manaCost: 45
   cooldown: 10

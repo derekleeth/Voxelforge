@@ -31,9 +31,9 @@ namespace Voxelforge.Gameplay
         readonly InputAction _interact;
         readonly InputAction _splitStyle;
         readonly InputAction _home;
-        readonly InputAction _ability1;
-        readonly InputAction _ability2;
-        readonly InputAction _ability3;
+        readonly InputAction[] _actionSlots = new InputAction[PlayerActionBar.SlotCount];
+        readonly InputAction _actionShift;
+        PadSlotChord _padChord;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -52,9 +52,9 @@ namespace Voxelforge.Gameplay
             _interact = _actions.FindAction("Player/Interact", throwIfNotFound: true);
             _splitStyle = _actions.FindAction("Player/SplitStyle", throwIfNotFound: true);
             _home = _actions.FindAction("Player/Home", throwIfNotFound: true);
-            _ability1 = _actions.FindAction("Player/Ability1", throwIfNotFound: true);
-            _ability2 = _actions.FindAction("Player/Ability2", throwIfNotFound: true);
-            _ability3 = _actions.FindAction("Player/Ability3", throwIfNotFound: true);
+            for (int i = 0; i < _actionSlots.Length; i++)
+                _actionSlots[i] = _actions.FindAction($"Player/ActionSlot{i + 1}", throwIfNotFound: true);
+            _actionShift = _actions.FindAction("Player/ActionShift", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -123,12 +123,7 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.Interact;
             if (_home.IsPressed())
                 buttons |= PlayerButtons.Home;
-            if (_ability1.IsPressed())
-                buttons |= PlayerButtons.Ability1;
-            if (_ability2.IsPressed())
-                buttons |= PlayerButtons.Ability2;
-            if (_ability3.IsPressed())
-                buttons |= PlayerButtons.Ability3;
+            buttons |= ReadActionSlots();
 
             return new PlayerInputFrame
             {
@@ -137,6 +132,34 @@ namespace Voxelforge.Gameplay
                 ViewPitch = ViewPitch,
                 Buttons = buttons,
             };
+        }
+
+        /// <summary>
+        /// The action bar slots held (Roadmap 4.4). Keyboards have a key per slot; a gamepad's d-pad is slots 1-4 and
+        /// becomes 5-8 while B is held, and a tap of B is slot 9 (<see cref="PadSlotChord"/>).
+        /// </summary>
+        PlayerButtons ReadActionSlots()
+        {
+            var buttons = PlayerButtons.None;
+            if (ControlScheme == "Gamepad")
+            {
+                int dpad = 0;
+                for (int i = 0; i < 4 && dpad == 0; i++)
+                {
+                    if (_actionSlots[i].IsPressed())
+                        dpad = i + 1;
+                }
+                int slot = _padChord.Update(_actionShift.IsPressed(), dpad, Time.unscaledTime);
+                if (slot > 0)
+                    buttons |= ActionSlotButtons.For(slot - 1);
+                return buttons;
+            }
+            for (int i = 0; i < _actionSlots.Length; i++)
+            {
+                if (_actionSlots[i].IsPressed())
+                    buttons |= ActionSlotButtons.For(i);
+            }
+            return buttons;
         }
 
         /// <summary>

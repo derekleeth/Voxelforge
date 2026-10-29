@@ -15,7 +15,6 @@ MonoBehaviour:
   id: 4
   displayName: EarthShatter
   description: Slam the ground where you look and shatter it into a wide, shallow bowl.
-  icon: {fileID: 0}
   element: 4
   manaCost: 35
   cooldown: 8

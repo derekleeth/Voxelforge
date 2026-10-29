@@ -57,8 +57,8 @@ namespace Voxelforge.Gameplay
             if (!IsServer || !IsSpawned || ability == null || world == null || world.World == null)
                 return;
             ushort blockId = world.World.GetVoxel(hit.Block).BlockId;
-            Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
-            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId));
+            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken));
         }
 
         void FixedUpdate()
@@ -75,18 +75,19 @@ namespace Voxelforge.Gameplay
         void Strike(VoxelWorldManager world, ManaBoltEnd end)
         {
             ushort blockId = BlockIds.Air;
+            int broken = 0;
             if (end.HitBlock && world != null && world.World != null)
             {
                 blockId = world.World.GetVoxel(end.Hit.Block).BlockId;
                 AbilityBook book = _caster != null ? _caster.Book : null;
                 AbilityDefinition ability = null;
                 book?.TryGet(end.AbilityId, out ability);
-                Apply(world, ability, end.Point, end.Hit.Block, end.Damage);
+                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage).Broken;
             }
-            _cues.ServerSend(AbilityCue.End(end, blockId));
+            _cues.ServerSend(AbilityCue.End(end, blockId, broken));
         }
 
-        void Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage)
+        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage)
         {
             _damage.Clear();
             AbilityImpact.Resolve(ability, point, block, damage, _damage);
@@ -95,6 +96,7 @@ namespace Voxelforge.Gameplay
             if (logHits)
                 Debug.Log($"[Voxelforge] {_player.PlayerId}'s {(ability != null ? ability.DisplayName : "bolt")} hit {block}: " +
                           $"{result.Broken} broken, {result.Damaged} damaged, {result.Skipped} untouched.", this);
+            return result;
         }
     }
 }

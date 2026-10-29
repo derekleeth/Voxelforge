@@ -15,7 +15,6 @@ MonoBehaviour:
   id: 1
   displayName: Mana Bolt
   description: A quick bolt of raw mana from the M.G.R.S. Breaks blocks from afar.
-  icon: {fileID: 0}
   element: 1
   manaCost: 8
   cooldown: 0.5

@@ -65,8 +65,9 @@ namespace Voxelforge.Tests
             {
                 Id = 7, AbilityId = AbilityIds.ManaBolt, HitBlock = true, Point = new float3(9f, 8f, 7f), Normal = new float3(-1f, 0f, 0f),
             };
-            AbilityCue impact = RoundTrip(AbilityCue.End(hit, BlockIds.Stone));
+            AbilityCue impact = RoundTrip(AbilityCue.End(hit, BlockIds.Stone, blocksBroken: 112));
             Assert.AreEqual(AbilityCueKind.Impact, impact.Kind);
+            Assert.AreEqual(112, impact.BlocksBroken);
             Assert.AreEqual(7, impact.ShotId);
             Assert.AreEqual(BlockIds.Stone, impact.BlockId);
             Assert.AreEqual(Vector3.left, impact.Direction);
@@ -123,6 +124,7 @@ namespace Voxelforge.Tests
         {
             typeof(Color), typeof(Material), typeof(AudioClip), typeof(ParticleSystem), typeof(Light), typeof(Renderer),
             typeof(AbilityLook), typeof(AbilityLookBook), typeof(ManaBoltView), typeof(CastingView), typeof(SoundRouter),
+            typeof(Sprite), typeof(Texture), typeof(HudSkin),
         };
 
         [TestCase(typeof(AbilityDefinition))]
@@ -134,6 +136,8 @@ namespace Voxelforge.Tests
         [TestCase(typeof(PlayerCaster))]
         [TestCase(typeof(PlayerStaff))]
         [TestCase(typeof(PlayerAbilityCues))]
+        [TestCase(typeof(PlayerActionBar))]
+        [TestCase(typeof(ActionBarLoadout))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

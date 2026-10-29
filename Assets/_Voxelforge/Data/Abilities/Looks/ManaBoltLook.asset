@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: ManaBoltLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: ccb4c5806064b274f8dd3b7ca85b4eda, type: 2}
+  icon: {fileID: 21300000, guid: 1e813524c29c0a5409cf306d031eccae, type: 3}
   glow: {r: 0.35, g: 0.85, b: 1, a: 1}
   coreShape: 0
   coreSize: 0.22

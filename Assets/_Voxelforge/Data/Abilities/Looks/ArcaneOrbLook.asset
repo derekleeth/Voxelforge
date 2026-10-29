@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: ArcaneOrbLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 365b2c98db0eab042abd551b1106f65d, type: 2}
+  icon: {fileID: 21300000, guid: b0bab15780a85144d81b0e558ae90702, type: 3}
   glow: {r: 0.8, g: 0.4, b: 1, a: 1}
   coreShape: 1
   coreSize: 0.45

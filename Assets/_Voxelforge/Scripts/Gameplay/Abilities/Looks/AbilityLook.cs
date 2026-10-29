@@ -24,6 +24,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("The ability this dresses.")]
         [SerializeField] AbilityDefinition ability;
 
+        [Tooltip("Its picture on the action bar (Roadmap 4.4). Empty = the element's glyph.")]
+        [SerializeField] Sprite icon;
+
         [Tooltip("Colour of the projectile, its light, the cast glow, the flashes and the bursts.")]
         [SerializeField] Color glow = new Color(0.35f, 0.85f, 1f);
 
@@ -96,6 +99,7 @@ namespace Voxelforge.Gameplay
         [SerializeField, Min(1f)] float maxDistance = 40f;
 
         public AbilityDefinition Ability => ability;
+        public Sprite Icon => icon;
         public Color Glow => glow;
         public AbilityCoreShape CoreShape => coreShape;
         public float CoreSize => coreSize;

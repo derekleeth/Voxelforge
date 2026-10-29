@@ -10,9 +10,9 @@ namespace Voxelforge.Gameplay
     /// their bag ("[Dirt 12] · Stone 5", with the item they hold in brackets, 3.3) under their hero, and their crafting
     /// window when it's open (3.5). Everything is placed through <b>that player's own camera
     /// and view</b> (CLAUDE.md Law #5), so it stays on their side of the screen when it's split and follows their hero
-    /// when it isn't. Holding the M.G.R.S. (3.6), the reticle reaches as far as its bolts and shows the recharge. A mana
-    /// bar sits under the hero and a cast bar low in their own view (4.1). Real action bars and inventory windows replace
-    /// it in 4.4.
+    /// when it isn't. Holding the M.G.R.S. (3.6), the reticle reaches as far as its bolts and shows the recharge. The
+    /// action bar, mana, cast bar and combat text are drawn by <see cref="CombatHud"/> (4.4); the bag becomes a real
+    /// inventory window in 4.5.
     /// </summary>
     public sealed class PlayerHud : MonoBehaviour
     {
@@ -33,10 +33,6 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Reticle arm length and thickness, in pixels at 1080p.")]
         [SerializeField] Vector2 reticleSize = new Vector2(9f, 2f);
-
-        [SerializeField] Color manaColor = new Color(0.25f, 0.55f, 1f);
-
-        [SerializeField] Color castColor = new Color(1f, 0.8f, 0.3f);
 
         // Must match SplitScreenDirector's slot count.
         const int MaxSlots = 4;
@@ -83,12 +79,15 @@ namespace Voxelforge.Gameplay
         {
             float3 feet = player.transform.position;
             PlayerInputFrame input = player.OwnerInput;
-            // Holding the M.G.R.S. (3.6), the reticle reaches as far as its bolts fly.
+            // The reticle sits where the aim ray from the hero's eyes really lands, out as far as anything they can cast
+            // reaches: the M.G.R.S. (3.6) or the spells on their action bar (4.4). Stopping it at mining reach left it
+            // floating in mid-air, and from the camera above and behind the hero that point shows below where the
+            // spell hits.
             PlayerHands hands = player.TryGetComponent(out PlayerHands h) ? h : null;
             PlayerCaster caster = player.TryGetComponent(out PlayerCaster c) ? c : null;
             AbilityDefinition ability = null;
             bool ranged = hands != null && hands.TryGetSelectedAbility(out ability);
-            float reach = ranged ? ability.Range : player.Aim.Reach;
+            float reach = Mathf.Max(player.Aim.Reach, ranged ? ability.Range : 0f, SpellReach(player));
             bool hasTarget = player.Aim.TryAim(player.World, feet, input, reach, out VoxelHit hit);
             float3 aimPoint = hasTarget ? hit.Point : player.Aim.Eyes(feet) + math.normalize(player.Aim.Direction(input)) * reach;
             if (TryProject(view, aimPoint, out Vector2 reticle))
@@ -111,21 +110,11 @@ namespace Voxelforge.Gameplay
                     DrawShadowedLabel(new Rect(under.x - 500f * scale, y, 1000f * scale, height), line, plain, scale);
                     y += height;
                 }
-                // Mana (4.1), between the bag and the Home reminder.
-                if (caster != null && caster.MaxMana > 0f)
-                {
-                    DrawMeter(new Rect(under.x - 70f * scale, y + 4f * scale, 140f * scale, Mathf.Max(3f, 6f * scale)),
-                        caster.Mana / caster.MaxMana, manaColor, scale);
-                    y += 14f * scale;
-                }
                 // A small reminder that Home works (Roadmap 3.8).
                 if (player.TryGetComponent(out PlayerHearth home) && home.HasHome)
                     DrawShadowedLabel(new Rect(under.x - 300f * scale, y, 600f * scale, 30f * scale),
                         "<color=#7CFF8A>Home Totem set</color>", "Home Totem set", scale);
             }
-
-            if (caster != null)
-                DrawCasting(OwnArea(player, view), caster, scale);
 
             if (player.TryGetComponent(out PlayerCrafter crafter))
             {
@@ -140,42 +129,23 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        /// <summary>
-        /// The part of the screen (GUI pixels) that is this player's own, for their crafting window: their rectangle in a
-        /// grid, their side of the line in a Voronoi split, and in a merged view the half their hero stands in, so two open
-        /// windows never sit on top of each other (CLAUDE.md Law #5).
-        /// </summary>
-        Rect OwnArea(PlayerController player, PlayerView view)
+        /// <summary>The longest range of the spells on this player's action bar, 0 if it's empty.</summary>
+        static float SpellReach(PlayerController player)
         {
-            Rect r = view.ScreenRect;
-            var area = new Rect(r.x * Screen.width, (1f - r.y - r.height) * Screen.height, r.width * Screen.width, r.height * Screen.height);
-            SplitMode mode = cameras.Layout.Mode;
-            float2 towards; // Which way, on screen (y up), this player's half lies.
-            if (mode == SplitMode.Voronoi && view.VoronoiSide != 0f)
-                towards = view.VoronoiNormal * view.VoronoiSide;
-            else if (mode == SplitMode.Merged && TryProject(view, player.VisualRoot.position, out Vector2 hero))
-                towards = new float2(hero.x < area.center.x ? -1f : 1f, 0f);
-            else
-                return area;
-
-            if (math.abs(towards.x) >= math.abs(towards.y))
-                return towards.x < 0f
-                    ? new Rect(area.x, area.y, area.width * 0.5f, area.height)
-                    : new Rect(area.center.x, area.y, area.width * 0.5f, area.height);
-            return towards.y > 0f
-                ? new Rect(area.x, area.y, area.width, area.height * 0.5f)
-                : new Rect(area.x, area.center.y, area.width, area.height * 0.5f);
+            if (!player.TryGetComponent(out PlayerActionBar bar))
+                return 0f;
+            float range = 0f;
+            for (int i = 0; i < PlayerActionBar.SlotCount; i++)
+            {
+                if (bar.TryGet(i, out AbilityDefinition spell))
+                    range = Mathf.Max(range, spell.Range);
+            }
+            return range;
         }
 
-        /// <summary>Where a world point shows up in this player's view, in GUI pixels (origin top-left).</summary>
-        static bool TryProject(PlayerView view, float3 point, out Vector2 gui)
-        {
-            Vector3 viewport = view.Camera.WorldToViewportPoint(point);
-            Rect rect = view.ScreenRect;
-            gui = new Vector2((rect.x + viewport.x * rect.width) * Screen.width,
-                (1f - (rect.y + viewport.y * rect.height)) * Screen.height);
-            return viewport.z > 0f;
-        }
+        Rect OwnArea(PlayerController player, PlayerView view) => PlayerScreenArea.Own(cameras.Layout.Mode, player, view);
+
+        static bool TryProject(PlayerView view, float3 point, out Vector2 gui) => PlayerScreenArea.TryProject(view, point, out gui);
 
         void DrawReticle(Vector2 centre, Color colour, float alpha, float scale)
         {
@@ -209,40 +179,6 @@ namespace Voxelforge.Gameplay
             DrawBar(centre.x - width * 0.5f - 1f, y - 1f, width + 2f, height + 2f);
             GUI.color = colour;
             DrawBar(centre.x - width * 0.5f, y, width * Mathf.Clamp01(ready), height);
-            GUI.color = previous;
-        }
-
-        /// <summary>
-        /// The cast bar (name and fill) low in this player's own area while they cast (4.1), and the owner's "Not enough
-        /// mana" style message just above it.
-        /// </summary>
-        void DrawCasting(Rect area, PlayerCaster caster, float scale)
-        {
-            float x = area.center.x;
-            float y = area.y + area.height * 0.74f;
-            AbilityDefinition casting = caster.Casting;
-            if (casting != null)
-            {
-                float width = Mathf.Min(260f * scale, area.width * 0.6f);
-                DrawShadowedLabel(new Rect(x - width, y - 28f * scale, width * 2f, 28f * scale), casting.DisplayName,
-                    casting.DisplayName, scale);
-                DrawMeter(new Rect(x - width * 0.5f, y, width, 12f * scale), caster.CastProgress, castColor, scale);
-            }
-            string message = caster.Message;
-            if (message != null)
-                DrawShadowedLabel(new Rect(x - 300f * scale, y - 60f * scale, 600f * scale, 30f * scale),
-                    $"<color=#FF6A5A>{message}</color>", message, scale);
-        }
-
-        /// <summary>A bar with a dark outline and back, filled <paramref name="fill"/> (0-1) from the left.</summary>
-        static void DrawMeter(Rect rect, float fill, Color colour, float scale)
-        {
-            float edge = Mathf.Max(1f, scale);
-            Color previous = GUI.color;
-            GUI.color = new Color(0f, 0f, 0f, 0.65f);
-            DrawBar(rect.x - edge, rect.y - edge, rect.width + edge * 2f, rect.height + edge * 2f);
-            GUI.color = colour;
-            DrawBar(rect.x, rect.y, rect.width * Mathf.Clamp01(fill), rect.height);
             GUI.color = previous;
         }
 

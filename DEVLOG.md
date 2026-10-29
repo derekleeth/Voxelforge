@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-10-29 - Session 1 (part 29): A Comic-Book HUD for Every Hero 🗡️💬 Roadmap 4.4
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Real action bars!** Each player has their own bar of 9 spell slots at the bottom of *their* part of the screen, on a parchment strip with wooden frames and brass rivets. The temporary 1/2/3 buttons are gone. Details in DECISIONS.md **D-027**.
+  - Slot 1 is Arcane Orb, 2 is Pyroblast and 3 is EarthShatter. The rest wait for classes (4.6).
+  - Keyboard: `1`-`9`. The right-hand keyboard player uses the **numpad**.
+  - Gamepad: the **d-pad** is slots 1-4, **hold B** + d-pad is 5-8, and **tap B** is slot 9.
+  - Each slot shows its key, sweeps dark while it's cooling down (with the seconds left), turns cold blue when you don't have enough mana, squashes when you press it and flashes when the spell goes off.
+- **A mana bar** sits on top of the action bar, and **a cast bar** pops up above it with the spell's name in old-fashioned medieval lettering.
+- **Comic-book combat text!** Pop-ups float up where things happen, only in *your* view:
+  - damage numbers where your spell hits, in the spell's colour;
+  - craters get a starburst: "KA-BOOM!" (fire), "KRAKA-THOOM!" (earth), "ZA-POW!" (arcane), with how many blocks broke;
+  - "-35 mana", "NOT READY!", "NO MANA!", "NOTHING IN RANGE!";
+  - "+12 Dirt" when you pick things up.
+- **Spell pictures made in Blender:** toy-like 3D spells with thick black ink outlines on comic "action rays" with halftone dots.
+- **The crosshair tells the truth now.** It used to sit lower than where spells landed on far-away cliffs. Now it follows your aim as far as your spells reach.
+- **Crisper numbers:** the small numbers (mana, keys, timers) use a thin ink outline so they aren't fuzzy.
+
+### Tests: 323 / 323 passing ✅
+- The 9 slot buttons each have their own bit and don't clash with any other button.
+- Gamepad: the d-pad gives 1-4, holding B gives 5-8, tapping B gives 9 (held long enough for the host to notice), and using B with the d-pad never also fires 9.
+- The action bar slots survive being sent over the network, and a loadout turns into the right spell IDs.
+- Hotkey labels match each player's controls.
+- Combat text lines disappear on time, the pool never overflows, and pickups of the same thing close together add up.
+- A crater cue carries how many blocks it broke, and the rules code still holds nothing you see or hear.
+
+### Things we learned
+- In a third-person game the aim starts at the hero's eyes, but you look from a camera above and behind them. A crosshair drawn at a point in mid-air shows up in the wrong place, so it has to sit where the aim really hits something.
+- Thick comic outlines look great on big letters but smear small numbers, so small text gets its own thinner style.
+- Don't change code while Unity is playing: it reloads and breaks the game you're testing.
+
+### Next up
+- [x] Play-test 4.4: action bars, cast bar, combat text and the fixed crosshair ✅
+- [ ] Roadmap **4.5 Generous Bag & Visual Inventory System**
+
+---
+
 ## 2026-10-29 - Session 1 (part 28): KABOOM! Spells That Dig Craters 💥 Roadmap 4.3
 **Phase:** 4 - The Warcraft Injection
 

@@ -26,6 +26,8 @@ GameObject:
   - component: {fileID: 6764939064301674151}
   - component: {fileID: 3957941889791426866}
   - component: {fileID: 8872604111369299944}
+  - component: {fileID: 1018173119184603921}
+  - component: {fileID: 8134390800328682175}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -354,13 +356,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerCaster
   ShowTopMostFoldoutHeaderGroup: 1
   abilities: {fileID: 11400000, guid: c5d94fc809c8ec5448bb469b809bcb21, type: 2}
-  testAbilities:
-  - {fileID: 11400000, guid: 365b2c98db0eab042abd551b1106f65d, type: 2}
-  - {fileID: 11400000, guid: 5c32efa60f6f1734e905b8384bd2ad84, type: 2}
-  - {fileID: 11400000, guid: e41f2045986f9624ead6b234eaa2887f, type: 2}
   maxMana: 100
   manaRegen: 10
-  messageSeconds: 1.5
 --- !u!114 &3957941889791426866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -389,6 +386,34 @@ MonoBehaviour:
   glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
   looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   animator: {fileID: 2811615453234438372}
+--- !u!114 &1018173119184603921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0984c8c4dcc632549a6f6d49fbb3ca53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerActionBar
+  ShowTopMostFoldoutHeaderGroup: 1
+  defaultLoadout: {fileID: 11400000, guid: 7ff00e3323e04a94cb32c7981559c8f4, type: 2}
+--- !u!114 &8134390800328682175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ec0d4a7bbbbf5d41beaf6b0db36bafb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerCombatText
+  overHead: 2.2
+  minManaShown: 10
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

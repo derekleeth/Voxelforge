@@ -5,7 +5,7 @@ using Unity.Netcode;
 namespace Voxelforge.Gameplay
 {
     [Flags]
-    public enum PlayerButtons : ushort
+    public enum PlayerButtons : uint
     {
         None = 0,
         Jump = 1 << 0,
@@ -24,14 +24,24 @@ namespace Voxelforge.Gameplay
         /// <summary>Ask to hearth back to this player's Home Totem (Roadmap 3.8, <see cref="PlayerHearth"/>). Place confirms.</summary>
         Home = 1 << 7,
         /// <summary>
-        /// Cast the test spell (Roadmap 4.1, <see cref="PlayerCaster"/>). Temporary: the 4.4 action bar replaces it with
-        /// real ability slots.
+        /// Cast what's in action bar slot 1 (Roadmap 4.4, <see cref="PlayerActionBar"/>). Slots 2-9 follow in order, so
+        /// slot n is <c>ActionSlot1 &lt;&lt; (n - 1)</c> (<see cref="ActionSlotButtons.For"/>).
         /// </summary>
-        Ability1 = 1 << 8,
-        /// <summary>Cast the second test spell (Roadmap 4.3). Temporary, like <see cref="Ability1"/>.</summary>
-        Ability2 = 1 << 9,
-        /// <summary>Cast the third test spell (Roadmap 4.3). Temporary, like <see cref="Ability1"/>.</summary>
-        Ability3 = 1 << 10,
+        ActionSlot1 = 1 << 8,
+        ActionSlot2 = 1 << 9,
+        ActionSlot3 = 1 << 10,
+        ActionSlot4 = 1 << 11,
+        ActionSlot5 = 1 << 12,
+        ActionSlot6 = 1 << 13,
+        ActionSlot7 = 1 << 14,
+        ActionSlot8 = 1 << 15,
+        ActionSlot9 = 1 << 16,
+    }
+
+    public static class ActionSlotButtons
+    {
+        /// <summary>The button for action bar slot <paramref name="slot"/> (0-8).</summary>
+        public static PlayerButtons For(int slot) => (PlayerButtons)((uint)PlayerButtons.ActionSlot1 << slot);
     }
 
     /// <summary>

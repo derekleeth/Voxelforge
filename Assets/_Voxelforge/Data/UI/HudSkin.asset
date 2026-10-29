@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a903c2b6e4030a468603a3a0397d59d, type: 3}
+  m_Name: HudSkin
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HudSkin
+  comicFont: {fileID: 11400000, guid: 23e0101a47a4fd144b6028455ede87eb, type: 2}
+  comicSmall: {fileID: 2100000, guid: c27fd9d16d9ed454991d7e8e21daa205, type: 2}
+  titleFont: {fileID: 11400000, guid: eac8e280973f41e49ada4cabe6bf490f, type: 2}
+  panel: {fileID: 21300000, guid: b1bf09b3bff5fd143a2c8cb009999231, type: 3}
+  slotFrame: {fileID: 21300000, guid: 24568c95d5e57f04a88b13bf933ccd32, type: 3}
+  slotBack: {fileID: 21300000, guid: be95cbfbf969aa54d86a2eaa60fe267e, type: 3}
+  slotFlash: {fileID: 21300000, guid: 4400729bbd0a73f44a9213f6ee4a485d, type: 3}
+  white: {fileID: 21300000, guid: 4bd8e3fa23f0497428153051292231b7, type: 3}
+  barFrame: {fileID: 21300000, guid: be35706d95a41ad4682767b4357cb909, type: 3}
+  barFill: {fileID: 21300000, guid: 6a428e834266628419bb34be921d5243, type: 3}
+  barBack: {fileID: 21300000, guid: 106b640be53711e4e8851c6ee0d9dd91, type: 3}
+  starburst: {fileID: 21300000, guid: 7142ba68823cb3144a3ce71d8c10337b, type: 3}
+  fallbackIcon: {fileID: 21300000, guid: 3d321326d17d8394d96fe8cfb7cebdf2, type: 3}
+  looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
+  ink: {r: 0.08, g: 0.05, b: 0.05, a: 1}
+  mana: {r: 0.22, g: 0.5, b: 1, a: 1}
+  cast: {r: 1, g: 0.78, b: 0.22, a: 1}
+  refusal: {r: 1, g: 0.32, b: 0.22, a: 1}
+  pickup: {r: 1, g: 0.92, b: 0.55, a: 1}
+  elements:
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 0.85, g: 0.5, b: 1, a: 1}
+  - {r: 1, g: 0.55, b: 0.15, a: 1}
+  - {r: 0.55, g: 0.9, b: 1, a: 1}
+  - {r: 0.85, g: 0.65, b: 0.35, a: 1}
+  - {r: 0.45, g: 1, b: 0.4, a: 1}
+  - {r: 0.6, g: 0.75, b: 1, a: 1}
+  - {r: 1, g: 0.95, b: 0.55, a: 1}
+  slotSize: 66
+  slotGap: 6
+  manaBarHeight: 22
+  castBarWidth: 340
+  castBarHeight: 26
+  combatTextSize: 44

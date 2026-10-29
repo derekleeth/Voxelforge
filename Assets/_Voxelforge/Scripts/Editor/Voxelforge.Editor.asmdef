@@ -4,7 +4,8 @@
     "references": [
         "Voxelforge.Core",
         "Voxelforge.Voxels",
-        "Voxelforge.Gameplay"
+        "Voxelforge.Gameplay",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

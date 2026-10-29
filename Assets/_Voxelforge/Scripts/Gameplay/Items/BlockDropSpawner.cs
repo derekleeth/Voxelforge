@@ -179,7 +179,10 @@ namespace Voxelforge.Gameplay
 
             int added = nearestBag.ServerAdd(drop.BlockId, drop.Count);
             if (added > 0)
+            {
                 PickedUp?.Invoke(nearestMiddle, drop.BlockId, added);
+                nearestBag.ServerTellPickedUp(drop.BlockId, added);
+            }
             if (added >= drop.Count)
                 return true;
             if (added > 0)
