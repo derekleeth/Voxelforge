@@ -18,7 +18,8 @@ namespace Voxelforge.Gameplay
     /// <item>3-4 players: a screen quarter each.</item>
     /// </list>
     /// With <see cref="SplitStyle.Classic"/> (Roadmap 3.7, switched by either player), two players always get a fixed
-    /// half each instead of merging and splitting. Heroes right next to a camera are hidden from it (<see cref="HeroCameraFade"/>).
+    /// half each instead of merging and splitting. Heroes right next to a camera are hidden from it (<see cref="HeroCameraFade"/>),
+    /// and a camera with rock overhead is lit a little less by the sky (<see cref="CaveLight"/>).
     /// <b>Not a singleton:</b> HUDs ask this component for their player's view with <see cref="TryGetView"/>
     /// (CLAUDE.md Laws #1 and #5).
     /// </summary>
@@ -84,6 +85,9 @@ namespace Voxelforge.Gameplay
         [SerializeField, Min(0f)] float mouseDegreesPerPixel = 0.15f;
         [SerializeField, Min(0f)] float stickDegreesPerSecond = 180f;
 
+        [Tooltip("How much of the sky's ambient light reaches a camera deep in a cave (1 = as bright as outside).")]
+        [SerializeField, Range(0f, 1f)] float caveAmbient = 0.55f;
+
         const string StylePrefKey = "Voxelforge.SplitStyle";
 
         static readonly int ViewBId = Shader.PropertyToID("_ViewB");
@@ -108,6 +112,7 @@ namespace Voxelforge.Gameplay
         bool _cursorReleased;
         SplitStyle _style;
         HeroCameraFade _heroFade;
+        CaveLight _caveLight;
 
         /// <summary>How the screen is shared out this frame.</summary>
         public SplitLayout Layout => _layout;
@@ -144,9 +149,14 @@ namespace Voxelforge.Gameplay
             if (!Enum.IsDefined(typeof(SplitStyle), _style))
                 _style = defaultStyle;
             _heroFade = new HeroCameraFade(_rigs, _controllers);
+            _caveLight = new CaveLight(_rigs, _controllers, caveAmbient);
         }
 
-        void OnDestroy() => _heroFade?.Dispose();
+        void OnDestroy()
+        {
+            _heroFade?.Dispose();
+            _caveLight?.Dispose();
+        }
 
         /// <summary>Switches between the dynamic and classic split-screen, and remembers it on this PC.</summary>
         public void SetStyle(SplitStyle style)

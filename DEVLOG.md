@@ -14,6 +14,8 @@
 - **The M.G.R.S. costs mana now:** 8 per bolt. Hold fire for about 16 seconds and you run dry ("Not enough mana"), then wait a moment and keep blasting.
 - **Our first spell with a cast time, the Arcane Orb!** Press **1** (Player 2 on the right of the keyboard: **]**, gamepad: **B**). A cast bar fills for 1.5 seconds, then a slow purple orb flies out and smashes blocks. Walk or jump while casting and it's interrupted. Then it needs 6 seconds to recharge.
 - The host decides everything: whether you have enough mana, if the spell is ready, and where it flies. Your PC only shows it.
+- **Caves are a bit darker.** Each player's camera looks up through the blocks to see how much sky is above it, and dims the sky's light down to 55% deep underground. In split-screen, each view gets its own darkness, so one player can be in a cave while the other is in the sun. It fades in over about a second as you walk in.
+- **Holding a torch lights up the cave around you!** A warm, flickering light at the flame, a little softer than a placed torch. Things in your hand also glow stronger now (3.5, was 2.2), so the torch flame and the M.G.R.S. crystals stand out.
 
 ### Tests: 277 / 277 passing ✅
 - Mana is spent when the spell goes off, never more than full, and refills over time.
@@ -22,8 +24,12 @@
 - The spell list catches broken spells (two with the same ID, a bolt with no speed).
 - The M.G.R.S. still breaks stone in 2 shots.
 
+### Issues found
+- **Held items had stopped glowing** (the M.G.R.S. crystals, torch flames in your hand). Unity had quietly switched the glow off in `Props_Held.mat` back in the 3.9 session. The cause: the material's lighting flag was "None", and URP reads "None" as "no glow", so it turned the glow off every time it checked the material. Now the flag is "Realtime Emissive" (in the material and in *Build Props & Items*), and the glow stays on.
+
 ### Things we learned
 - In *World of Warcraft* you pay for a spell when it **finishes**, not when you start it. That's why getting interrupted doesn't waste mana. We do the same.
+- If a file changes when nobody touched it, find out why before you just put it back. Otherwise Unity changes it again.
 
 ### Next up
 - [x] Play-test 4.1 in split-screen: mana bar, running dry, the Arcane Orb's cast bar, getting interrupted ✅

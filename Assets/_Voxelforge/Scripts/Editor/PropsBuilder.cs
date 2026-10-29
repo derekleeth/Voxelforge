@@ -33,6 +33,15 @@ namespace Voxelforge.Editor
         const string RecipeDir = "Assets/_Voxelforge/Data/Items/Recipes";
 
         static readonly Color Glow = new Color(2.2f, 2.2f, 2.2f);
+        // Held and dropped items glow harder than placed props: in the hand they're small, and a torch flame at 2.2 was
+        // barely noticeable (4.1 play-test).
+        static readonly Color HeldGlow = new Color(3.5f, 3.5f, 3.5f);
+        // A held torch lights the cave around the hero: like a placed torch (2.4 over 10 m), a little softer.
+        static readonly DecorationLight HeldTorchLight = new DecorationLight
+        {
+            enabled = true, color = new Color(1f, 0.64f, 0.32f), intensity = 1.8f, range = 8f,
+            offset = new Vector3(0f, 0.73f, 0f), flicker = 0.35f,
+        };
 
         // Held poses in the Wayfarer's right hand bone (2.5), measured on its idle pose: tools held out front, ready
         // to swing with the head pointing down at the block; torches and workbenches upright. The grip sits in the palm.
@@ -108,7 +117,7 @@ namespace Voxelforge.Editor
             ItemDefinition mgrs = MakeItem("Mgrs", ItemIds.Mgrs, "M.G.R.S.", held, default, ability: manaBolt, muzzle: StaffMuzzle,
                 pose: StaffPose);
             ItemDefinition torchItem = MakeItem("TorchFloor", BlockIds.Torch, "Torch", held, default, "Torch", dropSize: 1.6f,
-                heldScale: 0.7f, upright: true);
+                heldScale: 0.7f, upright: true, heldLight: HeldTorchLight);
             ItemDefinition benchItem = MakeItem("Workbench", BlockIds.Workbench, "Workbench", held, default, "WorkbenchItem", dropSize: 1.3f,
                 heldScale: 0.3f, upright: true);
             ItemDefinition totemItem = MakeItem("HomeTotem", BlockIds.HomeTotem, "Home Totem", held, default, "HomeTotemItem", dropSize: 1.4f,
@@ -185,9 +194,11 @@ namespace Voxelforge.Editor
             material.SetColor("_BaseColor", Color.white);
             material.SetFloat("_Smoothness", 0.3f);
             material.SetTexture("_EmissionMap", glow);
-            material.SetColor("_EmissionColor", Glow);
+            material.SetColor("_EmissionColor", HeldGlow);
             material.EnableKeyword("_EMISSION");
-            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            // Not None: URP's keyword check (run on import and in the Inspector) reads None as "emission off" and strips
+            // _EMISSION, so held items stop glowing. We have no realtime GI, so this flag changes nothing else.
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -302,20 +313,14 @@ namespace Voxelforge.Editor
             serialized.FindProperty("attach").enumValueIndex = (int)attach;
             serialized.FindProperty("minScale").floatValue = 1f;
             serialized.FindProperty("maxScale").floatValue = 1f;
-            SerializedProperty l = serialized.FindProperty("light");
-            l.FindPropertyRelative("enabled").boolValue = light.enabled;
-            l.FindPropertyRelative("color").colorValue = light.color;
-            l.FindPropertyRelative("intensity").floatValue = light.intensity;
-            l.FindPropertyRelative("range").floatValue = Mathf.Max(light.range, 0.1f);
-            l.FindPropertyRelative("offset").vector3Value = light.offset;
-            l.FindPropertyRelative("flicker").floatValue = light.flicker;
+            WriteLight(serialized.FindProperty("light"), light);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return decoration;
         }
 
         static ItemDefinition MakeItem(string model, ushort id, string displayName, Material material, ToolPower power,
             string assetName = null, float dropSize = 2f, float heldScale = 1f, bool upright = false, AbilityDefinition ability = null,
-            Vector3 muzzle = default, Vector3? pose = null)
+            Vector3 muzzle = default, Vector3? pose = null, DecorationLight heldLight = default)
         {
             Mesh mesh = LoadMesh(model);
             var item = LoadOrCreate<ItemDefinition>($"{ItemDir}/{assetName ?? model}.asset");
@@ -334,6 +339,7 @@ namespace Voxelforge.Editor
             tool.FindPropertyRelative("any").floatValue = power.any;
             serialized.FindProperty("ability").objectReferenceValue = ability;
             serialized.FindProperty("muzzle").vector3Value = muzzle;
+            WriteLight(serialized.FindProperty("heldLight"), heldLight);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return item;
         }
@@ -350,6 +356,16 @@ namespace Voxelforge.Editor
                 WriteAmount(list.GetArrayElementAtIndex(i), inputs[i]);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return recipe;
+        }
+
+        static void WriteLight(SerializedProperty property, DecorationLight light)
+        {
+            property.FindPropertyRelative("enabled").boolValue = light.enabled;
+            property.FindPropertyRelative("color").colorValue = light.color;
+            property.FindPropertyRelative("intensity").floatValue = light.intensity;
+            property.FindPropertyRelative("range").floatValue = Mathf.Max(light.range, 0.1f);
+            property.FindPropertyRelative("offset").vector3Value = light.offset;
+            property.FindPropertyRelative("flicker").floatValue = light.flicker;
         }
 
         static void WriteAmount(SerializedProperty property, ItemAmount amount)

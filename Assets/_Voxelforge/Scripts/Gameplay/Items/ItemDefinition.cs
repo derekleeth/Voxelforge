@@ -1,4 +1,5 @@
 using UnityEngine;
+using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
@@ -33,6 +34,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("How big a dropped one is, compared with a dropped block.")]
         [SerializeField, Min(0.1f)] float dropSize = 2f;
 
+        [Tooltip("A light it gives off while held (a torch lights a cave). Offset is in the model's own space.")]
+        [SerializeField] DecorationLight heldLight;
+
         [Header("Tool")]
         [Tooltip("Mining power multipliers while it's held. All 0 = not a tool (bare-hands power).")]
         [SerializeField] ToolPower toolPower;
@@ -52,6 +56,7 @@ namespace Voxelforge.Gameplay
         public Quaternion HeldRotation => Quaternion.Euler(heldRotation);
         public float HeldScale => heldScale;
         public float DropSize => dropSize;
+        public DecorationLight HeldLight => heldLight;
 
         /// <summary>True if any of its multipliers is set.</summary>
         public bool IsTool => toolPower.pick > 0f || toolPower.axe > 0f || toolPower.any > 0f;

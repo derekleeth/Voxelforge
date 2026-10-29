@@ -8,7 +8,8 @@ namespace Voxelforge.Gameplay
     /// Shows what a player holds (<see cref="PlayerHands.HeldItem"/>, Roadmap 3.5) in their hero's right hand, on every
     /// PC: a tool or prop model where its <see cref="ItemDefinition"/> says, or a small block. While the host says they're
     /// mining (<see cref="PlayerMiner.IsMining"/>) it swings, and when a ranged item shoots (<see cref="PlayerStaff"/>,
-    /// Roadmap 3.6) it kicks back. Presentation only.
+    /// Roadmap 3.6) it kicks back. An item with a <see cref="ItemDefinition.HeldLight"/> (a torch) lights up around the hero,
+    /// flickering like a placed one. Presentation only.
     /// </summary>
     [RequireComponent(typeof(PlayerHands))]
     public sealed class HeldItemView : MonoBehaviour
@@ -45,6 +46,8 @@ namespace Voxelforge.Gameplay
         Transform _pivot;
         MeshFilter _filter;
         MeshRenderer _renderer;
+        Light _light;
+        float _flickerSeed;
 
         static readonly int ClassicDrawId = Shader.PropertyToID("_VoxelforgeClassicDraw");
         ushort _shown = ushort.MaxValue;
@@ -83,6 +86,14 @@ namespace Voxelforge.Gameplay
             var block = new MaterialPropertyBlock();
             block.SetFloat(ClassicDrawId, 1f);
             _renderer.SetPropertyBlock(block);
+
+            // Under the model, so the light's offset is in the model's own space and follows the swing.
+            _light = new GameObject("Held Item Light").AddComponent<Light>();
+            _light.transform.SetParent(model.transform, false);
+            _light.type = LightType.Point;
+            _light.shadows = LightShadows.None;
+            _light.enabled = false;
+            _flickerSeed = Random.Range(0f, 100f);
             model.SetActive(false);
         }
 
@@ -107,6 +118,15 @@ namespace Voxelforge.Gameplay
             float sinceShot = _staff != null ? Time.time - _staff.LastShotTime : float.PositiveInfinity;
             float recoil = recoilAngle * Mathf.Exp(-sinceShot * recoilSettle);
             _pivot.localRotation = Quaternion.AngleAxis(-swing * swingAngle * _swingWeight + recoil, swingAxis);
+
+            if (_light.enabled)
+            {
+                // The same flame wobble as placed torches (PropLights).
+                DecorationLight glow = _shownDefinition.HeldLight;
+                float t = Time.time;
+                float wobble = Mathf.PerlinNoise(t * 6f, _flickerSeed) * 0.7f + Mathf.PerlinNoise(t * 17f, _flickerSeed + 31f) * 0.3f;
+                _light.intensity = glow.intensity * (1f + glow.flicker * (wobble - 0.5f));
+            }
         }
 
         /// <summary>
@@ -128,6 +148,7 @@ namespace Voxelforge.Gameplay
         {
             _shown = held;
             _shownDefinition = null;
+            _light.enabled = false;
             VoxelWorld world = _player != null ? _player.World : null;
             GameObject model = _filter.gameObject;
             if (held == BlockIds.Air || !_hands.Looks.TryGet(held, world != null ? world.Blocks : default, out ItemLook look))
@@ -145,6 +166,16 @@ namespace Voxelforge.Gameplay
                 t.localPosition = look.Definition.HeldPosition;
                 t.localRotation = look.Definition.HeldRotation;
                 t.localScale = Vector3.one * look.Definition.HeldScale;
+                DecorationLight heldLight = look.Definition.HeldLight;
+                if (heldLight.enabled && heldLight.intensity > 0f)
+                {
+                    _light.enabled = true;
+                    _light.color = heldLight.color;
+                    _light.intensity = heldLight.intensity;
+                    // The model is scaled down in the hand; the light's reach shouldn't be.
+                    _light.range = heldLight.range;
+                    _light.transform.localPosition = heldLight.offset;
+                }
             }
             else
             {

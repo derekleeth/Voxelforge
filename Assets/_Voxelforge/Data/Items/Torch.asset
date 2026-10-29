@@ -20,7 +20,16 @@ MonoBehaviour:
   heldRotation: {x: 359.5, y: 323.9, z: 148}
   heldScale: 0.7
   dropSize: 1.6
+  heldLight:
+    enabled: 1
+    color: {r: 1, g: 0.64, b: 0.32, a: 1}
+    intensity: 1.8
+    range: 8
+    offset: {x: 0, y: 0.73, z: 0}
+    flicker: 0.35
   toolPower:
     pick: 0
     axe: 0
     any: 0
+  ability: {fileID: 0}
+  muzzle: {x: 0, y: 0, z: 0}
