@@ -100,7 +100,12 @@ namespace Voxelforge.Gameplay
             player.ServerInitialize(playerId, localSlot, uuid, worldManager, this, spawnColumn, spawnTopY, profile);
             player.NetworkObject.SpawnWithOwnership(ownerClientId, destroyWithScene: true);
             if (profile != null && player.TryGetComponent(out PlayerBlockBag bag))
-                bag.ServerRestore(profile.Bag); // After spawning: the bag's list only syncs once it's on the network.
+            {
+                // After spawning: the bag's list only syncs once it's on the network.
+                List<ItemStack> lost = bag.ServerRestore(profile.Bag, profile.Bags);
+                if (lost.Count > 0)
+                    Debug.LogWarning($"{lost.Count} saved stacks didn't fit in {uuid}'s bag.", this);
+            }
             player.TryGetComponent(out PlayerHearth hearth);
             if (profile != null && hearth != null)
                 hearth.ServerRestore(profile.HasHome, profile.HomeBlock);

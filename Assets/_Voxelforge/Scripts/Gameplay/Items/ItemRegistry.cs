@@ -9,7 +9,7 @@ namespace Voxelforge.Gameplay
     /// unless they want a model when held or dropped (prop blocks such as torches).
     /// </summary>
     [CreateAssetMenu(menuName = "Voxelforge/Item Registry", fileName = "ItemRegistry")]
-    public sealed class ItemRegistry : ScriptableObject
+    public sealed class ItemRegistry : ScriptableObject, IItemRules
     {
         [SerializeField] List<ItemDefinition> items = new List<ItemDefinition>();
 
@@ -40,6 +40,13 @@ namespace Voxelforge.Gameplay
             ability = TryGet(id, out ItemDefinition item) ? item.Ability : null;
             return ability != null;
         }
+
+        public ItemCategory CategoryOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.Category : ItemRules.DefaultCategory(id);
+
+        public int MaxStackOf(ushort id) =>
+            TryGet(id, out ItemDefinition item) ? item.MaxStack : ItemRules.DefaultMaxStack(ItemRules.DefaultCategory(id));
+
+        public int BagSlotsOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.BagSlots : 0;
 
         /// <summary>The item's name: its definition's, else its block's, else "Item 1234".</summary>
         public string DisplayName(ushort id, BlockRegistry blocks)

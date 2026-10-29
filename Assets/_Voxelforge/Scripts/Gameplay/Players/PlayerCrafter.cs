@@ -94,7 +94,7 @@ namespace Voxelforge.Gameplay
             _stacks.Clear();
             for (int i = 0; i < _bag.SlotCount; i++)
                 _stacks.Add(_bag.GetSlot(i));
-            return recipes.Check(index, _stacks, IsNearWorkbench());
+            return recipes.Check(index, _stacks, IsNearWorkbench(), _bag.Rules);
         }
 
         /// <summary>True if a Workbench block is within reach. Only the host knows for sure (a remote PC has no world yet).</summary>

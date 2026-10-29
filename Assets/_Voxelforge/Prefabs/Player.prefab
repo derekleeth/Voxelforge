@@ -206,6 +206,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerBlockBag
   ShowTopMostFoldoutHeaderGroup: 1
+  items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
+  minRequestInterval: 0.05
 --- !u!114 &4898909458440408399
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -22,6 +22,9 @@ namespace Voxelforge.Gameplay
         public VoxelDeltaLog Deltas = new VoxelDeltaLog();
 
         public Dictionary<PlayerUuid, PlayerProfile> Profiles = new Dictionary<PlayerUuid, PlayerProfile>();
+
+        /// <summary>What's in every Storage Chest (Roadmap 4.5), by the chest block's position. Slots in order.</summary>
+        public Dictionary<int3, List<ItemStack>> Chests = new Dictionary<int3, List<ItemStack>>();
     }
 
     public enum WorldLoadResult
@@ -47,8 +50,11 @@ namespace Voxelforge.Gameplay
     /// </summary>
     public static class WorldSaveFile
     {
-        /// <summary>1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). Older saves still load.</summary>
-        public const int FormatVersion = 2;
+        /// <summary>
+        /// 1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). 3: each profile's worn bags, and the Storage
+        /// Chests after the profiles (4.5). Older saves still load.
+        /// </summary>
+        public const int FormatVersion = 3;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -79,16 +85,22 @@ namespace Voxelforge.Gameplay
                     writer.Write(profile.Feet.y);
                     writer.Write(profile.Feet.z);
                     writer.Write(profile.Yaw);
-                    writer.Write(profile.Bag.Count);
-                    foreach (ItemStack stack in profile.Bag)
-                    {
-                        writer.Write(stack.ItemId);
-                        writer.Write(stack.Count);
-                    }
+                    WriteStacks(writer, profile.Bag);
                     writer.Write(profile.HasHome);
                     writer.Write(profile.HomeBlock.x);
                     writer.Write(profile.HomeBlock.y);
                     writer.Write(profile.HomeBlock.z);
+                    for (int i = 0; i < EquippedBags.SocketCount; i++)
+                        writer.Write(profile.Bags[i]);
+                }
+
+                writer.Write(save.Chests.Count);
+                foreach (KeyValuePair<int3, List<ItemStack>> chest in save.Chests)
+                {
+                    writer.Write(chest.Key.x);
+                    writer.Write(chest.Key.y);
+                    writer.Write(chest.Key.z);
+                    WriteStacks(writer, chest.Value);
                 }
                 writer.Write(EndMarker);
             }
@@ -170,18 +182,35 @@ namespace Voxelforge.Gameplay
                         Feet = new float3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
                         Yaw = reader.ReadSingle(),
                     };
-                    int stacks = reader.ReadInt32();
-                    if (stacks < 0 || stacks > ushort.MaxValue)
+                    if (!ReadStacks(reader, profile.Bag))
                         return WorldLoadResult.Corrupt;
-                    for (int s = 0; s < stacks; s++)
-                        profile.Bag.Add(new ItemStack(reader.ReadUInt16(), reader.ReadUInt16()));
                     if (format >= 2)
                     {
                         profile.HasHome = reader.ReadBoolean();
                         profile.HomeBlock = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
                     }
+                    if (format >= 3)
+                    {
+                        for (int i = 0; i < EquippedBags.SocketCount; i++)
+                            profile.Bags[i] = reader.ReadUInt16();
+                    }
                     if (profile.Uuid.IsValid)
                         result.Profiles[profile.Uuid] = profile;
+                }
+
+                if (format >= 3)
+                {
+                    int chestCount = reader.ReadInt32();
+                    if (chestCount < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int c = 0; c < chestCount; c++)
+                    {
+                        var block = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
+                        var slots = new List<ItemStack>();
+                        if (!ReadStacks(reader, slots))
+                            return WorldLoadResult.Corrupt;
+                        result.Chests[block] = slots;
+                    }
                 }
 
                 if (reader.ReadUInt32() != EndMarker)
@@ -194,6 +223,26 @@ namespace Voxelforge.Gameplay
             {
                 return WorldLoadResult.Corrupt;
             }
+        }
+
+        static void WriteStacks(BinaryWriter writer, List<ItemStack> stacks)
+        {
+            writer.Write(stacks.Count);
+            foreach (ItemStack stack in stacks)
+            {
+                writer.Write(stack.ItemId);
+                writer.Write(stack.Count);
+            }
+        }
+
+        static bool ReadStacks(BinaryReader reader, List<ItemStack> stacks)
+        {
+            int count = reader.ReadInt32();
+            if (count < 0 || count > ushort.MaxValue)
+                return false;
+            for (int s = 0; s < count; s++)
+                stacks.Add(new ItemStack(reader.ReadUInt16(), reader.ReadUInt16()));
+            return true;
         }
 
         public static WorldLoadResult ReadFile(string path, out WorldSave save)

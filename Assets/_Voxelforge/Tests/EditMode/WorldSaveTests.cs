@@ -145,9 +145,13 @@ namespace Voxelforge.Tests
             p1.Bag.Add(new ItemStack(BlockIds.Dirt, 12));
             p1.Bag.Add(new ItemStack(BlockIds.Stone, 0)); // Empty slots keep their place.
             p1.Bag.Add(new ItemStack(BlockIds.Log, 4));
+            p1.Bags[0] = 1010;
+            p1.Bags[2] = 1012;
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
+            save.Chests[new int3(10, 64, -3)] = new List<ItemStack> { new ItemStack(BlockIds.Dirt, 999), ItemStack.Empty, new ItemStack(1001, 1) };
+            save.Chests[new int3(-200, 12, 7)] = new List<ItemStack>();
             return save;
         }
 
@@ -183,6 +187,14 @@ namespace Voxelforge.Tests
                 Assert.AreEqual(want.Feet, got.Feet);
                 Assert.AreEqual(want.Yaw, got.Yaw);
                 CollectionAssert.AreEqual(want.Bag, got.Bag, "Bag slots come back in the same order.");
+                Assert.AreEqual(want.Bags, got.Bags, "Worn bags (v3).");
+            }
+
+            Assert.AreEqual(save.Chests.Count, loaded.Chests.Count);
+            foreach (KeyValuePair<int3, List<ItemStack>> chest in save.Chests)
+            {
+                Assert.IsTrue(loaded.Chests.TryGetValue(chest.Key, out List<ItemStack> slots), $"Chest at {chest.Key}.");
+                CollectionAssert.AreEqual(chest.Value, slots);
             }
         }
 
@@ -263,24 +275,44 @@ namespace Voxelforge.Tests
         // ---- Bag and identities ----
 
         [Test]
-        public void BlockStacks_Restore_KeepsSlotOrder_MergesRepeats_AndCaps()
+        public void Version2Save_StillLoads_WithNoWornBagsOrChests()
         {
-            var stacks = new ItemStacks();
-            stacks.Add(BlockIds.Stone, 50, out _);
-            stacks.Restore(new[]
-            {
-                new ItemStack(BlockIds.Log, 4),
-                new ItemStack(BlockIds.Dirt, 0),
-                new ItemStack(BlockIds.Log, 3),
-                new ItemStack(BlockIds.Snow, 2000),
-            });
+            // A v2 body is a v3 body without the 8 bytes of worn bags per profile and without the chest count.
+            WorldSave save = SampleSave();
+            foreach (PlayerProfile profile in save.Profiles.Values)
+                profile.Bags = default;
+            save.Chests.Clear();
+            byte[] v3 = WorldSaveFile.EncodeBody(save);
 
-            Assert.AreEqual(3, stacks.Stacks.Count, "The old contents are gone and the repeated Log merged.");
-            Assert.AreEqual(new ItemStack(BlockIds.Log, 7), stacks.Stacks[0]);
-            Assert.AreEqual(new ItemStack(BlockIds.Dirt, 0), stacks.Stacks[1]);
-            Assert.AreEqual(ItemStacks.MaxPerItem, stacks.CountOf(BlockIds.Snow));
-            Assert.AreEqual(0, stacks.CountOf(BlockIds.Stone));
+            var body = new List<byte>(v3);
+            body.RemoveRange(body.Count - 8, 4); // The chest count (0), just before the end marker.
+            int end = body.Count - 4;
+            // Each profile ends with 4 ushorts of bags (all 0); cut them from the last profile backwards.
+            int cut = end;
+            var profiles = new List<PlayerProfile>(save.Profiles.Values);
+            for (int p = profiles.Count - 1; p >= 0; p--)
+            {
+                body.RemoveRange(cut - 8, 8);
+                cut -= 8 + ProfileBytesWithoutBags(profiles[p]);
+            }
+
+            using var memory = new MemoryStream();
+            memory.Write(new[] { (byte)'V', (byte)'F', (byte)'S', (byte)'V' }, 0, 4);
+            memory.Write(BitConverter.GetBytes(2), 0, 4);
+            using (var gzip = new System.IO.Compression.GZipStream(memory, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+                gzip.Write(body.ToArray(), 0, body.Count);
+            memory.Position = 0;
+
+            Assert.AreEqual(WorldLoadResult.Loaded, WorldSaveFile.Read(memory, out WorldSave loaded));
+            Assert.AreEqual(2, loaded.Profiles.Count);
+            Assert.AreEqual(0, loaded.Chests.Count);
+            foreach (PlayerProfile want in save.Profiles.Values)
+                CollectionAssert.AreEqual(want.Bag, loaded.Profiles[want.Uuid].Bag);
         }
+
+        // UUID 16, name (length byte + UTF-8), feet 12, yaw 4, bag count 4 + 4 per slot, home 1 + 12.
+        static int ProfileBytesWithoutBags(PlayerProfile profile) =>
+            16 + 1 + System.Text.Encoding.UTF8.GetByteCount(profile.Name) + 12 + 4 + 4 + 4 * profile.Bag.Count + 13;
 
         [Test]
         public void LocalPlayerIdentities_AreStablePerSlot_AndSurviveARestart()

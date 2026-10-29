@@ -22,8 +22,11 @@ namespace Voxelforge.Gameplay
         /// <summary>The way they faced, in degrees.</summary>
         public float Yaw;
 
-        /// <summary>The bag's slots in order, including empty ones, so the block picker order stays the same.</summary>
+        /// <summary>The bag's slots in order, including empty ones, so everything stays where the player put it.</summary>
         public List<ItemStack> Bag = new List<ItemStack>();
+
+        /// <summary>The bags they wear (Roadmap 4.5), which give the extra slots in <see cref="Bag"/>.</summary>
+        public EquippedBags Bags;
 
         /// <summary>True if they've placed a Home Totem (Roadmap 3.8) at <see cref="HomeBlock"/>.</summary>
         public bool HasHome;
@@ -38,6 +41,7 @@ namespace Voxelforge.Gameplay
             Feet = Feet,
             Yaw = Yaw,
             Bag = new List<ItemStack>(Bag),
+            Bags = Bags,
             HasHome = HasHome,
             HomeBlock = HomeBlock,
         };

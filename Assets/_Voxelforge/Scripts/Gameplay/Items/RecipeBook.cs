@@ -15,7 +15,7 @@ namespace Voxelforge.Gameplay
         MissingInputs,
         /// <summary>The recipe needs a workbench and none is in reach.</summary>
         NeedsWorkbench,
-        /// <summary>The bag already holds as many of the output as it can.</summary>
+        /// <summary>The output wouldn't fit in the bag.</summary>
         BagFull,
     }
 
@@ -37,8 +37,13 @@ namespace Voxelforge.Gameplay
             return recipe != null;
         }
 
-        /// <summary>Can <paramref name="bag"/> craft recipe <paramref name="index"/>? Doesn't change anything.</summary>
-        public CraftCheck Check(int index, IReadOnlyList<ItemStack> bag, bool nearWorkbench)
+        // A scratch bag to try the exchange in, so the check knows about slots and stack sizes (Roadmap 4.5).
+        [System.NonSerialized] ItemStacks _trial;
+        readonly List<int> _trialChanged = new List<int>();
+
+        /// <summary>Can <paramref name="bag"/> (its slots) craft recipe <paramref name="index"/>? Doesn't change anything.</summary>
+        /// <param name="rules">Stack sizes; null for the defaults.</param>
+        public CraftCheck Check(int index, IReadOnlyList<ItemStack> bag, bool nearWorkbench, IItemRules rules = null)
         {
             if (!TryGet(index, out RecipeDefinition recipe))
                 return CraftCheck.UnknownRecipe;
@@ -48,13 +53,14 @@ namespace Voxelforge.Gameplay
             IReadOnlyList<ItemStack> inputs = recipe.InputStacks();
             for (int i = 0; i < inputs.Count; i++)
             {
-                if (CountOf(bag, inputs[i].ItemId) < TotalOf(inputs, inputs[i].ItemId))
+                if (ItemStacks.CountOf(bag, inputs[i].ItemId) < TotalOf(inputs, inputs[i].ItemId))
                     return CraftCheck.MissingInputs;
             }
-            ItemStack output = recipe.Output.ToStack();
-            if (CountOf(bag, output.ItemId) - TotalOf(inputs, output.ItemId) + output.Count > ItemStacks.MaxPerItem)
-                return CraftCheck.BagFull;
-            return CraftCheck.Ok;
+            rules ??= ItemRules.Default;
+            if (_trial == null || _trial.Rules != rules)
+                _trial = new ItemStacks(0, rules);
+            _trial.CopyFrom(bag);
+            return _trial.TryExchange(inputs, recipe.Output.ToStack(), _trialChanged) ? CraftCheck.Ok : CraftCheck.BagFull;
         }
 
         /// <summary>
@@ -100,16 +106,6 @@ namespace Voxelforge.Gameplay
                 }
             }
             return errors;
-        }
-
-        static int CountOf(IReadOnlyList<ItemStack> stacks, ushort itemId)
-        {
-            for (int i = 0; i < stacks.Count; i++)
-            {
-                if (stacks[i].ItemId == itemId)
-                    return stacks[i].Count;
-            }
-            return 0;
         }
 
         static int TotalOf(IReadOnlyList<ItemStack> stacks, ushort itemId)

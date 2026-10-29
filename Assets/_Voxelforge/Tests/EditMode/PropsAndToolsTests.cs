@@ -160,9 +160,9 @@ namespace Voxelforge.Tests
         [Test]
         public void Exchange_IsAllOrNothing()
         {
-            var bag = new ItemStacks();
-            bag.Add(BlockIds.Log, 3, out _);
-            bag.Add(BlockIds.Stone, 2, out _);
+            var bag = new ItemStacks(PlayerBlockBag.BaseSlots);
+            bag.Add(BlockIds.Log, 3);
+            bag.Add(BlockIds.Stone, 2);
             var changed = new List<int>();
             var inputs = new[] { new ItemStack(BlockIds.Log, 2), new ItemStack(BlockIds.Stone, 3) };
 
@@ -170,24 +170,32 @@ namespace Voxelforge.Tests
             Assert.AreEqual(3, bag.CountOf(BlockIds.Log), "Nothing was taken.");
             Assert.AreEqual(0, changed.Count);
 
-            bag.Add(BlockIds.Stone, 1, out _);
+            bag.Add(BlockIds.Stone, 1);
             Assert.IsTrue(bag.TryExchange(inputs, new ItemStack(ItemIds.StonePickaxe, 1), changed));
             Assert.AreEqual(1, bag.CountOf(BlockIds.Log));
             Assert.AreEqual(0, bag.CountOf(BlockIds.Stone));
             Assert.AreEqual(1, bag.CountOf(ItemIds.StonePickaxe));
-            CollectionAssert.AreEquivalent(new[] { 0, 1, 2 }, changed, "Both inputs and the new pickaxe slot.");
+            CollectionAssert.AreEquivalent(new[] { 0, 1 }, changed, "Log went down; Stone's emptied slot took the pickaxe.");
+            Assert.AreEqual(new ItemStack(ItemIds.StonePickaxe, 1), bag.Stacks[1]);
         }
 
         [Test]
         public void Exchange_RefusesAnOutputThatWontFit()
         {
-            var bag = new ItemStacks();
-            bag.Add(BlockIds.Log, 1, out _);
-            bag.Add(BlockIds.Torch, ItemStacks.MaxPerItem - 2, out _);
+            // Two slots: Log, and Torches 2 short of a full stack. Crafting 4 torches frees nothing (1 Log stays).
+            var bag = new ItemStacks(2);
+            bag.Add(BlockIds.Log, 2);
+            bag.Add(BlockIds.Torch, ItemRules.BigStack - 2);
             var changed = new List<int>();
 
             Assert.IsFalse(bag.TryExchange(new[] { new ItemStack(BlockIds.Log, 1) }, new ItemStack(BlockIds.Torch, 4), changed));
-            Assert.AreEqual(1, bag.CountOf(BlockIds.Log));
+            Assert.AreEqual(2, bag.CountOf(BlockIds.Log), "Nothing was taken.");
+            Assert.AreEqual(ItemRules.BigStack - 2, bag.CountOf(BlockIds.Torch));
+            Assert.AreEqual(0, changed.Count);
+
+            Assert.IsTrue(bag.TryExchange(new[] { new ItemStack(BlockIds.Log, 2) }, new ItemStack(BlockIds.Torch, 4), changed),
+                "Using up the Log frees its slot for the 2 torches that don't fit on the stack.");
+            Assert.AreEqual(ItemRules.BigStack + 2, bag.CountOf(BlockIds.Torch));
         }
 
         [Test]

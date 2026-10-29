@@ -5,8 +5,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Which item from the bag a player holds (Roadmap 3.3, D-016; tools since 3.5): a block to build with or a tool to
-    /// mine with. It steps through the bag's non-empty
-    /// stacks in slot order. Slots never move (<see cref="ItemStacks"/>), so the order stays put as counts change.
+    /// mine with. It steps through the different items in the bag in slot order, once per item even when it fills
+    /// several slots (Roadmap 4.5).
     /// <see cref="BlockIds.Air"/> means nothing is selected. Plain C# so tests can drive it.
     /// </summary>
     public static class ItemSelection
@@ -17,10 +17,27 @@ namespace Voxelforge.Gameplay
         /// </summary>
         public static ushort Fix(IReadOnlyList<ItemStack> stacks, ushort current)
         {
+            int slot = -1;
+            return Fix(stacks, current, ref slot);
+        }
+
+        /// <summary>
+        /// <see cref="Fix(IReadOnlyList{ItemStack}, ushort)"/> that remembers where the held item was in
+        /// <paramref name="slot"/>: an emptied slot forgets its item (Roadmap 4.5), so this is how running out moves on to
+        /// the next item along rather than back to the first.
+        /// </summary>
+        public static ushort Fix(IReadOnlyList<ItemStack> stacks, ushort current, ref int slot)
+        {
             int index = IndexOf(stacks, current);
-            if (index >= 0 && stacks[index].Count > 0)
+            if (index >= 0)
+            {
+                slot = index;
                 return current;
-            return Step(stacks, index, +1);
+            }
+            int from = slot >= 0 && slot < stacks.Count ? slot : IndexOfAny(stacks, current);
+            ushort next = Step(stacks, from, +1);
+            slot = IndexOf(stacks, next);
+            return next;
         }
 
         /// <summary>The next item in the bag after <paramref name="current"/>, wrapping round.</summary>
@@ -40,17 +57,29 @@ namespace Voxelforge.Gameplay
             for (int i = 1; i <= count; i++)
             {
                 int index = ((from + direction * i) % count + count) % count;
-                if (stacks[index].Count > 0)
+                if (!stacks[index].IsEmpty && IndexOf(stacks, stacks[index].ItemId) == index)
                     return stacks[index].ItemId;
             }
             return BlockIds.Air;
         }
 
-        static int IndexOf(IReadOnlyList<ItemStack> stacks, ushort itemId)
+        // Any slot naming it, even an empty one.
+        static int IndexOfAny(IReadOnlyList<ItemStack> stacks, ushort itemId)
         {
             for (int i = 0; i < stacks.Count; i++)
             {
-                if (stacks[i].ItemId == itemId)
+                if (stacks[i].ItemId == itemId && itemId != 0)
+                    return i;
+            }
+            return -1;
+        }
+
+        static int IndexOf(IReadOnlyList<ItemStack> stacks, ushort itemId)
+        {
+            // The first non-empty slot holding it.
+            for (int i = 0; i < stacks.Count; i++)
+            {
+                if (stacks[i].ItemId == itemId && !stacks[i].IsEmpty)
                     return i;
             }
             return -1;

@@ -34,6 +34,7 @@ namespace Voxelforge.Gameplay
 
         // Owner state.
         ushort _selected;
+        int _selectedSlot = -1; // Where it was, so running out moves on to the next item (Roadmap 4.5).
         PlayerButtons _previousButtons;
 
         /// <summary>Owner only: the item picked from the bag, or <see cref="BlockIds.Air"/> when the bag is empty.</summary>
@@ -90,7 +91,7 @@ namespace Voxelforge.Gameplay
             _stacks.Clear();
             for (int i = 0; i < _bag.SlotCount; i++)
                 _stacks.Add(_bag.GetSlot(i));
-            _selected = ItemSelection.Fix(_stacks, _selected);
+            _selected = ItemSelection.Fix(_stacks, _selected, ref _selectedSlot);
             // The crafting window uses the same buttons to choose a recipe.
             if (_crafter != null && _crafter.IsMenuOpen)
                 return;

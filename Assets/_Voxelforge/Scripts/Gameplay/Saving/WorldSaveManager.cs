@@ -55,6 +55,8 @@ namespace Voxelforge.Gameplay
         const float ProfileRefreshSeconds = 1f;
 
         Dictionary<PlayerUuid, PlayerProfile> _profiles = new Dictionary<PlayerUuid, PlayerProfile>();
+        // Storage Chest contents (Roadmap 4.5), carried through until the chest service owns them.
+        Dictionary<int3, List<ItemStack>> _chests = new Dictionary<int3, List<ItemStack>>();
         string _path;
         string _blockedReason;
         Task<(long bytes, double ms)> _writeTask;
@@ -182,6 +184,7 @@ namespace Voxelforge.Gameplay
 
             world.UseSavedWorld(save.Seed, save.Deltas);
             _profiles = save.Profiles;
+            _chests = save.Chests;
             LoadedFromSave = true;
             LoadMilliseconds = timer.Elapsed.TotalMilliseconds;
             if (save.GeneratorVersion < TerrainSampler.GeneratorVersion)
@@ -272,6 +275,7 @@ namespace Voxelforge.Gameplay
                 SavedUtc = DateTime.UtcNow,
                 Deltas = world.DeltaLog,
                 Profiles = _profiles,
+                Chests = _chests,
             });
             _encodeMs = timer.Elapsed.TotalMilliseconds;
 
@@ -328,7 +332,10 @@ namespace Voxelforge.Gameplay
                 profile.Feet = feet;
                 profile.Yaw = yaw;
                 if (player.TryGetComponent(out PlayerBlockBag bag))
+                {
                     profile.Bag = bag.ServerSnapshot();
+                    profile.Bags = bag.Bags;
+                }
                 if (player.TryGetComponent(out PlayerHearth hearth))
                 {
                     profile.HasHome = hearth.HasHome;

@@ -183,8 +183,8 @@ namespace Voxelforge.Tests
                 };
                 Assert.AreEqual(CraftCheck.NeedsWorkbench, book.Check(0, bag, nearWorkbench: false));
                 Assert.AreEqual(CraftCheck.Ok, book.Check(0, bag, nearWorkbench: true));
-                var stacks = new ItemStacks();
-                stacks.Restore(bag);
+                var stacks = new ItemStacks(0);
+                stacks.Restore(bag, bag.Count);
                 Assert.IsTrue(stacks.TryExchange(recipe.InputStacks(), recipe.Output.ToStack(), new List<int>()));
                 Assert.AreEqual(1, stacks.CountOf(ItemIds.Mgrs));
                 Assert.AreEqual(0, stacks.CountOf(BlockIds.ManaCrystalOre));

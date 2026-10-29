@@ -17,6 +17,16 @@ namespace Voxelforge.Gameplay
 
         [SerializeField] string displayName;
 
+        [Header("Inventory")]
+        [Tooltip("Which inventory tab it sorts into (Roadmap 4.5). Auto: blocks are Blocks, everything else Gear.")]
+        [SerializeField] ItemCategory category;
+
+        [Tooltip("How many fit in one bag slot. 0 = the category's usual (999 blocks and materials, 20 consumables, 1 gear).")]
+        [SerializeField, Min(0)] int maxStack;
+
+        [Tooltip("Slots it adds when worn as a bag (Roadmap 4.5). 0 = not a bag.")]
+        [SerializeField, Range(0, 32)] int bagSlots;
+
         [Header("Look")]
         [Tooltip("The model. Its origin is where the hand grips it (tools) or its bottom centre (props); +Y is up.")]
         [SerializeField] Mesh mesh;
@@ -58,6 +68,13 @@ namespace Voxelforge.Gameplay
         public float DropSize => dropSize;
         public DecorationLight HeldLight => heldLight;
 
+        public ItemCategory Category => category == ItemCategory.Auto ? ItemRules.DefaultCategory(id) : category;
+        public int MaxStack => maxStack > 0 ? maxStack : ItemRules.DefaultMaxStack(Category);
+        public int BagSlots => bagSlots;
+
+        /// <summary>True if it can be worn in a bag socket.</summary>
+        public bool IsBag => bagSlots > 0;
+
         /// <summary>True if any of its multipliers is set.</summary>
         public bool IsTool => toolPower.pick > 0f || toolPower.axe > 0f || toolPower.any > 0f;
 
@@ -74,7 +91,7 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default,
-            AbilityDefinition ability = null)
+            AbilityDefinition ability = null, ItemCategory category = ItemCategory.Auto, int maxStack = 0, int bagSlots = 0)
         {
             var definition = CreateInstance<ItemDefinition>();
             definition.name = displayName;
@@ -82,6 +99,9 @@ namespace Voxelforge.Gameplay
             definition.displayName = displayName;
             definition.toolPower = toolPower;
             definition.ability = ability;
+            definition.category = category;
+            definition.maxStack = maxStack;
+            definition.bagSlots = bagSlots;
             return definition;
         }
     }
