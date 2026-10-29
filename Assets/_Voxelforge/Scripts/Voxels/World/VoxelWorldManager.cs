@@ -89,6 +89,9 @@ namespace Voxelforge.Voxels
         /// <summary>Host only: raised for every block that changes, e.g. for drops (3.2) or sending edits to clients (6.3).</summary>
         public event System.Action<VoxelEdit> EditApplied;
 
+        /// <summary>Host only: raised each time a block is mined without breaking yet, e.g. for mining sounds (3.9).</summary>
+        public event System.Action<VoxelHitDamage> BlockDamaged;
+
         /// <summary>Host only: how far blocks have been mined (Roadmap 3.2).</summary>
         public BlockDamageMap Damage => _editor?.Damage;
 
@@ -149,6 +152,7 @@ namespace Voxelforge.Voxels
             _editor = new VoxelWorldEditor(_world, _savedDeltas ?? new VoxelDeltaLog(), _scheduler);
             _savedDeltas = null;
             _editor.EditApplied += edit => EditApplied?.Invoke(edit);
+            _editor.BlockDamaged += damage => BlockDamaged?.Invoke(damage);
             _generator.DeltaLog = _editor.DeltaLog;
             if (crackMaterial != null)
                 _crackRenderer = new BlockCrackRenderer(crackMaterial);

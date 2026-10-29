@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20388b3c8d6a98b44bd0c31ce5239ae3, type: 3}
+  m_Name: Wood
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.SurfaceSound
+  steps:
+  - {fileID: 8300000, guid: de9796b8dc0366c44800e14e598f9699, type: 3}
+  - {fileID: 8300000, guid: 00db9fc9502f79e4b91b9aecf67576ff, type: 3}
+  - {fileID: 8300000, guid: 875a6cff23dc1c148b9a122b1fd7b0d6, type: 3}
+  - {fileID: 8300000, guid: 9873b4c6b21a5fe4b8035f075c11fecd, type: 3}
+  hits:
+  - {fileID: 8300000, guid: 538fa5cc50f95be4e95f03725b0d846a, type: 3}
+  - {fileID: 8300000, guid: e1c59ce7b3db1724f9e4272832ecbd20, type: 3}
+  - {fileID: 8300000, guid: 5d4632efe803e1a4f9295bbd03737210, type: 3}
+  breaks:
+  - {fileID: 8300000, guid: 99e2f9fe0deba894d89b265932807a25, type: 3}
+  - {fileID: 8300000, guid: 242efa3b7f2fa454f98ba010ddd078d6, type: 3}
+  places:
+  - {fileID: 8300000, guid: 336e9938983f10244a045b3620137381, type: 3}
+  hitExtras: []
+  breakExtras: []
+  volume: 1
+  pitchJitter: 0.08
+  hitPitchFirst: 0.85
+  hitPitchLast: 1.3

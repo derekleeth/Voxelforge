@@ -57,6 +57,9 @@ namespace Voxelforge.Gameplay
         /// <summary>Host only: drops lying in the world right now.</summary>
         public int DropCount => _drops.Count;
 
+        /// <summary>Host only: a drop went into a bag here (block ID, how many), e.g. for a pop sound (Roadmap 3.9).</summary>
+        public event System.Action<float3, ushort, int> PickedUp;
+
         bool IsServer => networkManager != null && networkManager.IsServer;
 
         void OnEnable()
@@ -152,6 +155,8 @@ namespace Voxelforge.Gameplay
             }
 
             int added = nearestBag.ServerAdd(drop.BlockId, drop.Count);
+            if (added > 0)
+                PickedUp?.Invoke(nearestMiddle, drop.BlockId, added);
             if (added >= drop.Count)
                 return true;
             if (added > 0)

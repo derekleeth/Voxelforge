@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20388b3c8d6a98b44bd0c31ce5239ae3, type: 3}
+  m_Name: Snow
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.SurfaceSound
+  steps:
+  - {fileID: 8300000, guid: c18a0bc6c69fdd6419e63c415dee2a8b, type: 3}
+  - {fileID: 8300000, guid: fcfed8d7a6433e54eb8a40ce1aeace05, type: 3}
+  - {fileID: 8300000, guid: 395f59acc2679114e95fe7e661f960fb, type: 3}
+  - {fileID: 8300000, guid: cb1d85913415e7147b66e9a36f0129fa, type: 3}
+  hits:
+  - {fileID: 8300000, guid: 73fc4e2b004f8e04691cd15b5f5704a5, type: 3}
+  - {fileID: 8300000, guid: 13eb679b578c8ca41865cea5acdb8e4d, type: 3}
+  - {fileID: 8300000, guid: d9a19d6f032891343ad289f12a429718, type: 3}
+  breaks:
+  - {fileID: 8300000, guid: 6d402cd64e71d094a8ca3494e95bd7e1, type: 3}
+  - {fileID: 8300000, guid: b0f6b8018c1c5e146843c5170f8cbf82, type: 3}
+  places:
+  - {fileID: 8300000, guid: 419e07e3e1fa357429a3524449c1898d, type: 3}
+  hitExtras: []
+  breakExtras: []
+  volume: 1
+  pitchJitter: 0.08
+  hitPitchFirst: 0.9
+  hitPitchLast: 1.25

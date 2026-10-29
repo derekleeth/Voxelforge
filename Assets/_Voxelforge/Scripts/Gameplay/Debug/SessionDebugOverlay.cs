@@ -31,6 +31,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Optional: F5 saves the world, and the overlay shows the save.")]
         [SerializeField] WorldSaveManager saves;
 
+        [Tooltip("Optional: shows how many sounds are playing (Roadmap 3.9).")]
+        [SerializeField] SoundRouter sounds;
+
         [SerializeField] bool visible = true;
 
         [Tooltip("How many seconds of frames the average and 1% low FPS cover.")]
@@ -235,6 +238,8 @@ namespace Voxelforge.Gameplay
                 _text.Append($"   being mined: {world.Damage.Count}");
             if (drops != null)
                 _text.Append($"   drops: {drops.DropCount}");
+            if (sounds != null)
+                _text.Append($"\nsounds: {sounds.ActiveVoices} + {sounds.ActiveLoops} loops / {sounds.VoiceCount} voices");
             if (saves != null)
                 _text.Append($"\n{saves.Describe()}");
         }

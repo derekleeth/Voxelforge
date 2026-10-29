@@ -35,10 +35,31 @@ namespace Voxelforge.Gameplay
         [Tooltip("How quickly IK weight and pelvis height follow their targets (per second).")]
         [SerializeField, Min(0f)] float smoothing = 15f;
 
+        [Header("Footsteps (Roadmap 3.9)")]
+        [Tooltip("A foot the animation lifts higher than this, in meters, is mid-stride...")]
+        [SerializeField, Min(0.01f)] float stepLiftHeight = 0.08f;
+
+        [Tooltip("...and when it comes back down under this, it's a footstep.")]
+        [SerializeField, Min(0f)] float stepPlantHeight = 0.03f;
+
+        [Tooltip("No footsteps below this ground speed, in m/s.")]
+        [SerializeField, Min(0f)] float stepMinSpeed = 0.4f;
+
         Animator _animator;
         HeroAnimator _heroAnimator;
         float _weight;
         float _pelvisOffset;
+        bool _leftLifted;
+        bool _rightLifted;
+
+        /// <summary>
+        /// Footsteps taken so far, counted on every PC from the animation, so <see cref="PlayerFoley"/> can tell a new one
+        /// happened (Roadmap 3.9). Polled rather than an event, so nothing has to unsubscribe.
+        /// </summary>
+        public int StepCount { get; private set; }
+
+        /// <summary>Where the last footstep landed: the foot, at the height of the ground the hero stands on.</summary>
+        public float3 LastStepPosition { get; private set; }
 
         void Awake()
         {
@@ -59,6 +80,10 @@ namespace Voxelforge.Gameplay
             float3 root = transform.position;
             float3 left = _animator.GetIKPosition(AvatarIKGoal.LeftFoot);
             float3 right = _animator.GetIKPosition(AvatarIKGoal.RightFoot);
+            bool walking = player != null && player.Grounded && speed >= stepMinSpeed;
+            CountStep(root, left, walking, ref _leftLifted);
+            CountStep(root, right, walking, ref _rightLifted);
+
             float leftWeight = 0f, rightWeight = 0f;
             float lowest = 0f;
             if (_weight > 0.001f)
@@ -73,6 +98,24 @@ namespace Voxelforge.Gameplay
 
             SetGoal(AvatarIKGoal.LeftFoot, left, leftWeight * _weight);
             SetGoal(AvatarIKGoal.RightFoot, right, rightWeight * _weight);
+        }
+
+        /// <summary>Counts a footstep when the animation puts a lifted foot back down. Needs no blocks.</summary>
+        void CountStep(float3 root, float3 foot, bool walking, ref bool lifted)
+        {
+            float lift = foot.y - (root.y + footHeight);
+            if (lift > stepLiftHeight)
+            {
+                lifted = true;
+                return;
+            }
+            if (!lifted || lift > stepPlantHeight)
+                return;
+            lifted = false;
+            if (!walking)
+                return;
+            StepCount++;
+            LastStepPosition = new float3(foot.x, root.y, foot.z);
         }
 
         /// <summary>Moves one foot onto the ground and returns how firmly to plant it (0-1).</summary>

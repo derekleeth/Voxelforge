@@ -5,6 +5,32 @@
 
 ---
 
+## D-022: Split-Screen Sound and Voxel Foley
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested 2026-10-28)
+
+### Decisions
+- **One mixer that hears through every local player (`SoundRouter`, scene component, not a singleton).** Unity allows one `AudioListener`, so per-player listeners are out (deferred in D-009). Instead every sound is a **2D** pooled `AudioSource` (`spatialBlend = 0`, 32 voices) and the router does the 3D part itself:
+  - **Ears:** one per local player with a view (`LocalPlayerManager.TryGetLocalPlayer` + `SplitScreenDirector.TryGetView`): the hero's `VisualRoot` + 1.6 m, turned like that view's camera. No `Camera.main` or player 0 (Law #1).
+  - **Loudness:** the loudest ear wins: full inside 2 m, then `(1 - t)²` to silence at the cue's max distance (`SoundMath.Gain`). A torch next to Player 2 is loud however far away Player 1 is.
+  - **Left/right:** from the loudest ear, inside **that player's part of the screen** (`SoundMath.RegionFor`): the whole stereo field for a full-screen or merged view, the left or right half in Classic (from `ScreenRect`), and in the Voronoi split a half centred at `VoronoiSide × VoronoiNormal.x × 0.5`. Then `pan = centre + halfWidth × dot(direction, camera right)`.
+  - Voices keep their world position and are **re-mixed every `LateUpdate`** (order 100, after the director), so loops and moving players stay right. When full, a new sound replaces the quietest one-off if it's louder; loops are never replaced.
+  - `SfxVolume` / `AmbienceVolume` are ready for the 6.3 settings sliders. The director's `AudioListener` stays only because Unity needs one; its position no longer matters.
+- **Data-driven sounds (`SoundBook`, `SurfaceSound`, in Gameplay).** `AudioClip`s stay out of the Voxels assembly, so `BlockDefinition` doesn't change. A `SurfaceSound` has steps, hits, breaks, places, optional layered extras (the Mana Crystal's chime and chord) and the hit pitch at the first and last crack stage. 7 surfaces: Stone (Stone, Red Rock, Sandstone), Dirt, Grass (the default, for blocks not listed and PCs without blocks), Sand, Snow, Wood (Tree Trunk, Log, Torch, Workbench, Home Totem), Crystal (stone + bells). Landing reuses steps, lower and louder.
+- **Who plays what:**
+  - **`WorldFoley` (host):** listens to `VoxelWorldManager.EditApplied` and a new `BlockDamaged` event (`VoxelHitDamage`: block, crack stage, instigator). Hits: at most one per block every 0.22 s, but always on a new crack stage, pitch rising across the 8 stages. Breaks: at most 3 per frame. **Tree falls:** ≥2 trunk blocks cleared in one frame = one creak at the trunk's middle + a leaf rustle at the top, and the rest of the trunk's breaks are muted. Pickups from a new `BlockDropSpawner.PickedUp` event. Remote PCs don't see blocks until Phase 6, so they don't hear these yet.
+  - **`PlayerFoley` (every PC):** follows every hero through new `PlayerController.AnySpawned` / `AnyDespawned` events (raised on every PC, like `BlockDrop.Spawned`). Footsteps from `HeroFootIK.StepCount`, which counts a step when the animation lifts a foot over 0.08 m and puts it back under 0.03 m while walking. It needs no blocks, so remote heroes have footsteps too. Polled, not an event, so nothing has to unsubscribe. At least 0.18 s between one hero's steps. Jump (once the animator sees upward speed), landing (falls of 0.3 s or more, heavier with fall speed). The M.G.R.S. through the existing `ManaBoltView.Fired` / `Impacted`.
+  - **`AmbientLoops`:** like `PropLights`, a fixed number of loops (6) go to the props nearest any ear, re-chosen every 0.2 s. Only decorations listed in `SoundBook.Loops` (both torch models) loop, so the Home Totem is silent.
+- **Sounds made from code (`SfxBuilder`, *Voxelforge > Build Sound Effects*), not recorded or AI-generated:** free, the same every build, and tweakable by numbers, like `build_props.py`. Filtered noise bursts, gliding sine thuds, partials for wooden knocks and stone rings, inharmonic bells for the crystal, a resonated click train for the tree creak. 70 mono 16-bit WAVs (3.2 MB; ADPCM, decompressed on load; the torch loop Vorbis, compressed in memory).
+  - **After play-testing:** footsteps sounded like "cymbals clashing" and torches like "crunchy foil". Fixes: footsteps lost the stone ring (only wood keeps its low knock), became a heel thud + softer toe below ~2.5 kHz, and dropped to volume 0.25; the noise filter got a second low-pass stage (one let too much hiss through); the torch became mostly a breathing low flame roar with ~3 quiet crackles a second and an occasional woody snap, a 6 s loop at volume 0.35.
+
+### Deferred on purpose
+- Recorded footsteps (CC0 packs or our own recordings) if we want more realism: they drop straight into the `SurfaceSound` assets.
+- Block sounds on remote PCs: with the block sync (Phase 6 / 7.2).
+- An `AudioMixer`, music and the volume sliders: 6.3. Occlusion (muffled sounds behind walls): later, if tunnels need it.
+
+---
+
 ## D-021: Home Totems and Hearthing Home
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested 2026-10-28)

@@ -79,10 +79,10 @@ namespace Voxelforge.Gameplay
         MaterialPropertyBlock _block;
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
-        /// <summary>Every PC: a bolt left the muzzle here. For the 3.7 audio router.</summary>
+        /// <summary>Every PC: a bolt left the muzzle here. For the audio router (<see cref="PlayerFoley"/>, 3.9).</summary>
         public event Action<Vector3> Fired;
 
-        /// <summary>Every PC: a bolt hit a block (true) or fizzled (false) here. For the 3.7 audio router.</summary>
+        /// <summary>Every PC: a bolt hit a block (true) or fizzled (false) here. For the audio router (<see cref="PlayerFoley"/>, 3.9).</summary>
         public event Action<Vector3, bool> Impacted;
 
         void Awake()

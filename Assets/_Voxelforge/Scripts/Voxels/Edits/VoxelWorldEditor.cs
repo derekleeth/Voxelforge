@@ -21,6 +21,24 @@ namespace Voxelforge.Voxels
         }
     }
 
+    /// <summary>One block worn down by mining without breaking, and who did it.</summary>
+    public readonly struct VoxelHitDamage
+    {
+        public readonly int3 Coord;
+        public readonly ushort BlockId;
+        /// <summary>The crack stage it shows now (<see cref="BlockCrackRenderer.StageFor"/>).</summary>
+        public readonly int CrackStage;
+        public readonly PlayerId Instigator;
+
+        public VoxelHitDamage(int3 coord, ushort blockId, int crackStage, PlayerId instigator)
+        {
+            Coord = coord;
+            BlockId = blockId;
+            CrackStage = crackStage;
+            Instigator = instigator;
+        }
+    }
+
     /// <summary>
     /// The only way blocks change after generation (CLAUDE.md Law #3, Roadmap 3.1, D-014). It checks a request, sets
     /// the block, records it in the <see cref="VoxelDeltaLog"/> and queues the remeshing. Plain C# so tests can drive
@@ -53,6 +71,9 @@ namespace Voxelforge.Voxels
         /// <summary>Raised once for every block that changes, including the rest of a chopped tree trunk.</summary>
         public event Action<VoxelEdit> EditApplied;
 
+        /// <summary>Raised every time a block is mined but doesn't break yet, e.g. for mining sounds (Roadmap 3.9).</summary>
+        public event Action<VoxelHitDamage> BlockDamaged;
+
         /// <summary>
         /// Mines the block at <paramref name="coord"/> by <paramref name="amount"/> on behalf of
         /// <paramref name="instigator"/>. Once its damage reaches <see cref="BlockInfo.MaxDurability"/> it breaks:
@@ -74,8 +95,12 @@ namespace Voxelforge.Voxels
             if (block.MaxDurability == 0)
                 return VoxelDamageResult.Unbreakable;
 
-            if (Damage.Add(coord, amount, time) < block.MaxDurability)
+            float damage = Damage.Add(coord, amount, time);
+            if (damage < block.MaxDurability)
+            {
+                BlockDamaged?.Invoke(new VoxelHitDamage(coord, block.Id, BlockCrackRenderer.StageFor(damage, block.MaxDurability), instigator));
                 return VoxelDamageResult.Damaged;
+            }
 
             RequestModifyVoxel(coord, BlockIds.Air, instigator); // Its Apply forgets the damage.
             return VoxelDamageResult.Broken;

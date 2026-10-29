@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20388b3c8d6a98b44bd0c31ce5239ae3, type: 3}
+  m_Name: Grass
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.SurfaceSound
+  steps:
+  - {fileID: 8300000, guid: 03768acf46de2774d85ccff51e63dfd2, type: 3}
+  - {fileID: 8300000, guid: afed57b54908bd1429da1e5a650d2d54, type: 3}
+  - {fileID: 8300000, guid: afc011d584efcae44863cc673e4326fb, type: 3}
+  - {fileID: 8300000, guid: b1f48c54f56e22e41bf376c0cc72eb7a, type: 3}
+  hits:
+  - {fileID: 8300000, guid: 1e97a470706d5e34cb04912a5dcb928d, type: 3}
+  - {fileID: 8300000, guid: 1da2d1241552fc145bd2c4e440e80226, type: 3}
+  - {fileID: 8300000, guid: 13148332721c3ae4fba08708c2b74280, type: 3}
+  breaks:
+  - {fileID: 8300000, guid: 64c8bb775b1aa7e44b4bac30997aeb77, type: 3}
+  - {fileID: 8300000, guid: f49fa289dc1ce154b8fb8ea5cf093a92, type: 3}
+  places:
+  - {fileID: 8300000, guid: f726c3d63b103d541b8fc4d40b4708ef, type: 3}
+  hitExtras: []
+  breakExtras: []
+  volume: 1
+  pitchJitter: 0.08
+  hitPitchFirst: 0.85
+  hitPitchLast: 1.2

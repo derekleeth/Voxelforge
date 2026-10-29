@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20388b3c8d6a98b44bd0c31ce5239ae3, type: 3}
+  m_Name: Stone
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.SurfaceSound
+  steps:
+  - {fileID: 8300000, guid: a3a0939ae21e8724aa6e8b4423bea233, type: 3}
+  - {fileID: 8300000, guid: 4ae7d17e49156ba459c0816119260cad, type: 3}
+  - {fileID: 8300000, guid: 0623c5f4c79573c4ebdb3cdffdeabe4f, type: 3}
+  - {fileID: 8300000, guid: 0042de554d90e834180686d0a46ccd6e, type: 3}
+  hits:
+  - {fileID: 8300000, guid: cc43206a13cfbc14fac937fc4a010afa, type: 3}
+  - {fileID: 8300000, guid: d84e6dc4803d28244a87c2da9eb67bf8, type: 3}
+  - {fileID: 8300000, guid: 0e38751c0546d504a83d267b5c572df5, type: 3}
+  breaks:
+  - {fileID: 8300000, guid: 036ea73c16f61d14a9df92339ecc319e, type: 3}
+  - {fileID: 8300000, guid: 83a481f2d73bba647a031dd212b7f0b9, type: 3}
+  places:
+  - {fileID: 8300000, guid: 18bab3fa826bc134f93f4ee50b1dec23, type: 3}
+  hitExtras: []
+  breakExtras: []
+  volume: 1
+  pitchJitter: 0.08
+  hitPitchFirst: 0.9
+  hitPitchLast: 1.35

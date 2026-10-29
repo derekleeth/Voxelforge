@@ -5,6 +5,42 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 24): The World Makes Noise! 🔊🔥 Roadmap 3.9
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **The game has sound now!** Details in DECISIONS.md **D-022**.
+  - **Footsteps** that sound like what you walk on: stone, dirt, grass, sand, snow and wood. Plus a whoosh when you jump and a thump when you land from high up.
+  - **Mining:** each hit gets higher as the block cracks, so you can *hear* it's about to break. Then a break sound, and a thunk when you place a block.
+  - **Mana Crystal Ore** rings like a little bell when you hit it, and plays a magic chord when it breaks.
+  - **Chop a tree** and it creaks and crashes down with a rustle of leaves.
+  - **Pick up drops:** pop!
+  - **Torches** softly roar and crackle when you're near them.
+  - **The M.G.R.S.** goes *zap* when it fires and *boom-sparkle* when the bolt lands.
+- **Split-screen sound:** each player hears from their own hero. In Classic split, Player 1's sounds come from the left speaker and Player 2's from the right. A torch next to either player sounds loud, however far away the other one is.
+- **Every sound is made from code**, like the 3D models: noise, tones and bells mixed together. Rebuild them any time with *Voxelforge → Build Sound Effects*.
+
+### Tests: all passing ✅
+- How loudness falls off with distance, and which side of the speakers each player's sounds come from (full screen, Classic halves, the angled split).
+- Mining hits get higher crack by crack.
+- Blocks without their own sounds get the default ones.
+
+### Play-test results 🎉
+- First try: footsteps sounded like **cymbals clashing** and were way too loud, and torches sounded like **crunchy foil**. 😬
+- Fixed: footsteps are now a soft heel-and-toe thud (no metal ring), half as loud. Torches are mostly a low flame roar with a few gentle crackles and the odd wood snap.
+- Second try: **"That sounds much better."** ✅
+
+### Things we learned
+- Unity can only have one "ear" (`AudioListener`), so for split-screen we do the 3D part ourselves, once per player.
+- A footstep is played hundreds of times, so it has to be quiet and dull. Anything bright or ringing gets annoying fast.
+- Real fire is mostly a soft roar. The crackles are the small part!
+
+### Next up
+- [x] Play-test 3.9
+- [ ] Roadmap **3.10 Playable Demo Build**
+
+---
+
 ## 2026-10-28 - Session 1 (part 23): There's No Place Like Home 🏠✨ Roadmap 3.8
 **Phase:** 3 - "Forge & Carve"
 

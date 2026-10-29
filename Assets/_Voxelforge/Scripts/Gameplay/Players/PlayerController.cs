@@ -184,6 +184,12 @@ namespace Voxelforge.Gameplay
         /// <summary>Raised on the owning PC when one of its players despawns.</summary>
         public static event Action<PlayerController> OwnerDespawned;
 
+        /// <summary>Raised on every PC when any player spawns, e.g. so footsteps play for remote heroes too (3.9).</summary>
+        public static event Action<PlayerController> AnySpawned;
+
+        /// <summary>Raised on every PC when any player despawns.</summary>
+        public static event Action<PlayerController> AnyDespawned;
+
         /// <summary>Owner only: where this player's controls come from.</summary>
         public void SetInputSource(IPlayerInputSource source)
         {
@@ -213,12 +219,14 @@ namespace Voxelforge.Gameplay
 
             if (IsOwner)
                 OwnerSpawned?.Invoke(this);
+            AnySpawned?.Invoke(this);
         }
 
         public override void OnNetworkDespawn()
         {
             if (IsOwner)
                 OwnerDespawned?.Invoke(this);
+            AnyDespawned?.Invoke(this);
             _inputSource = null;
             OwnerInput = default;
         }

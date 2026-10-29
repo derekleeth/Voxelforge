@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20388b3c8d6a98b44bd0c31ce5239ae3, type: 3}
+  m_Name: Dirt
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.SurfaceSound
+  steps:
+  - {fileID: 8300000, guid: 769d9e854f01d9f4992cb7e04900ec37, type: 3}
+  - {fileID: 8300000, guid: 49c721c182d49de45bf56f37a75aba7d, type: 3}
+  - {fileID: 8300000, guid: 769f36dcf3211be459b6f332daa41051, type: 3}
+  - {fileID: 8300000, guid: 11de886f487b24942a8ddbcd64a79d9e, type: 3}
+  hits:
+  - {fileID: 8300000, guid: f4bc8279aa2f68145864fd32a56e5b55, type: 3}
+  - {fileID: 8300000, guid: c0603c939162a3c44a48c079015931b3, type: 3}
+  - {fileID: 8300000, guid: a58072c9cd26c7f4faa1ae2b4ad1f484, type: 3}
+  breaks:
+  - {fileID: 8300000, guid: 5c60fdbc26f57414ca61a05fb753eac0, type: 3}
+  - {fileID: 8300000, guid: 864aae15914420042a8a479d52bd0e25, type: 3}
+  places:
+  - {fileID: 8300000, guid: a48f5ef5175fad341b9b602c9174228b, type: 3}
+  hitExtras: []
+  breakExtras: []
+  volume: 1
+  pitchJitter: 0.08
+  hitPitchFirst: 0.85
+  hitPitchLast: 1.2
