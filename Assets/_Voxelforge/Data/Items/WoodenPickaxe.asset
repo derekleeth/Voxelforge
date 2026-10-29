@@ -14,13 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
   id: 1000
   displayName: Wooden Pickaxe
+  category: 0
+  maxStack: 0
+  bagSlots: 0
   mesh: {fileID: -4073848044809343265, guid: f9cf23e20a461f748a4c98264f01e1ef, type: 3}
   material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
   heldPosition: {x: 0, y: 0.08, z: 0}
   heldRotation: {x: 352, y: 314, z: 70.8}
   heldScale: 1
   dropSize: 2
+  heldLight:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0.1
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
   toolPower:
     pick: 2
     axe: 1
     any: 1.5
+  ability: {fileID: 0}
+  muzzle: {x: 0, y: 0, z: 0}

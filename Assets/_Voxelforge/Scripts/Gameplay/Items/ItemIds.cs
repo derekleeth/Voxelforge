@@ -18,6 +18,14 @@ namespace Voxelforge.Gameplay
         /// <summary>Kian's M.G.R.S. (Magic Gun Rifle Staff, Roadmap 3.6): shoots Mana Bolts that break blocks.</summary>
         public const ushort Mgrs = 1004;
 
+        // Wearable bags (Roadmap 4.5): each adds slots while worn in a bag socket.
+        /// <summary>A small canvas satchel: +8 slots.</summary>
+        public const ushort WovenSatchel = 1010;
+        /// <summary>A canvas backpack with a bedroll: +12 slots.</summary>
+        public const ushort TravelersPack = 1011;
+        /// <summary>A big framed rucksack: +16 slots.</summary>
+        public const ushort DelversRucksack = 1012;
+
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;
     }

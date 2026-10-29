@@ -19,6 +19,8 @@ namespace Voxelforge.Editor
     /// <item>Kian's M.G.R.S. (Roadmap 3.6): its item, pointing at the Mana Bolt ability (<see cref="AbilityBuilder"/>, 4.1),
     /// its recipe, and <c>ManaBolt.mat</c>, the additive glow for its bolts, trails and sparks.</item>
     /// <item>The Home Totem (Roadmap 3.8): block 13, its prop with a soft green light, its item and its recipe.</item>
+    /// <item>The wearable bags (Roadmap 4.5): Woven Satchel, Traveler's Pack and Delver's Rucksack, Gear items with their
+    /// extra slots, and workbench recipes for now (5.6 Leatherworking will make them from hides).</item>
     /// </list>
     /// </summary>
     public static class PropsBuilder
@@ -122,8 +124,15 @@ namespace Voxelforge.Editor
                 heldScale: 0.3f, upright: true);
             ItemDefinition totemItem = MakeItem("HomeTotem", BlockIds.HomeTotem, "Home Totem", held, default, "HomeTotemItem", dropSize: 1.4f,
                 heldScale: 0.35f, upright: true);
+            ItemDefinition satchel = MakeItem("BagSatchel", ItemIds.WovenSatchel, "Woven Satchel", held, default, "WovenSatchel",
+                dropSize: 1.4f, heldScale: 0.6f, upright: true, bagSlots: 8);
+            ItemDefinition pack = MakeItem("BagPack", ItemIds.TravelersPack, "Traveler's Pack", held, default, "TravelersPack",
+                dropSize: 1.6f, heldScale: 0.5f, upright: true, bagSlots: 12);
+            ItemDefinition rucksack = MakeItem("BagRucksack", ItemIds.DelversRucksack, "Delver's Rucksack", held, default,
+                "DelversRucksack", dropSize: 1.8f, heldScale: 0.45f, upright: true, bagSlots: 16);
             var items = LoadOrCreate<ItemRegistry>($"{ItemDir}/ItemRegistry.asset");
-            AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs, totemItem);
+            AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs, totemItem,
+                satchel, pack, rucksack);
 
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
@@ -140,7 +149,12 @@ namespace Voxelforge.Editor
                     new ItemAmount(stonePickaxe, 1), new ItemAmount(stoneAxe, 1), new ItemAmount(mana, 3)),
                 MakeRecipe("Mgrs", new ItemAmount(mgrs, 1), true,
                     new ItemAmount(log, 3), new ItemAmount(stone, 2), new ItemAmount(mana, 5)),
-                MakeRecipe("HomeTotem", new ItemAmount(homeTotem, 1), true, new ItemAmount(log, 4), new ItemAmount(mana, 1)));
+                MakeRecipe("HomeTotem", new ItemAmount(homeTotem, 1), true, new ItemAmount(log, 4), new ItemAmount(mana, 1)),
+                // Roadmap 4.5. Bark and stone for now; Leatherworking (5.6) replaces these with hides.
+                MakeRecipe("WovenSatchel", new ItemAmount(satchel, 1), true, new ItemAmount(log, 6)),
+                MakeRecipe("TravelersPack", new ItemAmount(pack, 1), true, new ItemAmount(log, 8), new ItemAmount(stone, 4)),
+                MakeRecipe("DelversRucksack", new ItemAmount(rucksack, 1), true,
+                    new ItemAmount(log, 10), new ItemAmount(stone, 6), new ItemAmount(mana, 3)));
             MakeBoltMaterial();
 
             AssetDatabase.SaveAssets();
@@ -320,7 +334,7 @@ namespace Voxelforge.Editor
 
         static ItemDefinition MakeItem(string model, ushort id, string displayName, Material material, ToolPower power,
             string assetName = null, float dropSize = 2f, float heldScale = 1f, bool upright = false, AbilityDefinition ability = null,
-            Vector3 muzzle = default, Vector3? pose = null, DecorationLight heldLight = default)
+            Vector3 muzzle = default, Vector3? pose = null, DecorationLight heldLight = default, int bagSlots = 0)
         {
             Mesh mesh = LoadMesh(model);
             var item = LoadOrCreate<ItemDefinition>($"{ItemDir}/{assetName ?? model}.asset");
@@ -340,6 +354,9 @@ namespace Voxelforge.Editor
             serialized.FindProperty("ability").objectReferenceValue = ability;
             serialized.FindProperty("muzzle").vector3Value = muzzle;
             WriteLight(serialized.FindProperty("heldLight"), heldLight);
+            serialized.FindProperty("bagSlots").intValue = bagSlots;
+            if (bagSlots > 0)
+                serialized.FindProperty("category").enumValueIndex = (int)ItemCategory.Gear;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return item;
         }

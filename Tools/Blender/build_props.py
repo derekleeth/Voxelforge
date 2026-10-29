@@ -1,5 +1,5 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
-Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6) and the Home Totem (3.8).
+Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8) and the three wearable bags (4.5).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -13,6 +13,8 @@ Mesh contract:
   - tools: origin where the hand grips, handle along +Z, head at the top, a blade (if any) on the +X side
   - world props: origin at the bottom centre of their block; the wall torch has its wall on the +Y side
     (Unity +Z, see PropAttach.Wall)
+  - worn bags (4.5): origin at the middle of the side that rests on the hero's back, the bag hanging out along -Y
+    (Unity -Z, behind a hero facing +Z), +Z up. BackpackView puts that point on the hero's back
   - UV0 = the part's area of the atlas; vertex colour RGB = 1 (shading comes from the texture), A = sway
     (only flame tips sway, through Voxelforge/Foliage's wind)
 
@@ -40,7 +42,7 @@ GRID = {
     "wood": (0, 0), "wood_dark": (1, 0), "planks": (2, 0), "stone": (3, 0),
     "iron": (0, 1), "steel": (1, 1), "gold": (2, 1), "leather": (3, 1),
     "cloth": (0, 2), "flame": (1, 2), "mana": (2, 2), "rune": (3, 2),
-    "totem": (0, 3), "hearth": (1, 3),
+    "totem": (0, 3), "hearth": (1, 3), "canvas": (2, 3), "rope": (3, 3),
 }
 
 
@@ -204,6 +206,27 @@ def paint_hearth(rng):
     return colour, colour * 0.95
 
 
+def paint_canvas(rng):
+    """Woven travelling canvas for bags: a fine over-under weave, a little sun-bleached and grubby at the bottom."""
+    x, y = grid(CELL)
+    n = noise(CELL, 5, rng)
+    weave = 0.5 + 0.5 * np.sin(x * math.pi * 64) * np.sin(y * math.pi * 64)
+    colour = tint(rgb(196, 172, 124), 0.82 + 0.22 * n + 0.1 * weave)
+    colour *= (1 - 0.3 * np.clip(0.35 - y, 0, 1) / 0.35)[..., None]
+    return colour, np.zeros_like(colour)
+
+
+def paint_rope(rng):
+    """Twisted hemp rope: diagonal strands with dark grooves between them, running along v."""
+    x, y = grid(CELL)
+    n = noise(CELL, 6, rng)
+    twist = np.mod(y * 10.0 + x * 2.5, 1.0)
+    groove = np.clip(1.0 - np.abs(twist - 0.5) * 8.0, 0, 1)
+    colour = tint(rgb(176, 142, 92), 0.85 + 0.25 * n)
+    colour = colour * (1 - 0.55 * groove[..., None])
+    return colour, np.zeros_like(colour)
+
+
 def paint_atlas(seed=35):
     rng = np.random.default_rng(seed)
     painters = {
@@ -222,6 +245,8 @@ def paint_atlas(seed=35):
         # Added after the rest so their random numbers don't change the older areas.
         "totem": lambda: paint_totem(rng),
         "hearth": lambda: paint_hearth(rng),
+        "canvas": lambda: paint_canvas(rng),
+        "rope": lambda: paint_rope(rng),
     }
     albedo = np.zeros((SIZE, SIZE, 4), np.float32)
     glow = np.zeros((SIZE, SIZE, 4), np.float32)
@@ -642,6 +667,93 @@ def build_home_totem():
     return b
 
 
+def bag_body(b, width, depth, height, region_name="canvas"):
+    """A soft bag body: a box with its back face on y = 0, bulging out along -Y, a little narrower at the top."""
+    hw, d, hh = width / 2, depth, height / 2
+    top, bottom = 0.88, 1.0
+    corners = [Vector((sx * hw * (top if sz > 0 else bottom), sy, sz * hh)) for sz in (-1, 1) for sy in (0.0, -d) for sx in (-1, 1)]
+    # A rounded front: the middle of the front face pushes out a little further.
+    idx = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
+    b.part(region_name, convex([[corners[i] for i in f] for f in idx]))
+    b.part(region_name, box((0, -d - 0.012, -hh * 0.1), (width * 0.8, 0.03, height * 0.7)))
+
+
+def bag_flap(b, width, depth, height, length, region_name="leather"):
+    """A leather flap over the top, folding down the front."""
+    hw, d, hh = width / 2 * 0.9, depth, height / 2
+    b.part(region_name, box((0, -d / 2, hh + 0.012), (hw * 2 + 0.02, d + 0.02, 0.024)), grain=Vector((0, 1, 0)))
+    b.part(region_name, box((0, -d - 0.03, hh - length / 2), (hw * 1.6, 0.022, length)))
+
+
+def buckle(b, c, size=0.045):
+    c = Vector(c)
+    b.part("gold", box(c, (size, 0.02, size * 0.8)))
+    b.part("iron", box(c + Vector((0, -0.012, 0)), (size * 0.35, 0.01, size * 0.35)))
+
+
+def shoulder_straps(b, height, spread=0.1):
+    """The tops of the shoulder straps, curving forward over the shoulders from the top of the back."""
+    for sx in (-1, 1):
+        pts = [(sx * spread, -0.01, height / 2 - 0.02), (sx * spread, 0.05, height / 2 + 0.05),
+               (sx * spread, 0.13, height / 2 + 0.06)]
+        b.part("leather", sweep(pts, [(0.012, 0.05)] * 3, Vector((0, 0, 1))), grain=Vector((0, 1, 0)))
+
+
+def bedroll(b, z, depth, length, radius):
+    b.part("cloth", cylinder((-length / 2, -depth / 2, z), (length / 2, -depth / 2, z), radius, radius, 8,
+                             phase=math.pi / 8), grain=Vector((1, 0, 0)))
+    for x in (-length * 0.3, length * 0.3):  # Tied with rope.
+        b.part("rope", cylinder((x - 0.012, -depth / 2, z), (x + 0.012, -depth / 2, z), radius * 1.08, radius * 1.08, 8,
+                                phase=math.pi / 8), grain=Vector((1, 0, 0)))
+
+
+def build_bag_satchel():
+    """The Woven Satchel (+8 slots): a small canvas satchel with a leather flap and a brass buckle."""
+    b = MeshBuilder()
+    w, d, h = 0.28, 0.11, 0.24
+    bag_body(b, w, d, h)
+    bag_flap(b, w, d, h, 0.13)
+    buckle(b, (0, -d - 0.045, h / 2 - 0.12))
+    shoulder_straps(b, h, 0.08)
+    return b
+
+
+def build_bag_pack():
+    """The Traveler's Pack (+12 slots): a canvas backpack with a bedroll on top and a pouch on each side."""
+    b = MeshBuilder()
+    w, d, h = 0.36, 0.17, 0.42
+    bag_body(b, w, d, h)
+    bag_flap(b, w, d, h, 0.18)
+    buckle(b, (0, -d - 0.045, h / 2 - 0.17))
+    for sx in (-1, 1):
+        b.part("leather", box((sx * (w / 2 + 0.03), -d * 0.55, -h * 0.18), (0.06, d * 0.7, h * 0.4)))
+        buckle(b, (sx * (w / 2 + 0.03), -d * 0.95, -h * 0.08), 0.03)
+    bedroll(b, h / 2 + 0.07, d, w * 0.95, 0.065)
+    shoulder_straps(b, h)
+    return b
+
+
+def build_bag_rucksack():
+    """The Delver's Rucksack (+16 slots): a big framed rucksack with a bedroll, a coil of rope and a cooking pot."""
+    b = MeshBuilder()
+    w, d, h = 0.42, 0.22, 0.54
+    bag_body(b, w, d, h)
+    bag_flap(b, w, d, h, 0.2)
+    buckle(b, (0, -d - 0.045, h / 2 - 0.19))
+    for sx in (-1, 1):  # A wooden frame up the sides, standing proud of the top.
+        b.part("wood_dark", box((sx * (w / 2 + 0.02), -0.03, 0.06), (0.035, 0.035, h + 0.2)))
+        b.part("rope", box((sx * (w / 2 + 0.02), -0.03, h / 2 - 0.05), (0.045, 0.045, 0.03)))
+    b.part("wood_dark", box((0, -0.03, h / 2 + 0.15), (w + 0.075, 0.035, 0.035)), grain=Vector((1, 0, 0)))
+    bedroll(b, h / 2 + 0.07, d, w * 0.92, 0.07)
+    # A coil of rope on the front, and a little iron pot hanging off one side.
+    b.part("rope", cylinder((0, -d - 0.035, -h * 0.22), (0, -d - 0.085, -h * 0.22), 0.085, 0.085, 10), grain=Vector((0, 1, 0)))
+    b.part("canvas", cylinder((0, -d - 0.084, -h * 0.22), (0, -d - 0.086, -h * 0.22), 0.045, 0.045, 10))
+    b.part("iron", cylinder((w / 2 + 0.07, -d * 0.5, -h * 0.28), (w / 2 + 0.07, -d * 0.5, -h * 0.13), 0.07, 0.08, 8))
+    b.part("iron", box((w / 2 + 0.07, -d * 0.5, -h * 0.07), (0.015, 0.015, 0.1)))
+    shoulder_straps(b, h, 0.12)
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -652,6 +764,9 @@ MODELS = {
     "TorchWall": build_torch_wall,
     "Workbench": build_workbench,
     "HomeTotem": build_home_totem,
+    "BagSatchel": build_bag_satchel,
+    "BagPack": build_bag_pack,
+    "BagRucksack": build_bag_rucksack,
 }
 
 
@@ -694,9 +809,10 @@ def build_models(material):
         x += 1.2
 
 
-def export_models():
+def export_models(only=None):
+    """Exports every model, or just the names in only (so rebuilding new models leaves the others' files alone)."""
     os.makedirs(MODEL_DIR, exist_ok=True)
-    for name in MODELS:
+    for name in (only or MODELS):
         obj = bpy.data.objects[name]
         saved = obj.location.copy()
         obj.location = (0.0, 0.0, 0.0)  # The origin is the grip or the block's bottom centre.
@@ -714,13 +830,13 @@ def export_models():
         print(f"Exported {path}")
 
 
-def build_all(export=True):
+def build_all(export=True, only=None):
     albedo, glow = paint_atlas()
     atlas_image = save_image("Props_Atlas", albedo, ATLAS_PATH)
     glow_image = save_image("Props_Glow", glow, GLOW_PATH)
     build_models(preview_material(atlas_image, glow_image))
     if export:
-        export_models()
+        export_models(only)
 
 
 if __name__ == "__main__":

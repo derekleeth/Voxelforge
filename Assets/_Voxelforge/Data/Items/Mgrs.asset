@@ -14,12 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
   id: 1004
   displayName: M.G.R.S.
+  category: 0
+  maxStack: 0
+  bagSlots: 0
   mesh: {fileID: -2718890655765237734, guid: 87abdbd0539fa924888297db09e784a3, type: 3}
   material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
   heldPosition: {x: 0, y: 0.08, z: 0}
   heldRotation: {x: 72.3, y: 233.3, z: 350.7}
   heldScale: 1
   dropSize: 2
+  heldLight:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0.1
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
   toolPower:
     pick: 0
     axe: 0

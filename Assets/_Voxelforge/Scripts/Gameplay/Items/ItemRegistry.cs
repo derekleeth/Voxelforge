@@ -77,6 +77,8 @@ namespace Voxelforge.Gameplay
                     errors.Add($"'{item.DisplayName}' uses ID {item.Id}, below {ItemIds.FirstNonBlock}, but no block has it.");
                 if (!ItemIds.IsBlock(item.Id) && (item.Mesh == null || item.Material == null))
                     errors.Add($"'{item.DisplayName}' needs a mesh and a material.");
+                if (item.IsBag && (ItemIds.IsBlock(item.Id) || item.MaxStack != 1))
+                    errors.Add($"'{item.DisplayName}' is a bag, so it must be a one-per-slot item, not a block.");
                 if (item.Ability != null)
                 {
                     foreach (string problem in AbilityBook.Check(item.Ability))

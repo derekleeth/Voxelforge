@@ -263,5 +263,26 @@ namespace Voxelforge.Tests
             bags[3] = Satchel;
             Assert.AreEqual(16, bags.ExtraSlots(_rules));
         }
+
+        [Test]
+        public void BackpackView_ShowsTheBiggestWornBag()
+        {
+            ItemDefinition pack = ItemDefinition.Create(1101 + 50, "Pack", bagSlots: 12);
+            ItemRegistry rules = ItemRegistry.Create(new[] { _definitions[1], pack });
+            try
+            {
+                var bags = new EquippedBags();
+                Assert.AreEqual(0, BackpackView.Biggest(bags, rules), "Nothing worn: nothing on the back.");
+                bags[2] = Satchel;
+                Assert.AreEqual(Satchel, BackpackView.Biggest(bags, rules));
+                bags[0] = pack.Id;
+                Assert.AreEqual(pack.Id, BackpackView.Biggest(bags, rules), "The pack beats the satchel wherever it sits.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(pack);
+                Object.DestroyImmediate(rules);
+            }
+        }
     }
 }

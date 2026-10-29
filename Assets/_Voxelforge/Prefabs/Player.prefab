@@ -29,6 +29,7 @@ GameObject:
   - component: {fileID: 1018173119184603921}
   - component: {fileID: 8134390800328682175}
   - component: {fileID: 8489302776999847508}
+  - component: {fileID: 4276024312031293881}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -430,6 +431,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerInventory
   messageSeconds: 1.6
+--- !u!114 &4276024312031293881
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96e2d8224caa73f4e9be61ab472d31a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.BackpackView
+  animator: {fileID: 2811615453234438372}
+  backPosition: {x: 0.029, y: -0.038, z: -0.214}
+  backRotation: {x: 358.2, y: 354.8, z: 359.4}
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

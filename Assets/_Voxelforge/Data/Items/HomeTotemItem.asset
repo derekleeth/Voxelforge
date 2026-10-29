@@ -14,20 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
   id: 13
   displayName: Home Totem
+  category: 0
+  maxStack: 0
+  bagSlots: 0
   mesh: {fileID: 555140464665896442, guid: a9a685efeb41568499cad164e42cb2e3, type: 3}
   material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
   heldPosition: {x: 0, y: 0.08, z: 0}
   heldRotation: {x: 359.5, y: 323.9, z: 148}
   heldScale: 0.35
   dropSize: 1.4
+  heldLight:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0.1
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
   toolPower:
     pick: 0
     axe: 0
     any: 0
-  projectile:
-    damage: 0
-    cooldown: 0
-    speed: 0
-    range: 0
-    muzzle: {x: 0, y: 0, z: 0}
-    glow: {r: 0, g: 0, b: 0, a: 0}
+  ability: {fileID: 0}
+  muzzle: {x: 0, y: 0, z: 0}
