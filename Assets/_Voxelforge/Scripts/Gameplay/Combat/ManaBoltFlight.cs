@@ -25,6 +25,8 @@ namespace Voxelforge.Gameplay
     public struct ManaBoltEnd
     {
         public ushort Id;
+        /// <summary>The ability that launched it (<see cref="AbilityIds"/>).</summary>
+        public ushort AbilityId;
         /// <summary>True if it hit a block (<see cref="Hit"/>); false if it flew its whole range and fizzled.</summary>
         public bool HitBlock;
         public VoxelHit Hit;
@@ -82,7 +84,7 @@ namespace Voxelforge.Gameplay
                 if (world != null && VoxelQueries.Raycast(world, bolt.Position, bolt.Direction, move, out VoxelHit hit))
                 {
                     ended.Add(new ManaBoltEnd
-                        { Id = bolt.Id, HitBlock = true, Hit = hit, Point = hit.Point, Normal = (float3)hit.Normal, Damage = bolt.Damage });
+                        { Id = bolt.Id, AbilityId = bolt.AbilityId, HitBlock = true, Hit = hit, Point = hit.Point, Normal = (float3)hit.Normal, Damage = bolt.Damage });
                     _bolts.RemoveAt(i);
                     continue;
                 }
@@ -91,7 +93,7 @@ namespace Voxelforge.Gameplay
                 bolt.Remaining -= move;
                 if (bolt.Remaining <= 0f)
                 {
-                    ended.Add(new ManaBoltEnd { Id = bolt.Id, Point = bolt.Position, Normal = -bolt.Direction });
+                    ended.Add(new ManaBoltEnd { Id = bolt.Id, AbilityId = bolt.AbilityId, Point = bolt.Position, Normal = -bolt.Direction });
                     _bolts.RemoveAt(i);
                     continue;
                 }

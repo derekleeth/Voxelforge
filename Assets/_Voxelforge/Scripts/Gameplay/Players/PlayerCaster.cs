@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using Unity.Netcode;
@@ -14,9 +13,11 @@ namespace Voxelforge.Gameplay
     /// <item>Holding Mine with a ranged item (the M.G.R.S.) casts that item's ability, as in D-019.</item>
     /// <item>The temporary <see cref="PlayerButtons.Ability1"/> button casts <c>testAbility</c> until the 4.4 action bar.</item>
     /// </list>
-    /// <para>Every PC hears casts start, finish and stop, to draw cast bars and cooldowns in that player's own view.</para>
+    /// <para>Rules only (Roadmap 4.2): casts starting, going off and stopping go to every PC as <see cref="AbilityCue"/>s
+    /// (<see cref="PlayerAbilityCues"/>). Each PC times the cast bar and cooldowns in that player's own view from them.</para>
     /// </summary>
     [RequireComponent(typeof(PlayerController), typeof(PlayerHands), typeof(PlayerStaff))]
+    [RequireComponent(typeof(PlayerAbilityCues))]
     public sealed class PlayerCaster : NetworkBehaviour
     {
         [Tooltip("Data/Abilities/AbilityBook.asset: every ability, by ID.")]
@@ -46,6 +47,7 @@ namespace Voxelforge.Gameplay
         PlayerController _player;
         PlayerHands _hands;
         PlayerStaff _staff;
+        PlayerAbilityCues _cues;
 
         // Host state.
         AbilityCaster _caster;
@@ -81,21 +83,17 @@ namespace Voxelforge.Gameplay
         /// <summary>Owner only: a short message ("Not enough mana"), or null.</summary>
         public string Message => Time.time < _messageUntil ? _message : null;
 
-        /// <summary>Every PC: a cast with a cast time started.</summary>
-        public event Action<AbilityDefinition> CastStarted;
-
-        /// <summary>Every PC: an ability went off (instant or at the end of its cast).</summary>
-        public event Action<AbilityDefinition> CastFinished;
-
-        /// <summary>Every PC: a cast stopped before it went off, and why.</summary>
-        public event Action<AbilityDefinition, CastCheck> CastStopped;
-
         void Awake()
         {
             _player = GetComponent<PlayerController>();
             _hands = GetComponent<PlayerHands>();
             _staff = GetComponent<PlayerStaff>();
+            _cues = GetComponent<PlayerAbilityCues>();
         }
+
+        void OnEnable() => _cues.Received += OnCue;
+
+        void OnDisable() => _cues.Received -= OnCue;
 
         public override void OnNetworkSpawn()
         {
@@ -141,7 +139,7 @@ namespace Voxelforge.Gameplay
             bool moving = wasCasting != null && Moved(input);
             if (_caster.Tick(now, Time.fixedDeltaTime, moving, _finished, out CastCheck result) && result != CastCheck.Ok)
             {
-                CastStoppedRpc(wasCasting.Id, result);
+                _cues.ServerSend(AbilityCue.Cast(AbilityCueKind.CastStopped, wasCasting.Id, transform.position, result));
                 RefusedRpc(result);
             }
 
@@ -169,8 +167,8 @@ namespace Voxelforge.Gameplay
 
             foreach (AbilityDefinition ability in _finished)
             {
+                _cues.ServerSend(AbilityCue.Cast(AbilityCueKind.Released, ability.Id, transform.position));
                 Deliver(ability, input);
-                CastFinishedRpc(ability.Id);
             }
 
             float mana = _caster.Mana;
@@ -184,7 +182,7 @@ namespace Voxelforge.Gameplay
             if (check == CastCheck.Ok && _caster.IsCasting)
             {
                 _castFeet = transform.position;
-                CastStartedRpc(ability.Id);
+                _cues.ServerSend(AbilityCue.Cast(AbilityCueKind.CastBegan, ability.Id, transform.position));
             }
             return check;
         }
@@ -205,42 +203,26 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        bool TryGetAbility(ushort abilityId, out AbilityDefinition ability)
+        /// <summary>Every PC: keeps the cast bar and cooldowns in step with what the host said.</summary>
+        void OnCue(AbilityCue cue, AbilityDefinition ability)
         {
-            ability = null;
-            return abilities != null && abilities.TryGet(abilityId, out ability);
-        }
-
-        [Rpc(SendTo.ClientsAndHost)]
-        void CastStartedRpc(ushort abilityId)
-        {
-            if (!TryGetAbility(abilityId, out AbilityDefinition ability))
-                return;
-            _castingLocal = ability;
-            _castStartLocal = Time.time;
-            CastStarted?.Invoke(ability);
-        }
-
-        [Rpc(SendTo.ClientsAndHost)]
-        void CastFinishedRpc(ushort abilityId)
-        {
-            if (!TryGetAbility(abilityId, out AbilityDefinition ability))
-                return;
-            if (_castingLocal == ability)
-                _castingLocal = null;
-            if (ability.Cooldown > 0f)
-                _readyAtLocal[abilityId] = Time.time + ability.Cooldown;
-            CastFinished?.Invoke(ability);
-        }
-
-        [Rpc(SendTo.ClientsAndHost)]
-        void CastStoppedRpc(ushort abilityId, CastCheck reason)
-        {
-            if (!TryGetAbility(abilityId, out AbilityDefinition ability))
-                return;
-            if (_castingLocal == ability)
-                _castingLocal = null;
-            CastStopped?.Invoke(ability, reason);
+            switch (cue.Kind)
+            {
+                case AbilityCueKind.CastBegan:
+                    _castingLocal = ability;
+                    _castStartLocal = Time.time;
+                    break;
+                case AbilityCueKind.CastStopped:
+                    if (_castingLocal == ability)
+                        _castingLocal = null;
+                    break;
+                case AbilityCueKind.Released:
+                    if (_castingLocal == ability)
+                        _castingLocal = null;
+                    if (ability.Cooldown > 0f)
+                        _readyAtLocal[ability.Id] = Time.time + ability.Cooldown;
+                    break;
+            }
         }
 
         [Rpc(SendTo.Owner)]

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
@@ -8,32 +7,25 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// Draws this hero's Mana Bolts on every PC (Roadmap 3.6): a muzzle flash, a glowing bolt with a trail and a light
-    /// that travels with it, and a burst of sparks where it lands. The host moves the real bolt (<see cref="PlayerStaff"/>);
-    /// this one flies the same line from the start and speed the host sent, starting at the staff's muzzle and easing onto
-    /// that line, then ends wherever the host says it ended. Presentation only.
+    /// Draws this hero's projectiles on every PC (Roadmap 3.6, 4.2): a muzzle flash, a glowing core with a trail and a
+    /// light that travels with it, and a burst of sparks where it lands, each in its ability's <see cref="AbilityLook"/>.
+    /// The host moves the real bolt (<see cref="PlayerStaff"/>) and says so with <see cref="AbilityCue"/>s; this one flies
+    /// the same line from the start and speed the host sent, starting at the staff's muzzle (or the hand, with nothing
+    /// held) and easing onto that line, then ends wherever the host says it ended. Presentation only.
     /// <para>Each hero has its own small pool (a bolt is in the air for under a second), so there's nothing global, and
     /// URP's Forward+ only shades the bolt lights each split-screen camera can see.</para>
     /// </summary>
-    [RequireComponent(typeof(PlayerStaff))]
+    [RequireComponent(typeof(PlayerAbilityCues))]
     public sealed class ManaBoltView : MonoBehaviour
     {
         [Tooltip("Additive glow material for the bolt, its trail and the sparks (Materials/ManaBolt.mat).")]
         [SerializeField] Material glowMaterial;
 
-        [Tooltip("How big the bolt's glowing core is, in metres.")]
-        [SerializeField, Range(0.05f, 0.6f)] float boltSize = 0.22f;
+        [Tooltip("Data/Abilities/Looks/AbilityLookBook.asset: how each ability looks.")]
+        [SerializeField] AbilityLookBook looks;
 
-        [Tooltip("How bright the core and sparks glow (HDR multiplier on the item's glow colour).")]
+        [Tooltip("How bright the core and sparks glow (HDR multiplier on the look's glow colour).")]
         [SerializeField, Range(1f, 16f)] float glowBoost = 5f;
-
-        [Tooltip("Seconds the trail takes to fade.")]
-        [SerializeField, Range(0.05f, 1f)] float trailTime = 0.18f;
-
-        [Tooltip("The light that travels with the bolt.")]
-        [SerializeField, Range(0f, 20f)] float boltLightIntensity = 4f;
-
-        [SerializeField, Range(1f, 20f)] float boltLightRange = 7f;
 
         [Tooltip("Seconds the bolt takes to go from the muzzle onto the host's line.")]
         [SerializeField, Range(0f, 0.5f)] float converge = 0.1f;
@@ -41,17 +33,13 @@ namespace Voxelforge.Gameplay
         [Tooltip("Seconds the muzzle flash and the impact flash last.")]
         [SerializeField, Range(0.02f, 0.5f)] float flashTime = 0.12f;
 
-        [Tooltip("Sparks in one impact burst.")]
-        [SerializeField, Range(0, 80)] int burstSparks = 28;
-
-        [Tooltip("Sparks out of the muzzle per shot.")]
-        [SerializeField, Range(0, 30)] int muzzleSparks = 8;
-
         const int PoolSize = 4;
+        static readonly Color FallbackGlow = new Color(0.35f, 0.85f, 1f);
 
         sealed class Bolt
         {
             public GameObject Root;
+            public MeshFilter Shape;
             public MeshRenderer Core;
             public TrailRenderer Trail;
             public Light Light;
@@ -65,45 +53,35 @@ namespace Voxelforge.Gameplay
             public float Age;
             /// <summary>Seconds left of the fade after it ended (the trail and the impact flash).</summary>
             public float Fade;
+            public float TrailTime;
+            public float LightIntensity;
             public Color Glow;
         }
 
         readonly List<Bolt> _bolts = new List<Bolt>();
-        PlayerStaff _staff;
+        PlayerAbilityCues _cues;
         PlayerController _player;
         HeldItemView _held;
         ParticleSystem _sparks;
         Light _muzzleLight;
         float _muzzleFlash;
-        Mesh _coreMesh;
+        float _muzzleIntensity;
+        Mesh _gemMesh;
+        Mesh _orbMesh;
         MaterialPropertyBlock _block;
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
-        /// <summary>Every PC: a bolt left the muzzle here. For the audio router (<see cref="PlayerFoley"/>, 3.9).</summary>
-        public event Action<Vector3> Fired;
-
-        /// <summary>Every PC: a bolt hit a block (true) or fizzled (false) here. For the audio router (<see cref="PlayerFoley"/>, 3.9).</summary>
-        public event Action<Vector3, bool> Impacted;
-
         void Awake()
         {
-            _staff = GetComponent<PlayerStaff>();
+            _cues = GetComponent<PlayerAbilityCues>();
             _player = GetComponent<PlayerController>();
             _held = GetComponent<HeldItemView>();
             _block = new MaterialPropertyBlock();
         }
 
-        void OnEnable()
-        {
-            _staff.Fired += OnFired;
-            _staff.Ended += OnEnded;
-        }
+        void OnEnable() => _cues.Received += OnCue;
 
-        void OnDisable()
-        {
-            _staff.Fired -= OnFired;
-            _staff.Ended -= OnEnded;
-        }
+        void OnDisable() => _cues.Received -= OnCue;
 
         void OnDestroy()
         {
@@ -116,30 +94,58 @@ namespace Voxelforge.Gameplay
                 Destroy(_sparks.gameObject);
             if (_muzzleLight != null)
                 Destroy(_muzzleLight.gameObject);
-            if (_coreMesh != null)
-                Destroy(_coreMesh);
+            if (_gemMesh != null)
+                Destroy(_gemMesh);
+            if (_orbMesh != null)
+                Destroy(_orbMesh);
         }
 
-        void OnFired(ManaBolt shot, AbilityDefinition ability)
+        void OnCue(AbilityCue cue, AbilityDefinition ability)
+        {
+            if (cue.Kind == AbilityCueKind.Launched)
+                OnLaunched(cue, ability);
+            else if (cue.Kind == AbilityCueKind.Impact || cue.Kind == AbilityCueKind.Fizzled)
+                OnEnded(cue, ability);
+        }
+
+        AbilityLook LookFor(AbilityDefinition ability) => looks != null ? looks.For(ability) : null;
+
+        /// <summary>Where the projectile appears: the held item's muzzle, else the right hand, else the eyes.</summary>
+        Vector3 Muzzle(Vector3 eyes)
+        {
+            if (_held == null)
+                return eyes;
+            if (_held.TryGetMuzzle(out Vector3 muzzle, out _))
+                return muzzle;
+            return _held.Hand != null ? _held.Hand.position : eyes;
+        }
+
+        void OnLaunched(AbilityCue shot, AbilityDefinition ability)
         {
             EnsureShared();
+            AbilityLook look = LookFor(ability);
             Bolt bolt = Take();
-            Vector3 muzzle = (Vector3)shot.Position;
-            if (_held == null || !_held.TryGetMuzzle(out muzzle, out _))
-                muzzle = shot.Position;
+            Vector3 muzzle = Muzzle(shot.Position);
+            float size = look != null ? look.CoreSize : 0.22f;
 
-            bolt.Id = shot.Id;
+            bolt.Id = shot.ShotId;
             bolt.Flying = true;
             bolt.Origin = shot.Position;
-            bolt.Direction = shot.Direction;
-            bolt.StartOffset = (float3)muzzle - shot.Position;
-            bolt.Speed = shot.Speed;
-            bolt.Range = shot.Remaining;
+            bolt.Direction = math.normalizesafe((float3)shot.Direction, new float3(0f, 0f, 1f));
+            bolt.StartOffset = (float3)muzzle - (float3)shot.Position;
+            bolt.Speed = ability.ProjectileSpeed;
+            bolt.Range = ability.Range;
             bolt.Age = 0f;
             bolt.Fade = 0f;
-            bolt.Glow = ability.Glow.a > 0f ? ability.Glow : new Color(0.35f, 0.85f, 1f);
+            bolt.Glow = look != null ? look.Glow : FallbackGlow;
+            bolt.TrailTime = look != null ? look.TrailTime : 0.18f;
+            bolt.LightIntensity = look != null ? look.LightIntensity : 4f;
 
             bolt.Root.transform.position = muzzle;
+            bolt.Shape.sharedMesh = look != null && look.CoreShape == AbilityCoreShape.Orb ? _orbMesh : _gemMesh;
+            bolt.Shape.transform.localScale = Vector3.one * size;
+            bolt.Trail.time = bolt.TrailTime;
+            bolt.Trail.widthCurve = new AnimationCurve(new Keyframe(0f, size * 0.8f), new Keyframe(1f, 0f));
             bolt.Trail.Clear();
             bolt.Trail.emitting = true;
             bolt.Trail.startColor = bolt.Glow * glowBoost;
@@ -148,45 +154,51 @@ namespace Voxelforge.Gameplay
             bolt.Core.SetPropertyBlock(_block);
             bolt.Core.enabled = true;
             bolt.Light.color = bolt.Glow;
-            bolt.Light.intensity = boltLightIntensity;
+            bolt.Light.intensity = bolt.LightIntensity;
+            bolt.Light.range = look != null ? look.LightRange : 7f;
             bolt.Light.enabled = true;
             bolt.Root.SetActive(true);
 
             // Muzzle flash: a quick light and a puff of sparks out of the barrel.
             _muzzleLight.transform.position = muzzle;
             _muzzleLight.color = bolt.Glow;
+            _muzzleLight.range = bolt.Light.range * 0.7f;
+            _muzzleIntensity = bolt.LightIntensity;
             _muzzleFlash = flashTime;
-            Emit(muzzle, shot.Direction, bolt.Glow, muzzleSparks, 2.5f, 0.6f);
-            Fired?.Invoke(muzzle);
+            Emit(muzzle, bolt.Direction, bolt.Glow, look != null ? look.MuzzleSparks : 8, 2.5f, 0.6f);
         }
 
-        void OnEnded(ManaBoltEnd end, ushort blockId)
+        void OnEnded(AbilityCue end, AbilityDefinition ability)
         {
             EnsureShared();
+            AbilityLook look = LookFor(ability);
+            bool hitBlock = end.Kind == AbilityCueKind.Impact;
             Bolt bolt = null;
             foreach (Bolt b in _bolts)
             {
-                if (b.Flying && b.Id == end.Id)
+                if (b.Flying && b.Id == end.ShotId)
                     bolt = b;
             }
-            Color glow = bolt != null ? bolt.Glow : new Color(0.35f, 0.85f, 1f);
             if (bolt != null)
             {
                 bolt.Flying = false;
-                bolt.Root.transform.position = end.Point;
+                bolt.Root.transform.position = end.Position;
                 bolt.Core.enabled = false;
                 bolt.Trail.emitting = false;
-                bolt.Light.intensity = boltLightIntensity * (end.HitBlock ? 2.5f : 1f);
-                bolt.Fade = math.max(trailTime, flashTime);
+                bolt.Light.intensity = bolt.LightIntensity * (hitBlock ? 2.5f : 1f);
+                bolt.Fade = math.max(bolt.TrailTime, flashTime);
             }
 
-            // Sparks in the block's own colour mixed with mana, out of the face it hit.
+            // Sparks in the block's own colour mixed with the spell's, out of the face it hit.
+            Color glow = look != null ? look.Glow : FallbackGlow;
             Color sparks = glow;
             VoxelWorld world = _player != null ? _player.World : null;
-            if (end.HitBlock && world != null && blockId < world.Blocks.Length)
-                sparks = Color.Lerp(glow, (Color)world.Blocks[blockId].MapColor, 0.45f);
-            Emit(end.Point + end.Normal * 0.05f, end.Normal, sparks, end.HitBlock ? burstSparks : burstSparks / 3, 5f, 0.85f);
-            Impacted?.Invoke(end.Point, end.HitBlock);
+            if (hitBlock && world != null && end.BlockId < world.Blocks.Length)
+                sparks = Color.Lerp(glow, (Color)world.Blocks[end.BlockId].MapColor, 0.45f);
+            int burst = look != null ? look.ImpactSparks : 28;
+            float speed = look != null ? look.ImpactSpeed : 5f;
+            float3 normal = end.Direction;
+            Emit((float3)end.Position + normal * 0.05f, normal, sparks, hitBlock ? burst : burst / 3, speed, 0.85f);
         }
 
         void LateUpdate()
@@ -209,13 +221,13 @@ namespace Voxelforge.Gameplay
                         bolt.Flying = false;
                         bolt.Core.enabled = false;
                         bolt.Trail.emitting = false;
-                        bolt.Fade = trailTime;
+                        bolt.Fade = bolt.TrailTime;
                     }
                 }
                 else
                 {
                     bolt.Fade -= dt;
-                    bolt.Light.intensity = Mathf.MoveTowards(bolt.Light.intensity, 0f, boltLightIntensity * 3f * dt / flashTime);
+                    bolt.Light.intensity = Mathf.MoveTowards(bolt.Light.intensity, 0f, bolt.LightIntensity * 3f * dt / flashTime);
                     if (bolt.Fade <= 0f)
                         bolt.Root.SetActive(false);
                 }
@@ -226,7 +238,7 @@ namespace Voxelforge.Gameplay
                 _muzzleFlash -= dt;
                 bool on = _muzzleFlash > 0f;
                 if (on)
-                    _muzzleLight.intensity = boltLightIntensity * 2f * (_muzzleFlash / flashTime);
+                    _muzzleLight.intensity = _muzzleIntensity * 2f * (_muzzleFlash / flashTime);
                 if (_muzzleLight.enabled != on)
                     _muzzleLight.enabled = on;
             }
@@ -261,8 +273,8 @@ namespace Voxelforge.Gameplay
             root.SetActive(false);
             var core = new GameObject("Core");
             core.transform.SetParent(root.transform, false);
-            core.transform.localScale = Vector3.one * boltSize;
-            core.AddComponent<MeshFilter>().sharedMesh = _coreMesh;
+            var shape = core.AddComponent<MeshFilter>();
+            shape.sharedMesh = _gemMesh;
             var renderer = core.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = glowMaterial;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -270,19 +282,16 @@ namespace Voxelforge.Gameplay
 
             var trail = root.AddComponent<TrailRenderer>();
             trail.sharedMaterial = glowMaterial;
-            trail.time = trailTime;
             trail.minVertexDistance = 0.1f;
-            trail.widthCurve = new AnimationCurve(new Keyframe(0f, boltSize * 0.8f), new Keyframe(1f, 0f));
             trail.shadowCastingMode = ShadowCastingMode.Off;
             trail.receiveShadows = false;
             trail.emitting = false;
 
             Light light = root.AddComponent<Light>();
             light.type = LightType.Point;
-            light.range = boltLightRange;
             light.shadows = LightShadows.None;
             light.enabled = false;
-            return new Bolt { Root = root, Core = renderer, Trail = trail, Light = light };
+            return new Bolt { Root = root, Shape = shape, Core = renderer, Trail = trail, Light = light };
         }
 
         void EnsureShared()
@@ -290,7 +299,8 @@ namespace Voxelforge.Gameplay
             if (_sparks != null)
                 return;
 
-            _coreMesh = BuildCoreMesh();
+            _gemMesh = BuildGemMesh();
+            _orbMesh = BuildOrbMesh();
 
             var sparksObject = new GameObject($"{name} Mana Sparks");
             _sparks = sparksObject.AddComponent<ParticleSystem>();
@@ -319,7 +329,6 @@ namespace Voxelforge.Gameplay
 
             _muzzleLight = new GameObject($"{name} Muzzle Flash").AddComponent<Light>();
             _muzzleLight.type = LightType.Point;
-            _muzzleLight.range = boltLightRange * 0.7f;
             _muzzleLight.shadows = LightShadows.None;
             _muzzleLight.enabled = false;
         }
@@ -344,7 +353,7 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>A small faceted gem (an octahedron), matching the mana crystals on the staff.</summary>
-        static Mesh BuildCoreMesh()
+        static Mesh BuildGemMesh()
         {
             Vector3[] v =
             {
@@ -353,6 +362,38 @@ namespace Voxelforge.Gameplay
             };
             int[] t = { 0, 4, 2, 0, 2, 5, 0, 5, 3, 0, 3, 4, 1, 2, 4, 1, 5, 2, 1, 3, 5, 1, 4, 3 };
             var mesh = new Mesh { name = "Mana Bolt Core", vertices = v, triangles = t };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        /// <summary>A low-poly ball of radius 0.5, for orbs.</summary>
+        static Mesh BuildOrbMesh()
+        {
+            const int Rings = 6, Segments = 10;
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+            for (int r = 0; r <= Rings; r++)
+            {
+                float polar = Mathf.PI * r / Rings;
+                for (int s = 0; s <= Segments; s++)
+                {
+                    float around = Mathf.PI * 2f * s / Segments;
+                    vertices.Add(0.5f * new Vector3(Mathf.Sin(polar) * Mathf.Cos(around), Mathf.Cos(polar),
+                        Mathf.Sin(polar) * Mathf.Sin(around)));
+                }
+            }
+            for (int r = 0; r < Rings; r++)
+            {
+                for (int s = 0; s < Segments; s++)
+                {
+                    int a = r * (Segments + 1) + s, b = a + Segments + 1;
+                    triangles.AddRange(new[] { a, a + 1, b, a + 1, b + 1, b });
+                }
+            }
+            var mesh = new Mesh { name = "Ability Orb Core" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;

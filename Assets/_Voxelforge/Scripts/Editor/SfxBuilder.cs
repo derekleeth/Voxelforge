@@ -114,10 +114,14 @@ namespace Voxelforge.Editor
             written.Add(Write("BoltFire", BoltFire(new Random(89))));
             written.Add(Write("BoltImpact", BoltImpact(new Random(97))));
             written.Add(Write("TorchCrackle", TorchCrackle(new Random(101), 6f)));
+            written.Add(Write("CastHum", CastHum()));
+            written.Add(Write("OrbRelease", OrbRelease(new Random(103))));
+            written.Add(Write("OrbImpact", OrbImpact(new Random(107))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
-                SetImportSettings(path, looping: path.EndsWith("TorchCrackle.wav", StringComparison.Ordinal));
+                SetImportSettings(path, looping: path.EndsWith("TorchCrackle.wav", StringComparison.Ordinal) ||
+                                                 path.EndsWith("CastHum.wav", StringComparison.Ordinal));
 
             BuildAssets();
             AssetDatabase.SaveAssets();
@@ -301,6 +305,57 @@ namespace Voxelforge.Editor
             foreach (float note in new[] { 1568f, 1976f, 2349f })
                 AddTone(buffer, 0.02f, note, note, 0.35f, 0.12f);
             return Finish(buffer, 0.9f);
+        }
+
+        /// <summary>
+        /// Gathering mana while casting (Roadmap 4.2): a low, breathing hum with a faint shimmer on top. Every partial
+        /// and every swell fits a whole number of times into the two seconds, so it loops without a seam.
+        /// </summary>
+        static float[] CastHum()
+        {
+            const float Seconds = 2f;
+            float[] buffer = New(Seconds);
+            (float frequency, float amp, float swell)[] partials =
+            {
+                (110f, 0.5f, 1f), (165f, 0.3f, 1.5f), (220f, 0.25f, 2f), (330f, 0.12f, 1f), (1320f, 0.05f, 3f), (1980f, 0.03f, 2.5f),
+            };
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float sample = 0f;
+                foreach ((float frequency, float amp, float swell) in partials)
+                {
+                    float breathe = 0.7f + 0.3f * Mathf.Sin(2f * Mathf.PI * swell * t);
+                    sample += Mathf.Sin(2f * Mathf.PI * frequency * t) * amp * breathe;
+                }
+                buffer[i] = sample;
+            }
+            Normalize(buffer, 0.55f);
+            return buffer;
+        }
+
+        /// <summary>The Arcane Orb leaving the hands: a deep whump under a rising swell, and a bright ring.</summary>
+        static float[] OrbRelease(Random rng)
+        {
+            float[] buffer = New(0.9f);
+            AddTone(buffer, 0f, 70f, 40f, 0.18f, 0.9f);
+            AddTone(buffer, 0f, 180f, 900f, 0.16f, 0.5f, sweepTime: 0.25f);
+            AddTone(buffer, 0f, 270f, 1350f, 0.14f, 0.25f, sweepTime: 0.25f);
+            AddNoise(buffer, rng, 0f, 0.12f, 0.45f, 200f, 4000f);
+            AddBell(buffer, 0.05f, 880f, 0.35f, 0.15f);
+            return Finish(buffer, 0.8f);
+        }
+
+        /// <summary>The Arcane Orb landing: a heavy boom, crumbling grit, and a ringing chord that fades.</summary>
+        static float[] OrbImpact(Random rng)
+        {
+            float[] buffer = New(1.4f);
+            AddNoise(buffer, rng, 0f, 0.22f, 1f, 40f, 2500f);
+            AddTone(buffer, 0f, 60f, 32f, 0.3f, 1f);
+            AddGrains(buffer, rng, 0.05f, 0.5f, 18, 0.03f, 0.25f, 400f, 5000f);
+            foreach (float note in new[] { 1046f, 1318f, 1568f })
+                AddTone(buffer, 0.03f, note, note, 0.45f, 0.1f);
+            return Finish(buffer, 0.95f);
         }
 
         /// <summary>
@@ -560,8 +615,6 @@ namespace Voxelforge.Editor
             serialized.FindProperty("pickupPop").objectReferenceValue = Clip("PickupPop");
             serialized.FindProperty("treeCreak").objectReferenceValue = Clip("TreeCreak");
             serialized.FindProperty("leafRustle").objectReferenceValue = Clip("LeafRustle");
-            serialized.FindProperty("boltFire").objectReferenceValue = Clip("BoltFire");
-            serialized.FindProperty("boltImpact").objectReferenceValue = Clip("BoltImpact");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;

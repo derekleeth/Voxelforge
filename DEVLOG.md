@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-10-29 - Session 1 (part 27): Rules on the Host, Sparkles on Your Screen 🎆 Roadmap 4.2
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Spells are split in two.** The host does the *rules* (mana, where the bolt flies, which block it breaks), then just announces what happened: "cast started", "it went off", "it hit stone here". Each PC turns those announcements (we call them **cues**) into sparkles and sounds. Details in DECISIONS.md **D-025**.
+- **Every spell has a "look" asset now** (`Data/Abilities/Looks/`): its colour, the shape of its bolt, its sparks and its sounds. A new spell can look totally different without touching any code.
+- **The Arcane Orb looks like an orb!** It's a big purple ball now, not a purple Mana Bolt. While you cast it, glowing motes swirl into your hands and a magic hum builds. When it goes off there's a flash and a deep *whump*, and where it lands it makes a big purple burst and a boom.
+- If you're not holding the staff, the orb now comes out of your hand instead of your eyes.
+
+### Tests: 293 / 293 passing ✅
+- Every kind of cue survives being sent over the network.
+- A bolt damages only the block it hits, and a fizzle damages nothing (4.3 will add craters).
+- Each spell finds its own look, and a spell with no look gets the default.
+- A "guard" test fails if anyone ever puts a colour, sound or particle effect into the rules code.
+
+### Things we learned
+- Big games split it the same way: the server decides *what* happened and every screen decides how it *looks*. That way a slow PC, or a server with no screen at all, still plays exactly the same game.
+
+### Next up
+- [x] Play-test 4.2 in split-screen: the Mana Bolt looks and sounds the same, the Arcane Orb's hand glow, hum, orb, burst, and cancelling a cast by moving ✅
+- [ ] Roadmap **4.3 Destructive Spell Mechanics** (craters!)
+
+---
+
 ## 2026-10-28 - Session 1 (part 26): Spells Are Real Now! ✨ Roadmap 4.1
 **Phase:** 4 - The Warcraft Injection
 
@@ -33,7 +57,7 @@
 
 ### Next up
 - [x] Play-test 4.1 in split-screen: mana bar, running dry, the Arcane Orb's cast bar, getting interrupted ✅
-- [ ] Roadmap **4.2 Spell Logic vs. Visual Cue Split**
+- [x] Roadmap **4.2 Spell Logic vs. Visual Cue Split** (part 27)
 
 ---
 

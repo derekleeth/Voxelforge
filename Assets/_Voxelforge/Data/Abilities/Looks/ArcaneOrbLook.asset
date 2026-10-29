@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: ArcaneOrbLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: 365b2c98db0eab042abd551b1106f65d, type: 2}
+  glow: {r: 0.8, g: 0.4, b: 1, a: 1}
+  coreShape: 1
+  coreSize: 0.45
+  trailTime: 0.35
+  lightIntensity: 6
+  lightRange: 10
+  muzzleSparks: 16
+  impactSparks: 70
+  impactSpeed: 7
+  castMotesPerSecond: 90
+  castLight: 3
+  castLoop: {fileID: 8300000, guid: f758a5df429b0764da732022f63cf5e7, type: 3}
+  castLoopVolume: 0.5
+  release: {fileID: 8300000, guid: a7f32b34f69e4044eb43a0deadb6a89e, type: 3}
+  releaseVolume: 0.9
+  impact: {fileID: 8300000, guid: aa54dd91b7d3e3c4c87f0a38f3d61c55, type: 3}
+  impactVolume: 1.1
+  fizzle: {fileID: 0}
+  maxDistance: 40

@@ -155,6 +155,8 @@ MonoBehaviour:
   blockMaterial: {fileID: 2100000, guid: 5ee5e8c52c9196249955d2e268fc5f7d, type: 2}
   visible: 1
   reticleSize: {x: 9, y: 2}
+  manaColor: {r: 0.25, g: 0.55, b: 1, a: 1}
+  castColor: {r: 1, g: 0.8, b: 0.3, a: 1}
 --- !u!4 &83969904
 Transform:
   m_ObjectHideFlags: 0
@@ -605,13 +607,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerFoley
   router: {fileID: 444543919}
   sounds: {fileID: 11400000, guid: 73f908f424a3b2b429f49fbff3f8f2c6, type: 2}
+  looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   footstepVolume: 0.25
   minStepInterval: 0.18
   jumpVolume: 0.5
   minLandAirTime: 0.3
   heavyLandSpeed: 14
-  boltFireVolume: 0.8
-  boltImpactVolume: 0.9
 --- !u!114 &444543918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1216,6 +1217,7 @@ MonoBehaviour:
   maxPitch: 70
   mouseDegreesPerPixel: 0.15
   stickDegreesPerSecond: 180
+  caveAmbient: 0.55
 --- !u!4 &1604232798
 Transform:
   m_ObjectHideFlags: 0

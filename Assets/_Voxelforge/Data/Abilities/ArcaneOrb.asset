@@ -27,4 +27,3 @@ MonoBehaviour:
   projectileSpeed: 18
   blockDamage: 120
   creatureDamage: 60
-  glow: {r: 0.8, g: 0.4, b: 1, a: 1}

@@ -7,7 +7,7 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// Shows what a player holds (<see cref="PlayerHands.HeldItem"/>, Roadmap 3.5) in their hero's right hand, on every
     /// PC: a tool or prop model where its <see cref="ItemDefinition"/> says, or a small block. While the host says they're
-    /// mining (<see cref="PlayerMiner.IsMining"/>) it swings, and when a ranged item shoots (<see cref="PlayerStaff"/>,
+    /// mining (<see cref="PlayerMiner.IsMining"/>) it swings, and when a ranged item shoots (<see cref="PlayerAbilityCues"/>,
     /// Roadmap 3.6) it kicks back. An item with a <see cref="ItemDefinition.HeldLight"/> (a torch) lights up around the hero,
     /// flickering like a placed one. Presentation only.
     /// </summary>
@@ -41,7 +41,7 @@ namespace Voxelforge.Gameplay
         PlayerHands _hands;
         PlayerMiner _miner;
         PlayerController _player;
-        PlayerStaff _staff;
+        PlayerAbilityCues _cues;
         Transform _hand;
         Transform _pivot;
         MeshFilter _filter;
@@ -60,7 +60,7 @@ namespace Voxelforge.Gameplay
             _hands = GetComponent<PlayerHands>();
             _miner = GetComponent<PlayerMiner>();
             _player = GetComponent<PlayerController>();
-            _staff = GetComponent<PlayerStaff>();
+            _cues = GetComponent<PlayerAbilityCues>();
         }
 
         void Start()
@@ -115,7 +115,7 @@ namespace Voxelforge.Gameplay
             if (mining)
                 _swingTime += Time.deltaTime;
             float swing = Mathf.Sin(_swingTime * swingRate * Mathf.PI * 2f) * 0.5f + 0.5f;
-            float sinceShot = _staff != null ? Time.time - _staff.LastShotTime : float.PositiveInfinity;
+            float sinceShot = _cues != null ? Time.time - _cues.LastShotTime : float.PositiveInfinity;
             float recoil = recoilAngle * Mathf.Exp(-sinceShot * recoilSettle);
             _pivot.localRotation = Quaternion.AngleAxis(-swing * swingAngle * _swingWeight + recoil, swingAxis);
 
@@ -128,6 +128,9 @@ namespace Voxelforge.Gameplay
                 _light.intensity = glow.intensity * (1f + glow.flicker * (wobble - 0.5f));
             }
         }
+
+        /// <summary>The hero's right hand bone, or null before <c>Start</c> or on a hero without one.</summary>
+        public Transform Hand => _hand;
 
         /// <summary>
         /// Where a ranged item's bolt leaves the model in the world (<see cref="ItemDefinition.Muzzle"/>), and which way the

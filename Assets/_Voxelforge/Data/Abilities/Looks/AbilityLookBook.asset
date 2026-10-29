@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb573af5ac34bc14b831231d90befbe4, type: 3}
+  m_Name: AbilityLookBook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLookBook
+  defaultLook: {fileID: 11400000, guid: ff5b38ae4b5595e44ad7faf08db55e62, type: 2}
+  looks:
+  - {fileID: 11400000, guid: ff5b38ae4b5595e44ad7faf08db55e62, type: 2}
+  - {fileID: 11400000, guid: a198e8b0409510643aedcf209a5f0746, type: 2}

@@ -5,6 +5,36 @@
 
 ---
 
+## D-025: Spell Rules vs. Spell Cues (Logic/Visual Split)
+- **Date:** 2026-10-29
+- **Status:** Accepted (play-tested in split-screen 2026-10-29)
+
+### Decisions
+- **The host only runs rules and says what happened.** `AbilityCaster`, `ManaBoltFlight` and the new **`AbilityImpact`** (plain C#: a hit becomes a list of `VoxelDamageRequest`s) decide everything. `PlayerStaff` applies the requests through `VoxelWorldManager.RequestDamageVoxel` (Law #3). The world's editor stays hidden, so the math never touches the world directly.
+  - 4.3's craters go into `AbilityImpact.Resolve` (more requests, using the AoE radius). Nothing else needs to change.
+- **One cue channel per hero.** `PlayerAbilityCues` (a NetworkBehaviour on the Player prefab) sends `AbilityCue` structs to every PC with one reliable RPC. There are six kinds: `CastBegan`, `CastStopped`, `Released`, `Launched`, `Impact` and `Fizzled`. Only the fields a kind uses are sent.
+  - It replaced `PlayerCaster`'s three cast RPCs and `PlayerStaff`'s two bolt RPCs. The owner-only "Not enough mana" message stays its own RPC, because it's a message, not something that happened.
+  - `PlayerCaster` keeps the cast bar and cooldowns in step from the cues. Its public API didn't change, so `PlayerHud` didn't either.
+- **How a spell looks and sounds is an `AbilityLook` asset**, never part of the `AbilityDefinition`:
+  - colour, core shape (gem or orb) and size, trail, light
+  - muzzle and impact sparks
+  - cast motes and cast light
+  - sounds: a cast loop, release, impact and fizzle
+  - The looks are listed in an `AbilityLookBook` with a fallback look, the same pattern as `SoundBook` (D-022). `glow` left `AbilityDefinition`. `boltFire` / `boltImpact` left `SoundBook` and moved into the Mana Bolt's look.
+- **Views only listen.**
+  - `ManaBoltView` draws any projectile from its look. With nothing held, it starts at the right hand.
+  - The new `CastingView` swirls motes into both hands and grows a light during a cast, flashes when the spell goes off, and puffs when it's stopped.
+  - `PlayerFoley` plays a hum during a cast and the release, impact and fizzle sounds, from cues and looks. It no longer listens to the VFX component.
+- **A test guards the line:** `AbilityCueTests.Rules_HoldNothingYouSeeOrHear` fails if a rules class (definitions, caster, flight, impact, cue, `PlayerCaster`, `PlayerStaff`, `PlayerAbilityCues`) gets a field holding a colour, material, sound, particle system, light, renderer, look or view.
+- **New look for the Arcane Orb:** a 0.45 m purple orb with a longer trail and a 70-spark burst. While casting it has hand motes and the synthesised `CastHum` loop; when it goes off and lands it plays `OrbRelease` and `OrbImpact`. The Mana Bolt looks and sounds as before.
+
+### Deferred on purpose
+- Hearthing (`PlayerHearth`/`HearthView`) keeps its own RPCs. It could move onto cues later.
+- Creature damage and health: Phase 5. Cue kinds for them get added when they're needed.
+- An `AbilityElement` default look (for example, every Fire spell glowing orange) waits until 4.6 has enough spells to need it.
+
+---
+
 ## D-024: The Ability Framework (Spells, Mana, Cooldowns, Cast Times)
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested in split-screen 2026-10-29)

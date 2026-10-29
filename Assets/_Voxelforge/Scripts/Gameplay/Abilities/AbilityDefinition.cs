@@ -5,6 +5,7 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// One spell or ability template (Roadmap 4.1): what it costs, how long it takes, what it does. The host runs it
     /// (<see cref="AbilityCaster"/>, <see cref="PlayerCaster"/>), so these numbers are only ever trusted on the host.
+    /// Only rules live here (Roadmap 4.2): how it looks and sounds is its <see cref="AbilityLook"/>.
     /// Create one with Assets &gt; Create &gt; Voxelforge &gt; Ability, then add it to the <see cref="AbilityBook"/>.
     /// </summary>
     [CreateAssetMenu(menuName = "Voxelforge/Ability", fileName = "NewAbility")]
@@ -54,10 +55,6 @@ namespace Voxelforge.Gameplay
         [Tooltip("Damage to creatures. Nothing has health until Phase 5, so it's only kept for now.")]
         [SerializeField, Min(0f)] float creatureDamage;
 
-        [Header("Look")]
-        [Tooltip("Colour of the bolt, its light, the muzzle flash and the burst.")]
-        [SerializeField] Color glow = new Color(0.35f, 0.85f, 1f);
-
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public string Description => description;
@@ -74,7 +71,6 @@ namespace Voxelforge.Gameplay
         public float ProjectileSpeed => projectileSpeed;
         public float BlockDamage => blockDamage;
         public float CreatureDamage => creatureDamage;
-        public Color Glow => glow;
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static AbilityDefinition Create(ushort id, string displayName, float manaCost = 0f, float cooldown = 0f,

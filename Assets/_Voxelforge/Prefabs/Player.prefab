@@ -24,6 +24,8 @@ GameObject:
   - component: {fileID: 520568974359262074}
   - component: {fileID: 8021262987991610499}
   - component: {fileID: 6764939064301674151}
+  - component: {fileID: 3957941889791426866}
+  - component: {fileID: 8872604111369299944}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -299,15 +301,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ManaBoltView
   glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
-  boltSize: 0.22
+  looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   glowBoost: 5
-  trailTime: 0.18
-  boltLightIntensity: 4
-  boltLightRange: 7
   converge: 0.1
   flashTime: 0.12
-  burstSparks: 28
-  muzzleSparks: 8
 --- !u!114 &520568974359262074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -359,6 +356,34 @@ MonoBehaviour:
   maxMana: 100
   manaRegen: 10
   messageSeconds: 1.5
+--- !u!114 &3957941889791426866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acd0e3f0334d2d44da3ddc6a2832637c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerAbilityCues
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &8872604111369299944
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4e8fb46c0add6142b82f0c1c84e8bd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.CastingView
+  glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
+  animator: {fileID: 2811615453234438372}
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

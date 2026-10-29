@@ -25,7 +25,7 @@ namespace Voxelforge.Gameplay
 
     /// <summary>
     /// Every sound the game plays (Roadmap 3.9), in one asset: a <see cref="SurfaceSound"/> per block, the one-off
-    /// sounds, and the loops props make. Kept out of <see cref="BlockDefinition"/> so the voxel engine knows nothing
+    /// sounds, and the loops props make. Spells keep theirs in their <see cref="AbilityLook"/> (4.2). Kept out of <see cref="BlockDefinition"/> so the voxel engine knows nothing
     /// about audio. Built by <c>SfxBuilder</c> (Voxelforge &gt; Build Sound Effects).
     /// </summary>
     [CreateAssetMenu(menuName = "Voxelforge/Sound Book", fileName = "SoundBook")]
@@ -43,9 +43,6 @@ namespace Voxelforge.Gameplay
         [Tooltip("A chopped tree falling.")]
         [SerializeField] AudioClip treeCreak;
         [SerializeField] AudioClip leafRustle;
-        [Tooltip("The M.G.R.S. firing a Mana Bolt (Roadmap 3.6).")]
-        [SerializeField] AudioClip boltFire;
-        [SerializeField] AudioClip boltImpact;
 
         [Header("Loops")]
         [SerializeField] AmbientLoop[] loops = Array.Empty<AmbientLoop>();
@@ -57,8 +54,6 @@ namespace Voxelforge.Gameplay
         public AudioClip PickupPop => pickupPop;
         public AudioClip TreeCreak => treeCreak;
         public AudioClip LeafRustle => leafRustle;
-        public AudioClip BoltFire => boltFire;
-        public AudioClip BoltImpact => boltImpact;
         public AmbientLoop[] Loops => loops;
 
         /// <summary>How the block with this ID sounds. Never null if there's a default surface.</summary>

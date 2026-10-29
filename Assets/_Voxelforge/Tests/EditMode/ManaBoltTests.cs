@@ -123,7 +123,8 @@ namespace Voxelforge.Tests
         [Test]
         public void Hits_BreakDirtInOneAndStoneInTwo_ButNotBedrock()
         {
-            // What PlayerStaff does with a hit, on the host.
+            // What PlayerStaff does with a hit, on the host: the damage math (AbilityImpact, 4.2), then the edits.
+            var damage = new List<VoxelDamageRequest>();
             VoxelDamageResult Shoot(int3 target, float time)
             {
                 _ended.Clear();
@@ -132,7 +133,12 @@ namespace Voxelforge.Tests
                 flight.TryLaunch(from, East, _bolt, out _);
                 ManaBoltEnd end = FlyUntilEnd(flight);
                 Assert.AreEqual(target, end.Hit.Block);
-                return _editor.RequestDamageVoxel(end.Hit.Block, end.Damage, P1, time);
+                Assert.AreEqual(_bolt.Id, end.AbilityId);
+                damage.Clear();
+                AbilityImpact.Resolve(_bolt, end, damage);
+                Assert.AreEqual(1, damage.Count, "A bolt damages only the block it hits until 4.3's craters.");
+                Assert.AreEqual(target, damage[0].Block);
+                return _editor.RequestDamageVoxel(damage[0].Block, damage[0].Amount, P1, time);
             }
 
             var dirt = new int3(10, 34, 2);

@@ -44,8 +44,6 @@ MonoBehaviour:
   pickupPop: {fileID: 8300000, guid: dcf9661d0c60cbb4a8c1f757bd3d162d, type: 3}
   treeCreak: {fileID: 8300000, guid: 4fa8c22f6690d7b429caba6493099dd0, type: 3}
   leafRustle: {fileID: 8300000, guid: f24c2db460fe51843b80a80f1753dcbd, type: 3}
-  boltFire: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
-  boltImpact: {fileID: 8300000, guid: 25107508f75e6444e94e1d610b8f1c17, type: 3}
   loops:
   - decoration: {fileID: 11400000, guid: a6e88c1d67d36444481add0b0458f1e6, type: 2}
     clip: {fileID: 8300000, guid: 1c22145e70ef6d04ea3bc34d0a9a1fb3, type: 3}

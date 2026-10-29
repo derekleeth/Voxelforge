@@ -9,14 +9,18 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// The sounds heroes make, for every hero on every PC (Roadmap 3.9, D-022): footsteps that sound like the block
     /// under the foot (<see cref="HeroFootIK.StepCount"/>), a jump whoosh, a landing thump that gets heavier with the
-    /// fall, and the M.G.R.S. firing and its Mana Bolt landing (<see cref="ManaBoltView"/>, 3.6). Presentation only: it
-    /// reads what each PC already sees and plays it through the <see cref="SoundRouter"/>.
+    /// fall, and its spells (4.2): a hum while casting, then the release, impact and fizzle sounds of the spell's
+    /// <see cref="AbilityLook"/>, from the <see cref="AbilityCue"/>s the host sends (<see cref="PlayerAbilityCues"/>).
+    /// Presentation only: it reads what each PC already knows and plays it through the <see cref="SoundRouter"/>.
     /// </summary>
     public sealed class PlayerFoley : MonoBehaviour
     {
         [SerializeField] SoundRouter router;
 
         [SerializeField] SoundBook sounds;
+
+        [Tooltip("Data/Abilities/Looks/AbilityLookBook.asset: each spell's sounds.")]
+        [SerializeField] AbilityLookBook looks;
 
         [SerializeField, Range(0f, 2f)] float footstepVolume = 0.25f;
 
@@ -31,18 +35,15 @@ namespace Voxelforge.Gameplay
         [Tooltip("Falling this fast (m/s) or faster lands at full volume.")]
         [SerializeField, Min(1f)] float heavyLandSpeed = 14f;
 
-        [SerializeField, Range(0f, 2f)] float boltFireVolume = 0.8f;
-
-        [SerializeField, Range(0f, 2f)] float boltImpactVolume = 0.9f;
-
         sealed class Hero
         {
             public PlayerController Player;
             public HeroFootIK Feet;
             public HeroAnimator Animator;
-            public ManaBoltView Bolts;
-            public Action<Vector3> OnFired;
-            public Action<Vector3, bool> OnImpacted;
+            public PlayerAbilityCues Cues;
+            public Action<AbilityCue, AbilityDefinition> OnCue;
+            public int CastLoop;
+            public float CastLoopVolume;
             public int StepCount;
             public float LastStepTime = float.NegativeInfinity;
             public bool WasGrounded = true;
@@ -74,16 +75,13 @@ namespace Voxelforge.Gameplay
                 Player = player,
                 Feet = player.GetComponentInChildren<HeroFootIK>(),
                 Animator = player.GetComponentInChildren<HeroAnimator>(),
-                Bolts = player.GetComponent<ManaBoltView>(),
+                Cues = player.GetComponent<PlayerAbilityCues>(),
             };
             hero.StepCount = hero.Feet != null ? hero.Feet.StepCount : 0;
-            if (hero.Bolts != null)
+            if (hero.Cues != null)
             {
-                hero.OnFired = position => Play(sounds != null ? sounds.BoltFire : null, position, boltFireVolume, 1f, 40f);
-                hero.OnImpacted = (position, hitBlock) =>
-                    Play(sounds != null ? sounds.BoltImpact : null, position, boltImpactVolume * (hitBlock ? 1f : 0.5f), hitBlock ? 1f : 1.3f, 40f);
-                hero.Bolts.Fired += hero.OnFired;
-                hero.Bolts.Impacted += hero.OnImpacted;
+                hero.OnCue = (cue, ability) => OnCue(hero, cue, ability);
+                hero.Cues.Received += hero.OnCue;
             }
             _heroes.Add(hero);
         }
@@ -98,11 +96,9 @@ namespace Voxelforge.Gameplay
         void Forget(int index)
         {
             Hero hero = _heroes[index];
-            if (hero.Bolts != null)
-            {
-                hero.Bolts.Fired -= hero.OnFired;
-                hero.Bolts.Impacted -= hero.OnImpacted;
-            }
+            if (hero.Cues != null)
+                hero.Cues.Received -= hero.OnCue;
+            StopCastLoop(hero);
             _heroes.RemoveAt(index);
         }
 
@@ -118,6 +114,8 @@ namespace Voxelforge.Gameplay
                     Forget(i);
                     continue;
                 }
+                if (hero.CastLoop != 0)
+                    router.MoveLoop(hero.CastLoop, Chest(hero.Player), hero.CastLoopVolume);
                 if (hero.Player.HasLanded)
                     Listen(hero);
             }
@@ -169,6 +167,47 @@ namespace Voxelforge.Gameplay
             }
             hero.WasGrounded = grounded;
         }
+
+        void OnCue(Hero hero, AbilityCue cue, AbilityDefinition ability)
+        {
+            AbilityLook look = looks != null ? looks.For(ability) : null;
+            if (router == null || look == null)
+                return;
+            switch (cue.Kind)
+            {
+                case AbilityCueKind.CastBegan:
+                    StopCastLoop(hero);
+                    hero.CastLoopVolume = look.CastLoopVolume;
+                    hero.CastLoop = router.StartLoop(look.CastLoop, Chest(hero.Player), look.CastLoopVolume, look.MaxDistance,
+                        SoundCategory.Sfx);
+                    break;
+                case AbilityCueKind.CastStopped:
+                    StopCastLoop(hero);
+                    break;
+                case AbilityCueKind.Released:
+                    StopCastLoop(hero);
+                    Play(look.Release, Chest(hero.Player), look.ReleaseVolume, UnityEngine.Random.Range(0.96f, 1.04f), look.MaxDistance);
+                    break;
+                case AbilityCueKind.Impact:
+                    Play(look.Impact, cue.Position, look.ImpactVolume, 1f, look.MaxDistance);
+                    break;
+                case AbilityCueKind.Fizzled:
+                    if (look.Fizzle != null)
+                        Play(look.Fizzle, cue.Position, look.ImpactVolume, 1f, look.MaxDistance);
+                    else
+                        Play(look.Impact, cue.Position, look.ImpactVolume * 0.5f, 1.3f, look.MaxDistance);
+                    break;
+            }
+        }
+
+        void StopCastLoop(Hero hero)
+        {
+            if (hero.CastLoop != 0 && router != null)
+                router.StopLoop(hero.CastLoop);
+            hero.CastLoop = 0;
+        }
+
+        static float3 Chest(PlayerController player) => (float3)player.VisualRoot.position + new float3(0f, 1.2f, 0f);
 
         /// <summary>
         /// The surface under <paramref name="point"/>, or under the hero's middle when the foot is over the edge.

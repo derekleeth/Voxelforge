@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: ManaBoltLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: ccb4c5806064b274f8dd3b7ca85b4eda, type: 2}
+  glow: {r: 0.35, g: 0.85, b: 1, a: 1}
+  coreShape: 0
+  coreSize: 0.22
+  trailTime: 0.18
+  lightIntensity: 4
+  lightRange: 7
+  muzzleSparks: 8
+  impactSparks: 28
+  impactSpeed: 5
+  castMotesPerSecond: 50
+  castLight: 2.5
+  castLoop: {fileID: 0}
+  castLoopVolume: 0.5
+  release: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
+  releaseVolume: 0.8
+  impact: {fileID: 8300000, guid: 25107508f75e6444e94e1d610b8f1c17, type: 3}
+  impactVolume: 0.9
+  fizzle: {fileID: 0}
+  maxDistance: 40
