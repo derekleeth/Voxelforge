@@ -188,6 +188,7 @@ MonoBehaviour:
   skin: {fileID: 11400000, guid: 3f58f1fc7d2f9814fb4918af15a97a19, type: 2}
   items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
   world: {fileID: 1325734895}
+  blockMaterial: {fileID: 2100000, guid: 5ee5e8c52c9196249955d2e268fc5f7d, type: 2}
   visible: 1
   sortingOrder: 10
 --- !u!1 &122390141

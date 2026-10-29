@@ -15,6 +15,8 @@ namespace Voxelforge.Gameplay
         Refused,
         /// <summary><see cref="CombatTextEvent.Amount"/> of <see cref="CombatTextEvent.ItemId"/> went into the bag.</summary>
         Pickup,
+        /// <summary>The host said no to something in the bag (<see cref="CombatTextEvent.BagReason"/>, Roadmap 4.5).</summary>
+        BagRefused,
     }
 
     /// <summary>
@@ -32,6 +34,8 @@ namespace Voxelforge.Gameplay
         public ushort ItemId;
         /// <summary>For <see cref="CombatTextKind.Refused"/>.</summary>
         public CastCheck Reason;
+        /// <summary>For <see cref="CombatTextKind.BagRefused"/>.</summary>
+        public BagRefusal BagReason;
         /// <summary>Where in the world it starts floating.</summary>
         public float3 Position;
     }

@@ -7,8 +7,8 @@ namespace Voxelforge.Gameplay
     /// The comic-book RPG HUD for every player on this PC (Roadmap 4.4): an action bar with mana, a cast bar and floating
     /// combat text each. One overlay canvas holds a <see cref="PlayerHudPanel"/> per local player, and every frame each
     /// panel is fitted to <b>that player's own</b> part of the screen (<see cref="PlayerScreenArea"/>, CLAUDE.md Law #5),
-    /// so it follows them through Dynamic and Classic splits and merges. The reticle, bag and windows stay in
-    /// <see cref="PlayerHud"/>.
+    /// so it follows them through Dynamic and Classic splits and merges. Each panel also holds that player's inventory
+    /// window (4.5). The reticle, held item and crafting window stay in <see cref="PlayerHud"/>.
     /// </summary>
     public sealed class CombatHud : MonoBehaviour
     {
@@ -25,6 +25,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("For block names.")]
         [SerializeField] VoxelWorldManager world;
 
+        [Tooltip("Materials/VoxelBlocks.mat: for block pictures in the inventory window.")]
+        [SerializeField] Material blockMaterial;
+
         [SerializeField] bool visible = true;
 
         [Tooltip("Above the world, under the IMGUI windows (which always draw last).")]
@@ -35,6 +38,10 @@ namespace Voxelforge.Gameplay
 
         readonly PlayerHudPanel[] _panels = new PlayerHudPanel[MaxSlots];
         RectTransform _canvas;
+        ItemLooks _looks;
+        ItemIcons _icons;
+
+        ItemIcons Icons => _icons ??= new ItemIcons(_looks ??= new ItemLooks(items, blockMaterial));
 
         void Awake()
         {
@@ -61,6 +68,8 @@ namespace Voxelforge.Gameplay
                 _panels[i]?.Dispose();
                 _panels[i] = null;
             }
+            _icons?.Dispose();
+            _looks?.Dispose();
         }
 
         void LateUpdate()
@@ -82,7 +91,7 @@ namespace Voxelforge.Gameplay
                     continue;
                 }
 
-                panel = _panels[slot] ??= new PlayerHudPanel(_canvas, skin, (byte)slot, ItemName);
+                panel = _panels[slot] ??= new PlayerHudPanel(_canvas, skin, (byte)slot, ItemName, id => Icons.Get(id));
                 panel.Bind(player, input?.ControlScheme);
                 panel.SetVisible(true);
                 Rect own = PlayerScreenArea.Own(mode, player, view);
@@ -93,6 +102,9 @@ namespace Voxelforge.Gameplay
                     : own;
                 panel.Tick(view, own, text, scale, now);
             }
+
+            VoxelWorld voxels = world != null ? world.World : null;
+            _icons?.DrawQueued(voxels != null ? voxels.Blocks : default);
         }
 
         string ItemName(ushort itemId)

@@ -37,7 +37,10 @@ namespace Voxelforge.Gameplay
             _cues.Received += OnCue;
             _caster.Refused += OnRefused;
             if (_bag != null)
+            {
                 _bag.PickedUp += OnPickedUp;
+                _bag.Refused += OnBagRefused;
+            }
         }
 
         void OnDisable()
@@ -45,7 +48,10 @@ namespace Voxelforge.Gameplay
             _cues.Received -= OnCue;
             _caster.Refused -= OnRefused;
             if (_bag != null)
+            {
                 _bag.PickedUp -= OnPickedUp;
+                _bag.Refused -= OnBagRefused;
+            }
         }
 
         float3 Head => (float3)transform.position + new float3(0f, overHead, 0f);
@@ -78,6 +84,9 @@ namespace Voxelforge.Gameplay
 
         void OnPickedUp(ushort itemId, int count) =>
             Raise(new CombatTextEvent { Kind = CombatTextKind.Pickup, ItemId = itemId, Amount = count, Position = Head });
+
+        void OnBagRefused(BagRefusal reason) =>
+            Raise(new CombatTextEvent { Kind = CombatTextKind.BagRefused, BagReason = reason, Position = Head });
 
         void Raise(in CombatTextEvent e) => Raised?.Invoke(e);
     }

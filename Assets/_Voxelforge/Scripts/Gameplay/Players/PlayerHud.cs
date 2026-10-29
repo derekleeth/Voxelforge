@@ -6,13 +6,12 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// A tiny HUD for each player on this PC (Roadmap 3.2, D-015): a reticle in their team colour where they aim, and
-    /// their bag ("[Dirt 12] · Stone 5", with the item they hold in brackets, 3.3) under their hero, and their crafting
+    /// A tiny HUD for each player on this PC (Roadmap 3.2, D-015): a reticle in their team colour where they aim, the
+    /// item they hold ("[Dirt 12]", 3.3; the whole bag is the 4.5 inventory window) under their hero, and their crafting
     /// window when it's open (3.5). Everything is placed through <b>that player's own camera
     /// and view</b> (CLAUDE.md Law #5), so it stays on their side of the screen when it's split and follows their hero
     /// when it isn't. Holding the M.G.R.S. (3.6), the reticle reaches as far as its bolts and shows the recharge. The
-    /// action bar, mana, cast bar and combat text are drawn by <see cref="CombatHud"/> (4.4); the bag becomes a real
-    /// inventory window in 4.5.
+    /// action bar, mana, cast bar, combat text and inventory window are drawn by <see cref="CombatHud"/> (4.4, 4.5).
     /// </summary>
     public sealed class PlayerHud : MonoBehaviour
     {
@@ -77,6 +76,10 @@ namespace Voxelforge.Gameplay
 
         void DrawHud(PlayerController player, PlayerView view, float scale)
         {
+            // The inventory window (Roadmap 4.5) covers the middle of the view; these would draw over it.
+            if (player.TryGetComponent(out PlayerInventory inventory) && inventory.IsOpen)
+                return;
+
             float3 feet = player.transform.position;
             PlayerInputFrame input = player.OwnerInput;
             // The reticle sits where the aim ray from the hero's eyes really lands, out as far as anything they can cast
@@ -186,32 +189,21 @@ namespace Voxelforge.Gameplay
             GUI.DrawTexture(new Rect(x, y, width, height), Texture2D.whiteTexture);
 
         /// <summary>
-        /// "[Dirt 12]  ·  Stone 5": the block <paramref name="selected"/> for building is bracketed, in
-        /// <paramref name="teamColor"/> if there is one (the drop shadow has none).
+        /// "[Dirt 1204]": the item <paramref name="selected"/> in hand and how many the bag holds, in
+        /// <paramref name="teamColor"/> if there is one (the drop shadow has none). The rest of the bag is in the
+        /// inventory window (Roadmap 4.5).
         /// </summary>
         string DescribeBag(PlayerBlockBag bag, ushort selected, Color? teamColor)
         {
             _text.Clear();
-            for (int i = 0; i < bag.SlotCount; i++)
-            {
-                ItemStack stack = bag.GetSlot(i);
-                if (stack.Count == 0)
-                    continue;
-                if (_text.Length > 0)
-                    _text.Append("  ·  ");
-                if (stack.ItemId == selected)
-                {
-                    if (teamColor.HasValue)
-                        _text.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(teamColor.Value)).Append('>');
-                    _text.Append('[').Append(ItemName(stack.ItemId)).Append(' ').Append(stack.Count).Append(']');
-                    if (teamColor.HasValue)
-                        _text.Append("</color>");
-                }
-                else
-                {
-                    _text.Append(ItemName(stack.ItemId)).Append(' ').Append(stack.Count);
-                }
-            }
+            int count = selected != BlockIds.Air ? bag.CountOf(selected) : 0;
+            if (count == 0)
+                return string.Empty;
+            if (teamColor.HasValue)
+                _text.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(teamColor.Value)).Append('>');
+            _text.Append('[').Append(ItemName(selected)).Append(' ').Append(count).Append(']');
+            if (teamColor.HasValue)
+                _text.Append("</color>");
             return _text.ToString();
         }
 

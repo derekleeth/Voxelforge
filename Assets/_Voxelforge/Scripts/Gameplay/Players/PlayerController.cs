@@ -49,7 +49,10 @@ namespace Voxelforge.Gameplay
 
         IPlayerInputSource _inputSource;
         PlayerHands _hands;
+        PlayerInventory _inventory;
         uint _nextSequence;
+        // Buttons still held from inside the inventory window, ignored until let go so closing it doesn't also jump.
+        PlayerButtons _swallowed;
 
         // Host-only state.
         PlayerId _assignedId;
@@ -108,8 +111,14 @@ namespace Voxelforge.Gameplay
         /// <summary>This player's team colour (by local slot), for the cloth and anything else that marks them out.</summary>
         public Color TeamColor => slotColors.Length > 0 ? slotColors[LocalSlot % slotColors.Length] : Color.white;
 
-        /// <summary>Owner only: the frame just sent to the host, for owner-side tools such as aiming at blocks.</summary>
+        /// <summary>
+        /// Owner only: the frame just sent to the host, for owner-side tools such as aiming at blocks. While the
+        /// inventory window is open (Roadmap 4.5) it has no movement and no buttons: the window has the controls.
+        /// </summary>
         public PlayerInputFrame OwnerInput { get; private set; }
+
+        /// <summary>Owner only: this frame's controls as pressed, even while a window has them (<see cref="PlayerInventory"/>).</summary>
+        public PlayerInputFrame OwnerRawInput { get; private set; }
 
         /// <summary>Host only: the newest frame received from the owner. Host-side actions such as mining read it.</summary>
         public PlayerInputFrame ServerInput => _latestInput;
@@ -204,6 +213,7 @@ namespace Voxelforge.Gameplay
         void Awake()
         {
             _hands = GetComponent<PlayerHands>();
+            _inventory = GetComponent<PlayerInventory>();
         }
 
         public override void OnNetworkSpawn()
@@ -229,6 +239,7 @@ namespace Voxelforge.Gameplay
             AnyDespawned?.Invoke(this);
             _inputSource = null;
             OwnerInput = default;
+            OwnerRawInput = default;
         }
 
         public override void OnDestroy()
@@ -284,6 +295,20 @@ namespace Voxelforge.Gameplay
                 PlayerInputFrame frame = _inputSource.Read();
                 frame.Sequence = _nextSequence++;
                 frame.HeldItem = _hands != null ? _hands.OwnerSelected : BlockIds.Air;
+                OwnerRawInput = frame;
+                frame.Buttons &= ~PlayerButtons.Inventory;
+                if (_inventory != null && _inventory.IsOpen)
+                {
+                    // The hero stands still while the window has the controls (Roadmap 4.5); the camera still turns.
+                    frame.Move = float2.zero;
+                    _swallowed = frame.Buttons;
+                    frame.Buttons = PlayerButtons.None;
+                }
+                else
+                {
+                    _swallowed &= frame.Buttons;
+                    frame.Buttons &= ~_swallowed;
+                }
                 OwnerInput = frame;
                 SubmitInputRpc(frame);
             }

@@ -48,6 +48,7 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.CraterHit:
                     return 1.6f;
                 case CombatTextKind.Refused:
+                case CombatTextKind.BagRefused:
                     return 1.2f;
                 case CombatTextKind.Pickup:
                     return 1.4f;

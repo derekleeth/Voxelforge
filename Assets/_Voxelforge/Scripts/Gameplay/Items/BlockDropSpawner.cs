@@ -161,7 +161,10 @@ namespace Voxelforge.Gameplay
                 float3 middle = (float3)player.transform.position + new float3(0f, HeroMiddle, 0f);
                 float distance = math.distance(position, middle);
                 // A full bag can't take this block, so the drop stays for someone else.
-                if (distance < nearest && bag.ServerRoomFor(drop.BlockId) > 0)
+                bool room = bag.ServerRoomFor(drop.BlockId) > 0;
+                if (!room && distance <= pickupRadius)
+                    bag.ServerTellBagFull();
+                if (distance < nearest && room)
                 {
                     nearest = distance;
                     nearestBag = bag;

@@ -40,6 +40,16 @@ namespace Voxelforge.Gameplay
         /// <summary>Owner only: the item picked from the bag, or <see cref="BlockIds.Air"/> when the bag is empty.</summary>
         public ushort OwnerSelected => _selected;
 
+        /// <summary>Owner only: hold <paramref name="itemId"/> if the bag has one (from the inventory window, Roadmap 4.5).</summary>
+        public void OwnerSelect(ushort itemId)
+        {
+            if (_bag.CountOf(itemId) > 0)
+            {
+                _selected = itemId;
+                _selectedSlot = -1;
+            }
+        }
+
         /// <summary>Every PC: what the host agreed this player is holding (<see cref="BlockIds.Air"/> = empty hands).</summary>
         public ushort HeldItem => _held.Value;
 

@@ -469,13 +469,20 @@ namespace Voxelforge.Gameplay
 
         /// <summary>
         /// Locks the mouse while a keyboard + mouse player is in the game. Esc lets it go, and a click on the game
-        /// takes it back.
+        /// takes it back. Their open inventory window (Roadmap 4.5) frees it too, so they can point at slots.
         /// </summary>
         void UpdateCursor()
         {
             bool mousePlayer = false;
             for (int i = 0; i < _activeCount; i++)
-                mousePlayer |= _inputs[_active[i]].UsesMouse;
+            {
+                int slot = _active[i];
+                if (!_inputs[slot].UsesMouse)
+                    continue;
+                PlayerController controller = _controllers[slot];
+                bool windowOpen = controller != null && controller.TryGetComponent(out PlayerInventory inventory) && inventory.IsOpen;
+                mousePlayer |= !windowOpen;
+            }
 
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 _cursorReleased = true;

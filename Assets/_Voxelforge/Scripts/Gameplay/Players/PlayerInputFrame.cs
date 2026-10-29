@@ -36,6 +36,8 @@ namespace Voxelforge.Gameplay
         ActionSlot7 = 1 << 14,
         ActionSlot8 = 1 << 15,
         ActionSlot9 = 1 << 16,
+        /// <summary>Open or close this player's inventory window (Roadmap 4.5, <see cref="PlayerInventory"/>). Not sent to the host.</summary>
+        Inventory = 1 << 17,
     }
 
     public static class ActionSlotButtons

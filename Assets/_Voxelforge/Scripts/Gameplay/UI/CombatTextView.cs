@@ -116,6 +116,11 @@ namespace Voxelforge.Gameplay
                     colour = _skin.refusal;
                     size *= 0.85f;
                     break;
+                case CombatTextKind.BagRefused:
+                    words = e.BagReason == BagRefusal.BagFull ? "Bag full!" : "No room to take that bag off!";
+                    colour = _skin.refusal;
+                    size *= 0.85f;
+                    break;
                 case CombatTextKind.Pickup:
                     words = $"+{e.Amount} {_itemName?.Invoke(e.ItemId) ?? "?"}";
                     colour = _skin.pickup;

@@ -28,6 +28,8 @@ namespace Voxelforge.Gameplay
         ItemStacks _server;
         readonly List<int> _changed = new List<int>();
         float _lastRequestTime = float.NegativeInfinity;
+        float _lastFullTold = float.NegativeInfinity;
+        const float BagFullRepeatSeconds = 4f;
 
         /// <summary>Owner only: the host put a picked-up stack in this bag (item, count), for the combat text (4.4).</summary>
         public event Action<ushort, int> PickedUp;
@@ -93,6 +95,15 @@ namespace Voxelforge.Gameplay
         {
             if (IsServer && IsSpawned)
                 RefusedRpc(reason);
+        }
+
+        /// <summary>Host only: the hero is standing on loot the full bag can't take. Says so now and then, not every frame.</summary>
+        public void ServerTellBagFull()
+        {
+            if (Time.time - _lastFullTold < BagFullRepeatSeconds)
+                return;
+            _lastFullTold = Time.time;
+            ServerTellRefused(BagRefusal.BagFull);
         }
 
         [Rpc(SendTo.Owner)]
