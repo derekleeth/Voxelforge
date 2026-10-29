@@ -9,7 +9,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// A corner readout of the host and every player, for play-testing. F3 hides it, F4 records frame stats, F5 saves
-    /// the world, F12 saves a screenshot and Shift+Esc quits a build. Starting a build with <c>-smoketest &lt;seconds&gt;</c> logs stats and a
+    /// the world, F11 toggles full screen in a build, F12 saves a screenshot and Shift+Esc quits a build. Starting a build with <c>-smoketest &lt;seconds&gt;</c> logs stats and a
     /// screenshot after that long, then quits.
     /// </summary>
     public sealed class SessionDebugOverlay : MonoBehaviour
@@ -111,20 +111,48 @@ namespace Voxelforge.Gameplay
                 LogFrameStats("F4");
             if (keyboard.f5Key.wasPressedThisFrame && saves != null)
                 saves.SaveNow();
+            if (keyboard.f11Key.wasPressedThisFrame && !Application.isEditor)
+                ToggleFullScreen();
             if (keyboard.f12Key.wasPressedThisFrame)
                 SaveScreenshot("screenshot");
             if (keyboard.escapeKey.wasPressedThisFrame && keyboard.shiftKey.isPressed && !Application.isEditor)
                 Application.Quit();
         }
 
+        /// <summary>
+        /// Switches a build between a borderless full-screen window at the monitor's own resolution and a window. Unity
+        /// remembers the choice for the next start. The 6.3 settings screen takes this over.
+        /// </summary>
+        void ToggleFullScreen()
+        {
+            if (Screen.fullScreenMode == FullScreenMode.Windowed)
+            {
+                DisplayInfo display = Screen.mainWindowDisplayInfo;
+                Screen.SetResolution(display.width, display.height, FullScreenMode.FullScreenWindow);
+                ShowToast($"Full screen ({display.width}x{display.height}). F11 for a window.", delayFrames: 0);
+            }
+            else
+            {
+                DisplayInfo display = Screen.mainWindowDisplayInfo;
+                int width = Mathf.Min(1600, display.width * 3 / 4);
+                int height = Mathf.Min(900, display.height * 3 / 4);
+                Screen.SetResolution(width, height, FullScreenMode.Windowed);
+                ShowToast($"Windowed ({width}x{height}). F11 for full screen.", delayFrames: 0);
+            }
+        }
+
         /// <summary>Writes the stats to the log and to frame-stats.txt, and says so on screen.</summary>
         void LogFrameStats(string reason)
         {
             FrameStatsSnapshot stats = _frameStats.Snapshot(statsWindowSeconds);
-            string camera = cameras != null ? cameras.Layout.Mode.ToString() : "unknown";
+            string camera = cameras != null ? $"{cameras.Layout.Mode} ({cameras.Style} style)" : "unknown";
             int players = session != null && session.Players != null ? session.Players.Players.Count : 0;
+            string save = saves != null && world != null
+                ? $"; save {(saves.LastSaveBytes > 0 ? $"{saves.LastSaveBytes:N0} bytes" : "not saved yet")}, " +
+                  $"{world.DeltaLog.BlockCount} edited blocks, loaded in {saves.LoadMilliseconds:F1} ms"
+                : "";
             string line = $"{reason}: {stats}; camera {camera}, {players} player(s), {Screen.width}x{Screen.height}, " +
-                          $"{(Application.isEditor ? "editor" : "build")}";
+                          $"{(Application.isEditor ? "editor" : "build")}{save}";
             Debug.Log($"[FrameStats] {line}");
 
             string path = Path.Combine(OutputFolder(), "frame-stats.txt");

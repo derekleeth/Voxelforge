@@ -5,6 +5,45 @@
 
 ---
 
+## 2026-10-28 - Session 1 (part 25): Forge & Carve, the Real Game! 🏆 Roadmap 3.10 done, Phase 3 complete!
+**Phase:** 3 - "Forge & Carve"
+
+### What we did
+- **A new Windows game, version 0.3.10:** `Builds/Windows/Voxelforge.exe`, with everything from Phase 3: digging, chopping, building, torches, crafting, the M.G.R.S., Home Totems, Classic split-screen, sound and saving. Details in DECISIONS.md **D-023**.
+- **F11 = full screen!** The game had got stuck in a window, because Unity remembers the last window mode. Now F11 switches between full screen and a window, and the game remembers your choice.
+- **F4 records more:** the split-screen style (Dynamic or Classic), how big the save is, how many blocks were changed and how long the save took to load.
+- Claude's smoke tests now use their own world called `smoketest`, so they never touch our real save.
+
+### Results 🎉
+| | Average FPS | 1% low | Worst frame |
+|---|---|---|---|
+| Dynamic split | 120-134 ✅ | 41-43 ⚠️ | 56-60 ms |
+| Classic split | 134-166 ✅ | 42-51 ⚠️ | 26-69 ms |
+| Overview (nobody joined) | 280 | 76-82 | 16-24 ms |
+
+- Tested at **2560×1440** this time (2.7 was 1920×1080), so that's a lot more pixels, and the average still beats 120. ✅
+- **Build size:** 113.3 MB (was 110 MB). Builds take 15-40 seconds.
+- **Startup:** the world is ready in about 1.5 seconds.
+- **Saving:** 206 bytes for 12 changed blocks and 2 players. It loads in about 20 ms. We quit, restarted, and **everything came back**. ✅
+- **Play-test approved:** "It looks awesome." ✅
+- **Phase 3 is complete!** 🏆
+
+### Issues found
+- **The "1% low" got worse:** 41-51 FPS, down from 87 in 2.7. That means some frames take 25-70 ms. We didn't feel it while playing, but we'll track it down before Phase 4 adds spells.
+- **A 1-second pause at startup** while the world is built. If you press F4 in the first 10 seconds, it shows up as a huge "worst frame". A loading screen (6.2) will hide it.
+- F4 said "save 0.0 KB" before the first save of a session. Now it says "not saved yet".
+
+### Things we learned
+- The game remembers full screen or windowed *outside* the project (in Windows' registry), so changing the project setting alone doesn't fix a stuck window.
+- The average FPS can look great while the 1% low hides stutters. That's why we record both.
+
+### Next up
+- [x] Play-test 3.10 ✅
+- [ ] Find the slow frames behind the 1% low (Development build + profiler)
+- [ ] Roadmap **Phase 4: The Warcraft Injection**: classes, races and spells!
+
+---
+
 ## 2026-10-28 - Session 1 (part 24): The World Makes Noise! 🔊🔥 Roadmap 3.9
 **Phase:** 3 - "Forge & Carve"
 

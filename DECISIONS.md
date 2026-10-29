@@ -5,6 +5,36 @@
 
 ---
 
+## D-023: The 0.3.10 Demo Build (Forge & Carve)
+- **Date:** 2026-10-28
+- **Status:** Accepted (play-tested in split-screen 2026-10-28)
+
+### Decisions
+- **Same pipeline as D-013:** `DemoBuilder`, Windows x86_64, Mono, Direct3D 12, into the git-ignored `Builds/Windows/`. Version **`0.3.10`** (phase 3, step 10).
+- **Full screen: F11** switches a build between a borderless full-screen window at the monitor's own resolution and a window (at most 1600×900). Unity remembers the window mode in the registry (`HKCU\Software\Voxelforge\Voxelforge`, `Screenmanager Fullscreen mode`) and that beats the project default, which is how an earlier run got stuck windowed. Alt+Enter still works. The 6.3 settings screen takes this over.
+- **F4 records more:** each `frame-stats.txt` line now has the split **style** next to the camera mode, the last save's size (or "not saved yet"), the edited-block count and the load time, so one line holds what the DEVLOG needs.
+- **Smoke tests use their own world:** `Voxelforge.exe -smoketest 20 -world smoketest -newworld`, so a smoke test never touches the play-test save.
+
+### Results (RTX 4060 Laptop GPU, 2560×1440, release build)
+| Camera | Average FPS | 1% low | Worst frame |
+|---|---|---|---|
+| Dynamic split (Voronoi) | 120-134 | 41-43 | 56-60 ms |
+| Classic split | 134-166 | 42-51 | 26-69 ms |
+| Overview (smoke test, 1920×1080) | 280 | 76-82 | 16-24 ms |
+
+- **Averages pass 120+**, at 78% more pixels than 2.7's 1080p. Dynamic split is right on the line.
+- **The 1% low roughly halved** since 2.7 (87 → 41-51), with regular 25-70 ms frames. It wasn't noticed in play. Suspects to check with a Development build and the profiler: remeshing while both players edit, GC from Mono, the 3.9 sound mixer, prop lights, and the higher resolution.
+- **A 1-1.3 s frame at startup** (terrain generation and first meshing) shows up in any F4 snapshot taken in the first ~10 s. It's a loading pause, not gameplay.
+- **Build:** 113.3 MB (110.3 at 2.7), 14-37 s, 0 errors. The two warnings on a full build are the stripped GPU-occlusion debug shaders (D-013).
+- **Startup:** terrain (904 chunks) generates in 1.5-1.6 s, first meshing in 0.36 s.
+- **Saving:** 206 bytes for 12 edited blocks and 2 profiles; loaded in 15.8-21.1 ms; encode 4-7 ms on the main thread, write 7-25 ms on a worker. Edits and both player profiles came back after a restart.
+
+### Deferred on purpose
+- Finding the 1% low drop: before Phase 4 adds spells and UI.
+- A loading screen to hide the startup pause: 6.2.
+
+---
+
 ## D-022: Split-Screen Sound and Voxel Foley
 - **Date:** 2026-10-28
 - **Status:** Accepted (play-tested 2026-10-28)
