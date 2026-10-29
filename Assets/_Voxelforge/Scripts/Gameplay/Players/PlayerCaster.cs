@@ -2,16 +2,17 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
+using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// This player's spells (Roadmap 4.1): their mana pool, cooldowns and cast bar. <b>The host</b> runs the rules
     /// (<see cref="AbilityCaster"/>) from the input it received, and when a cast finishes it hands the ability to its
-    /// delivery, so far <see cref="PlayerStaff"/> for projectiles (CLAUDE.md Laws #1 and #2).
+    /// delivery, <see cref="PlayerStaff"/> for projectiles and ground slams (CLAUDE.md Laws #1 and #2).
     /// <list type="bullet">
     /// <item>Holding Mine with a ranged item (the M.G.R.S.) casts that item's ability, as in D-019.</item>
-    /// <item>The temporary <see cref="PlayerButtons.Ability1"/> button casts <c>testAbility</c> until the 4.4 action bar.</item>
+    /// <item>The temporary Ability 1-3 buttons cast <c>testAbilities</c> until the 4.4 action bar.</item>
     /// </list>
     /// <para>Rules only (Roadmap 4.2): casts starting, going off and stopping go to every PC as <see cref="AbilityCue"/>s
     /// (<see cref="PlayerAbilityCues"/>). Each PC times the cast bar and cooldowns in that player's own view from them.</para>
@@ -23,8 +24,8 @@ namespace Voxelforge.Gameplay
         [Tooltip("Data/Abilities/AbilityBook.asset: every ability, by ID.")]
         [SerializeField] AbilityBook abilities;
 
-        [Tooltip("Cast by the temporary Ability 1 button until the 4.4 action bar.")]
-        [SerializeField] AbilityDefinition testAbility;
+        [Tooltip("Cast by the temporary Ability 1, 2 and 3 buttons, in that order, until the 4.4 action bar.")]
+        [SerializeField] AbilityDefinition[] testAbilities = new AbilityDefinition[3];
 
         [Tooltip("Mana when full. Classes and races (4.6/4.7) will set this.")]
         [SerializeField, Min(0f)] float maxMana = 100f;
@@ -40,6 +41,7 @@ namespace Voxelforge.Gameplay
         const float DriftAllowed = 0.35f;
         // The host only sends mana when it changed by at least this much, or reached full.
         const float ManaSendStep = 0.5f;
+        static readonly PlayerButtons[] AbilityButtons = { PlayerButtons.Ability1, PlayerButtons.Ability2, PlayerButtons.Ability3 };
 
         readonly NetworkVariable<float> _mana = new NetworkVariable<float>();
         readonly NetworkVariable<float> _maxMana = new NetworkVariable<float>();
@@ -150,16 +152,18 @@ namespace Voxelforge.Gameplay
                     _toldNoMana = false;
                 if (input.IsPressed(PlayerButtons.Mine) && _hands.TryGetHeldAbility(out AbilityDefinition held))
                 {
-                    CastCheck check = TryCast(held, now);
+                    CastCheck check = TryCast(held, now, input);
                     if (check == CastCheck.NotEnoughMana && !_toldNoMana)
                     {
                         _toldNoMana = true;
                         RefusedRpc(check);
                     }
                 }
-                if ((pressed & PlayerButtons.Ability1) != 0 && testAbility != null)
+                for (int i = 0; i < AbilityButtons.Length && i < testAbilities.Length; i++)
                 {
-                    CastCheck check = TryCast(testAbility, now);
+                    if ((pressed & AbilityButtons[i]) == 0 || testAbilities[i] == null)
+                        continue;
+                    CastCheck check = TryCast(testAbilities[i], now, input);
                     if (check != CastCheck.Ok)
                         RefusedRpc(check);
                 }
@@ -176,8 +180,11 @@ namespace Voxelforge.Gameplay
                 _mana.Value = mana;
         }
 
-        CastCheck TryCast(AbilityDefinition ability, float now)
+        CastCheck TryCast(AbilityDefinition ability, float now, PlayerInputFrame input)
         {
+            // A ground slam needs ground to slam, checked before any mana is spent.
+            if (ability.Delivery == AbilityDelivery.GroundSlam && !TryAimAtBlock(ability, input, out _))
+                return CastCheck.NoTarget;
             CastCheck check = _caster.TryBegin(ability, now, _finished);
             if (check == CastCheck.Ok && _caster.IsCasting)
             {
@@ -200,7 +207,20 @@ namespace Voxelforge.Gameplay
                 case AbilityDelivery.Projectile:
                     _staff.ServerLaunch(ability, _player.Aim.Eyes(transform.position), _player.Aim.Direction(input));
                     break;
+                case AbilityDelivery.GroundSlam:
+                    if (TryAimAtBlock(ability, input, out VoxelHit hit))
+                        _staff.ServerStrikeAt(ability, hit);
+                    break;
             }
+        }
+
+        /// <summary>Host: the block the hero aims at within <paramref name="ability"/>'s range.</summary>
+        bool TryAimAtBlock(AbilityDefinition ability, PlayerInputFrame input, out VoxelHit hit)
+        {
+            hit = default;
+            VoxelWorldManager world = _player.WorldManager;
+            return world != null && world.World != null && VoxelQueries.Raycast(world.World,
+                _player.Aim.Eyes(transform.position), _player.Aim.Direction(input), ability.Range, out hit);
         }
 
         /// <summary>Every PC: keeps the cast bar and cooldowns in step with what the host said.</summary>
@@ -244,6 +264,8 @@ namespace Voxelforge.Gameplay
                     return "Already casting";
                 case CastCheck.Interrupted:
                     return "Interrupted: stand still while you cast";
+                case CastCheck.NoTarget:
+                    return "Nothing in range";
                 default:
                     return "Can't cast that";
             }

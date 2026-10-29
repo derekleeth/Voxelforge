@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Mathematics;
 using Voxelforge.Core;
 
@@ -80,10 +81,50 @@ namespace Voxelforge.Voxels
         /// it's set to air through <see cref="RequestModifyVoxel"/>, so it's logged and a tree trunk fells its tree.
         /// </summary>
         /// <param name="time">Now, in game seconds. Blocks left alone heal (<see cref="BlockDamageMap.HealIdle"/>).</param>
-        public VoxelDamageResult RequestDamageVoxel(int3 coord, float amount, PlayerId instigator, float time)
+        public VoxelDamageResult RequestDamageVoxel(int3 coord, float amount, PlayerId instigator, float time) =>
+            instigator.IsValid ? DamageOne(coord, amount, instigator, time, area: false) : VoxelDamageResult.NoInstigator;
+
+        /// <summary>
+        /// Damages many blocks at once on behalf of <paramref name="instigator"/>, e.g. a spell's crater (Roadmap 4.3).
+        /// Each block is damaged as by <see cref="RequestDamageVoxel"/>, so every break is logged, raised and remeshed
+        /// the same way, trees fall and torches drop. Gather jobs are finished once for the whole batch.
+        /// </summary>
+        /// <param name="area">
+        /// True for a blast: <see cref="BlockInfo.IsBlastProof"/> blocks (Home Totems) are passed by.
+        /// </param>
+        public VoxelBatchResult RequestDamageVoxels(IReadOnlyList<VoxelDamageRequest> requests, PlayerId instigator, float time,
+            bool area)
         {
+            var result = new VoxelBatchResult();
+            if (requests == null || requests.Count == 0)
+                return result;
             if (!instigator.IsValid)
-                return VoxelDamageResult.NoInstigator;
+            {
+                result.Skipped = requests.Count;
+                return result;
+            }
+
+            _meshes?.CompleteGatherJobs(); // Once here; the per-block calls below then find nothing in flight.
+            for (int i = 0; i < requests.Count; i++)
+            {
+                switch (DamageOne(requests[i].Block, requests[i].Amount, instigator, time, area))
+                {
+                    case VoxelDamageResult.Broken:
+                        result.Broken++;
+                        break;
+                    case VoxelDamageResult.Damaged:
+                        result.Damaged++;
+                        break;
+                    default:
+                        result.Skipped++;
+                        break;
+                }
+            }
+            return result;
+        }
+
+        VoxelDamageResult DamageOne(int3 coord, float amount, PlayerId instigator, float time, bool area)
+        {
             if (!(amount > 0f))
                 return VoxelDamageResult.NoDamage;
             if (!_world.TryGetChunk(VoxelMath.WorldToChunk(coord), out _))
@@ -92,7 +133,7 @@ namespace Voxelforge.Voxels
             BlockInfo block = _world.Blocks[_world.GetVoxel(coord).BlockId];
             if (!block.IsTargetable)
                 return VoxelDamageResult.NotSolid;
-            if (block.MaxDurability == 0)
+            if (block.MaxDurability == 0 || (area && block.IsBlastProof))
                 return VoxelDamageResult.Unbreakable;
 
             float damage = Damage.Add(coord, amount, time);

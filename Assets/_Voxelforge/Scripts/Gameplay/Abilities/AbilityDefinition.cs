@@ -40,8 +40,16 @@ namespace Voxelforge.Gameplay
         [Tooltip("How far it reaches, in metres. A projectile fizzles out here.")]
         [SerializeField, Min(0f)] float range;
 
-        [Tooltip("Radius of what it hits where it lands, in metres. 0 = only what it hits. Craters use it from 4.3.")]
+        [Tooltip("Radius of the crater it blasts where it lands, in metres (Roadmap 4.3). 0 = only the block it hits.")]
         [SerializeField, Min(0f)] float aoeRadius;
+
+        [Header("Crater (4.3)")]
+        [Tooltip("How much of the block damage is left at the crater's edge (0-1). Low = soft blocks carve wide but " +
+                 "hard ones only near the middle.")]
+        [SerializeField, Range(0f, 1f)] float craterFalloff = 0.25f;
+
+        [Tooltip("How deep the crater is for its width. 1 = a round bowl, 0.4 = wide and shallow.")]
+        [SerializeField, Range(0.2f, 1f)] float craterFlatten = 1f;
 
         [Header("Effect")]
         [SerializeField] AbilityDelivery delivery;
@@ -49,7 +57,7 @@ namespace Voxelforge.Gameplay
         [Tooltip("How fast a projectile flies, in metres per second.")]
         [SerializeField, Min(0f)] float projectileSpeed;
 
-        [Tooltip("Block damage per hit, like mining damage (Stone has 60 durability).")]
+        [Tooltip("Block damage per hit, like mining damage (Stone has 60 durability). In a crater, this is at the middle.")]
         [SerializeField, Min(0f)] float blockDamage;
 
         [Tooltip("Damage to creatures. Nothing has health until Phase 5, so it's only kept for now.")]
@@ -67,6 +75,8 @@ namespace Voxelforge.Gameplay
         public bool CastWhileMoving => castWhileMoving;
         public float Range => range;
         public float AoeRadius => aoeRadius;
+        public float CraterFalloff => craterFalloff;
+        public float CraterFlatten => craterFlatten;
         public AbilityDelivery Delivery => delivery;
         public float ProjectileSpeed => projectileSpeed;
         public float BlockDamage => blockDamage;
@@ -75,7 +85,8 @@ namespace Voxelforge.Gameplay
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static AbilityDefinition Create(ushort id, string displayName, float manaCost = 0f, float cooldown = 0f,
             float castTime = 0f, float range = 24f, float projectileSpeed = 40f, float blockDamage = 45f, float aoeRadius = 0f,
-            bool castWhileMoving = false, AbilityElement element = AbilityElement.Arcane)
+            bool castWhileMoving = false, AbilityElement element = AbilityElement.Arcane,
+            AbilityDelivery delivery = AbilityDelivery.Projectile, float craterFalloff = 0.25f, float craterFlatten = 1f)
         {
             var definition = CreateInstance<AbilityDefinition>();
             definition.name = displayName;
@@ -90,6 +101,9 @@ namespace Voxelforge.Gameplay
             definition.aoeRadius = aoeRadius;
             definition.castWhileMoving = castWhileMoving;
             definition.element = element;
+            definition.delivery = delivery;
+            definition.craterFalloff = craterFalloff;
+            definition.craterFlatten = craterFlatten;
             return definition;
         }
     }

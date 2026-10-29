@@ -301,10 +301,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ManaBoltView
   glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  debrisMaterial: {fileID: 2100000, guid: efa1e424df86d6f4caa1ef131a25e702, type: 2}
   looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   glowBoost: 5
   converge: 0.1
   flashTime: 0.12
+  blastFlashTime: 0.45
 --- !u!114 &520568974359262074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -352,7 +354,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerCaster
   ShowTopMostFoldoutHeaderGroup: 1
   abilities: {fileID: 11400000, guid: c5d94fc809c8ec5448bb469b809bcb21, type: 2}
-  testAbility: {fileID: 11400000, guid: 365b2c98db0eab042abd551b1106f65d, type: 2}
+  testAbilities:
+  - {fileID: 11400000, guid: 365b2c98db0eab042abd551b1106f65d, type: 2}
+  - {fileID: 11400000, guid: 5c32efa60f6f1734e905b8384bd2ad84, type: 2}
+  - {fileID: 11400000, guid: e41f2045986f9624ead6b234eaa2887f, type: 2}
   maxMana: 100
   manaRegen: 10
   messageSeconds: 1.5

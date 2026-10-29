@@ -5,6 +5,37 @@
 
 ---
 
+## 2026-10-29 - Session 1 (part 28): KABOOM! Spells That Dig Craters 💥 Roadmap 4.3
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Spells blow holes in the world now!** A big spell doesn't just break one block any more; it blasts out a whole crater. Details in DECISIONS.md **D-026**.
+- **Two new spells:**
+  - 🔥 **Pyroblast** (`2`, P2 `-`, d-pad left): stand still for 2.5 seconds while a fire roar builds in your hands, then hurl a huge fireball that blows a deep, round crater.
+  - 🪨 **EarthShatter** (`3`, P2 `=`, d-pad right): instantly slam the ground you're looking at and smash it into a wide, shallow bowl. Aim at the sky and it says "Nothing in range" (and you keep your mana).
+  - The **Arcane Orb** (`1`) makes a small crater too.
+- **Craters are "realistic":** soft stuff like dirt and sand gets carved out wide, while hard stuff like stone and ore only breaks near the middle and is left cracked further out.
+- **Home Totems are blast-proof,** so your partner can't blow up your way home by accident. You can still mine your own totem to move it.
+- **No lag from 100 drops:** everything a blast breaks pops out as a few big stacks (like "Dirt ×41"), not a hundred little items. Chopped trees drop a stack or two of logs now too.
+- **It feels big:** a flash lights up the crater, chunks of rock (the colour of what you hit) fly everywhere, there are new boom and slam sounds, and **your camera shakes** if you're close. Your partner's camera only shakes if *they're* close too.
+
+### Tests: 306 / 306 passing ✅
+- With no blast radius, a spell still only hits one block (the Mana Bolt didn't change).
+- A crater never reaches past its radius, gets weaker toward the edge, and "flatten" makes it shallower but just as wide.
+- A blast breaks dirt, cracks stone, skips totems and unbreakable blocks, and fells a tree caught in it.
+- Nearby broken blocks of the same kind become one stack.
+- Camera shake is full inside the crater and zero far away.
+
+### Things we learned
+- A crater is just *lots of mining at once*. Because every block goes through the same "damage this block" path, saving, drops, sounds and falling trees all just work.
+- The first time some code runs it's slow (18 ms) because the computer is still translating it. After that a whole crater took less than half a millisecond!
+
+### Next up
+- [x] Play-test 4.3 in split-screen: Pyroblast and EarthShatter craters, merged drops, debris and shake, a totem surviving a blast, "Nothing in range" ✅
+- [ ] Roadmap **4.4 Per-Player Split-Screen HUD** (real action bars replace the temporary 1/2/3 buttons)
+
+---
+
 ## 2026-10-29 - Session 1 (part 27): Rules on the Host, Sparkles on Your Screen 🎆 Roadmap 4.2
 **Phase:** 4 - The Warcraft Injection
 

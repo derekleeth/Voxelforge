@@ -22,6 +22,7 @@ MonoBehaviour:
   isTransparent: 1
   isProp: 1
   needsSupport: 0
+  blastProof: 1
   lightEmission: 0
   mapColor:
     serializedVersion: 2

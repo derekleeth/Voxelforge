@@ -117,11 +117,16 @@ namespace Voxelforge.Editor
             written.Add(Write("CastHum", CastHum()));
             written.Add(Write("OrbRelease", OrbRelease(new Random(103))));
             written.Add(Write("OrbImpact", OrbImpact(new Random(107))));
+            written.Add(Write("FireRoar", TorchCrackle(new Random(109), 2f)));
+            written.Add(Write("PyroRelease", PyroRelease(new Random(113))));
+            written.Add(Write("PyroImpact", PyroImpact(new Random(127))));
+            written.Add(Write("EarthSlam", EarthSlam(new Random(131))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
                 SetImportSettings(path, looping: path.EndsWith("TorchCrackle.wav", StringComparison.Ordinal) ||
-                                                 path.EndsWith("CastHum.wav", StringComparison.Ordinal));
+                                                 path.EndsWith("CastHum.wav", StringComparison.Ordinal) ||
+                                                 path.EndsWith("FireRoar.wav", StringComparison.Ordinal));
 
             BuildAssets();
             AssetDatabase.SaveAssets();
@@ -356,6 +361,51 @@ namespace Voxelforge.Editor
             foreach (float note in new[] { 1046f, 1318f, 1568f })
                 AddTone(buffer, 0.03f, note, note, 0.45f, 0.1f);
             return Finish(buffer, 0.95f);
+        }
+
+        /// <summary>Pyroblast leaving the hands (Roadmap 4.3): a rushing whoosh of flame over a deep thump.</summary>
+        static float[] PyroRelease(Random rng)
+        {
+            float[] buffer = New(1.1f);
+            AddTone(buffer, 0f, 60f, 35f, 0.2f, 0.9f);
+            AddNoise(buffer, rng, 0f, 0.3f, 0.8f, 150f, 2500f);
+            AddNoise(buffer, rng, 0.02f, 0.15f, 0.35f, 2000f, 7000f);
+            AddTone(buffer, 0f, 140f, 420f, 0.2f, 0.3f, sweepTime: 0.35f);
+            AddGrains(buffer, rng, 0.05f, 0.6f, 14, 0.02f, 0.15f, 1500f, 6000f);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>
+        /// Pyroblast landing (Roadmap 4.3): a huge boom with a long rolling rumble, rock thrown and pattering back
+        /// down, and the crackle of fire.
+        /// </summary>
+        static float[] PyroImpact(Random rng)
+        {
+            float[] buffer = New(2.4f);
+            AddNoise(buffer, rng, 0f, 0.45f, 1f, 30f, 1800f);
+            AddTone(buffer, 0f, 55f, 25f, 0.6f, 1f);
+            AddTone(buffer, 0.01f, 90f, 40f, 0.25f, 0.6f);
+            AddNoise(buffer, rng, 0f, 0.06f, 0.6f, 1000f, 8000f);
+            AddGrains(buffer, rng, 0.1f, 0.6f, 30, 0.04f, 0.3f, 300f, 4000f);
+            AddGrains(buffer, rng, 0.6f, 1.2f, 40, 0.02f, 0.15f, 800f, 6000f);
+            AddGrains(buffer, rng, 0.2f, 1.8f, 50, 0.015f, 0.08f, 2000f, 9000f);
+            return Finish(buffer, 1f);
+        }
+
+        /// <summary>
+        /// EarthShatter (Roadmap 4.3): a deep ground-shaking slam, the crack of splitting stone, then rubble tumbling.
+        /// </summary>
+        static float[] EarthSlam(Random rng)
+        {
+            float[] buffer = New(2f);
+            AddTone(buffer, 0f, 48f, 28f, 0.5f, 1f);
+            AddNoise(buffer, rng, 0f, 0.3f, 0.9f, 25f, 900f);
+            float[] crack = New(2f);
+            AddNoise(crack, rng, 0.015f, 0.05f, 1f, 400f, 6000f);
+            Add(buffer, Resonate(crack, 700f, 0.995f), 0.5f);
+            Add(buffer, crack, 0.5f);
+            AddGrains(buffer, rng, 0.08f, 1.2f, 60, 0.04f, 0.3f, 150f, 3000f);
+            return Finish(buffer, 1f);
         }
 
         /// <summary>

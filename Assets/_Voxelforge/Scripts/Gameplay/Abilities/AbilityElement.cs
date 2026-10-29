@@ -16,11 +16,15 @@ namespace Voxelforge.Gameplay
         Holy,
     }
 
-    /// <summary>How an ability reaches what it hits. Only <see cref="Projectile"/> exists so far; 4.3 and 4.6 add more.</summary>
+    /// <summary>How an ability reaches what it hits. Sent as a byte, so only add to the end.</summary>
     public enum AbilityDelivery : byte
     {
         /// <summary>A bolt flies from the hero's eyes along their aim (<see cref="PlayerStaff"/>).</summary>
         Projectile,
+        /// <summary>
+        /// Goes off at once on the block the hero aims at, within range, with nothing flying (Roadmap 4.3, EarthShatter).
+        /// </summary>
+        GroundSlam,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>
@@ -34,5 +38,7 @@ namespace Voxelforge.Gameplay
         NotEnoughMana,
         /// <summary>The hero moved or jumped during a cast that needs them to stand still.</summary>
         Interrupted,
+        /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> with no block in range to slam.</summary>
+        NoTarget,
     }
 }

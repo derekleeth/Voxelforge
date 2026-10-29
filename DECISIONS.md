@@ -5,6 +5,54 @@
 
 ---
 
+## D-026: Craters and Area Spells (Destructive Spell Mechanics)
+- **Date:** 2026-10-29
+- **Status:** Accepted (play-tested in split-screen 2026-10-29)
+
+### Decisions
+- **A crater is just many damage requests.** As D-025 planned, `AbilityImpact.Resolve` turns a hit into a list of `VoxelDamageRequest`s:
+  - With no `aoeRadius`, it's the one block that was hit, as before. The Mana Bolt is unchanged.
+  - With a radius, it's every block whose middle is inside an ellipsoid around the hit point. `craterFlatten` squashes the ellipsoid: 1 is a round bowl, 0.45 a wide, shallow one.
+  - Damage is `blockDamage` at the middle and falls to `craterFalloff` of it at the edge.
+  - Radius is capped at 8 m.
+- **Durability shapes the hole.** Every block in a crater is damaged the normal way, so its durability decides whether it breaks. Dirt carves wide, while stone and ore only go near the middle and are left cracked further out (those heal, 3.2). Unbreakable blocks are never touched.
+- **One batch call (Law #3).** `VoxelWorldManager.RequestDamageVoxels(requests, instigator, area)`:
+  - Finishes the gather jobs once, then damages each block through the same path as `RequestDamageVoxel`.
+  - Every break is still logged, raised and remeshed one by one, so saves, drops, foley, falling trees and torches dropping all keep working.
+  - `VoxelDamageRequest` moved into the Voxels assembly so the batch can take it.
+  - It returns `VoxelBatchResult` (broken / damaged / skipped).
+- **`BlockFlags.BlastProof`:** blasts (`area: true`) pass blast-proof blocks by. Home Totems are blast-proof, so a partner's spell can't destroy your way home. Mining still breaks them, so you can move your totem.
+- **Two spells and a new delivery:**
+  - **Pyroblast** (ID 3): Fire, 2.5 s cast, 45 mana, 10 s cooldown. A 22 m/s fireball out to 40 m. Crater radius 4, round, 240 damage at the middle.
+  - **EarthShatter** (ID 4): Earth, instant, 35 mana, 8 s cooldown. Crater radius 4.5, flatten 0.45, 150 damage.
+  - EarthShatter is the first **`AbilityDelivery.GroundSlam`**: nothing flies; it goes off on the block you aim at, within range.
+  - With no block in range, the cast is refused with **`CastCheck.NoTarget`** ("Nothing in range") before any mana is spent.
+  - The **Arcane Orb** now makes a small crater (radius 3, falloff 0.15, flatten 0.8).
+- **A ground slam reuses the `Impact` cue** with `ShotId` 0 (`AbilityCue.Blast`). Projectile IDs now start at 1 so a slam never matches a flying bolt. Clients read the crater size from the shared `AbilityDefinition`, so nothing new goes over the network.
+- **Temporary buttons until the 4.4 action bar:** `PlayerCaster.testAbilities[3]` on Ability 1/2/3. Ability 1 is still Arcane Orb.
+  - Ability 2 (Pyroblast): key `2`, P2 `-`, pad d-pad left.
+  - Ability 3 (EarthShatter): key `3`, P2 `=`, pad d-pad right.
+- **Drops are merged per frame.** `BlockDropSpawner` collects every block broken in a frame in a `DropBatcher` and spawns one stack per drop type per ~3 m area.
+  - Each stack spawns from the broken block nearest the middle of its group, which is always air.
+  - A crater of about 130 blocks gave 18 stacks instead of 130 network objects.
+  - Side effect: a felled tree now drops a stack or two of logs instead of one per block. A single mined block drops as before, one frame later.
+- **Looks (each PC, D-025 split):** `AbilityLook` has new crater settings: `debrisChunks`, `debrisSpeed`, `debrisTint`, `shakeStrength` and `blastLight`.
+  - `ManaBoltView` flashes a light over the crater and throws lit cubes tinted like the block that was hit (`Art/Materials/Props/BlastDebris.mat`).
+  - New synthesised sounds: `FireRoar` (cast loop), `PyroRelease`, `PyroImpact` and `EarthSlam`.
+- **Camera shake per viewport (Law #5).** `BlastShake`, owned by `SplitScreenDirector` like `CaveLight`, hears every hero's cues through `PlayerController.AnySpawned`, so it works on remote PCs too.
+  - It shakes each local player's own rig by how near their hero is: full strength inside the crater, nothing past 6× the radius.
+  - The rig only turns (`PlayerCameraRig.Shake`), so the camera never pokes into blocks.
+
+### Measured
+- Live host, warm: a whole Pyroblast crater (112 blocks broken) took **0.42 ms** on the main thread. The first call ever took 18 ms (one-time JIT). Remeshing stays on worker threads (Law #4).
+
+### Deferred on purpose
+- Craters hurting creatures and heroes: Phase 5 (health).
+- Debris bouncing on blocks: chunks fade out before sinking far, and particle collision against voxels isn't worth it yet.
+- Remote PCs seeing the blocks change: Phase 6 block sync.
+
+---
+
 ## D-025: Spell Rules vs. Spell Cues (Logic/Visual Split)
 - **Date:** 2026-10-29
 - **Status:** Accepted (play-tested in split-screen 2026-10-29)

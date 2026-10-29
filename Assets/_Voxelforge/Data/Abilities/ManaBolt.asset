@@ -23,6 +23,8 @@ MonoBehaviour:
   castWhileMoving: 0
   range: 24
   aoeRadius: 0
+  craterFalloff: 0.25
+  craterFlatten: 1
   delivery: 0
   projectileSpeed: 40
   blockDamage: 45

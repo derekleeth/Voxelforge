@@ -31,7 +31,7 @@ namespace Voxelforge.Gameplay
         public AbilityCueKind Kind;
         /// <summary><see cref="AbilityIds"/>.</summary>
         public ushort AbilityId;
-        /// <summary>Pairs a projectile's <see cref="AbilityCueKind.Launched"/> with how it ended.</summary>
+        /// <summary>Pairs a projectile's <see cref="AbilityCueKind.Launched"/> with how it ended. 0 for a ground slam's impact.</summary>
         public ushort ShotId;
         public Vector3 Position;
         /// <summary>Which way a projectile left, or the face it hit (minus its direction if it fizzled).</summary>
@@ -50,6 +50,10 @@ namespace Voxelforge.Gameplay
                 Kind = AbilityCueKind.Launched, AbilityId = bolt.AbilityId, ShotId = bolt.Id, Position = bolt.Position,
                 Direction = bolt.Direction,
             };
+
+        /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> hit <paramref name="blockId"/> at <paramref name="point"/>, on the face <paramref name="normal"/>.</summary>
+        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId) =>
+            new AbilityCue { Kind = AbilityCueKind.Impact, AbilityId = abilityId, Position = point, Direction = normal, BlockId = blockId };
 
         public static AbilityCue End(in ManaBoltEnd end, ushort blockId) =>
             new AbilityCue

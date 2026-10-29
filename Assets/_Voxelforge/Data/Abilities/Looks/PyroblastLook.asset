@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: PyroblastLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: 5c32efa60f6f1734e905b8384bd2ad84, type: 2}
+  glow: {r: 1, g: 0.45, b: 0.1, a: 1}
+  coreShape: 1
+  coreSize: 0.6
+  trailTime: 0.5
+  lightIntensity: 9
+  lightRange: 14
+  muzzleSparks: 24
+  impactSparks: 110
+  impactSpeed: 10
+  debrisChunks: 60
+  debrisSpeed: 9
+  debrisTint: {r: 0.12, g: 0.08, b: 0.06, a: 0.35}
+  shakeStrength: 0.7
+  blastLight: 18
+  castMotesPerSecond: 140
+  castLight: 4.5
+  castLoop: {fileID: 8300000, guid: 1e166650ba407d44498fe214638c88af, type: 3}
+  castLoopVolume: 0.5
+  release: {fileID: 8300000, guid: 7bfc19fe9f9d09c47945a5cb2161f221, type: 3}
+  releaseVolume: 1
+  impact: {fileID: 8300000, guid: 38cd80ae1fb53e7498820ef83e276979, type: 3}
+  impactVolume: 1.4
+  fizzle: {fileID: 0}
+  maxDistance: 70

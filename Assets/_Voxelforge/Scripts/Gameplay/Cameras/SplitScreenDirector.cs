@@ -29,6 +29,9 @@ namespace Voxelforge.Gameplay
 
         [SerializeField] LocalPlayerManager localPlayers;
 
+        [Tooltip("Data/Abilities/Looks/AbilityLookBook.asset: how hard each spell's crater shakes the views (Roadmap 4.3).")]
+        [SerializeField] AbilityLookBook abilityLooks;
+
         [Tooltip("Shows the world before anyone joins. Player cameras are copies of it, so they share its render settings.")]
         [SerializeField] Camera overviewCamera;
 
@@ -113,6 +116,7 @@ namespace Voxelforge.Gameplay
         SplitStyle _style;
         HeroCameraFade _heroFade;
         CaveLight _caveLight;
+        BlastShake _blastShake;
 
         /// <summary>How the screen is shared out this frame.</summary>
         public SplitLayout Layout => _layout;
@@ -150,12 +154,14 @@ namespace Voxelforge.Gameplay
                 _style = defaultStyle;
             _heroFade = new HeroCameraFade(_rigs, _controllers);
             _caveLight = new CaveLight(_rigs, _controllers, caveAmbient);
+            _blastShake = new BlastShake(_rigs, _controllers, abilityLooks);
         }
 
         void OnDestroy()
         {
             _heroFade?.Dispose();
             _caveLight?.Dispose();
+            _blastShake?.Dispose();
         }
 
         /// <summary>Switches between the dynamic and classic split-screen, and remembers it on this PC.</summary>

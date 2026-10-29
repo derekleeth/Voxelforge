@@ -8,7 +8,9 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Block drops (Roadmap 3.2, D-015). On the host it watches <see cref="VoxelWorldManager.EditApplied"/>: whenever a
-    /// block is mined or chopped away, its <see cref="BlockInfo.DropId"/> pops out as a <see cref="BlockDrop"/>. It
+    /// block is mined, chopped or blasted away, its <see cref="BlockInfo.DropId"/> pops out as a <see cref="BlockDrop"/>.
+    /// Blocks broken in the same frame pop out together, one stack per drop and area (<see cref="DropBatcher"/>, Roadmap
+    /// 4.3), so a crater doesn't spawn a network object per block. It
     /// then merges drops lying close together, pulls drops toward the nearest player and puts them in that player's
     /// <see cref="PlayerBlockBag"/>, and clears away drops nobody picks up. On every PC it gives each drop the mesh of
     /// its block, or its model for prop blocks such as torches (<see cref="ItemLooks"/>, Roadmap 3.5).
@@ -48,10 +50,18 @@ namespace Voxelforge.Gameplay
         [Tooltip("How fast a new drop hops out of its block, in metres per second.")]
         [SerializeField, Range(0f, 10f)] float popSpeed = 3f;
 
+        [Tooltip("Blocks broken in the same frame closer than about this share one stack, in metres (Roadmap 4.3).")]
+        [SerializeField, Range(1f, 8f)] float stackArea = 3f;
+
+        [Tooltip("Extra hop for a stack of many blocks (a crater), in metres per second.")]
+        [SerializeField, Range(0f, 10f)] float blastPopSpeed = 3f;
+
         // How high above the feet a hero's middle is, where drops fly to.
         const float HeroMiddle = 0.8f;
 
         readonly List<BlockDrop> _drops = new List<BlockDrop>();
+        readonly List<PendingDrop> _pending = new List<PendingDrop>();
+        DropBatcher _batcher;
         ItemLooks _looks;
 
         /// <summary>Host only: drops lying in the world right now.</summary>
@@ -88,14 +98,27 @@ namespace Voxelforge.Gameplay
             BlockInfo block = world.World.Blocks[edit.Before.BlockId];
             if (block.DropCount == 0)
                 return;
+            _batcher ??= new DropBatcher(stackArea);
+            _batcher.Add((float3)edit.Coord + 0.5f, block.DropId, block.DropCount);
+        }
 
-            // A small hop in a random direction, so drops from a felled tree spread out a little.
-            float angle = UnityEngine.Random.value * math.PI * 2f;
-            var velocity = new float3(math.sin(angle) * 0.6f, popSpeed, math.cos(angle) * 0.6f);
-            BlockDrop drop = Instantiate(dropPrefab, (float3)edit.Coord + 0.5f, Quaternion.identity);
-            drop.ServerInitialize(world.World, block.DropId, block.DropCount, velocity);
-            drop.NetworkObject.Spawn(destroyWithScene: true);
-            _drops.Add(drop);
+        void LateUpdate()
+        {
+            if (_batcher == null || _batcher.IsEmpty || !IsServer)
+                return;
+            _pending.Clear();
+            _batcher.Flush(_pending);
+            foreach (PendingDrop pending in _pending)
+            {
+                // A small hop in a random direction, so stacks spread out a little; a stack from a crater hops higher.
+                float angle = UnityEngine.Random.value * math.PI * 2f;
+                float up = popSpeed + (pending.Blocks > 1 ? blastPopSpeed * math.saturate(pending.Blocks / 16f) : 0f);
+                var velocity = new float3(math.sin(angle) * 0.6f, up, math.cos(angle) * 0.6f);
+                BlockDrop drop = Instantiate(dropPrefab, pending.Position, Quaternion.identity);
+                drop.ServerInitialize(world.World, pending.BlockId, pending.Count, velocity);
+                drop.NetworkObject.Spawn(destroyWithScene: true);
+                _drops.Add(drop);
+            }
         }
 
         void OnDropSpawned(BlockDrop drop)

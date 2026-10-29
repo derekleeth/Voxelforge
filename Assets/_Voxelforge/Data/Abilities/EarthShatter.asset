@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 932fac5680c989645b848805131d9727, type: 3}
+  m_Name: EarthShatter
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityDefinition
+  id: 4
+  displayName: EarthShatter
+  description: Slam the ground where you look and shatter it into a wide, shallow bowl.
+  icon: {fileID: 0}
+  element: 4
+  manaCost: 35
+  cooldown: 8
+  castTime: 0
+  castWhileMoving: 0
+  range: 20
+  aoeRadius: 4.5
+  craterFalloff: 0.2
+  craterFlatten: 0.45
+  delivery: 1
+  projectileSpeed: 0
+  blockDamage: 150
+  creatureDamage: 80

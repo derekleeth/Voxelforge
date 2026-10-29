@@ -975,6 +975,8 @@ MonoBehaviour:
   mergeRadius: 1
   lifetimeSeconds: 300
   popSpeed: 3
+  stackArea: 3
+  blastPopSpeed: 3
 --- !u!4 &974320861
 Transform:
   m_ObjectHideFlags: 0
@@ -1197,6 +1199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.SplitScreenDirector
   localPlayers: {fileID: 2147055201}
+  abilityLooks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   overviewCamera: {fileID: 330585545}
   compositeCamera: {fileID: 122390144}
   compositeQuad: {fileID: 1620927727}

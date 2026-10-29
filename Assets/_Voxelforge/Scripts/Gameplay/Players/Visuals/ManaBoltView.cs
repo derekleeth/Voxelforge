@@ -9,6 +9,7 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// Draws this hero's projectiles on every PC (Roadmap 3.6, 4.2): a muzzle flash, a glowing core with a trail and a
     /// light that travels with it, and a burst of sparks where it lands, each in its ability's <see cref="AbilityLook"/>.
+    /// A spell with a crater (4.3) also flashes and throws chunks of the block it hit, ground slams included.
     /// The host moves the real bolt (<see cref="PlayerStaff"/>) and says so with <see cref="AbilityCue"/>s; this one flies
     /// the same line from the start and speed the host sent, starting at the staff's muzzle (or the hand, with nothing
     /// held) and easing onto that line, then ends wherever the host says it ended. Presentation only.
@@ -21,6 +22,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Additive glow material for the bolt, its trail and the sparks (Materials/ManaBolt.mat).")]
         [SerializeField] Material glowMaterial;
 
+        [Tooltip("Lit material for the rock chunks a crater throws (Roadmap 4.3). Empty = no chunks.")]
+        [SerializeField] Material debrisMaterial;
+
         [Tooltip("Data/Abilities/Looks/AbilityLookBook.asset: how each ability looks.")]
         [SerializeField] AbilityLookBook looks;
 
@@ -32,6 +36,9 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Seconds the muzzle flash and the impact flash last.")]
         [SerializeField, Range(0.02f, 0.5f)] float flashTime = 0.12f;
+
+        [Tooltip("Seconds a crater's flash takes to fade.")]
+        [SerializeField, Range(0.05f, 1.5f)] float blastFlashTime = 0.45f;
 
         const int PoolSize = 4;
         static readonly Color FallbackGlow = new Color(0.35f, 0.85f, 1f);
@@ -63,9 +70,14 @@ namespace Voxelforge.Gameplay
         PlayerController _player;
         HeldItemView _held;
         ParticleSystem _sparks;
+        ParticleSystem _debris;
         Light _muzzleLight;
         float _muzzleFlash;
         float _muzzleIntensity;
+        Light _blastLight;
+        float _blastFlash;
+        float _blastIntensity;
+        Mesh _chunkMesh;
         Mesh _gemMesh;
         Mesh _orbMesh;
         MaterialPropertyBlock _block;
@@ -92,8 +104,14 @@ namespace Voxelforge.Gameplay
             }
             if (_sparks != null)
                 Destroy(_sparks.gameObject);
+            if (_debris != null)
+                Destroy(_debris.gameObject);
             if (_muzzleLight != null)
                 Destroy(_muzzleLight.gameObject);
+            if (_blastLight != null)
+                Destroy(_blastLight.gameObject);
+            if (_chunkMesh != null)
+                Destroy(_chunkMesh);
             if (_gemMesh != null)
                 Destroy(_gemMesh);
             if (_orbMesh != null)
@@ -199,6 +217,25 @@ namespace Voxelforge.Gameplay
             float speed = look != null ? look.ImpactSpeed : 5f;
             float3 normal = end.Direction;
             Emit((float3)end.Position + normal * 0.05f, normal, sparks, hitBlock ? burst : burst / 3, speed, 0.85f);
+
+            // A crater (Roadmap 4.3): a flash that lights the bowl and chunks of the block it hit flung out.
+            float radius = ability != null ? ability.AoeRadius : 0f;
+            if (!hitBlock || radius <= 0f)
+                return;
+            float scale = radius / 3f;
+            _blastLight.transform.position = (Vector3)((float3)end.Position + normal * radius * 0.5f);
+            _blastLight.color = glow;
+            _blastLight.range = radius * 3f;
+            _blastIntensity = look != null ? look.BlastLight : 8f;
+            _blastFlash = blastFlashTime;
+            Emit((float3)end.Position + normal * 0.1f, normal, sparks, (int)(burst * scale), speed * 1.4f, 1.2f);
+
+            Color rock = world != null && end.BlockId < world.Blocks.Length ? (Color)world.Blocks[end.BlockId].MapColor : Color.gray;
+            if (look != null)
+                rock = Color.Lerp(rock, look.DebrisTint, look.DebrisTint.a);
+            rock.a = 1f;
+            EmitDebris((float3)end.Position, normal, rock, (int)((look != null ? look.DebrisChunks : 40) * scale),
+                look != null ? look.DebrisSpeed : 7f, radius);
         }
 
         void LateUpdate()
@@ -231,6 +268,16 @@ namespace Voxelforge.Gameplay
                     if (bolt.Fade <= 0f)
                         bolt.Root.SetActive(false);
                 }
+            }
+
+            if (_blastLight != null)
+            {
+                _blastFlash -= dt;
+                bool on = _blastFlash > 0f;
+                if (on)
+                    _blastLight.intensity = _blastIntensity * (_blastFlash / blastFlashTime);
+                if (_blastLight.enabled != on)
+                    _blastLight.enabled = on;
             }
 
             if (_muzzleLight != null)
@@ -331,6 +378,100 @@ namespace Voxelforge.Gameplay
             _muzzleLight.type = LightType.Point;
             _muzzleLight.shadows = LightShadows.None;
             _muzzleLight.enabled = false;
+
+            _blastLight = new GameObject($"{name} Blast Flash").AddComponent<Light>();
+            _blastLight.type = LightType.Point;
+            _blastLight.shadows = LightShadows.None;
+            _blastLight.enabled = false;
+
+            if (debrisMaterial == null)
+                return;
+            _chunkMesh = BuildChunkMesh();
+            var debrisObject = new GameObject($"{name} Blast Debris");
+            _debris = debrisObject.AddComponent<ParticleSystem>();
+            _debris.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ParticleSystem.MainModule debrisMain = _debris.main;
+            debrisMain.playOnAwake = false;
+            debrisMain.loop = false;
+            debrisMain.simulationSpace = ParticleSystemSimulationSpace.World;
+            debrisMain.startLifetime = 1.4f;
+            debrisMain.gravityModifier = 2f;
+            debrisMain.startRotation3D = true;
+            debrisMain.maxParticles = 600;
+            ParticleSystem.EmissionModule debrisEmission = _debris.emission;
+            debrisEmission.enabled = false;
+            ParticleSystem.ShapeModule debrisShape = _debris.shape;
+            debrisShape.enabled = false;
+            ParticleSystem.RotationOverLifetimeModule spin = _debris.rotationOverLifetime;
+            spin.enabled = true;
+            spin.separateAxes = true;
+            spin.x = new ParticleSystem.MinMaxCurve(-6f, 6f);
+            spin.y = new ParticleSystem.MinMaxCurve(-6f, 6f);
+            spin.z = new ParticleSystem.MinMaxCurve(-6f, 6f);
+            ParticleSystem.SizeOverLifetimeModule shrink = _debris.sizeOverLifetime;
+            shrink.enabled = true;
+            shrink.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.7f, 1f), new Keyframe(1f, 0f)));
+            ParticleSystem.CollisionModule bounce = _debris.collision;
+            bounce.enabled = false; // Blocks are a mesh the particle system can't see cheaply; chunks fade before they'd sink far.
+            var debrisRenderer = debrisObject.GetComponent<ParticleSystemRenderer>();
+            debrisRenderer.sharedMaterial = debrisMaterial;
+            debrisRenderer.renderMode = ParticleSystemRenderMode.Mesh;
+            debrisRenderer.mesh = _chunkMesh;
+            debrisRenderer.alignment = ParticleSystemRenderSpace.World;
+            debrisRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            debrisRenderer.receiveShadows = false;
+            _debris.Play();
+        }
+
+        /// <summary>Little cubes of <paramref name="colour"/> thrown up and out of a crater of <paramref name="radius"/>.</summary>
+        void EmitDebris(float3 at, float3 normal, Color colour, int count, float speed, float radius)
+        {
+            if (_debris == null || count <= 0)
+                return;
+            float3 n = math.normalizesafe(normal, new float3(0f, 1f, 0f));
+            var emit = new ParticleSystem.EmitParams { applyShapeToPosition = false };
+            for (int i = 0; i < count; i++)
+            {
+                float3 random = UnityEngine.Random.insideUnitSphere;
+                float3 dir = math.normalizesafe(n * 1.2f + random, n);
+                emit.position = at + random * radius * 0.4f;
+                emit.velocity = dir * speed * UnityEngine.Random.Range(0.5f, 1.2f);
+                emit.rotation3D = UnityEngine.Random.insideUnitSphere * 180f;
+                // A little variety, so the chunks don't look painted on.
+                float shade = UnityEngine.Random.Range(0.7f, 1.1f);
+                emit.startColor = new Color(colour.r * shade, colour.g * shade, colour.b * shade, 1f);
+                emit.startSize = UnityEngine.Random.Range(0.1f, 0.28f);
+                emit.startLifetime = UnityEngine.Random.Range(0.9f, 1.6f);
+                _debris.Emit(emit, 1);
+            }
+        }
+
+        /// <summary>A unit cube with flat faces, for crater chunks.</summary>
+        static Mesh BuildChunkMesh()
+        {
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var triangles = new List<int>();
+            Vector3[] axes = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+            foreach (Vector3 n in axes)
+            {
+                Vector3 u = Mathf.Abs(n.y) > 0.5f ? Vector3.right : Vector3.up;
+                Vector3 v = Vector3.Cross(n, u);
+                int start = vertices.Count;
+                vertices.Add((n - u - v) * 0.5f);
+                vertices.Add((n - u + v) * 0.5f);
+                vertices.Add((n + u + v) * 0.5f);
+                vertices.Add((n + u - v) * 0.5f);
+                for (int i = 0; i < 4; i++)
+                    normals.Add(n);
+                triangles.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
+            }
+            var mesh = new Mesh { name = "Blast Chunk" };
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         void Emit(float3 at, float3 normal, Color colour, int count, float speed, float spread)

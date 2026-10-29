@@ -32,6 +32,8 @@ namespace Voxelforge.Gameplay
         readonly InputAction _splitStyle;
         readonly InputAction _home;
         readonly InputAction _ability1;
+        readonly InputAction _ability2;
+        readonly InputAction _ability3;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -51,6 +53,8 @@ namespace Voxelforge.Gameplay
             _splitStyle = _actions.FindAction("Player/SplitStyle", throwIfNotFound: true);
             _home = _actions.FindAction("Player/Home", throwIfNotFound: true);
             _ability1 = _actions.FindAction("Player/Ability1", throwIfNotFound: true);
+            _ability2 = _actions.FindAction("Player/Ability2", throwIfNotFound: true);
+            _ability3 = _actions.FindAction("Player/Ability3", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -121,6 +125,10 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.Home;
             if (_ability1.IsPressed())
                 buttons |= PlayerButtons.Ability1;
+            if (_ability2.IsPressed())
+                buttons |= PlayerButtons.Ability2;
+            if (_ability3.IsPressed())
+                buttons |= PlayerButtons.Ability3;
 
             return new PlayerInputFrame
             {

@@ -175,6 +175,14 @@ namespace Voxelforge.Voxels
         public VoxelDamageResult RequestDamageVoxel(int3 coord, float amount, PlayerId instigator) =>
             _editor?.RequestDamageVoxel(coord, amount, instigator, Time.time) ?? VoxelDamageResult.ChunkNotLoaded;
 
+        /// <summary>
+        /// <b>Host only.</b> Damages many blocks at once on behalf of <paramref name="instigator"/>, each as by
+        /// <see cref="RequestDamageVoxel"/>, e.g. a spell's crater (Roadmap 4.3). With <paramref name="area"/>,
+        /// blast-proof blocks such as Home Totems are passed by.
+        /// </summary>
+        public VoxelBatchResult RequestDamageVoxels(IReadOnlyList<VoxelDamageRequest> requests, PlayerId instigator, bool area) =>
+            _editor?.RequestDamageVoxels(requests, instigator, Time.time, area) ?? default;
+
         void CreateDecorations()
         {
             if (decorationSet == null)

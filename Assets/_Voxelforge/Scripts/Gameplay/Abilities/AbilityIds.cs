@@ -14,5 +14,11 @@ namespace Voxelforge.Gameplay
 
         /// <summary>A slow, heavy test spell with a cast time, on the temporary Ability 1 button until 4.4.</summary>
         public const ushort ArcaneOrb = 2;
+
+        /// <summary>A slow fire orb with a long cast that blasts a deep, round crater (Roadmap 4.3).</summary>
+        public const ushort Pyroblast = 3;
+
+        /// <summary>An instant slam on the ground you aim at that blasts a wide, shallow crater (Roadmap 4.3).</summary>
+        public const ushort EarthShatter = 4;
     }
 }

@@ -7,11 +7,12 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// This player's projectiles (Roadmap 3.6, 4.1): the M.G.R.S.'s Mana Bolts and any other projectile ability.
-    /// <see cref="PlayerCaster"/> decides <i>when</i> one goes off; then <b>the host</b> launches it from the hero's eyes
-    /// along their aim (<see cref="PlayerController.Aim"/>), moves it (<see cref="ManaBoltFlight"/>), works out what the
-    /// hit damages (<see cref="AbilityImpact"/>) and applies it through <see cref="VoxelWorldManager.RequestDamageVoxel"/>
-    /// in this player's name. No position ever comes from a PC (CLAUDE.md Laws #1-#3).
+    /// This player's projectiles and blasts (Roadmap 3.6, 4.1, 4.3): the M.G.R.S.'s Mana Bolts, any other projectile
+    /// ability, and ground slams. <see cref="PlayerCaster"/> decides <i>when</i> one goes off; then <b>the host</b>
+    /// launches it from the hero's eyes along their aim (<see cref="PlayerController.Aim"/>), moves it
+    /// (<see cref="ManaBoltFlight"/>), works out what the hit damages, one block or a whole crater
+    /// (<see cref="AbilityImpact"/>), and applies it through <see cref="VoxelWorldManager.RequestDamageVoxels"/> in this
+    /// player's name. No position ever comes from a PC (CLAUDE.md Laws #1-#3).
     /// <para>Rules only (Roadmap 4.2): every PC hears <see cref="AbilityCue"/>s for the launch and the hit through
     /// <see cref="PlayerAbilityCues"/>, and draws them itself (<see cref="ManaBoltView"/>).</para>
     /// </summary>
@@ -49,6 +50,17 @@ namespace Voxelforge.Gameplay
                 _cues.ServerSend(AbilityCue.Launch(bolt));
         }
 
+        /// <summary>Host only: <paramref name="ability"/> goes off on the block at <paramref name="hit"/> (a ground slam).</summary>
+        public void ServerStrikeAt(AbilityDefinition ability, in VoxelHit hit)
+        {
+            VoxelWorldManager world = _player.WorldManager;
+            if (!IsServer || !IsSpawned || ability == null || world == null || world.World == null)
+                return;
+            ushort blockId = world.World.GetVoxel(hit.Block).BlockId;
+            Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId));
+        }
+
         void FixedUpdate()
         {
             if (!IsServer || !IsSpawned || _flight.Count == 0)
@@ -69,16 +81,20 @@ namespace Voxelforge.Gameplay
                 AbilityBook book = _caster != null ? _caster.Book : null;
                 AbilityDefinition ability = null;
                 book?.TryGet(end.AbilityId, out ability);
-                _damage.Clear();
-                AbilityImpact.Resolve(ability, end, _damage);
-                foreach (VoxelDamageRequest request in _damage)
-                {
-                    VoxelDamageResult result = world.RequestDamageVoxel(request.Block, request.Amount, _player.PlayerId);
-                    if (logHits)
-                        Debug.Log($"[Voxelforge] {_player.PlayerId}'s bolt hit {request.Block}: {result}.", this);
-                }
+                Apply(world, ability, end.Point, end.Hit.Block, end.Damage);
             }
             _cues.ServerSend(AbilityCue.End(end, blockId));
+        }
+
+        void Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage)
+        {
+            _damage.Clear();
+            AbilityImpact.Resolve(ability, point, block, damage, _damage);
+            bool area = ability != null && ability.AoeRadius > 0f;
+            VoxelBatchResult result = world.RequestDamageVoxels(_damage, _player.PlayerId, area);
+            if (logHits)
+                Debug.Log($"[Voxelforge] {_player.PlayerId}'s {(ability != null ? ability.DisplayName : "bolt")} hit {block}: " +
+                          $"{result.Broken} broken, {result.Damaged} damaged, {result.Skipped} untouched.", this);
         }
     }
 }

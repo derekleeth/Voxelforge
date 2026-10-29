@@ -20,6 +20,8 @@ namespace Voxelforge.Voxels
         Prop = 1 << 3,
         /// <summary>Must rest on a solid block below or beside it, and breaks when that block goes (torches).</summary>
         NeedsSupport = 1 << 4,
+        /// <summary>Spell blasts pass it by (Roadmap 4.3), e.g. Home Totems. Mining still breaks it.</summary>
+        BlastProof = 1 << 5,
     }
 
     /// <summary>
@@ -58,6 +60,7 @@ namespace Voxelforge.Voxels
         public bool IsTransparent => (Flags & BlockFlags.Transparent) != 0;
         public bool IsProp => (Flags & BlockFlags.Prop) != 0;
         public bool NeedsSupport => (Flags & BlockFlags.NeedsSupport) != 0;
+        public bool IsBlastProof => (Flags & BlockFlags.BlastProof) != 0;
 
         /// <summary>Aim rays stop here, so it can be mined and built against: solid blocks and props.</summary>
         public bool IsTargetable => (Flags & (BlockFlags.Solid | BlockFlags.Prop)) != 0;

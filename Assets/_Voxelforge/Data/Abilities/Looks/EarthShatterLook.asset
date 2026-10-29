@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: EarthShatterLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: e41f2045986f9624ead6b234eaa2887f, type: 2}
+  glow: {r: 0.75, g: 0.55, b: 0.3, a: 1}
+  coreShape: 0
+  coreSize: 0.3
+  trailTime: 0.2
+  lightIntensity: 2
+  lightRange: 6
+  muzzleSparks: 0
+  impactSparks: 40
+  impactSpeed: 5
+  debrisChunks: 90
+  debrisSpeed: 8
+  debrisTint: {r: 0.35, g: 0.25, b: 0.15, a: 0.25}
+  shakeStrength: 0.9
+  blastLight: 3
+  castMotesPerSecond: 0
+  castLight: 0
+  castLoop: {fileID: 0}
+  castLoopVolume: 0.5
+  release: {fileID: 0}
+  releaseVolume: 0.8
+  impact: {fileID: 8300000, guid: d99a921bb2ed1b3449d347347d0ec708, type: 3}
+  impactVolume: 1.4
+  fizzle: {fileID: 0}
+  maxDistance: 60

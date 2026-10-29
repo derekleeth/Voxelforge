@@ -34,6 +34,12 @@ namespace Voxelforge.Gameplay
         const float EaseOutRate = 4f;
         /// <summary>How far over the hero's right shoulder the view moves in tight spots (Roadmap 3.7), in meters.</summary>
         public const float ShoulderOffset = 0.55f;
+
+        // Camera shake (Roadmap 4.3): the biggest turn in degrees, how fast it wobbles, and how much of a full shake
+        // settles per second.
+        const float MaxShakeDegrees = 3.5f;
+        const float ShakeFrequency = 22f;
+        const float ShakeSettleRate = 1.6f;
         /// <summary>Squeezed below this clear fraction, the view moves over the shoulder; it moves back above the second.</summary>
         const float ShoulderIn = 0.55f, ShoulderOut = 0.85f;
         /// <summary>How quickly the view slides over the shoulder and back (per second).</summary>
@@ -44,6 +50,7 @@ namespace Voxelforge.Gameplay
         float _clearFraction = 1f; // How far from the pivot to the wanted spot the camera may go, 0-1.
         bool _overShoulder;
         float _shoulder; // 0 = behind the hero, 1 = fully over the shoulder.
+        float _shake; // 0 = still, 1 = the hardest shake (Roadmap 4.3).
 
         public byte LocalSlot { get; private set; }
 
@@ -72,6 +79,15 @@ namespace Voxelforge.Gameplay
         /// With a <paramref name="world"/>, it slides towards <paramref name="pivot"/> when blocks are between the
         /// two. <paramref name="pivot"/> must be in open air: the player's head (see the class summary).
         /// </summary>
+        /// <summary>
+        /// Shakes this view (Roadmap 4.3, <see cref="BlastShake"/>) by <paramref name="amount"/> (0-1). Shakes add up
+        /// and settle down on their own. Only the view turns, so the camera never pokes into a block.
+        /// </summary>
+        public void Shake(float amount)
+        {
+            _shake = Mathf.Clamp01(_shake + Mathf.Max(amount, 0f));
+        }
+
         public void SetPose(Vector3 focus, float yaw, float pitch, float distance, VoxelWorld world, Vector3 pivot)
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
@@ -100,7 +116,22 @@ namespace Voxelforge.Gameplay
                 _clearFraction = fraction;
             else
                 _clearFraction = math.lerp(_clearFraction, fraction, 1f - math.exp(-EaseOutRate * Time.unscaledDeltaTime));
-            transform.SetPositionAndRotation(Vector3.Lerp(pivot, wanted, _clearFraction), rotation);
+            transform.SetPositionAndRotation(Vector3.Lerp(pivot, wanted, _clearFraction), rotation * ShakeOffset());
+        }
+
+        /// <summary>This frame's shake as a small turn, and lets the shake settle a little.</summary>
+        Quaternion ShakeOffset()
+        {
+            if (_shake <= 0f)
+                return Quaternion.identity;
+            // Squared, so small shakes stay gentle and big ones kick.
+            float strength = _shake * _shake * MaxShakeDegrees;
+            float t = Time.unscaledTime * ShakeFrequency;
+            _shake = Mathf.Max(0f, _shake - ShakeSettleRate * Time.unscaledDeltaTime);
+            return Quaternion.Euler(
+                (Mathf.PerlinNoise(t, 0.1f) * 2f - 1f) * strength,
+                (Mathf.PerlinNoise(0.3f, t) * 2f - 1f) * strength,
+                (Mathf.PerlinNoise(t, 0.7f) * 2f - 1f) * strength * 0.5f);
         }
 
         /// <summary>

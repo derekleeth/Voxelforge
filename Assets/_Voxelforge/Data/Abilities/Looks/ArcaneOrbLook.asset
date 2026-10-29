@@ -22,6 +22,11 @@ MonoBehaviour:
   muzzleSparks: 16
   impactSparks: 70
   impactSpeed: 7
+  debrisChunks: 30
+  debrisSpeed: 6
+  debrisTint: {r: 0.6, g: 0.3, b: 0.9, a: 0.2}
+  shakeStrength: 0.3
+  blastLight: 8
   castMotesPerSecond: 90
   castLight: 3
   castLoop: {fileID: 8300000, guid: f758a5df429b0764da732022f63cf5e7, type: 3}

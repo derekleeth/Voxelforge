@@ -39,6 +39,9 @@ namespace Voxelforge.Voxels
         [Tooltip("Must rest on a solid block below or beside it, and breaks (dropping itself) when that block goes.")]
         [SerializeField] bool needsSupport;
 
+        [Tooltip("Spell blasts (Roadmap 4.3) pass it by, e.g. Home Totems. Mining still breaks it.")]
+        [SerializeField] bool blastProof;
+
         [Tooltip("Light the block gives off, 0-15.")]
         [SerializeField, Range(0, Voxel.MaxLight)] int lightEmission;
 
@@ -67,6 +70,7 @@ namespace Voxelforge.Voxels
         public bool IsTransparent => isTransparent;
         public bool IsProp => isProp;
         public bool NeedsSupport => needsSupport;
+        public bool IsBlastProof => blastProof;
         public HarvestKind HarvestKind => harvestKind;
         public int LightEmission => lightEmission;
         public Color32 MapColor => mapColor;
@@ -86,6 +90,8 @@ namespace Voxelforge.Voxels
                 flags |= BlockFlags.Prop;
             if (needsSupport)
                 flags |= BlockFlags.NeedsSupport;
+            if (blastProof)
+                flags |= BlockFlags.BlastProof;
 
             return new BlockInfo
             {
@@ -109,7 +115,7 @@ namespace Voxelforge.Voxels
         internal static BlockDefinition Create(ushort id, string displayName, int maxDurability = 20,
             bool isSolid = true, bool isTransparent = false, int lightEmission = 0, BiomeTint biomeTint = BiomeTint.None,
             BlockDefinition drop = null, int dropCount = 1, HarvestKind harvestKind = HarvestKind.Any, bool isProp = false,
-            bool needsSupport = false)
+            bool needsSupport = false, bool blastProof = false)
         {
             var definition = CreateInstance<BlockDefinition>();
             definition.name = displayName;
@@ -125,6 +131,7 @@ namespace Voxelforge.Voxels
             definition.harvestKind = harvestKind;
             definition.isProp = isProp;
             definition.needsSupport = needsSupport;
+            definition.blastProof = blastProof;
             return definition;
         }
     }

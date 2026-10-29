@@ -28,6 +28,10 @@ namespace Voxelforge.Gameplay
         /// real ability slots.
         /// </summary>
         Ability1 = 1 << 8,
+        /// <summary>Cast the second test spell (Roadmap 4.3). Temporary, like <see cref="Ability1"/>.</summary>
+        Ability2 = 1 << 9,
+        /// <summary>Cast the third test spell (Roadmap 4.3). Temporary, like <see cref="Ability1"/>.</summary>
+        Ability3 = 1 << 10,
     }
 
     /// <summary>

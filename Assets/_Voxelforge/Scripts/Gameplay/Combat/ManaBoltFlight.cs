@@ -45,7 +45,7 @@ namespace Voxelforge.Gameplay
     public sealed class ManaBoltFlight
     {
         readonly List<ManaBolt> _bolts = new List<ManaBolt>();
-        ushort _nextId;
+        ushort _nextId = 1; // 0 is a ground slam's impact (AbilityCue.Blast), which no bolt may match.
 
         public int Count => _bolts.Count;
 
@@ -60,6 +60,8 @@ namespace Voxelforge.Gameplay
             if (ability == null || ability.ProjectileSpeed <= 0f || ability.Range <= 0f || length < 1e-6f)
                 return false;
 
+            if (_nextId == 0)
+                _nextId = 1;
             bolt = new ManaBolt
             {
                 Id = _nextId++,
