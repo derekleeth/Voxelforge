@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: RuneHammerLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: c0bac5ec91bab0942ad4d7d21b60969d, type: 2}
+  icon: {fileID: 0}
+  glow: {r: 1, g: 0.78, b: 0.3, a: 1}
+  coreShape: 0
+  coreSize: 0.6
+  coreMesh: {fileID: 53063314143989333, guid: 5bc5b134eb239d1488b819347b85bf1f, type: 3}
+  coreSpin: 900
+  trailTime: 0.25
+  lightIntensity: 5
+  lightRange: 8
+  muzzleSparks: 14
+  impactSparks: 45
+  impactSpeed: 6
+  debrisChunks: 40
+  debrisSpeed: 7
+  debrisTint: {r: 0, g: 0, b: 0, a: 0}
+  shakeStrength: 0.4
+  blastLight: 8
+  castMotesPerSecond: 0
+  castLight: 0
+  castLoop: {fileID: 0}
+  castLoopVolume: 0.5
+  release: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
+  releaseVolume: 0.8
+  impact: {fileID: 8300000, guid: aa54dd91b7d3e3c4c87f0a38f3d61c55, type: 3}
+  impactVolume: 1
+  fizzle: {fileID: 0}
+  maxDistance: 40

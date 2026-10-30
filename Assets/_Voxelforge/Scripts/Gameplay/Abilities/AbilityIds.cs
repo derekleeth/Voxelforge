@@ -20,5 +20,14 @@ namespace Voxelforge.Gameplay
 
         /// <summary>An instant slam on the ground you aim at that blasts a wide, shallow crater (Roadmap 4.3).</summary>
         public const ushort EarthShatter = 4;
+
+        /// <summary>Runeforged Paladin (Roadmap 4.6): a glowing hammer thrown end over end.</summary>
+        public const ushort RuneHammer = 5;
+
+        /// <summary>Runeforged Paladin (Roadmap 4.6): a shield on the partner you aim at, or on yourself.</summary>
+        public const ushort BulwarkRune = 6;
+
+        /// <summary>Runeforged Paladin (Roadmap 4.6): a golden circle at your feet that heals heroes standing in it.</summary>
+        public const ushort HallowedForge = 7;
     }
 }

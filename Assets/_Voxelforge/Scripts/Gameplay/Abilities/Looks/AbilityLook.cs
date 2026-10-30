@@ -36,6 +36,13 @@ namespace Voxelforge.Gameplay
         [Tooltip("How big the glowing core is, in metres.")]
         [SerializeField, Range(0.05f, 1f)] float coreSize = 0.22f;
 
+        [Tooltip("A model to fly instead of the gem or orb, drawn as glowing light (Roadmap 4.6: the Rune Hammer). Empty = " +
+                 "the core shape.")]
+        [SerializeField] Mesh coreMesh;
+
+        [Tooltip("How fast the core tumbles end over end, in degrees a second. 0 = it doesn't.")]
+        [SerializeField, Range(0f, 2000f)] float coreSpin;
+
         [Tooltip("Seconds the trail takes to fade.")]
         [SerializeField, Range(0.05f, 1f)] float trailTime = 0.18f;
 
@@ -103,6 +110,8 @@ namespace Voxelforge.Gameplay
         public Color Glow => glow;
         public AbilityCoreShape CoreShape => coreShape;
         public float CoreSize => coreSize;
+        public Mesh CoreMesh => coreMesh;
+        public float CoreSpin => coreSpin;
         public float TrailTime => trailTime;
         public float LightIntensity => lightIntensity;
         public float LightRange => lightRange;

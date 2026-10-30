@@ -10,7 +10,8 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// This player's spells (Roadmap 4.1): their mana pool, cooldowns and cast bar. <b>The host</b> runs the rules
     /// (<see cref="AbilityCaster"/>) from the input it received, and when a cast finishes it hands the ability to its
-    /// delivery, <see cref="PlayerStaff"/> for projectiles and ground slams (CLAUDE.md Laws #1 and #2).
+    /// delivery: <see cref="PlayerStaff"/> for projectiles and ground slams, <see cref="PlayerSupport"/> for shields and
+    /// zones (CLAUDE.md Laws #1 and #2).
     /// <list type="bullet">
     /// <item>Holding Mine with a ranged item (the M.G.R.S.) casts that item's ability, as in D-019.</item>
     /// <item>The action bar buttons cast the slots of <see cref="PlayerActionBar"/> (4.4).</item>
@@ -45,6 +46,7 @@ namespace Voxelforge.Gameplay
         PlayerStaff _staff;
         PlayerAbilityCues _cues;
         PlayerActionBar _actionBar;
+        PlayerSupport _support;
 
         // Host state.
         AbilityCaster _caster;
@@ -83,6 +85,7 @@ namespace Voxelforge.Gameplay
             _staff = GetComponent<PlayerStaff>();
             _cues = GetComponent<PlayerAbilityCues>();
             _actionBar = GetComponent<PlayerActionBar>();
+            _support = GetComponent<PlayerSupport>();
         }
 
         void OnEnable() => _cues.Received += OnCue;
@@ -224,6 +227,14 @@ namespace Voxelforge.Gameplay
                 case AbilityDelivery.GroundSlam:
                     if (TryAimAtBlock(ability, input, out VoxelHit hit))
                         _staff.ServerStrikeAt(ability, hit);
+                    break;
+                case AbilityDelivery.Shield:
+                    if (_support != null)
+                        _support.ServerShield(ability, input);
+                    break;
+                case AbilityDelivery.Zone:
+                    if (_support != null)
+                        _support.ServerZone(ability);
                     break;
             }
         }

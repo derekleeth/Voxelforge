@@ -28,3 +28,8 @@ MonoBehaviour:
   projectileSpeed: 22
   blockDamage: 200
   creatureDamage: 120
+  healAmount: 0
+  shieldAmount: 0
+  duration: 0
+  pulseInterval: 1
+  aimCone: 12

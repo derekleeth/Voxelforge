@@ -62,6 +62,8 @@ namespace Voxelforge.Gameplay
             public float Fade;
             public float TrailTime;
             public float LightIntensity;
+            /// <summary>Degrees a second the core tumbles end over end (Roadmap 4.6), or 0.</summary>
+            public float Spin;
             public Color Glow;
         }
 
@@ -160,8 +162,13 @@ namespace Voxelforge.Gameplay
             bolt.LightIntensity = look != null ? look.LightIntensity : 4f;
 
             bolt.Root.transform.position = muzzle;
-            bolt.Shape.sharedMesh = look != null && look.CoreShape == AbilityCoreShape.Orb ? _orbMesh : _gemMesh;
+            bolt.Shape.sharedMesh = look != null && look.CoreMesh != null ? look.CoreMesh
+                : look != null && look.CoreShape == AbilityCoreShape.Orb ? _orbMesh : _gemMesh;
             bolt.Shape.transform.localScale = Vector3.one * size;
+            // A model (the Rune Hammer) faces along its flight and tumbles about the axis across it.
+            bolt.Spin = look != null ? look.CoreSpin : 0f;
+            bolt.Root.transform.rotation = Quaternion.LookRotation((Vector3)bolt.Direction);
+            bolt.Shape.transform.localRotation = Quaternion.identity;
             bolt.Trail.time = bolt.TrailTime;
             bolt.Trail.widthCurve = new AnimationCurve(new Keyframe(0f, size * 0.8f), new Keyframe(1f, 0f));
             bolt.Trail.Clear();
@@ -252,6 +259,8 @@ namespace Voxelforge.Gameplay
                     float travelled = math.min(bolt.Age * bolt.Speed, bolt.Range);
                     float pull = converge > 0f ? math.saturate(1f - bolt.Age / converge) : 0f;
                     bolt.Root.transform.position = bolt.Origin + bolt.Direction * travelled + bolt.StartOffset * pull;
+                    if (bolt.Spin > 0f)
+                        bolt.Shape.transform.localRotation = Quaternion.Euler(bolt.Age * bolt.Spin, 0f, 0f);
                     // If the host's message is lost, don't hang in the air for ever.
                     if (bolt.Age > bolt.Range / math.max(bolt.Speed, 0.01f) + 1f)
                     {

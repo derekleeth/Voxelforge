@@ -34,6 +34,8 @@ GameObject:
   - component: {fileID: 5778312443207847284}
   - component: {fileID: 2107521008217144011}
   - component: {fileID: 1778222139694727321}
+  - component: {fileID: 8276849153448150790}
+  - component: {fileID: 7719699045505043243}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -505,6 +507,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46edffc0e29930b448b6b7117f937078, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerClassMenu
+--- !u!114 &8276849153448150790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46744ef1f856776499b2a301617ade70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerSupport
+  ShowTopMostFoldoutHeaderGroup: 1
+  zonePrefab: {fileID: 8377431964475306606, guid: 66fb5c74a1bc5c1499e37bc44d0c2746, type: 3}
+--- !u!114 &7719699045505043243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f988d3a211f46c344bc1cdc59a9ec620, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ShieldView
+  looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
+  glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  radius: 1.05
+  bubbleAlpha: 0.14
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

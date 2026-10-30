@@ -20,6 +20,9 @@ namespace Voxelforge.Editor
     /// <c>Art/Textures/UI/Icons/&lt;Ability&gt;.png</c> when there is one.
     /// It also writes how each looks and sounds (<see cref="AbilityLook"/>, Roadmap 4.2) in <c>Looks/</c>, using the
     /// sounds from <i>Voxelforge → Build Sound Effects</i>, so build those first.
+    /// <para>The Runeforged Paladin's spells (Roadmap 4.6): <b>Rune Hammer</b> (a glowing hammer thrown end over end),
+    /// <b>Bulwark Rune</b> (a shield on the partner you aim at, or you) and <b>Hallowed Forge</b> (a golden circle at your
+    /// feet that heals heroes in it). Until step F they borrow sounds from the older spells.</para>
     /// <para>And the classes (Roadmap 4.6) in <c>Data/Classes/</c>: each <see cref="ClassDefinition"/>, its action bar
     /// loadout and the <see cref="ClassBook"/>, in the order the class window shows them.</para>
     /// </summary>
@@ -30,6 +33,10 @@ namespace Voxelforge.Editor
         public const string ArcaneOrbPath = AbilityDir + "/ArcaneOrb.asset";
         public const string PyroblastPath = AbilityDir + "/Pyroblast.asset";
         public const string EarthShatterPath = AbilityDir + "/EarthShatter.asset";
+        public const string RuneHammerPath = AbilityDir + "/RuneHammer.asset";
+        public const string BulwarkRunePath = AbilityDir + "/BulwarkRune.asset";
+        public const string HallowedForgePath = AbilityDir + "/HallowedForge.asset";
+        const string HammerModelPath = "Assets/_Voxelforge/Art/Models/Props/RuneHammer.fbx";
         public const string BookPath = AbilityDir + "/AbilityBook.asset";
         public const string LoadoutPath = AbilityDir + "/DefaultLoadout.asset";
         const string IconDir = "Assets/_Voxelforge/Art/Textures/UI/Icons";
@@ -71,14 +78,29 @@ namespace Voxelforge.Editor
                 speed: 0f, blockDamage: 120f, creatureDamage: 80f, craterFalloff: 0.2f, craterFlatten: 0.45f,
                 delivery: AbilityDelivery.GroundSlam);
 
+            // ---- Runeforged Paladin (Roadmap 4.6) ----
+            AbilityDefinition runeHammer = MakeAbility(RuneHammerPath, AbilityIds.RuneHammer, "Rune Hammer",
+                "Hurl a hammer of rune-light end over end. It hits hard, and its runes burst where it lands.",
+                AbilityElement.Holy, manaCost: 15f, cooldown: 4f, castTime: 0f, range: 30f, aoeRadius: 0f,
+                speed: 30f, blockDamage: 60f, creatureDamage: 45f);
+            AbilityDefinition bulwarkRune = MakeAbility(BulwarkRunePath, AbilityIds.BulwarkRune, "Bulwark Rune",
+                "Carve a rune of warding round the partner you aim at, or round yourself. It soaks up the next 40 damage.",
+                AbilityElement.Holy, manaCost: 20f, cooldown: 12f, castTime: 0f, range: 20f, aoeRadius: 0f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Shield,
+                shieldAmount: 40f, duration: 15f, aimCone: 12f);
+            AbilityDefinition hallowedForge = MakeAbility(HallowedForgePath, AbilityIds.HallowedForge, "Hallowed Forge",
+                "Bless the ground at your feet with a ring of forge-fire. Heroes standing in it heal for 6 seconds.",
+                AbilityElement.Holy, manaCost: 35f, cooldown: 20f, castTime: 1.5f, range: 0f, aoeRadius: 6f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Zone,
+                healAmount: 5f, duration: 6f, pulseInterval: 1f);
+
             var book = LoadOrCreate<AbilityBook>(BookPath);
             var serialized = new SerializedObject(book);
             SerializedProperty list = serialized.FindProperty("abilities");
-            list.arraySize = 4;
-            list.GetArrayElementAtIndex(0).objectReferenceValue = manaBolt;
-            list.GetArrayElementAtIndex(1).objectReferenceValue = arcaneOrb;
-            list.GetArrayElementAtIndex(2).objectReferenceValue = pyroblast;
-            list.GetArrayElementAtIndex(3).objectReferenceValue = earthShatter;
+            AbilityDefinition[] all = { manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge };
+            list.arraySize = all.Length;
+            for (int i = 0; i < all.Length; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = all[i];
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(book);
 
@@ -119,20 +141,37 @@ namespace Voxelforge.Editor
                 castLoop: null, release: null, impact: "EarthSlam", releaseVolume: 0.8f, impactVolume: 1.4f,
                 debrisChunks: 90, debrisSpeed: 8f, debrisTint: new Color(0.35f, 0.25f, 0.15f, 0.25f), shake: 0.9f,
                 blastLight: 3f, maxDistance: 60f);
+            // Paladin: warm forge-gold. The hammer flies as a glowing hammer, tumbling.
+            var paladinGold = new Color(1f, 0.78f, 0.3f);
+            AbilityLook runeHammerLook = MakeLook($"{LookDir}/RuneHammerLook.asset", runeHammer, paladinGold,
+                AbilityCoreShape.Gem, coreSize: 0.6f, trailTime: 0.25f, light: 5f, lightRange: 8f, muzzleSparks: 14,
+                impactSparks: 45, impactSpeed: 6f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: "BoltFire", impact: "OrbImpact", releaseVolume: 0.8f, impactVolume: 1f,
+                coreMesh: LoadModelMesh(HammerModelPath, "RuneHammer"), coreSpin: 900f);
+            AbilityLook bulwarkLook = MakeLook($"{LookDir}/BulwarkRuneLook.asset", bulwarkRune, new Color(1f, 0.86f, 0.42f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3f, lightRange: 6f, muzzleSparks: 0,
+                impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: "OrbRelease", impact: null, releaseVolume: 0.7f, impactVolume: 0.8f);
+            AbilityLook hallowedLook = MakeLook($"{LookDir}/HallowedForgeLook.asset", hallowedForge, paladinGold,
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3.5f, lightRange: 12f, muzzleSparks: 0,
+                impactSparks: 40, impactSpeed: 3f, castMotes: 70f, castLight: 3f,
+                castLoop: "CastHum", release: "OrbRelease", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
 
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
             serialized.FindProperty("defaultLook").objectReferenceValue = manaBoltLook;
             list = serialized.FindProperty("looks");
-            list.arraySize = 4;
-            list.GetArrayElementAtIndex(0).objectReferenceValue = manaBoltLook;
-            list.GetArrayElementAtIndex(1).objectReferenceValue = arcaneOrbLook;
-            list.GetArrayElementAtIndex(2).objectReferenceValue = pyroblastLook;
-            list.GetArrayElementAtIndex(3).objectReferenceValue = earthShatterLook;
+            AbilityLook[] allLooks =
+            {
+                manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
+            };
+            list.arraySize = allLooks.Length;
+            for (int i = 0; i < allLooks.Length; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = allLooks[i];
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(lookBook);
 
-            BuildClasses(loadout, earthShatter);
+            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge);
             return manaBolt;
         }
 
@@ -140,7 +179,8 @@ namespace Voxelforge.Editor
         /// The classes (Roadmap 4.6). Slots 1-3 are each class's signature spells; the ones not built yet (steps C-E) are
         /// left empty, and the class window says "Coming soon".
         /// </summary>
-        static void BuildClasses(ActionBarLoadout adventurerBar, AbilityDefinition earthShatter)
+        static void BuildClasses(ActionBarLoadout adventurerBar, AbilityDefinition earthShatter, AbilityDefinition runeHammer,
+            AbilityDefinition bulwarkRune, AbilityDefinition hallowedForge)
         {
             if (!AssetDatabase.IsValidFolder(ClassDir))
                 AssetDatabase.CreateFolder("Assets/_Voxelforge/Data", "Classes");
@@ -152,7 +192,7 @@ namespace Voxelforge.Editor
                 "A holy knight in rune-carved plate, tough as an anvil. Hurls a glowing hammer, shields a partner and blesses " +
                 "the ground so friends standing on it heal.",
                 maxHealth: 150f, maxMana: 80f, manaRegen: 8f,
-                MakeLoadout("RuneforgedPaladinBar"));
+                MakeLoadout("RuneforgedPaladinBar", runeHammer, bulwarkRune, hallowedForge));
             ClassDefinition geomancer = MakeClass("GeomancerMage", HeroClassId.GeomancerMage, "Geomancer Mage",
                 "A scholar of stone who bends the land itself. Flings stone spears, shatters the ground into craters and " +
                 "rides a pillar of rock up out of trouble.",
@@ -211,7 +251,7 @@ namespace Voxelforge.Editor
             float trailTime, float light, float lightRange, int muzzleSparks, int impactSparks, float impactSpeed,
             float castMotes, float castLight, string castLoop, string release, string impact, float releaseVolume,
             float impactVolume, int debrisChunks = 40, float debrisSpeed = 7f, Color debrisTint = default, float shake = 0.4f,
-            float blastLight = 8f, float maxDistance = 40f)
+            float blastLight = 8f, float maxDistance = 40f, Mesh coreMesh = null, float coreSpin = 0f)
         {
             var look = LoadOrCreate<AbilityLook>(path);
             var serialized = new SerializedObject(look);
@@ -241,6 +281,8 @@ namespace Voxelforge.Editor
             serialized.FindProperty("shakeStrength").floatValue = shake;
             serialized.FindProperty("blastLight").floatValue = blastLight;
             serialized.FindProperty("maxDistance").floatValue = maxDistance;
+            serialized.FindProperty("coreMesh").objectReferenceValue = coreMesh;
+            serialized.FindProperty("coreSpin").floatValue = coreSpin;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(look);
             return look;
@@ -259,7 +301,8 @@ namespace Voxelforge.Editor
         static AbilityDefinition MakeAbility(string path, ushort id, string displayName, string description,
             AbilityElement element, float manaCost, float cooldown, float castTime, float range, float aoeRadius, float speed,
             float blockDamage, float creatureDamage, float craterFalloff = 0.25f, float craterFlatten = 1f,
-            AbilityDelivery delivery = AbilityDelivery.Projectile)
+            AbilityDelivery delivery = AbilityDelivery.Projectile, float healAmount = 0f, float shieldAmount = 0f,
+            float duration = 0f, float pulseInterval = 1f, float aimCone = 12f)
         {
             var ability = LoadOrCreate<AbilityDefinition>(path);
             var serialized = new SerializedObject(ability);
@@ -279,9 +322,26 @@ namespace Voxelforge.Editor
             serialized.FindProperty("projectileSpeed").floatValue = speed;
             serialized.FindProperty("blockDamage").floatValue = blockDamage;
             serialized.FindProperty("creatureDamage").floatValue = creatureDamage;
+            serialized.FindProperty("healAmount").floatValue = healAmount;
+            serialized.FindProperty("shieldAmount").floatValue = shieldAmount;
+            serialized.FindProperty("duration").floatValue = duration;
+            serialized.FindProperty("pulseInterval").floatValue = pulseInterval;
+            serialized.FindProperty("aimCone").floatValue = aimCone;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
             return ability;
+        }
+
+        /// <summary>The mesh called <paramref name="name"/> in the model at <paramref name="path"/>, or null (with a warning).</summary>
+        static Mesh LoadModelMesh(string path, string name)
+        {
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+            {
+                if (asset is Mesh mesh && mesh.name == name)
+                    return mesh;
+            }
+            Debug.LogWarning($"[Voxelforge] No {name} mesh in {path} yet: run build_props.py in Blender, then Build Abilities again.");
+            return null;
         }
 
         static T LoadOrCreate<T>(string path) where T : ScriptableObject

@@ -1,6 +1,6 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
 Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags, the
-drawstring loot bag and the Storage Chest (4.5), and the Training Dummy (4.6).
+drawstring loot bag and the Storage Chest (4.5), the Training Dummy and the Rune Hammer (4.6).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -880,6 +880,26 @@ def build_training_dummy():
     return b
 
 
+# The Rune Hammer (4.6): the Runeforged Paladin's thrown hammer, flown by the game as glowing light (an AbilityLook
+# core mesh), tumbling end over end. Its origin is its middle so it tumbles about its centre; the handle runs along +Z
+# and the head's long side along Y (Unity Z, the way it flies). Chunky on purpose: only the silhouette shows.
+def build_rune_hammer():
+    b = MeshBuilder()
+    b.part("wood_dark", cylinder((0, 0, -0.5), (0, 0, 0.3), 0.05, 0.045, 8, phase=math.pi / 8))
+    b.part("gold", cylinder((0, 0, -0.56), (0, 0, -0.48), 0.07, 0.07, 8))  # Pommel.
+    b.part("leather", cylinder((0, 0, -0.42), (0, 0, -0.18), 0.058, 0.058, 8))  # Grip wrap.
+    # A big blocky head with flared faces and gold bands, a rune panel on each side.
+    head_z, head_h = 0.42, 0.3
+    b.part("iron", box((0, 0, head_z), (0.3, 0.46, head_h)), grain=Vector((0, 1, 0)))
+    for sy in (-1, 1):
+        b.part("steel", box((0, sy * 0.27, head_z), (0.36, 0.08, head_h + 0.06)))  # Striking faces.
+        b.part("gold", box((0, sy * 0.17, head_z), (0.32, 0.04, head_h + 0.02)))  # Bands.
+    for sx in (-1, 1):
+        b.part("rune", box((sx * 0.155, 0, head_z), (0.01, 0.26, 0.18)))
+    b.part("gold", gem((0, 0, head_z + head_h / 2 + 0.06), (0.07, 0.07, 0.09)))  # A gem on top.
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -898,6 +918,7 @@ MODELS = {
     "ChestBody": build_chest_body,
     "ChestLid": build_chest_lid,
     "TrainingDummy": build_training_dummy,
+    "RuneHammer": build_rune_hammer,
 }
 
 

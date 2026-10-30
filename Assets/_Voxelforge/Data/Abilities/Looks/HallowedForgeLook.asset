@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: HallowedForgeLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: 54b45a2083eafad4680d5aa02fd20ff7, type: 2}
+  icon: {fileID: 0}
+  glow: {r: 1, g: 0.78, b: 0.3, a: 1}
+  coreShape: 0
+  coreSize: 0.2
+  coreMesh: {fileID: 0}
+  coreSpin: 0
+  trailTime: 0.2
+  lightIntensity: 3.5
+  lightRange: 12
+  muzzleSparks: 0
+  impactSparks: 40
+  impactSpeed: 3
+  debrisChunks: 40
+  debrisSpeed: 7
+  debrisTint: {r: 0, g: 0, b: 0, a: 0}
+  shakeStrength: 0.4
+  blastLight: 8
+  castMotesPerSecond: 70
+  castLight: 3
+  castLoop: {fileID: 8300000, guid: f758a5df429b0764da732022f63cf5e7, type: 3}
+  castLoopVolume: 0.5
+  release: {fileID: 8300000, guid: a7f32b34f69e4044eb43a0deadb6a89e, type: 3}
+  releaseVolume: 0.9
+  impact: {fileID: 0}
+  impactVolume: 0.8
+  fizzle: {fileID: 0}
+  maxDistance: 40

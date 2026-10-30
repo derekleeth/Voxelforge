@@ -25,6 +25,16 @@ namespace Voxelforge.Gameplay
         /// Goes off at once on the block the hero aims at, within range, with nothing flying (Roadmap 4.3, EarthShatter).
         /// </summary>
         GroundSlam,
+        /// <summary>
+        /// A shield on the partner nearest the aim, or on the caster if no partner is in range (Roadmap 4.6, Bulwark Rune;
+        /// <see cref="PlayerSupport"/>).
+        /// </summary>
+        Shield,
+        /// <summary>
+        /// A circle on the ground at the caster's feet that pulses while it lasts (Roadmap 4.6, Hallowed Forge;
+        /// <see cref="AbilityZone"/>).
+        /// </summary>
+        Zone,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>

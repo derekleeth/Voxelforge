@@ -60,6 +60,22 @@ namespace Voxelforge.Gameplay
         [Tooltip("Damage to targets: Training Dummies (Roadmap 4.6), creatures in Phase 5. In a crater, this is at the middle.")]
         [SerializeField, Min(0f)] float creatureDamage;
 
+        [Header("Support (4.6)")]
+        [Tooltip("Health a Zone gives each hero in it every pulse.")]
+        [SerializeField, Min(0f)] float healAmount;
+
+        [Tooltip("Damage a Shield soaks up.")]
+        [SerializeField, Min(0f)] float shieldAmount;
+
+        [Tooltip("Seconds a Shield or Zone lasts.")]
+        [SerializeField, Min(0f)] float duration;
+
+        [Tooltip("Seconds between a Zone's pulses.")]
+        [SerializeField, Min(0.1f)] float pulseInterval = 1f;
+
+        [Tooltip("A Shield only goes on a partner this close to where the caster aims, in degrees; else on the caster.")]
+        [SerializeField, Range(0f, 45f)] float aimCone = 12f;
+
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public string Description => description;
@@ -77,12 +93,18 @@ namespace Voxelforge.Gameplay
         public float ProjectileSpeed => projectileSpeed;
         public float BlockDamage => blockDamage;
         public float CreatureDamage => creatureDamage;
+        public float HealAmount => healAmount;
+        public float ShieldAmount => shieldAmount;
+        public float Duration => duration;
+        public float PulseInterval => pulseInterval;
+        public float AimCone => aimCone;
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static AbilityDefinition Create(ushort id, string displayName, float manaCost = 0f, float cooldown = 0f,
             float castTime = 0f, float range = 24f, float projectileSpeed = 40f, float blockDamage = 45f, float aoeRadius = 0f,
             bool castWhileMoving = false, AbilityElement element = AbilityElement.Arcane,
-            AbilityDelivery delivery = AbilityDelivery.Projectile, float craterFalloff = 0.25f, float craterFlatten = 1f)
+            AbilityDelivery delivery = AbilityDelivery.Projectile, float craterFalloff = 0.25f, float craterFlatten = 1f,
+            float healAmount = 0f, float shieldAmount = 0f, float duration = 0f, float pulseInterval = 1f, float aimCone = 12f)
         {
             var definition = CreateInstance<AbilityDefinition>();
             definition.name = displayName;
@@ -100,6 +122,11 @@ namespace Voxelforge.Gameplay
             definition.delivery = delivery;
             definition.craterFalloff = craterFalloff;
             definition.craterFlatten = craterFlatten;
+            definition.healAmount = healAmount;
+            definition.shieldAmount = shieldAmount;
+            definition.duration = duration;
+            definition.pulseInterval = pulseInterval;
+            definition.aimCone = aimCone;
             return definition;
         }
     }

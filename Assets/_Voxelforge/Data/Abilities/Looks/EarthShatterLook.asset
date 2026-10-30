@@ -17,6 +17,8 @@ MonoBehaviour:
   glow: {r: 0.75, g: 0.55, b: 0.3, a: 1}
   coreShape: 0
   coreSize: 0.3
+  coreMesh: {fileID: 0}
+  coreSpin: 0
   trailTime: 0.2
   lightIntensity: 2
   lightRange: 6

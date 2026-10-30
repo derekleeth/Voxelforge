@@ -148,6 +148,9 @@ namespace Voxelforge.Tests
         [TestCase(typeof(ClassDefinition))]
         [TestCase(typeof(ClassBook))]
         [TestCase(typeof(PlayerClass))]
+        [TestCase(typeof(PlayerSupport))]
+        [TestCase(typeof(AbilityZone))]
+        [TestCase(typeof(ZoneRules))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |
