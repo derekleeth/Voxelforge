@@ -34,6 +34,7 @@ namespace Voxelforge.Gameplay
         readonly InputAction[] _actionSlots = new InputAction[PlayerActionBar.SlotCount];
         readonly InputAction _actionShift;
         readonly InputAction _inventory;
+        readonly InputAction _classMenu;
         PadSlotChord _padChord;
         InputUser _user;
 
@@ -57,6 +58,7 @@ namespace Voxelforge.Gameplay
                 _actionSlots[i] = _actions.FindAction($"Player/ActionSlot{i + 1}", throwIfNotFound: true);
             _actionShift = _actions.FindAction("Player/ActionShift", throwIfNotFound: true);
             _inventory = _actions.FindAction("Player/Inventory", throwIfNotFound: true);
+            _classMenu = _actions.FindAction("Player/ClassMenu", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -127,6 +129,8 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.Home;
             if (_inventory.IsPressed())
                 buttons |= PlayerButtons.Inventory;
+            if (_classMenu.IsPressed())
+                buttons |= PlayerButtons.ClassMenu;
             buttons |= ReadActionSlots();
 
             return new PlayerInputFrame

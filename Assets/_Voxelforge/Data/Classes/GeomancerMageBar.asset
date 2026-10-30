@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4290a5fecff88fc47bb3b794be4d8199, type: 3}
+  m_Name: GeomancerMageBar
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ActionBarLoadout
+  slots:
+  - {fileID: 0}
+  - {fileID: 11400000, guid: e41f2045986f9624ead6b234eaa2887f, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}

@@ -145,6 +145,9 @@ namespace Voxelforge.Tests
         [TestCase(typeof(CombatTargets))]
         [TestCase(typeof(CombatTarget))]
         [TestCase(typeof(TargetDamage))]
+        [TestCase(typeof(ClassDefinition))]
+        [TestCase(typeof(ClassBook))]
+        [TestCase(typeof(PlayerClass))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

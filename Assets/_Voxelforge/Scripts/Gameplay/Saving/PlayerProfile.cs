@@ -6,8 +6,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// What a world remembers about one player between sessions (Roadmap 3.4, D-017): where they stood, which way they
-    /// faced, their block bag, and their Home Totem (3.8). Kept under their <see cref="PlayerUuid"/>, so it survives players joining in a
-    /// different order. Phase 4 adds class, race and stats here.
+    /// faced, their block bag, their Home Totem (3.8) and their class (4.6). Kept under their <see cref="PlayerUuid"/>, so it
+    /// survives players joining in a different order. Race (4.7) comes next.
     /// </summary>
     public sealed class PlayerProfile
     {
@@ -34,6 +34,9 @@ namespace Voxelforge.Gameplay
         /// <summary>Where their Home Totem stands. Only meaningful with <see cref="HasHome"/>.</summary>
         public int3 HomeBlock;
 
+        /// <summary>Their class (Roadmap 4.6). Saves from before 4.6 load as Adventurers.</summary>
+        public HeroClassId Class;
+
         public PlayerProfile Clone() => new PlayerProfile
         {
             Uuid = Uuid,
@@ -44,6 +47,7 @@ namespace Voxelforge.Gameplay
             Bags = Bags,
             HasHome = HasHome,
             HomeBlock = HomeBlock,
+            Class = Class,
         };
     }
 }

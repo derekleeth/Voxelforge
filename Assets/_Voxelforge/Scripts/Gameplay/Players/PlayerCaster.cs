@@ -108,6 +108,28 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Host only: a new mana pool and regeneration (a class, Roadmap 4.6). Any cast in progress stops for free, and
+        /// the hero keeps the same share of their mana so changing class never looks like spending or gaining it.
+        /// </summary>
+        public void ServerSetPool(float maxMana, float regen)
+        {
+            if (!IsServer || _caster == null)
+                return;
+            if (_caster.Casting != null)
+            {
+                _cues.ServerSend(AbilityCue.Cast(AbilityCueKind.CastStopped, _caster.Casting.Id, transform.position,
+                    CastCheck.Interrupted));
+                _caster.Cancel();
+            }
+            float share = _caster.MaxMana > 0f ? _caster.Mana / _caster.MaxMana : 1f;
+            _caster.SetMaxMana(maxMana);
+            _caster.SetMana(maxMana * share);
+            _caster.Regen = regen;
+            _maxMana.Value = _caster.MaxMana;
+            _mana.Value = _caster.Mana;
+        }
+
+        /// <summary>
         /// Every PC: how recharged <paramref name="ability"/> is, 0 (just cast) to 1 (ready). Instant feedback on this PC,
         /// from when it heard the ability went off.
         /// </summary>

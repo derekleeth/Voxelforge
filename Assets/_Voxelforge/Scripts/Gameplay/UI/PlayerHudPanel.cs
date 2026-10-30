@@ -20,6 +20,8 @@ namespace Voxelforge.Gameplay
         readonly RectTransform _textArea;
         readonly RectTransform _inventoryArea;
         readonly InventoryView _inventoryView;
+        readonly RectTransform _classArea;
+        readonly ClassPickerView _classView;
         readonly ActionBarView _actionBar;
         readonly CastBarView _castBar;
         readonly CombatTextView _textView;
@@ -33,6 +35,7 @@ namespace Voxelforge.Gameplay
         PlayerAbilityCues _cues;
         PlayerCombatText _combatText;
         PlayerInventory _inventory;
+        PlayerClassMenu _classMenu;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
             Func<ushort, Texture> itemIcon)
@@ -56,6 +59,11 @@ namespace Voxelforge.Gameplay
             _inventoryArea = NestedCanvas($"Player {slot + 1} Inventory", canvas);
             _inventoryView = new InventoryView(_inventoryArea, skin, itemIcon, itemName);
             HudWidgets.SetActive(_inventoryArea, false);
+
+            // The class window (Roadmap 4.6), on its own canvas like the inventory.
+            _classArea = NestedCanvas($"Player {slot + 1} Class", canvas);
+            _classView = new ClassPickerView(_classArea, skin);
+            HudWidgets.SetActive(_classArea, false);
         }
 
         static RectTransform NestedCanvas(string name, RectTransform parent)
@@ -71,8 +79,11 @@ namespace Voxelforge.Gameplay
         {
             _actionBar.SetScheme(controlScheme);
             _inventoryView.SetScheme(controlScheme);
+            _classView.SetScheme(controlScheme);
             if (_inventory != null)
                 _inventory.Scheme = controlScheme;
+            if (_classMenu != null)
+                _classMenu.Scheme = controlScheme;
             if (_player == player)
                 return;
             if (_cues != null)
@@ -90,6 +101,9 @@ namespace Voxelforge.Gameplay
             _inventory = player != null ? player.GetComponent<PlayerInventory>() : null;
             if (_inventory != null)
                 _inventory.Scheme = controlScheme;
+            _classMenu = player != null ? player.GetComponent<PlayerClassMenu>() : null;
+            if (_classMenu != null)
+                _classMenu.Scheme = controlScheme;
             if (_cues != null)
                 _cues.Received += OnCue;
             if (_combatText != null)
@@ -101,7 +115,10 @@ namespace Voxelforge.Gameplay
             HudWidgets.SetActive(_barArea, visible);
             HudWidgets.SetActive(_textArea, visible);
             if (!visible)
+            {
                 HudWidgets.SetActive(_inventoryArea, false);
+                HudWidgets.SetActive(_classArea, false);
+            }
         }
 
         /// <param name="ownArea">The player's own part of the screen (GUI pixels), for the bars.</param>
@@ -127,6 +144,8 @@ namespace Voxelforge.Gameplay
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
 
+            TickClassWindow(ownArea, scale, shrink, now);
+
             bool open = _inventory != null && _inventory.IsOpen;
             HudWidgets.SetActive(_inventoryArea, open);
             if (open)
@@ -146,6 +165,26 @@ namespace Voxelforge.Gameplay
                     window.anchoredPosition = offset;
                 _inventoryView.Tick(_inventory, _player.TeamColor, now);
             }
+        }
+
+        /// <summary>The class window (Roadmap 4.6): centred in the player's view above their action bar, shrunk to fit.</summary>
+        void TickClassWindow(Rect ownArea, float scale, float shrink, float now)
+        {
+            bool open = _classMenu != null && _classMenu.IsOpen;
+            HudWidgets.SetActive(_classArea, open);
+            if (!open)
+                return;
+            Fit(_classArea, ownArea, scale);
+            float barRoom = (_actionBar.Height + 24f) * shrink;
+            float fit = Mathf.Min(1f, (ownArea.width / scale - 24f) / _classView.Width,
+                (ownArea.height / scale - barRoom - 24f) / _classView.Height);
+            RectTransform window = _classView.Root;
+            if (!Mathf.Approximately(window.localScale.x, fit))
+                window.localScale = new Vector3(fit, fit, 1f);
+            var offset = new Vector2(0f, barRoom * 0.5f);
+            if (window.anchoredPosition != offset)
+                window.anchoredPosition = offset;
+            _classView.Tick(_classMenu, _player.TeamColor, now);
         }
 
         /// <summary>Lays <paramref name="rect"/> over <paramref name="gui"/> (GUI pixels, y down) on the overlay canvas (y up).</summary>
@@ -180,6 +219,8 @@ namespace Voxelforge.Gameplay
                 Object.Destroy(_textArea.gameObject);
             if (_inventoryArea != null)
                 Object.Destroy(_inventoryArea.gameObject);
+            if (_classArea != null)
+                Object.Destroy(_classArea.gameObject);
         }
     }
 }

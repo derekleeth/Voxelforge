@@ -25,6 +25,12 @@ namespace Voxelforge.Gameplay
 
         /// <summary>What's in every Storage Chest (Roadmap 4.5), by the chest block's position. Slots in order.</summary>
         public Dictionary<int3, List<ItemStack>> Chests = new Dictionary<int3, List<ItemStack>>();
+
+        /// <summary>
+        /// Earthen Rock raised by earth spells (Roadmap 4.6): each block and the seconds it has left before it crumbles,
+        /// so a wall saved mid-way still crumbles on time after loading.
+        /// </summary>
+        public Dictionary<int3, float> Earth = new Dictionary<int3, float>();
     }
 
     public enum WorldLoadResult
@@ -52,9 +58,10 @@ namespace Voxelforge.Gameplay
     {
         /// <summary>
         /// 1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). 3: each profile's worn bags, and the Storage
-        /// Chests after the profiles (4.5). Older saves still load.
+        /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). Older
+        /// saves still load.
         /// </summary>
-        public const int FormatVersion = 3;
+        public const int FormatVersion = 4;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -92,6 +99,7 @@ namespace Voxelforge.Gameplay
                     writer.Write(profile.HomeBlock.z);
                     for (int i = 0; i < EquippedBags.SocketCount; i++)
                         writer.Write(profile.Bags[i]);
+                    writer.Write((byte)profile.Class);
                 }
 
                 writer.Write(save.Chests.Count);
@@ -101,6 +109,16 @@ namespace Voxelforge.Gameplay
                     writer.Write(chest.Key.y);
                     writer.Write(chest.Key.z);
                     WriteStacks(writer, chest.Value);
+                }
+
+                Dictionary<int3, float> earth = save.Earth ?? new Dictionary<int3, float>();
+                writer.Write(earth.Count);
+                foreach (KeyValuePair<int3, float> block in earth)
+                {
+                    writer.Write(block.Key.x);
+                    writer.Write(block.Key.y);
+                    writer.Write(block.Key.z);
+                    writer.Write(block.Value);
                 }
                 writer.Write(EndMarker);
             }
@@ -194,6 +212,8 @@ namespace Voxelforge.Gameplay
                         for (int i = 0; i < EquippedBags.SocketCount; i++)
                             profile.Bags[i] = reader.ReadUInt16();
                     }
+                    if (format >= 4)
+                        profile.Class = (HeroClassId)reader.ReadByte();
                     if (profile.Uuid.IsValid)
                         result.Profiles[profile.Uuid] = profile;
                 }
@@ -210,6 +230,18 @@ namespace Voxelforge.Gameplay
                         if (!ReadStacks(reader, slots))
                             return WorldLoadResult.Corrupt;
                         result.Chests[block] = slots;
+                    }
+                }
+
+                if (format >= 4)
+                {
+                    int earthCount = reader.ReadInt32();
+                    if (earthCount < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int e = 0; e < earthCount; e++)
+                    {
+                        var block = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
+                        result.Earth[block] = reader.ReadSingle();
                     }
                 }
 

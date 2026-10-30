@@ -137,7 +137,7 @@ namespace Voxelforge.Gameplay
         }
 
         // The d-pad is action slots 1-4 (up, right, down, left) on a gamepad.
-        static float2 DPad(PlayerButtons buttons)
+        internal static float2 DPad(PlayerButtons buttons)
         {
             float2 d = float2.zero;
             if ((buttons & PlayerButtons.ActionSlot1) != 0) d.y += 1f;
@@ -145,6 +145,13 @@ namespace Voxelforge.Gameplay
             if ((buttons & PlayerButtons.ActionSlot3) != 0) d.y -= 1f;
             if ((buttons & PlayerButtons.ActionSlot4) != 0) d.x -= 1f;
             return d;
+        }
+
+        /// <summary>Owner only: closes the window, e.g. for the class window opening from it (Roadmap 4.6).</summary>
+        public void OwnerClose()
+        {
+            if (IsOpen)
+                SetOpen(false);
         }
 
         /// <summary>Owner only: opens the window, e.g. for a Storage Chest that Interact opened (<see cref="PlayerChest"/>).</summary>

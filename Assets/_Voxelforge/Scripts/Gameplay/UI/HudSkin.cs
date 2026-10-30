@@ -78,6 +78,13 @@ namespace Voxelforge.Gameplay
             new Color(0.85f, 0.65f, 0.35f), new Color(0.45f, 1f, 0.4f), new Color(0.6f, 0.75f, 1f), new Color(1f, 0.95f, 0.55f),
         };
 
+        [Tooltip("Each class's colour in the class window (Roadmap 4.6), in HeroClassId order: Adventurer, Runeforged " +
+                 "Paladin, Geomancer Mage, Shaman.")]
+        public Color[] classes =
+        {
+            new Color(0.62f, 0.5f, 0.36f), new Color(1f, 0.78f, 0.25f), new Color(0.88f, 0.48f, 0.2f), new Color(0.2f, 0.7f, 0.85f),
+        };
+
         [Header("Sizes (pixels at 1080p)")]
         [Range(32f, 120f)] public float slotSize = 66f;
         [Range(0f, 20f)] public float slotGap = 6f;
@@ -90,6 +97,12 @@ namespace Voxelforge.Gameplay
         {
             int i = (int)element;
             return elements != null && i < elements.Length ? elements[i] : Color.white;
+        }
+
+        public Color ClassColor(HeroClassId id)
+        {
+            int i = (int)id;
+            return classes != null && i < classes.Length ? classes[i] : Color.white;
         }
 
         public Sprite IconFor(AbilityDefinition ability)

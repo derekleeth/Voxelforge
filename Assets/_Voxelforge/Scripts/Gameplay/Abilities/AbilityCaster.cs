@@ -43,6 +43,9 @@ namespace Voxelforge.Gameplay
 
         public void Refill() => Mana = MaxMana;
 
+        /// <summary>Sets the mana left, between 0 and <see cref="MaxMana"/>.</summary>
+        public void SetMana(float mana) => Mana = Mathf.Clamp(mana, 0f, MaxMana);
+
         /// <summary>Seconds until <paramref name="abilityId"/> can be cast again; 0 if it's ready.</summary>
         public float CooldownRemaining(ushort abilityId, float now) =>
             _readyAt.TryGetValue(abilityId, out float readyAt) ? Mathf.Max(0f, readyAt - now) : 0f;

@@ -50,6 +50,7 @@ namespace Voxelforge.Gameplay
         IPlayerInputSource _inputSource;
         PlayerHands _hands;
         PlayerInventory _inventory;
+        PlayerClassMenu _classMenu;
         uint _nextSequence;
         // Buttons still held from inside the inventory window, ignored until let go so closing it doesn't also jump.
         PlayerButtons _swallowed;
@@ -116,6 +117,12 @@ namespace Voxelforge.Gameplay
         /// inventory window is open (Roadmap 4.5) it has no movement and no buttons: the window has the controls.
         /// </summary>
         public PlayerInputFrame OwnerInput { get; private set; }
+
+        /// <summary>
+        /// Owner only: one of this player's windows is open and has their controls: the inventory (Roadmap 4.5) or the
+        /// class window (4.6). The hero stands still, and the mouse player gets a free cursor.
+        /// </summary>
+        public bool WindowOpen => (_inventory != null && _inventory.IsOpen) || (_classMenu != null && _classMenu.IsOpen);
 
         /// <summary>Owner only: this frame's controls as pressed, even while a window has them (<see cref="PlayerInventory"/>).</summary>
         public PlayerInputFrame OwnerRawInput { get; private set; }
@@ -214,6 +221,7 @@ namespace Voxelforge.Gameplay
         {
             _hands = GetComponent<PlayerHands>();
             _inventory = GetComponent<PlayerInventory>();
+            _classMenu = GetComponent<PlayerClassMenu>();
         }
 
         public override void OnNetworkSpawn()
@@ -296,10 +304,10 @@ namespace Voxelforge.Gameplay
                 frame.Sequence = _nextSequence++;
                 frame.HeldItem = _hands != null ? _hands.OwnerSelected : BlockIds.Air;
                 OwnerRawInput = frame;
-                frame.Buttons &= ~PlayerButtons.Inventory;
-                if (_inventory != null && _inventory.IsOpen)
+                frame.Buttons &= ~(PlayerButtons.Inventory | PlayerButtons.ClassMenu);
+                if (WindowOpen)
                 {
-                    // The hero stands still while the window has the controls (Roadmap 4.5); the camera still turns.
+                    // The hero stands still while a window has the controls (Roadmap 4.5); the camera still turns.
                     frame.Move = float2.zero;
                     _swallowed = frame.Buttons;
                     frame.Buttons = PlayerButtons.None;

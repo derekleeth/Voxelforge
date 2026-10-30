@@ -32,6 +32,8 @@ GameObject:
   - component: {fileID: 4276024312031293881}
   - component: {fileID: 7073484678100323289}
   - component: {fileID: 5778312443207847284}
+  - component: {fileID: 2107521008217144011}
+  - component: {fileID: 1778222139694727321}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -476,6 +478,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerHealth
   ShowTopMostFoldoutHeaderGroup: 1
   maxHealth: 100
+--- !u!114 &2107521008217144011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a063850f830f8f419585521af6eff3e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerClass
+  ShowTopMostFoldoutHeaderGroup: 1
+  classes: {fileID: 11400000, guid: b18f1c5a1a0c2b94cac8fb0533f20d44, type: 2}
+  minRequestInterval: 0.5
+--- !u!114 &1778222139694727321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46edffc0e29930b448b6b7117f937078, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerClassMenu
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

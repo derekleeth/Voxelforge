@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3d11181dfdb17944ad755939644a69c, type: 3}
+  m_Name: ClassBook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ClassBook
+  classes:
+  - {fileID: 11400000, guid: 9476a271a0bfa984b998e45e8679aa05, type: 2}
+  - {fileID: 11400000, guid: 9dacfc78008a9634daef11cd9e11eb05, type: 2}
+  - {fileID: 11400000, guid: 1e6d961d20841394ba1a88cb0d4f1868, type: 2}
+  - {fileID: 11400000, guid: 2b0c112fa9f8de0489d96eefe964cd8f, type: 2}

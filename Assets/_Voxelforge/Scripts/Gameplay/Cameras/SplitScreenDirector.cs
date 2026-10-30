@@ -480,7 +480,7 @@ namespace Voxelforge.Gameplay
                 if (!_inputs[slot].UsesMouse)
                     continue;
                 PlayerController controller = _controllers[slot];
-                bool windowOpen = controller != null && controller.TryGetComponent(out PlayerInventory inventory) && inventory.IsOpen;
+                bool windowOpen = controller != null && controller.WindowOpen;
                 mousePlayer |= !windowOpen;
             }
 

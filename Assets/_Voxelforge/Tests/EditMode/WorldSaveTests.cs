@@ -147,11 +147,14 @@ namespace Voxelforge.Tests
             p1.Bag.Add(new ItemStack(BlockIds.Log, 4));
             p1.Bags[0] = 1010;
             p1.Bags[2] = 1012;
+            p1.Class = HeroClassId.Shaman;
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
             save.Chests[new int3(10, 64, -3)] = new List<ItemStack> { new ItemStack(BlockIds.Dirt, 999), ItemStack.Empty, new ItemStack(1001, 1) };
             save.Chests[new int3(-200, 12, 7)] = new List<ItemStack>();
+            save.Earth[new int3(5, 70, -9)] = 21.5f;
+            save.Earth[new int3(5, 71, -9)] = 0.25f;
             return save;
         }
 
@@ -188,7 +191,9 @@ namespace Voxelforge.Tests
                 Assert.AreEqual(want.Yaw, got.Yaw);
                 CollectionAssert.AreEqual(want.Bag, got.Bag, "Bag slots come back in the same order.");
                 Assert.AreEqual(want.Bags, got.Bags, "Worn bags (v3).");
+                Assert.AreEqual(want.Class, got.Class, "Class (v4).");
             }
+            CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock and its time left (v4).");
 
             Assert.AreEqual(save.Chests.Count, loaded.Chests.Count);
             foreach (KeyValuePair<int3, List<ItemStack>> chest in save.Chests)
@@ -277,37 +282,71 @@ namespace Voxelforge.Tests
         [Test]
         public void Version2Save_StillLoads_WithNoWornBagsOrChests()
         {
-            // A v2 body is a v3 body without the 8 bytes of worn bags per profile and without the chest count.
-            WorldSave save = SampleSave();
-            foreach (PlayerProfile profile in save.Profiles.Values)
-                profile.Bags = default;
-            save.Chests.Clear();
-            byte[] v3 = WorldSaveFile.EncodeBody(save);
-
-            var body = new List<byte>(v3);
-            body.RemoveRange(body.Count - 8, 4); // The chest count (0), just before the end marker.
-            int end = body.Count - 4;
-            // Each profile ends with 4 ushorts of bags (all 0); cut them from the last profile backwards.
-            int cut = end;
-            var profiles = new List<PlayerProfile>(save.Profiles.Values);
-            for (int p = profiles.Count - 1; p >= 0; p--)
-            {
-                body.RemoveRange(cut - 8, 8);
-                cut -= 8 + ProfileBytesWithoutBags(profiles[p]);
-            }
-
-            using var memory = new MemoryStream();
-            memory.Write(new[] { (byte)'V', (byte)'F', (byte)'S', (byte)'V' }, 0, 4);
-            memory.Write(BitConverter.GetBytes(2), 0, 4);
-            using (var gzip = new System.IO.Compression.GZipStream(memory, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
-                gzip.Write(body.ToArray(), 0, body.Count);
-            memory.Position = 0;
-
-            Assert.AreEqual(WorldLoadResult.Loaded, WorldSaveFile.Read(memory, out WorldSave loaded));
+            WorldSave save = OldSample();
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 2), out WorldSave loaded));
             Assert.AreEqual(2, loaded.Profiles.Count);
             Assert.AreEqual(0, loaded.Chests.Count);
             foreach (PlayerProfile want in save.Profiles.Values)
                 CollectionAssert.AreEqual(want.Bag, loaded.Profiles[want.Uuid].Bag);
+        }
+
+        [Test]
+        public void Version3Save_StillLoads_AsAdventurersWithNoEarth()
+        {
+            WorldSave save = OldSample();
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 3), out WorldSave loaded));
+            Assert.AreEqual(2, loaded.Profiles.Count);
+            Assert.AreEqual(0, loaded.Earth.Count);
+            foreach (PlayerProfile want in save.Profiles.Values)
+            {
+                CollectionAssert.AreEqual(want.Bag, loaded.Profiles[want.Uuid].Bag);
+                Assert.AreEqual(HeroClassId.Adventurer, loaded.Profiles[want.Uuid].Class, "Before 4.6, everyone was an Adventurer.");
+            }
+        }
+
+        /// <summary>The sample with nothing older formats can't hold (worn bags, class, chests, earth).</summary>
+        static WorldSave OldSample()
+        {
+            WorldSave save = SampleSave();
+            foreach (PlayerProfile profile in save.Profiles.Values)
+            {
+                profile.Bags = default;
+                profile.Class = HeroClassId.Adventurer;
+            }
+            save.Chests.Clear();
+            save.Earth.Clear();
+            return save;
+        }
+
+        /// <summary>
+        /// A whole v2 or v3 save file for <paramref name="save"/> (from <see cref="OldSample"/>). A v4 body ends each
+        /// profile with 4 ushorts of worn bags (v3) and a class byte (v4), then has the chest count (v3), the earth count
+        /// (v4) and the end marker; older bodies are the same with those cut out.
+        /// </summary>
+        static byte[] OlderFile(WorldSave save, int version)
+        {
+            var body = new List<byte>(WorldSaveFile.EncodeBody(save));
+            int end = body.Count - 4;
+            body.RemoveRange(end - 4, 4); // The earth count (0).
+            end -= 4;
+            if (version < 3)
+                body.RemoveRange(end - 4, 4); // The chest count (0).
+            int cut = end - 4;
+            // Cut each profile's newer tail, from the last profile backwards.
+            int tail = version < 3 ? 8 + 1 : 1;
+            var profiles = new List<PlayerProfile>(save.Profiles.Values);
+            for (int p = profiles.Count - 1; p >= 0; p--)
+            {
+                body.RemoveRange(cut - tail, tail);
+                cut -= 9 + ProfileBytesWithoutBags(profiles[p]);
+            }
+
+            using var memory = new MemoryStream();
+            memory.Write(new[] { (byte)'V', (byte)'F', (byte)'S', (byte)'V' }, 0, 4);
+            memory.Write(BitConverter.GetBytes(version), 0, 4);
+            using (var gzip = new System.IO.Compression.GZipStream(memory, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+                gzip.Write(body.ToArray(), 0, body.Count);
+            return memory.ToArray();
         }
 
         // UUID 16, name (length byte + UTF-8), feet 12, yaw 4, bag count 4 + 4 per slot, home 1 + 12.

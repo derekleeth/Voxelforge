@@ -20,6 +20,8 @@ namespace Voxelforge.Editor
     /// <c>Art/Textures/UI/Icons/&lt;Ability&gt;.png</c> when there is one.
     /// It also writes how each looks and sounds (<see cref="AbilityLook"/>, Roadmap 4.2) in <c>Looks/</c>, using the
     /// sounds from <i>Voxelforge → Build Sound Effects</i>, so build those first.
+    /// <para>And the classes (Roadmap 4.6) in <c>Data/Classes/</c>: each <see cref="ClassDefinition"/>, its action bar
+    /// loadout and the <see cref="ClassBook"/>, in the order the class window shows them.</para>
     /// </summary>
     public static class AbilityBuilder
     {
@@ -34,6 +36,8 @@ namespace Voxelforge.Editor
         const string LookDir = AbilityDir + "/Looks";
         public const string LookBookPath = LookDir + "/AbilityLookBook.asset";
         const string SfxDir = "Assets/_Voxelforge/Art/Audio/Sfx";
+        const string ClassDir = "Assets/_Voxelforge/Data/Classes";
+        public const string ClassBookPath = ClassDir + "/ClassBook.asset";
 
         [MenuItem("Voxelforge/Build Abilities")]
         public static void BuildMenu()
@@ -127,7 +131,80 @@ namespace Voxelforge.Editor
             list.GetArrayElementAtIndex(3).objectReferenceValue = earthShatterLook;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(lookBook);
+
+            BuildClasses(loadout, earthShatter);
             return manaBolt;
+        }
+
+        /// <summary>
+        /// The classes (Roadmap 4.6). Slots 1-3 are each class's signature spells; the ones not built yet (steps C-E) are
+        /// left empty, and the class window says "Coming soon".
+        /// </summary>
+        static void BuildClasses(ActionBarLoadout adventurerBar, AbilityDefinition earthShatter)
+        {
+            if (!AssetDatabase.IsValidFolder(ClassDir))
+                AssetDatabase.CreateFolder("Assets/_Voxelforge/Data", "Classes");
+
+            ClassDefinition adventurer = MakeClass("Adventurer", HeroClassId.Adventurer, "Adventurer",
+                "No calling yet: a wanderer with a bag of starter spells. Pick a path when you're ready, and change it whenever you like.",
+                maxHealth: 100f, maxMana: 100f, manaRegen: 10f, adventurerBar);
+            ClassDefinition paladin = MakeClass("RuneforgedPaladin", HeroClassId.RuneforgedPaladin, "Runeforged Paladin",
+                "A holy knight in rune-carved plate, tough as an anvil. Hurls a glowing hammer, shields a partner and blesses " +
+                "the ground so friends standing on it heal.",
+                maxHealth: 150f, maxMana: 80f, manaRegen: 8f,
+                MakeLoadout("RuneforgedPaladinBar"));
+            ClassDefinition geomancer = MakeClass("GeomancerMage", HeroClassId.GeomancerMage, "Geomancer Mage",
+                "A scholar of stone who bends the land itself. Flings stone spears, shatters the ground into craters and " +
+                "rides a pillar of rock up out of trouble.",
+                maxHealth: 90f, maxMana: 130f, manaRegen: 12f,
+                MakeLoadout("GeomancerMageBar", null, earthShatter));
+            ClassDefinition shaman = MakeClass("Shaman", HeroClassId.Shaman, "Shaman",
+                "A wise caller of the elements. Raises walls of living earth and plants totems that heal friends or call " +
+                "down lightning on foes.",
+                maxHealth: 110f, maxMana: 110f, manaRegen: 10f,
+                MakeLoadout("ShamanBar"));
+
+            var book = LoadOrCreate<ClassBook>(ClassBookPath);
+            var serialized = new SerializedObject(book);
+            SerializedProperty list = serialized.FindProperty("classes");
+            ClassDefinition[] order = { adventurer, paladin, geomancer, shaman };
+            list.arraySize = order.Length;
+            for (int i = 0; i < order.Length; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = order[i];
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(book);
+            foreach (string error in book.Validate())
+                Debug.LogError($"[Voxelforge] Class book: {error}", book);
+        }
+
+        static ActionBarLoadout MakeLoadout(string name, params AbilityDefinition[] abilities)
+        {
+            var loadout = LoadOrCreate<ActionBarLoadout>($"{ClassDir}/{name}.asset");
+            var serialized = new SerializedObject(loadout);
+            SerializedProperty list = serialized.FindProperty("slots");
+            list.arraySize = PlayerActionBar.SlotCount;
+            for (int i = 0; i < PlayerActionBar.SlotCount; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = i < abilities.Length ? abilities[i] : null;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(loadout);
+            return loadout;
+        }
+
+        static ClassDefinition MakeClass(string name, HeroClassId id, string displayName, string description, float maxHealth,
+            float maxMana, float manaRegen, ActionBarLoadout loadout)
+        {
+            var definition = LoadOrCreate<ClassDefinition>($"{ClassDir}/{name}.asset");
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("id").intValue = (int)id;
+            serialized.FindProperty("displayName").stringValue = displayName;
+            serialized.FindProperty("description").stringValue = description;
+            serialized.FindProperty("maxHealth").floatValue = maxHealth;
+            serialized.FindProperty("maxMana").floatValue = maxMana;
+            serialized.FindProperty("manaRegen").floatValue = manaRegen;
+            serialized.FindProperty("loadout").objectReferenceValue = loadout;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(definition);
+            return definition;
         }
 
         static AbilityLook MakeLook(string path, AbilityDefinition ability, Color glow, AbilityCoreShape shape, float coreSize,

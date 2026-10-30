@@ -76,8 +76,8 @@ namespace Voxelforge.Gameplay
 
         void DrawHud(PlayerController player, PlayerView view, float scale)
         {
-            // The inventory window (Roadmap 4.5) covers the middle of the view; these would draw over it.
-            if (player.TryGetComponent(out PlayerInventory inventory) && inventory.IsOpen)
+            // The inventory (Roadmap 4.5) and class (4.6) windows cover the middle of the view; these would draw over them.
+            if (player.WindowOpen)
                 return;
 
             float3 feet = player.transform.position;

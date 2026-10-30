@@ -3,8 +3,8 @@ using UnityEngine;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// Which ability sits in each of the nine action bar slots (Roadmap 4.4). Every hero starts with the default loadout;
-    /// classes and talents (4.6) will hand out their own. Create one with Assets &gt; Create &gt; Voxelforge &gt;
+    /// Which ability sits in each of the nine action bar slots (Roadmap 4.4). Each class (4.6, <see cref="ClassDefinition"/>)
+    /// has its own; talents will hand out more. Create one with Assets &gt; Create &gt; Voxelforge &gt;
     /// Action Bar Loadout.
     /// </summary>
     [CreateAssetMenu(menuName = "Voxelforge/Action Bar Loadout", fileName = "NewLoadout")]
@@ -21,6 +21,9 @@ namespace Voxelforge.Gameplay
                 result[i] = slots[i] != null ? slots[i].Id : AbilityIds.None;
             return result;
         }
+
+        /// <summary>The ability in slot <paramref name="slot"/> (0-8), or null.</summary>
+        public AbilityDefinition Get(int slot) => slot >= 0 && slot < slots.Length ? slots[slot] : null;
 
         void OnValidate()
         {

@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf936218b420cda4d98a0687823ddebe, type: 3}
+  m_Name: Shaman
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ClassDefinition
+  id: 3
+  displayName: Shaman
+  description: A wise caller of the elements. Raises walls of living earth and plants totems that heal friends or call down lightning on foes.
+  maxHealth: 110
+  maxMana: 110
+  manaRegen: 10
+  loadout: {fileID: 11400000, guid: 9dd614f135847544a8b362b12e134d55, type: 2}

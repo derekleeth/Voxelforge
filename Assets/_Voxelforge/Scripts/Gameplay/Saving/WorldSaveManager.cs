@@ -60,6 +60,8 @@ namespace Voxelforge.Gameplay
         Dictionary<PlayerUuid, PlayerProfile> _profiles = new Dictionary<PlayerUuid, PlayerProfile>();
         // Storage Chest contents (Roadmap 4.5) as loaded, carried through unchanged in a scene without StorageChests.
         Dictionary<int3, List<ItemStack>> _chests = new Dictionary<int3, List<ItemStack>>();
+        // Earthen Rock timers (Roadmap 4.6) as loaded, carried through unchanged until step D's EarthWorks keeps them.
+        Dictionary<int3, float> _earth = new Dictionary<int3, float>();
         string _path;
         string _blockedReason;
         Task<(long bytes, double ms)> _writeTask;
@@ -188,6 +190,7 @@ namespace Voxelforge.Gameplay
             world.UseSavedWorld(save.Seed, save.Deltas);
             _profiles = save.Profiles;
             _chests = save.Chests;
+            _earth = save.Earth;
             if (chests != null)
                 chests.ServerRestore(save.Chests);
             LoadedFromSave = true;
@@ -281,6 +284,7 @@ namespace Voxelforge.Gameplay
                 Deltas = world.DeltaLog,
                 Profiles = _profiles,
                 Chests = chests != null ? chests.ServerSnapshot() : _chests,
+                Earth = _earth,
             });
             _encodeMs = timer.Elapsed.TotalMilliseconds;
 
@@ -346,6 +350,8 @@ namespace Voxelforge.Gameplay
                     profile.HasHome = hearth.HasHome;
                     profile.HomeBlock = hearth.ServerHomeBlock;
                 }
+                if (player.TryGetComponent(out PlayerClass heroClass))
+                    profile.Class = heroClass.Class;
             }
         }
 
