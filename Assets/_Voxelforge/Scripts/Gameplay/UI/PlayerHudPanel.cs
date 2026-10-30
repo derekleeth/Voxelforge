@@ -126,12 +126,14 @@ namespace Voxelforge.Gameplay
                 Fit(_inventoryArea, ownArea, scale);
                 // Centred in the player's view, above their action bar, shrunk to fit a small view.
                 float barRoom = (_actionBar.Height + 24f) * shrink;
+                // An open chest's pane (4.5) sits above the window: fit both, and centre them together.
+                float extra = _inventoryView.ExtraHeight;
                 float fit = Mathf.Min(1f, (ownArea.width / scale - 24f) / _inventoryView.Width,
-                    (ownArea.height / scale - barRoom - 24f) / _inventoryView.Height);
+                    (ownArea.height / scale - barRoom - 24f) / (_inventoryView.Height + extra));
                 RectTransform window = _inventoryView.Root;
                 if (!Mathf.Approximately(window.localScale.x, fit))
                     window.localScale = new Vector3(fit, fit, 1f);
-                var offset = new Vector2(0f, barRoom * 0.5f);
+                var offset = new Vector2(0f, (barRoom - extra * fit) * 0.5f);
                 if (window.anchoredPosition != offset)
                     window.anchoredPosition = offset;
                 _inventoryView.Tick(_inventory, _player.TeamColor, now);

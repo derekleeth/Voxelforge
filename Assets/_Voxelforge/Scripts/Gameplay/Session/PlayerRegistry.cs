@@ -48,6 +48,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Spawns loot bags (Roadmap 4.5): a player's dropped stacks, and saved items that no longer fit.")]
         [SerializeField] LootBagSpawner loot;
 
+        [Tooltip("What's in every Storage Chest (Roadmap 4.5), for heroes opening one.")]
+        [SerializeField] StorageChests chests;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -59,6 +62,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Host only: where loot bags come from (Roadmap 4.5), for players dropping and sending things.</summary>
         public LootBagSpawner Loot => loot;
+
+        /// <summary>Host only: the Storage Chests' contents (Roadmap 4.5).</summary>
+        public StorageChests Chests => chests;
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 

@@ -265,6 +265,58 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void MoveTo_PutsIntoMergesOrSwapsAcrossTwoSets()
+        {
+            var bag = new ItemStacks(4, _rules);
+            var chest = new ItemStacks(StorageChests.Slots, _rules);
+            var here = new List<int>();
+            var there = new List<int>();
+            bag.Add(BlockIds.Dirt, 900);
+            bag.Add(ItemIds.StonePickaxe, 1);
+            chest.Add(BlockIds.Dirt, 500);
+
+            Assert.IsTrue(bag.MoveTo(0, chest, 0, here, there), "Onto the same item: as much as fits.");
+            Assert.AreEqual(new ItemStack(BlockIds.Dirt, 999), chest.Stacks[0]);
+            Assert.AreEqual(new ItemStack(BlockIds.Dirt, 401), bag.Stacks[0], "What doesn't fit stays in the bag.");
+            CollectionAssert.AreEqual(new[] { 0 }, here);
+            CollectionAssert.AreEqual(new[] { 0 }, there);
+
+            Assert.IsTrue(bag.MoveTo(1, chest, 5, here, there), "Into an empty slot.");
+            Assert.AreEqual(ItemIds.StonePickaxe, chest.Stacks[5].ItemId);
+            Assert.IsTrue(bag.Stacks[1].IsEmpty);
+
+            Assert.IsTrue(chest.MoveTo(5, bag, 0, here, there), "Onto something else: they swap.");
+            Assert.AreEqual(ItemIds.StonePickaxe, bag.Stacks[0].ItemId);
+            Assert.AreEqual(new ItemStack(BlockIds.Dirt, 401), chest.Stacks[5]);
+
+            Assert.IsFalse(chest.MoveTo(9, bag, 0, here, there), "An empty slot has nothing to move.");
+            Assert.IsEmpty(here);
+            Assert.IsEmpty(there);
+        }
+
+        [Test]
+        public void MoveAllTo_StoresWhatFits_AndLeavesTheRest()
+        {
+            var bag = new ItemStacks(4, _rules);
+            var chest = new ItemStacks(2, _rules);
+            var here = new List<int>();
+            var there = new List<int>();
+            chest.Add(BlockIds.Log, 990);
+            chest.Add(ItemIds.StonePickaxe, 1);
+            bag.Add(BlockIds.Log, 30);
+
+            Assert.AreEqual(9, bag.MoveAllTo(0, chest, here, there), "Tops up the chest's Logs, then it's full.");
+            Assert.AreEqual(new ItemStack(BlockIds.Log, 21), bag.Stacks[0]);
+            Assert.AreEqual(999, chest.Stacks[0].Count);
+            Assert.AreEqual(0, bag.MoveAllTo(0, chest, here, there), "A full chest takes nothing.");
+            Assert.IsEmpty(here);
+
+            Assert.AreEqual(1, chest.MoveAllTo(1, bag, here, there), "Taking the pickaxe finds it a bag slot.");
+            Assert.IsTrue(chest.Stacks[1].IsEmpty);
+            Assert.AreEqual(1, bag.CountOf(ItemIds.StonePickaxe));
+        }
+
+        [Test]
         public void BackpackView_ShowsTheBiggestWornBag()
         {
             ItemDefinition pack = ItemDefinition.Create(1101 + 50, "Pack", bagSlots: 12);

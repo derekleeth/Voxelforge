@@ -358,6 +358,7 @@ MonoBehaviour:
   pullRadius: 2
   pickupRadius: 0.7
   pullSpeed: 8
+  dropperWalkAway: 1
   lifetimeSeconds: 600
   tossSeconds: 0.6
   tossHeight: 1.4
@@ -1068,6 +1069,55 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1043139413
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1043139415}
+  - component: {fileID: 1043139414}
+  m_Layer: 0
+  m_Name: Storage Chests
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1043139414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1043139413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42eb92d89403c244b8d42a6b60bb035c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.StorageChests
+  networkManager: {fileID: 2147055199}
+  world: {fileID: 1325734895}
+  players: {fileID: 2147055197}
+  loot: {fileID: 250688586}
+  items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
+--- !u!4 &1043139415
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1043139413}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1325734893
 GameObject:
   m_ObjectHideFlags: 0
@@ -1226,6 +1276,7 @@ MonoBehaviour:
   world: {fileID: 1325734895}
   players: {fileID: 2147055197}
   networkManager: {fileID: 2147055199}
+  chests: {fileID: 1043139414}
   worldName: World1
   startNewWorld: 0
   autosaveMinutes: 2
@@ -1404,6 +1455,61 @@ Transform:
   m_Children: []
   m_Father: {fileID: 122390142}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1982930542
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1982930544}
+  - component: {fileID: 1982930543}
+  m_Layer: 0
+  m_Name: Chest Lids
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1982930543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1982930542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be91fcaf279dc3148974eb6e561b1aa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ChestLids
+  world: {fileID: 1325734895}
+  chunkLoader: {fileID: 1325734897}
+  lidMesh: {fileID: 1914514882801985509, guid: 0732c963aba30b14b95b6c6b49aa7810, type: 3}
+  material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
+  hinge: {x: 0, y: 0.5, z: 0.31}
+  openAngle: 100
+  swingSpeed: 360
+  maxDistance: 90
+  maxLids: 96
+  router: {fileID: 444543919}
+  sounds: {fileID: 11400000, guid: 73f908f424a3b2b429f49fbff3f8f2c6, type: 2}
+--- !u!4 &1982930544
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1982930542}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2145343286
 GameObject:
   m_ObjectHideFlags: 0
@@ -1562,6 +1668,7 @@ MonoBehaviour:
   chunkLoader: {fileID: 1325734897}
   hearthRadiusChunks: 2
   loot: {fileID: 250688586}
+  chests: {fileID: 1043139414}
 --- !u!114 &2147055198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1681,6 +1788,8 @@ SceneRoots:
   - {fileID: 1604232798}
   - {fileID: 974320861}
   - {fileID: 250688587}
+  - {fileID: 1043139415}
+  - {fileID: 1982930544}
   - {fileID: 83969904}
   - {fileID: 684737380}
   - {fileID: 444543920}

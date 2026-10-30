@@ -38,6 +38,9 @@ namespace Voxelforge.Gameplay
 
         [SerializeField] NetworkManager networkManager;
 
+        [Tooltip("What's in the Storage Chests (Roadmap 4.5), saved with the world.")]
+        [SerializeField] StorageChests chests;
+
         [Tooltip("The save's folder name. -world <name> on the command line overrides it.")]
         [SerializeField] string worldName = "World1";
 
@@ -55,7 +58,7 @@ namespace Voxelforge.Gameplay
         const float ProfileRefreshSeconds = 1f;
 
         Dictionary<PlayerUuid, PlayerProfile> _profiles = new Dictionary<PlayerUuid, PlayerProfile>();
-        // Storage Chest contents (Roadmap 4.5), carried through until the chest service owns them.
+        // Storage Chest contents (Roadmap 4.5) as loaded, carried through unchanged in a scene without StorageChests.
         Dictionary<int3, List<ItemStack>> _chests = new Dictionary<int3, List<ItemStack>>();
         string _path;
         string _blockedReason;
@@ -185,6 +188,8 @@ namespace Voxelforge.Gameplay
             world.UseSavedWorld(save.Seed, save.Deltas);
             _profiles = save.Profiles;
             _chests = save.Chests;
+            if (chests != null)
+                chests.ServerRestore(save.Chests);
             LoadedFromSave = true;
             LoadMilliseconds = timer.Elapsed.TotalMilliseconds;
             if (save.GeneratorVersion < TerrainSampler.GeneratorVersion)
@@ -275,7 +280,7 @@ namespace Voxelforge.Gameplay
                 SavedUtc = DateTime.UtcNow,
                 Deltas = world.DeltaLog,
                 Profiles = _profiles,
-                Chests = _chests,
+                Chests = chests != null ? chests.ServerSnapshot() : _chests,
             });
             _encodeMs = timer.Elapsed.TotalMilliseconds;
 

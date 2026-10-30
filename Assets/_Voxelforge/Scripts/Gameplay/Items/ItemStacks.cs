@@ -165,31 +165,77 @@ namespace Voxelforge.Gameplay
         public bool Move(int from, int to, List<int> changed)
         {
             changed.Clear();
-            if (from == to || !InRange(from) || !InRange(to) || _slots[from].IsEmpty)
+            if (from == to || !MoveBetween(this, from, this, to))
+                return false;
+            changed.Add(from);
+            changed.Add(to);
+            return true;
+        }
+
+        /// <summary>
+        /// <see cref="Move"/> between two sets of slots (a bag and a Storage Chest, Roadmap 4.5): slot
+        /// <paramref name="from"/> here onto slot <paramref name="to"/> in <paramref name="other"/>.
+        /// </summary>
+        public bool MoveTo(int from, ItemStacks other, int to, List<int> changedHere, List<int> changedThere)
+        {
+            changedHere.Clear();
+            changedThere.Clear();
+            if (other == this)
+                throw new ArgumentException("Use Move within one set of slots.", nameof(other));
+            if (!MoveBetween(this, from, other, to))
+                return false;
+            changedHere.Add(from);
+            changedThere.Add(to);
+            return true;
+        }
+
+        /// <summary>
+        /// Puts as much of slot <paramref name="from"/> as fits into <paramref name="other"/>, topping up its stacks first
+        /// (storing in or taking from a chest in one go, Roadmap 4.5). What doesn't fit stays. Returns how many moved.
+        /// </summary>
+        public int MoveAllTo(int from, ItemStacks other, List<int> changedHere, List<int> changedThere)
+        {
+            changedHere.Clear();
+            changedThere.Clear();
+            if (other == this)
+                throw new ArgumentException("A slot can't be stored in its own slots.", nameof(other));
+            if (!InRange(from) || _slots[from].IsEmpty)
+                return 0;
+            ItemStack stack = _slots[from];
+            int moved = other.Add(stack.ItemId, stack.Count, changedThere);
+            if (moved > 0)
+            {
+                _slots[from] = moved == stack.Count ? ItemStack.Empty : new ItemStack(stack.ItemId, (ushort)(stack.Count - moved));
+                changedHere.Add(from);
+            }
+            return moved;
+        }
+
+        static bool MoveBetween(ItemStacks a, int from, ItemStacks b, int to)
+        {
+            if (!a.InRange(from) || !b.InRange(to) || a._slots[from].IsEmpty)
                 return false;
 
-            ItemStack source = _slots[from];
-            ItemStack target = _slots[to];
+            ItemStack source = a._slots[from];
+            ItemStack target = b._slots[to];
             if (target.IsEmpty)
             {
-                _slots[to] = source;
-                _slots[from] = ItemStack.Empty;
+                b._slots[to] = source;
+                a._slots[from] = ItemStack.Empty;
             }
             else if (target.ItemId == source.ItemId)
             {
-                int moved = Math.Min(source.Count, MaxStackOf(source.ItemId) - target.Count);
+                int moved = Math.Min(source.Count, b.MaxStackOf(source.ItemId) - target.Count);
                 if (moved <= 0)
                     return false;
-                _slots[to] = new ItemStack(target.ItemId, (ushort)(target.Count + moved));
-                _slots[from] = source.Count == moved ? ItemStack.Empty : new ItemStack(source.ItemId, (ushort)(source.Count - moved));
+                b._slots[to] = new ItemStack(target.ItemId, (ushort)(target.Count + moved));
+                a._slots[from] = source.Count == moved ? ItemStack.Empty : new ItemStack(source.ItemId, (ushort)(source.Count - moved));
             }
             else
             {
-                _slots[to] = source;
-                _slots[from] = target;
+                b._slots[to] = source;
+                a._slots[from] = target;
             }
-            changed.Add(from);
-            changed.Add(to);
             return true;
         }
 

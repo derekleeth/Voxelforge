@@ -5,6 +5,43 @@
 
 ---
 
+## D-028: The Generous Bag, Wearable Bags, Loot Bags & Storage Chests
+- **Date:** 2026-10-30
+- **Status:** Accepted (play-tested 2026-10-30, both players sharing a chest)
+
+### Decisions
+- **The bag is real slots, owned by the host.** `ItemStacks` (plain C#, tested) is a fixed list of slots, each empty or one stack.
+  - Every player starts with **40 slots**. Up to **4 worn bags** (`EquippedBags`, memcpy, a `NetworkVariable`) add more, up to 255 slots, because slot numbers go over the network as a byte.
+  - Stack sizes come from the item's category (`ItemRegistry` / `IItemRules`): **999** for blocks and materials, **20** for consumables, **1** for gear.
+  - New items top up matching stacks first, then fill the first empty slot, so nothing jumps around until **Auto-Sort**. Auto-Sort merges stacks and orders them by tab, then by item ID.
+  - `PlayerBlockBag` syncs the slots through a `NetworkList<ItemStack>`, sending only the slots that changed. The owner's PC only sends requests (move, sort, equip, unequip, drop, send); the host checks each one and limits how fast they can come.
+  - Taking off a bag is refused when its items would have nowhere to go. Crafting swaps a recipe's inputs for its output against the real slots, all at once or not at all.
+- **Save format 3** stores each profile's worn bags and adds a Storage Chest section. v1 and v2 saves still load. Saved items that no longer fit are dropped as a loot bag where the player comes back, never lost.
+- **One inventory window per player, in their own view (Law #5).**
+  - `InventoryModel` (plain C#, tested) holds the tabs (All / Blocks / Gear / Consumables / Materials), the cursor, scrolling, and stick repeat (`NavRepeat`).
+  - `InventoryView` draws it in uGUI/TMP like the D-027 HUD: an 8-wide grid that scrolls, 5 rows tall (exactly the starting 40), the four bag sockets, the name of the item under the cursor and hints for that player's controls.
+  - While it's open the hero stands still and the window has the controls; buttons still held when it closes are ignored until released, so closing it doesn't also jump. The mouse player gets a free cursor and can point and click.
+- **Wearable bags:** the Woven Satchel (+8 slots), Traveler's Pack (+12) and Delver's Rucksack (+16) are Gear items with workbench recipes for now; 5.6 Leatherworking replaces those recipes. `BackpackView` shows the **biggest** worn bag on the upper chest bone on every PC.
+- **Send to Partner** gives a stack to the **nearest other hero, wherever they are**. Every PC sees a sack lob across (looks only). What the partner's bag can't take lands at their feet as a loot bag. A target picker by name waits for 6.1 named heroes.
+- **Loot bags** (`LootBag` + `LootBagSpawner`, host) hold up to 8 stacks.
+  - They share landing physics with block drops (`DropPhysics`), are picked up by walking over them and vanish after 10 minutes.
+  - Whoever dropped a sack can't take it back until they've walked away from it, so it doesn't fly straight back in.
+- **Storage Chests (block 14):** crafted from 8 Logs anywhere, broken with an axe, **blast-proof** like Home Totems so a partner's spell can't scatter a base's storage. 27 slots, in rows of 9.
+  - **Contents live on the host** in `StorageChests`, keyed by the chest block. A chest gets its slots the first time someone opens it. Only chests with something in them are saved, and they load back at startup.
+  - **Opening:** Interact while aiming at a chest opens it, else crafting as before (`PlayerCrafter` asks `PlayerChest.OwnerTryOpenAimed` first). The owner sends the chest's position; the host checks a chest is there and in reach with `PlayerAim.InReach`, the same check as block edits. Walking away, or the chest breaking, closes it.
+  - **Per hero, `PlayerChest`:** a `ChestLink` `NetworkVariable` says which chest is open, so every PC can open its lid. A `NetworkList` copies that chest's slots to the owner. Every change goes to everyone looking into the same chest, so two players can share one.
+  - **Moving stacks:** the same window shows the chest on its own parchment above the bag. Pick up / Put works across both (`ItemStacks.MoveTo`: into, onto or swap). With a chest open, Use becomes **Take / Store**, which moves a whole stack across (`MoveAllTo`). Sort sorts whichever side the cursor is on.
+  - **Breaking it:** the host listens to `VoxelWorldManager.EditApplied`, so a chest broken any way spills its contents as loot bags.
+- **Chest lids are drawn apart from the body.** The body is a prop decoration like the Workbench, but GPU-instanced props can't move one part of one instance. `ChestLids` (every PC) reads the decoration layer like `PropLights`, gives the nearest chests a pooled lid (URP Lit, `Props_Held`) on the hinge, and swings it open while anyone has that chest open, with a creak and a thump.
+- **Art:** `build_props.py` adds `Chest` (whole, for the item, icon and ghost), `ChestBody` and `ChestLid` (origin on the hinge), plus the three bags and the loot sack. Each addition left the atlas's existing areas pixel-identical.
+
+### Trade-offs we accept
+- Chests face a random quarter turn, like Workbenches, rather than toward whoever placed them.
+- Like every prop and the world itself, chests can only be seen and opened on the host PC until remote players get the world (Phase 7).
+- Lids use URP Lit while chest bodies use the props' world shader, so a lid can look slightly brighter than its body in dark caves.
+
+---
+
 ## D-027: The Per-Player Comic-Book HUD (Action Bars, Cast Bars, Combat Text)
 - **Date:** 2026-10-29
 - **Status:** Accepted (play-tested 2026-10-29)

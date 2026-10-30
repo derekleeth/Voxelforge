@@ -121,6 +121,7 @@ namespace Voxelforge.Gameplay
                     {
                         BagRefusal.BagFull => "Bag full!",
                         BagRefusal.NoPartner => "Nobody to send to!",
+                        BagRefusal.ChestFull => "Chest full!",
                         _ => "No room to take that bag off!",
                     };
                     colour = _skin.refusal;

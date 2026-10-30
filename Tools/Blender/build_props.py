@@ -1,6 +1,6 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
-Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags and the
-drawstring loot bag (4.5).
+Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags, the
+drawstring loot bag and the Storage Chest (4.5).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -14,6 +14,8 @@ Mesh contract:
   - tools: origin where the hand grips, handle along +Z, head at the top, a blade (if any) on the +X side
   - world props: origin at the bottom centre of their block; the wall torch has its wall on the +Y side
     (Unity +Z, see PropAttach.Wall)
+  - the chest lid (4.5): origin on the hinge (the back top edge of the body, Unity (0, 0.5, 0.31) from the block's
+    bottom centre), the lid reaching forward along -Y (Unity -Z); the game turns it about X to open it
   - worn bags (4.5): origin at the middle of the side that rests on the hero's back, the bag hanging out along -Y
     (Unity -Z, behind a hero facing +Z), +Z up. BackpackView puts that point on the hero's back
   - UV0 = the part's area of the atlas; vertex colour RGB = 1 (shading comes from the texture), A = sway
@@ -787,6 +789,62 @@ def build_loot_bag():
     return b
 
 
+# The Storage Chest (4.5): the body sits in its block like any prop; the lid is its own model so the game can swing it
+# open. Front faces -Y (Unity -Z), the hinge runs along the back top edge.
+CHEST_W, CHEST_D, CHEST_H = 0.84, 0.62, 0.5
+CHEST_HINGE = Vector((0.0, CHEST_D / 2, CHEST_H))
+CHEST_LID_H = 0.22
+
+
+def chest_body(b):
+    w, d, h = CHEST_W, CHEST_D, CHEST_H
+    b.part("planks", box((0, 0, h / 2), (w - 0.04, d - 0.04, h - 0.02)), grain=Vector((1, 0, 0)))
+    for sx in (-1, 1):  # Dark corner posts.
+        for sy in (-1, 1):
+            b.part("wood_dark", box((sx * (w / 2 - 0.035), sy * (d / 2 - 0.035), h / 2), (0.075, 0.075, h)))
+    b.part("wood_dark", box((0, 0, 0.035), (w, d, 0.07)), grain=Vector((1, 0, 0)))  # Plinth.
+    b.part("wood_dark", box((0, 0, h - 0.025), (w, d, 0.05)), grain=Vector((1, 0, 0)))  # Rim under the lid.
+    for x in (-0.22, 0.22):  # Iron bands round the front, bottom and back.
+        b.part("iron", box((x, 0, h / 2), (0.07, d + 0.025, h + 0.01)))
+    b.part("gold", box((0, -d / 2 - 0.01, h - 0.1), (0.14, 0.03, 0.15)))  # Lock plate.
+    b.part("iron", box((0, -d / 2 - 0.025, h - 0.12), (0.035, 0.01, 0.06)))  # Keyhole.
+
+
+def chest_lid(b, at=Vector((0, 0, 0))):
+    """The lid with its origin on the hinge line (at), reaching forward along -Y from it."""
+    w, d, t = CHEST_W, CHEST_D, CHEST_LID_H
+    def p(x, y, z):
+        return Vector((x, y, z)) + at
+    b.part("planks", box(p(0, -d / 2, 0.07), (w, d, 0.14)), grain=Vector((1, 0, 0)))
+    b.part("planks", box(p(0, -d / 2, 0.17), (w - 0.08, d - 0.08, 0.06)), grain=Vector((1, 0, 0)))  # Raised top.
+    b.part("wood_dark", box(p(0, -d / 2, 0.02), (w + 0.01, d + 0.01, 0.04)), grain=Vector((1, 0, 0)))  # Lid rim.
+    for x in (-0.22, 0.22):
+        b.part("iron", box(p(x, -d / 2, 0.1), (0.075, d + 0.02, 0.15)))
+        b.part("iron", box(p(x, -d / 2, t - 0.01), (0.075, d - 0.06, 0.03)))
+    b.part("gold", box(p(0, -d - 0.02, -0.02), (0.1, 0.03, 0.13)))  # Hasp down over the lock.
+    for x in (-0.3, 0.3):  # Hinge knuckles at the back.
+        b.part("iron", cylinder(p(x - 0.06, 0.012, 0.0), p(x + 0.06, 0.012, 0.0), 0.025, 0.025, 6), grain=Vector((1, 0, 0)))
+
+
+def build_chest():
+    b = MeshBuilder()
+    chest_body(b)
+    chest_lid(b, CHEST_HINGE)
+    return b
+
+
+def build_chest_body():
+    b = MeshBuilder()
+    chest_body(b)
+    return b
+
+
+def build_chest_lid():
+    b = MeshBuilder()
+    chest_lid(b)
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -801,6 +859,9 @@ MODELS = {
     "BagPack": build_bag_pack,
     "BagRucksack": build_bag_rucksack,
     "LootBag": build_loot_bag,
+    "Chest": build_chest,
+    "ChestBody": build_chest_body,
+    "ChestLid": build_chest_lid,
 }
 
 

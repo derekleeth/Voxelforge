@@ -350,6 +350,23 @@ namespace Voxelforge.Gameplay
         /// <summary>Host only: a copy of every slot in order, for saving.</summary>
         public List<ItemStack> ServerSnapshot() => new List<ItemStack>(_server.Stacks);
 
+        /// <summary>
+        /// Host only: the slots themselves, for a Storage Chest (Roadmap 4.5, <see cref="PlayerChest"/>) to move stacks
+        /// in and out of. Call <see cref="ServerSyncSlots"/> with the slots it changed.
+        /// </summary>
+        internal ItemStacks ServerStacks => IsServer ? _server : null;
+
+        /// <summary>Host only: sends slots changed through <see cref="ServerStacks"/> to every PC.</summary>
+        internal void ServerSyncSlots(IReadOnlyList<int> changed)
+        {
+            if (!CheckServer("change"))
+                return;
+            _changed.Clear();
+            for (int i = 0; i < changed.Count; i++)
+                _changed.Add(changed[i]);
+            Sync();
+        }
+
         // ---- Owner requests (Law #2: the host decides) ----
 
         public void RequestMove(int from, int to)
@@ -486,5 +503,7 @@ namespace Voxelforge.Gameplay
         NoRoom,
         /// <summary>Send to Partner with nobody else playing.</summary>
         NoPartner,
+        /// <summary>The Storage Chest is full.</summary>
+        ChestFull,
     }
 }

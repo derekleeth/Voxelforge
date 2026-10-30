@@ -30,6 +30,7 @@ GameObject:
   - component: {fileID: 8134390800328682175}
   - component: {fileID: 8489302776999847508}
   - component: {fileID: 4276024312031293881}
+  - component: {fileID: 7073484678100323289}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -446,6 +447,20 @@ MonoBehaviour:
   animator: {fileID: 2811615453234438372}
   backPosition: {x: 0.029, y: -0.038, z: -0.214}
   backRotation: {x: 358.2, y: 354.8, z: 359.4}
+--- !u!114 &7073484678100323289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b1d3acea3144a4ebe6c36c3a5c724a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerChest
+  ShowTopMostFoldoutHeaderGroup: 1
+  minRequestInterval: 0.05
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

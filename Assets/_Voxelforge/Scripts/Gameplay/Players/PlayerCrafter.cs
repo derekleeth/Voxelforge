@@ -6,7 +6,7 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// Crafting (Roadmap 3.5). Interact opens this player's recipe list in their own split-screen view
+    /// Crafting (Roadmap 3.5). Interact (unless aimed at a Storage Chest, <see cref="PlayerChest"/>) opens this player's recipe list in their own split-screen view
     /// (<see cref="PlayerHud"/>, CLAUDE.md Law #5); Select Next / Previous choose a recipe and Place crafts it. The owning
     /// PC sends only the recipe number with <see cref="RequestCraftRpc"/>. <b>The host</b> checks it with
     /// <see cref="RecipeBook.Check"/>, including that a Workbench block is within reach of this hero, and swaps the
@@ -32,6 +32,7 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerBlockBag _bag;
+        PlayerChest _chest;
         readonly List<ItemStack> _stacks = new List<ItemStack>();
 
         // Owner state.
@@ -59,6 +60,7 @@ namespace Voxelforge.Gameplay
         {
             _player = GetComponent<PlayerController>();
             _bag = GetComponent<PlayerBlockBag>();
+            _chest = GetComponent<PlayerChest>();
         }
 
         void Update()
@@ -70,7 +72,8 @@ namespace Voxelforge.Gameplay
             PlayerButtons pressed = buttons & ~_previousButtons;
             _previousButtons = buttons;
 
-            if ((pressed & PlayerButtons.Interact) != 0)
+            // Aiming at a Storage Chest (Roadmap 4.5), Interact opens that instead.
+            if ((pressed & PlayerButtons.Interact) != 0 && (_menuOpen || _chest == null || !_chest.OwnerTryOpenAimed()))
                 _menuOpen = !_menuOpen;
             if (!_menuOpen || !_player.HasLanded)
                 return;

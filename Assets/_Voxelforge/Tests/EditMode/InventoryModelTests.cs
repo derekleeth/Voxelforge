@@ -44,6 +44,38 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Chest_StartsInIt_AndTheCursorCrossesToTheBag()
+        {
+            var model = new InventoryModel();
+            List<ItemStack> bag = Bag(16);
+            model.Rebuild(bag, ItemRules.Default);
+            Assert.AreEqual(-1, model.CursorChest);
+
+            model.Rebuild(bag, ItemRules.Default, StorageChests.Slots);
+            Assert.AreEqual(0, model.CursorChest, "A chest that just opened has the cursor.");
+            Assert.AreEqual(-1, model.CursorSlot);
+
+            model.Move(+1, 0);
+            model.Move(0, +1);
+            model.Move(0, +1);
+            Assert.AreEqual(19, model.CursorChest, "Rows of 9: column 1 of the third row.");
+            model.Move(0, +1);
+            Assert.AreEqual(-1, model.CursorChest);
+            Assert.AreEqual(1, model.CursorSlot, "Down out of the chest lands on the bag's top row, same column.");
+
+            model.Move(+1, 0);
+            model.Move(0, -1);
+            Assert.AreEqual(20, model.CursorChest, "Up from the bag's top row goes back into the chest's bottom row.");
+
+            model.SetTab(InventoryTab.Gear);
+            Assert.AreEqual(20, model.CursorChest, "Tabs only filter the bag; the cursor stays in the chest.");
+
+            model.Rebuild(bag, ItemRules.Default);
+            Assert.AreEqual(-1, model.CursorChest, "The chest closed: back to the bag.");
+            Assert.IsTrue(model.CursorCell >= 0 || model.CursorSocket >= 0);
+        }
+
+        [Test]
         public void StepTab_Wraps()
         {
             var model = new InventoryModel();

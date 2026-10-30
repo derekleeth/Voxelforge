@@ -29,5 +29,10 @@ namespace Voxelforge.Voxels
         /// like the Workbench.
         /// </summary>
         public const ushort HomeTotem = 13;
+        /// <summary>
+        /// A Storage Chest (Roadmap 4.5): 27 slots kept by the host and saved with the world. A solid prop, its lid drawn
+        /// apart so it can open. Breaking it spills what's inside as loot bags.
+        /// </summary>
+        public const ushort Chest = 14;
     }
 }

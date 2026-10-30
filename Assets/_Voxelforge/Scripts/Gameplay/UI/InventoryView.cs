@@ -9,7 +9,8 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// One player's inventory window (Roadmap 4.5, D-028): a parchment comic-book frame with a title and capacity, five
     /// tabs, an 8-wide grid of slots that scrolls, the four bag sockets, the name of the item under the cursor and the
-    /// buttons for this player's controls. <see cref="PlayerHudPanel"/> keeps it inside that player's own view (CLAUDE.md
+    /// buttons for this player's controls; above it, while a Storage Chest is open, the chest's 27 slots on their own
+    /// parchment. <see cref="PlayerHudPanel"/> keeps it inside that player's own view (CLAUDE.md
     /// Law #5). It only shows what <see cref="PlayerInventory"/> and the synced bag say; the mouse player can also point
     /// and click, which goes through the same <see cref="PlayerInventory"/> requests.
     /// </summary>
@@ -25,6 +26,9 @@ namespace Voxelforge.Gameplay
         const float InfoHeight = 34f;
         const float HintHeight = 50f;
         const float SectionGap = 12f;
+        // The Storage Chest pane (4.5): 9 slots to a row, a little smaller, so the rows are as wide as the bag's 8.
+        const float ChestSlot = 54f;
+        const float ChestPaneGap = 10f;
 
         static readonly string[] TabNames = { "All", "Blocks", "Gear", "Consumables", "Materials" };
         static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
@@ -54,7 +58,15 @@ namespace Voxelforge.Gameplay
         readonly TextMeshProUGUI _scrollUp;
         readonly TextMeshProUGUI _scrollDown;
         readonly RectTransform _grid;
+        readonly RectTransform _chestPane;
+        readonly RectTransform _chestGrid;
+        readonly Cell[] _chestCells = new Cell[StorageChests.Slots];
+        readonly TextMeshProUGUI _chestCapacity;
+        readonly float _chestPaneHeight;
+        int _chestUsedShown = -1;
         string _scheme;
+        bool _hintsForChest;
+        string _hintsShown;
         int _usedShown = -1;
         int _capacityShown = -1;
         int _infoSlot = -2;
@@ -131,7 +143,37 @@ namespace Voxelforge.Gameplay
             FitInside(_hints, 13f, 20f);
             _hints.textWrappingMode = TextWrappingModes.Normal;
             Row(_hints.rectTransform, Pad, y, gridWidth, HintHeight);
+
+            // The Storage Chest (4.5): its own parchment just above the bag's, shown only while a chest is open.
+            int chestRows = (StorageChests.Slots + InventoryModel.ChestColumns - 1) / InventoryModel.ChestColumns;
+            float chestGridWidth = InventoryModel.ChestColumns * ChestSlot + (InventoryModel.ChestColumns - 1) * Gap;
+            float chestGridHeight = chestRows * ChestSlot + (chestRows - 1) * Gap;
+            _chestPaneHeight = Pad + TitleHeight + SectionGap * 0.5f + chestGridHeight + Pad;
+            _chestPane = HudWidgets.Place(HudWidgets.Rect("Chest", Root), new Vector2(0.5f, 1f), new Vector2(0.5f, 0f),
+                new Vector2(0f, ChestPaneGap), new Vector2(Width, _chestPaneHeight));
+            HudWidgets.Stretch(HudWidgets.Image("Parchment", _chestPane, skin.panel, Color.white, Image.Type.Sliced).rectTransform);
+            float chestX = (Width - chestGridWidth) * 0.5f;
+            TextMeshProUGUI chestTitle = HudWidgets.Label("Title", _chestPane, skin.titleFont, 36f, InkBrown, TextAlignmentOptions.Left);
+            Row(chestTitle.rectTransform, chestX, -Pad, chestGridWidth, TitleHeight);
+            chestTitle.text = "Storage Chest";
+            _chestCapacity = HudWidgets.Label("Capacity", _chestPane, skin.titleFont, 28f, InkBrown, TextAlignmentOptions.Right);
+            Row(_chestCapacity.rectTransform, chestX, -Pad, chestGridWidth, TitleHeight);
+            _chestGrid = Row(HudWidgets.Rect("Grid", _chestPane), chestX, -Pad - TitleHeight - SectionGap * 0.5f, chestGridWidth,
+                chestGridHeight);
+            for (int i = 0; i < _chestCells.Length; i++)
+            {
+                int col = i % InventoryModel.ChestColumns;
+                int row = i / InventoryModel.ChestColumns;
+                _chestCells[i] = MakeCell($"Chest {i}", _chestGrid, col * (ChestSlot + Gap), -row * (ChestSlot + Gap), ChestSlot);
+            }
+            HudWidgets.SetActive(_chestPane, false);
         }
+
+        /// <summary>
+        /// How much taller the window is right now than <see cref="Height"/> (the chest pane above it, in 1080p pixels), so
+        /// the HUD can fit and centre both.
+        /// </summary>
+        public float ExtraHeight => _chestPane.gameObject.activeSelf ? _chestPaneHeight + ChestPaneGap : 0f;
 
         /// <summary>Shrinks the text to stay inside its box rather than spill over the frame.</summary>
         static void FitInside(TextMeshProUGUI label, float min, float max)
@@ -169,18 +211,27 @@ namespace Voxelforge.Gameplay
 
         public void SetScheme(string scheme)
         {
-            if (_scheme == scheme)
-                return;
             _scheme = scheme;
-            _hints.text = scheme switch
+            UpdateHints();
+        }
+
+        /// <summary>The controls for this scheme; with a chest open, Use takes a stack out or stores one.</summary>
+        void UpdateHints()
+        {
+            string key = _hintsForChest ? $"{_scheme} chest" : _scheme;
+            if (_hintsShown == key)
+                return;
+            _hintsShown = key;
+            string use = _hintsForChest ? "Take / Store" : "Use / Wear";
+            _hints.text = _scheme switch
             {
-                "Gamepad" => Hints(("A", "Pick up / Put"), ("X", "Use / Wear"), ("Y", "Send to partner"), ("RT", "Drop"), null,
+                "Gamepad" => Hints(("A", "Pick up / Put"), ("X", use), ("Y", "Send to partner"), ("RT", "Drop"), null,
                     ("View", "Sort"), ("LB RB", "Tabs"), ("B", "Close")),
-                "KeyboardRight" => Hints(("RCtrl", "Pick up / Put"), (";", "Use / Wear"), ("'", "Send to partner"),
+                "KeyboardRight" => Hints(("RCtrl", "Pick up / Put"), (";", use), ("'", "Send to partner"),
                     ("RShift", "Drop"), null, ("Arrows", "Move"), ("[", "Sort"), (". /", "Tabs"), ("Backspace", "Close")),
-                "KeyboardLeft" => Hints(("Space", "Pick up / Put"), ("F", "Use / Wear"), ("G", "Send to partner"), ("Q", "Drop"),
+                "KeyboardLeft" => Hints(("Space", "Pick up / Put"), ("F", use), ("G", "Send to partner"), ("Q", "Drop"),
                     null, ("WASD", "Move"), ("H", "Sort"), ("Z C  1-5", "Tabs"), ("Tab", "Close")),
-                _ => Hints(("Click", "Pick up / Put"), ("Right-click", "Use / Wear"), ("G", "Send to partner"), null,
+                _ => Hints(("Click", "Pick up / Put"), ("Right-click", use), ("G", "Send to partner"), null,
                     ("Click outside", "Drop"), ("H", "Sort"), ("1-5", "Tabs"), ("Wheel", "Scroll"), ("Tab", "Close")),
             };
         }
@@ -265,7 +316,50 @@ namespace Voxelforge.Gameplay
                     model.CursorSocket == i ? new Color(teamColor.r, teamColor.g, teamColor.b, pulse) : Clear);
             }
 
+            TickChest(inventory, teamColor, pulse);
             UpdateInfo(inventory, rules, bags);
+        }
+
+        void TickChest(PlayerInventory inventory, Color teamColor, float pulse)
+        {
+            var chest = inventory.ChestSlots;
+            bool open = chest.Count > 0;
+            HudWidgets.SetActive(_chestPane, open);
+            if (_hintsForChest != open)
+            {
+                _hintsForChest = open;
+                UpdateHints();
+            }
+            if (!open)
+                return;
+
+            int used = 0;
+            foreach (ItemStack stack in chest)
+            {
+                if (!stack.IsEmpty)
+                    used++;
+            }
+            if (used != _chestUsedShown)
+            {
+                _chestUsedShown = used;
+                _chestCapacity.SetText("{0} / {1}", (float)used, (float)chest.Count);
+            }
+            InventoryModel model = inventory.Model;
+            for (int i = 0; i < _chestCells.Length; i++)
+            {
+                Cell c = _chestCells[i];
+                bool exists = i < chest.Count;
+                HudWidgets.SetActive(c.Root, exists);
+                if (!exists)
+                    continue;
+                Show(c, chest[i]);
+                Color glow = Clear;
+                if (i == inventory.HeldChestSlot)
+                    glow = new Color(_skin.pickup.r, _skin.pickup.g, _skin.pickup.b, 0.9f);
+                if (i == model.CursorChest)
+                    glow = new Color(teamColor.r, teamColor.g, teamColor.b, pulse);
+                HudWidgets.SetColor(c.Glow, glow);
+            }
         }
 
         void Show(Cell c, ItemStack stack)
@@ -301,9 +395,11 @@ namespace Voxelforge.Gameplay
         {
             InventoryModel model = inventory.Model;
             string message = inventory.Message;
-            int key = model.CursorSocket >= 0 ? -10 - model.CursorSocket : model.CursorSlot;
+            bool inChest = model.CursorChest >= 0 && model.CursorChest < inventory.ChestSlots.Count;
+            int key = model.CursorSocket >= 0 ? -10 - model.CursorSocket : inChest ? -100 - model.CursorChest : model.CursorSlot;
             ItemStack stack = model.CursorSocket >= 0
                 ? (bags[model.CursorSocket] != 0 ? new ItemStack(bags[model.CursorSocket], 1) : ItemStack.Empty)
+                : inChest ? inventory.ChestSlots[model.CursorChest]
                 : key >= 0 ? inventory.Slots[key] : ItemStack.Empty;
             if (key == _infoSlot && stack.Equals(_infoStack) && message == _infoMessage)
                 return;
@@ -344,6 +440,14 @@ namespace Voxelforge.Gameplay
                     over = true;
                 }
             }
+            for (int i = 0; i < _chestCells.Length && !over && _chestPane.gameObject.activeSelf; i++)
+            {
+                if (_chestCells[i].Root.gameObject.activeSelf && RectTransformUtility.RectangleContainsScreenPoint(_chestCells[i].Root, point, null))
+                {
+                    model.PointAtChest(i);
+                    over = true;
+                }
+            }
             for (int i = 0; i < _sockets.Length && !over; i++)
             {
                 if (RectTransformUtility.RectangleContainsScreenPoint(_sockets[i].Root, point, null))
@@ -366,7 +470,8 @@ namespace Voxelforge.Gameplay
             }
             // A stack picked up and a click outside the window: throw it out as a loot bag (Roadmap 4.5).
             if (!over && inventory.HeldSlot >= 0 && mouse.leftButton.wasPressedThisFrame &&
-                !RectTransformUtility.RectangleContainsScreenPoint(Root, point, null))
+                !RectTransformUtility.RectangleContainsScreenPoint(Root, point, null) &&
+                !(_chestPane.gameObject.activeSelf && RectTransformUtility.RectangleContainsScreenPoint(_chestPane, point, null)))
             {
                 inventory.Drop();
                 return;

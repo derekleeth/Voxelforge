@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: Chest
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 2
+  mesh: {fileID: -1065621015209302032, guid: 779151003fcf86342945e2d489fb1d72, type: 3}
+  lodMesh: {fileID: 0}
+  material: {fileID: 2100000, guid: 8711cf652b640b643b503b56091e4c3a, type: 2}
+  tint: 0
+  castShadows: 1
+  lodDistance: 200
+  maxDistance: 90
+  propBlock: {fileID: 11400000, guid: df3b12b466fd50e4e84ee32b27dcffd2, type: 2}
+  attach: 0
+  surfaces: []
+  density: 0.1
+  biomes: []
+  minScale: 1
+  maxScale: 1
+  modelTrunkHeight: 5
+  light:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0.1
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0

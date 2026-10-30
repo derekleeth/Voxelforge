@@ -21,6 +21,8 @@ namespace Voxelforge.Editor
     /// <item>The Home Totem (Roadmap 3.8): block 13, its prop with a soft green light, its item and its recipe.</item>
     /// <item>The wearable bags (Roadmap 4.5): Woven Satchel, Traveler's Pack and Delver's Rucksack, Gear items with their
     /// extra slots, and workbench recipes for now (5.6 Leatherworking will make them from hides).</item>
+    /// <item>The Storage Chest (Roadmap 4.5): block 14, its body prop (the lid is drawn by <see cref="ChestLids"/>), its
+    /// item and its recipe (8 Logs, anywhere).</item>
     /// </list>
     /// </summary>
     public static class PropsBuilder
@@ -82,8 +84,11 @@ namespace Voxelforge.Editor
             BlockDefinition workbench = MakeBlock("Workbench", BlockIds.Workbench, durability: 60, solid: true, needsSupport: false,
                 light: 0, HarvestKind.Axe, new Color32(150, 100, 60, 255));
             BlockDefinition homeTotem = MakeBlock("HomeTotem", BlockIds.HomeTotem, durability: 60, solid: true, needsSupport: false,
-                light: 0, HarvestKind.Axe, new Color32(90, 220, 110, 255));
-            AddToList(registry, "blocks", torch, workbench, homeTotem);
+                light: 0, HarvestKind.Axe, new Color32(90, 220, 110, 255), blastProof: true);
+            // Blast-proof like the totem: a partner's spell shouldn't scatter a base's storage.
+            BlockDefinition chest = MakeBlock("Chest", BlockIds.Chest, durability: 60, solid: true, needsSupport: false,
+                light: 0, HarvestKind.Axe, new Color32(160, 110, 60, 255), blastProof: true, displayName: "Storage Chest");
+            AddToList(registry, "blocks", torch, workbench, homeTotem, chest);
             SetHarvestKinds(registry);
 
             // ---- Prop decorations ----
@@ -91,7 +96,8 @@ namespace Voxelforge.Editor
             Mesh torchWallMesh = LoadMesh("TorchWall");
             Mesh workbenchMesh = LoadMesh("Workbench");
             Mesh totemMesh = LoadMesh("HomeTotem");
-            if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null || totemMesh == null)
+            Mesh chestBodyMesh = LoadMesh("ChestBody");
+            if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null || totemMesh == null || chestBodyMesh == null)
                 return;
             var floorLight = new DecorationLight
             {
@@ -108,7 +114,9 @@ namespace Voxelforge.Editor
                 // A soft green glow at the carved houses, with only a little shimmer.
                 MakeProp("HomeTotem", totemMesh, world, homeTotem, PropAttach.Any,
                     new DecorationLight { enabled = true, color = HomeGlow, intensity = 1.6f, range = 7f, offset = new Vector3(0f, 0.6f, 0f), flicker = 0.12f },
-                    castShadows: true));
+                    castShadows: true),
+                // Just the body: ChestLids draws the lid so it can open (Roadmap 4.5).
+                MakeProp("Chest", chestBodyMesh, world, chest, PropAttach.Any, default, castShadows: true));
 
             // ---- Items ----
             ItemDefinition woodenPickaxe = MakeItem("WoodenPickaxe", ItemIds.WoodenPickaxe, "Wooden Pickaxe", held, new ToolPower(2f, 1f, 1.5f));
@@ -130,9 +138,11 @@ namespace Voxelforge.Editor
                 dropSize: 1.6f, heldScale: 0.5f, upright: true, bagSlots: 12);
             ItemDefinition rucksack = MakeItem("BagRucksack", ItemIds.DelversRucksack, "Delver's Rucksack", held, default,
                 "DelversRucksack", dropSize: 1.8f, heldScale: 0.45f, upright: true, bagSlots: 16);
+            ItemDefinition chestItem = MakeItem("Chest", BlockIds.Chest, "Storage Chest", held, default, "ChestItem", dropSize: 1.3f,
+                heldScale: 0.3f, upright: true);
             var items = LoadOrCreate<ItemRegistry>($"{ItemDir}/ItemRegistry.asset");
             AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs, totemItem,
-                satchel, pack, rucksack);
+                satchel, pack, rucksack, chestItem);
 
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
@@ -154,7 +164,8 @@ namespace Voxelforge.Editor
                 MakeRecipe("WovenSatchel", new ItemAmount(satchel, 1), true, new ItemAmount(log, 6)),
                 MakeRecipe("TravelersPack", new ItemAmount(pack, 1), true, new ItemAmount(log, 8), new ItemAmount(stone, 4)),
                 MakeRecipe("DelversRucksack", new ItemAmount(rucksack, 1), true,
-                    new ItemAmount(log, 10), new ItemAmount(stone, 6), new ItemAmount(mana, 3)));
+                    new ItemAmount(log, 10), new ItemAmount(stone, 6), new ItemAmount(mana, 3)),
+                MakeRecipe("Chest", new ItemAmount(chest, 1), false, new ItemAmount(log, 8)));
             MakeBoltMaterial();
 
             AssetDatabase.SaveAssets();
@@ -247,12 +258,13 @@ namespace Voxelforge.Editor
         }
 
         static BlockDefinition MakeBlock(string name, ushort id, int durability, bool solid, bool needsSupport, int light,
-            HarvestKind harvest, Color32 mapColor)
+            HarvestKind harvest, Color32 mapColor, bool blastProof = false, string displayName = null)
         {
             var block = LoadOrCreate<BlockDefinition>($"{BlockDir}/{name}.asset");
             var serialized = new SerializedObject(block);
             serialized.FindProperty("id").intValue = id;
-            serialized.FindProperty("displayName").stringValue = name;
+            serialized.FindProperty("displayName").stringValue = displayName ?? name;
+            serialized.FindProperty("blastProof").boolValue = blastProof;
             serialized.FindProperty("maxDurability").intValue = durability;
             serialized.FindProperty("drop").objectReferenceValue = null; // Drops itself.
             serialized.FindProperty("dropCount").intValue = 1;
@@ -287,6 +299,7 @@ namespace Voxelforge.Editor
                     case BlockIds.Log:
                     case BlockIds.Workbench:
                     case BlockIds.HomeTotem:
+                    case BlockIds.Chest:
                         kind = HarvestKind.Axe;
                         break;
                     default:

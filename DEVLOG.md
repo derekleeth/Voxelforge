@@ -5,6 +5,42 @@
 
 ---
 
+## 2026-10-30 - Session 1 (part 30): Bags, Backpacks, Loot Sacks & Treasure Chests 🎒📦 Roadmap 4.5
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **A real, roomy bag!** Every hero starts with **40 slots**. Blocks and materials stack to **999**, so building never crowds out your loot. Details in DECISIONS.md **D-028**.
+- **An inventory window in your own view** (Tab, Backspace for the right keyboard, Start on a gamepad):
+  - a parchment window with tabs for All, Blocks, Gear, Consumables and Materials, and a picture of every item;
+  - pick things up and put them down to move, merge or swap them, and one button for **Auto-Sort**;
+  - your hero stands still while it's open, and the mouse player can just point and click.
+- **Wearable bags:** craft a **Woven Satchel** (+8 slots), **Traveler's Pack** (+12) or **Delver's Rucksack** (+16) and wear up to 4. Your biggest one shows on your hero's back, so you can see who's carrying the rucksack.
+- **Send to Partner!** Toss a stack to your partner wherever they are, and watch a little sack fly across. If their bag is full, it lands at their feet.
+- **Drawstring loot bags:** dropped things land in a little sack you pick up by walking over it.
+- **Storage Chests!** Craft one from 8 Logs anywhere and put it in your base.
+  - Aim at it and press **Interact**. The lid creaks open and its 27 slots appear above your bag.
+  - Move stacks in and out the same way as in your bag, or use **Take / Store** to move a whole stack at once.
+  - **Both players can use the same chest at once** and see each other's changes.
+  - Chests are saved with the world. Break one and everything inside spills out in loot bags, so nothing is lost.
+- **New Blender models:** the three bags, the loot sack, and a banded wooden chest with a gold lock whose lid really opens.
+
+### Tests: 345 / 345 passing ✅
+- Slots stack, sort, resize and load from old saves without losing anything.
+- Wearing and taking off bags adds and removes the right number of slots, and the biggest worn bag is the one on your back.
+- Moving stacks between your bag and a chest puts them in, tops them up or swaps them, and a full chest takes nothing.
+- The window's cursor starts in a chest when it opens, crosses between the chest and the bag, and goes back to the bag when the chest closes.
+- Loot bags land and stop like block drops do.
+
+### Things we learned
+- A model drawn thousands of times at once on the graphics card can't move one part of one copy. So the chest's lid is its own little model, and only chests near a player get one.
+- Letting the host keep everything and only *asking* it to move things makes sharing easy: two players at one chest just works.
+
+### Next up
+- [x] Play-test 4.5: inventory, bags, Send to Partner, loot bags and a shared Storage Chest ✅
+- [ ] Roadmap **4.6 Class & Spell Design**
+
+---
+
 ## 2026-10-29 - Session 1 (part 29): A Comic-Book HUD for Every Hero 🗡️💬 Roadmap 4.4
 **Phase:** 4 - The Warcraft Injection
 
