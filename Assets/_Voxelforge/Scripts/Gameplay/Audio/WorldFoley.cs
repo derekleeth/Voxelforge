@@ -8,7 +8,8 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// The sounds blocks make (Roadmap 3.9, D-022): mining hits that rise in pitch as the block cracks, breaking and
     /// placing in the block's own <see cref="SurfaceSound"/>, the Mana Crystal's chime, one creak and a leaf rustle when
-    /// a chopped tree falls, and a pop when a drop flies into a bag. It listens to the world's own events
+    /// a chopped tree falls, and a pop when a drop flies into a bag. Since Roadmap 4.6 also Earthen Rock crumbling, and
+    /// spell zones: a sound when one is placed and on each pulse or strike, from its spell's look. It listens to the world's own events
     /// (<see cref="VoxelWorldManager.EditApplied"/>, <see cref="VoxelWorldManager.BlockDamaged"/>), which only the host
     /// raises; remote PCs don't see blocks until Phase 6. Presentation only.
     /// </summary>
@@ -22,6 +23,9 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("For the pop when a drop is picked up.")]
         [SerializeField] BlockDropSpawner drops;
+
+        [Tooltip("Data/Abilities/Looks/AbilityLookBook.asset: the sounds of spell zones and totems (Roadmap 4.6).")]
+        [SerializeField] AbilityLookBook looks;
 
         [Tooltip("Least time between two hit sounds on one block, in seconds. A new crack stage always plays.")]
         [SerializeField, Range(0.05f, 1f)] float hitInterval = 0.22f;
@@ -58,6 +62,7 @@ namespace Voxelforge.Gameplay
             }
             if (drops != null)
                 drops.PickedUp += OnPickedUp;
+            AbilityZone.Spawned += OnZoneSpawned;
         }
 
         void OnDisable()
@@ -69,6 +74,34 @@ namespace Voxelforge.Gameplay
             }
             if (drops != null)
                 drops.PickedUp -= OnPickedUp;
+            AbilityZone.Spawned -= OnZoneSpawned;
+        }
+
+        // A spell zone or totem (Roadmap 4.6): its Impact sound when placed, its Pulse sound each pulse or strike.
+        void OnZoneSpawned(AbilityZone zone)
+        {
+            if (!TryGetLook(zone, out AbilityLook look))
+                return;
+            Play(look.Impact, (float3)zone.transform.position + new float3(0f, 0.5f, 0f), look.ImpactVolume, 1f, look.MaxDistance);
+            zone.Pulsed += OnZonePulsed;
+        }
+
+        void OnZonePulsed(AbilityZone zone, bool struck, Vector3 point)
+        {
+            if (!TryGetLook(zone, out AbilityLook look))
+                return;
+            // A totem that strikes is only heard when it hits something; a healing zone on every pulse.
+            if (struck)
+                Play(look.Pulse, point, look.PulseVolume, UnityEngine.Random.Range(0.92f, 1.08f), look.MaxDistance);
+            else if (zone.Ability.CreatureDamage <= 0f)
+                Play(look.Pulse, (float3)zone.transform.position + new float3(0f, 1f, 0f), look.PulseVolume,
+                    UnityEngine.Random.Range(0.95f, 1.05f), look.MaxDistance);
+        }
+
+        bool TryGetLook(AbilityZone zone, out AbilityLook look)
+        {
+            look = null;
+            return zone != null && zone.Ability != null && looks != null && looks.TryGet(zone.Ability.Id, out look);
         }
 
         void OnBlockDamaged(VoxelHitDamage damage)
@@ -112,6 +145,12 @@ namespace Voxelforge.Gameplay
                 if (restOfTrunk || _breaksThisFrame >= maxBreaksPerFrame)
                     return;
                 _breaksThisFrame++;
+                // Earthen Rock whose time ran out crumbles away (Roadmap 4.6) rather than breaking.
+                if (edit.Before.BlockId == BlockIds.EarthenRock && edit.Instigator == Voxelforge.Core.PlayerId.World)
+                {
+                    Play(sounds.EarthCrumble, at, breakVolume, UnityEngine.Random.Range(0.85f, 1.1f), 32f);
+                    return;
+                }
                 SurfaceSound surface = sounds.SurfaceFor(edit.Before.BlockId);
                 if (surface == null)
                     return;

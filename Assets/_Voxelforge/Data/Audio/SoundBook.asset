@@ -40,10 +40,19 @@ MonoBehaviour:
     surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
   - block: {fileID: 11400000, guid: e1139366d98b212418e21637503732ba, type: 2}
     surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
+  - block: {fileID: 11400000, guid: df3b12b466fd50e4e84ee32b27dcffd2, type: 2}
+    surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
+  - block: {fileID: 11400000, guid: adb5e24034ad3a04dbed79cbb2e3c593, type: 2}
+    surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
+  - block: {fileID: 11400000, guid: 1023b3dceffeb6c40a7ceabeaa877e32, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
   jump: {fileID: 8300000, guid: 566c293bf392d084fb863c9b529f787c, type: 3}
   pickupPop: {fileID: 8300000, guid: dcf9661d0c60cbb4a8c1f757bd3d162d, type: 3}
   treeCreak: {fileID: 8300000, guid: 4fa8c22f6690d7b429caba6493099dd0, type: 3}
   leafRustle: {fileID: 8300000, guid: f24c2db460fe51843b80a80f1753dcbd, type: 3}
+  earthCrumble: {fileID: 8300000, guid: a0108e2a52053e94385dc6b48a25263a, type: 3}
+  shieldBlock: {fileID: 8300000, guid: 00e6b189fabcc9f4ca09915d996ae57d, type: 3}
+  hayThwack: {fileID: 8300000, guid: 6e3f0def15759894b83c3172785fc7ae, type: 3}
   loops:
   - decoration: {fileID: 11400000, guid: a6e88c1d67d36444481add0b0458f1e6, type: 2}
     clip: {fileID: 8300000, guid: 1c22145e70ef6d04ea3bc34d0a9a1fb3, type: 3}

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RisingPillarLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 78a0b25d267999b4c8b46379661c8931, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 5c53723c1e00cea43a007bf484f21087, type: 3}
   glow: {r: 0.95, g: 0.6, b: 0.25, a: 1}
   coreShape: 0
   coreSize: 0.2
@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 0
   zoneModel: {fileID: 0}
   zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
   trailTime: 0.2
   lightIntensity: 2
   lightRange: 6
@@ -36,7 +38,7 @@ MonoBehaviour:
   castLight: 0
   castLoop: {fileID: 0}
   castLoopVolume: 0.5
-  release: {fileID: 8300000, guid: d99a921bb2ed1b3449d347347d0ec708, type: 3}
+  release: {fileID: 8300000, guid: 7b87458f7542e144884d9eaf97bba6d5, type: 3}
   releaseVolume: 0.9
   impact: {fileID: 0}
   impactVolume: 0.8

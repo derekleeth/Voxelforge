@@ -37,6 +37,7 @@ namespace Voxelforge.Gameplay
             public RectTransform Root;
             public Image Glow;
             public Image Band;
+            public Image Crest;
             public TextMeshProUGUI Name;
             public TextMeshProUGUI Stamp;
             public TextMeshProUGUI Stats;
@@ -93,9 +94,16 @@ namespace Voxelforge.Gameplay
             float inner = CardWidth - 20f;
             c.Band = HudWidgets.Image("Band", c.Root, _skin.barFill, Color.white);
             Row(c.Band.rectTransform, 6f, -6f, CardWidth - 12f, BandHeight);
+            // The class's crest at the left of its band, framed like a spell slot (Roadmap 4.6 step F).
+            RectTransform crest = HudWidgets.Place(HudWidgets.Rect("Crest", c.Band.transform), new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f), new Vector2(3f, 0f), new Vector2(BandHeight - 6f, BandHeight - 6f));
+            c.Crest = HudWidgets.Image("Picture", crest, null, Color.white);
+            HudWidgets.Stretch(c.Crest.rectTransform, 3f);
+            HudWidgets.Stretch(HudWidgets.Image("Frame", crest, _skin.slotFrame, Color.white).rectTransform);
             c.Name = HudWidgets.SmallLabel("Name", c.Band.transform, _skin, 26f, Color.white, TextAlignmentOptions.Center);
-            FitInside(c.Name, 16f, 26f);
-            HudWidgets.Stretch(c.Name.rectTransform, 6f);
+            FitInside(c.Name, 15f, 26f);
+            HudWidgets.Place(c.Name.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(BandHeight, 0f),
+                new Vector2(CardWidth - 12f - BandHeight - 6f, BandHeight - 6f));
 
             float cy = -6f - BandHeight - 6f;
             c.Stats = HudWidgets.Label("Stats", c.Root, _skin.titleFont, 20f, InkBrown, TextAlignmentOptions.Center);
@@ -205,6 +213,9 @@ namespace Voxelforge.Gameplay
                 if (definition == null)
                     continue;
                 c.Band.color = _skin.ClassColor(definition.Id);
+                Sprite crest = _skin.CrestFor(definition.Id);
+                c.Crest.sprite = crest;
+                c.Crest.enabled = crest != null;
                 c.Name.text = definition.DisplayName;
                 c.Stats.text = $"<color=#A3221B>Health {definition.MaxHealth:0}</color>   " +
                                $"<color=#1F4FB0>Mana {definition.MaxMana:0}</color>";

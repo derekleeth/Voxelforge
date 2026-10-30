@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: StoneSpearLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 37ee2a50d98053340953bb71c97d1312, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b16141efde706f647b19ae515ecff6f3, type: 3}
   glow: {r: 0.95, g: 0.6, b: 0.25, a: 1}
   coreShape: 0
   coreSize: 0.7
@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 0
   zoneModel: {fileID: 0}
   zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
   trailTime: 0.3
   lightIntensity: 4
   lightRange: 7
@@ -36,9 +38,9 @@ MonoBehaviour:
   castLight: 2.5
   castLoop: {fileID: 8300000, guid: f758a5df429b0764da732022f63cf5e7, type: 3}
   castLoopVolume: 0.5
-  release: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
+  release: {fileID: 8300000, guid: d12b09231996f384196faa2592ecdb25, type: 3}
   releaseVolume: 0.8
-  impact: {fileID: 8300000, guid: d99a921bb2ed1b3449d347347d0ec708, type: 3}
+  impact: {fileID: 8300000, guid: 1bce7d6d0588e834fbc7729256c2b6c4, type: 3}
   impactVolume: 0.9
   fizzle: {fileID: 0}
   maxDistance: 40

@@ -42,6 +42,8 @@ namespace Voxelforge.Gameplay
             public HeroAnimator Animator;
             public PlayerAbilityCues Cues;
             public Action<AbilityCue, AbilityDefinition> OnCue;
+            public PlayerHealth Health;
+            public Action<HealthEvent> OnHealth;
             public int CastLoop;
             public float CastLoopVolume;
             public int StepCount;
@@ -83,6 +85,12 @@ namespace Voxelforge.Gameplay
                 hero.OnCue = (cue, ability) => OnCue(hero, cue, ability);
                 hero.Cues.Received += hero.OnCue;
             }
+            hero.Health = player.GetComponent<PlayerHealth>();
+            if (hero.Health != null)
+            {
+                hero.OnHealth = e => OnHealth(hero, e);
+                hero.Health.Changed += hero.OnHealth;
+            }
             _heroes.Add(hero);
         }
 
@@ -98,6 +106,8 @@ namespace Voxelforge.Gameplay
             Hero hero = _heroes[index];
             if (hero.Cues != null)
                 hero.Cues.Received -= hero.OnCue;
+            if (hero.Health != null)
+                hero.Health.Changed -= hero.OnHealth;
             StopCastLoop(hero);
             _heroes.RemoveAt(index);
         }
@@ -166,6 +176,27 @@ namespace Voxelforge.Gameplay
                 hero.JumpPlayed = false;
             }
             hero.WasGrounded = grounded;
+        }
+
+        /// <summary>
+        /// Roadmap 4.6: a shield going on chimes with its spell's Impact sound on the hero who got it, and a hit it
+        /// soaks up clinks.
+        /// </summary>
+        void OnHealth(Hero hero, HealthEvent e)
+        {
+            if (hero.Player == null || sounds == null)
+                return;
+            float3 chest = Chest(hero.Player);
+            switch (e.Kind)
+            {
+                case HealthEventKind.Shielded:
+                    if (looks != null && looks.TryGet(e.AbilityId, out AbilityLook look))
+                        Play(look.Impact, chest, look.ImpactVolume, 1f, look.MaxDistance);
+                    break;
+                case HealthEventKind.Absorbed:
+                    Play(sounds.ShieldBlock, chest, 0.7f, UnityEngine.Random.Range(0.92f, 1.1f), 24f);
+                    break;
+            }
         }
 
         void OnCue(Hero hero, AbilityCue cue, AbilityDefinition ability)

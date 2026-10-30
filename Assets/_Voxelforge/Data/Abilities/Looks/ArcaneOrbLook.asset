@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 0
   zoneModel: {fileID: 0}
   zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
   trailTime: 0.35
   lightIntensity: 6
   lightRange: 10

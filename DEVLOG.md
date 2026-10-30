@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-10-30 - Session 1 (part 31): Paladins, Geomancers & Shamans! ⚒️🪨⚡ Roadmap 4.6
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Three classes to choose from!** Press **K** (or **]** on the right keyboard, or **LT** in the inventory on a gamepad) to open the class window in your own view. Every class has its own health, mana and action bar, and you can switch any time for free. Details in DECISIONS.md **D-029**.
+  - **Runeforged Paladin** (tough, 150 health): **Rune Hammer** throws a glowing hammer that tumbles end over end. **Bulwark Rune** puts a golden shield on your partner (or you). **Hallowed Forge** blesses the ground so everyone standing in it heals.
+  - **Geomancer Mage** (lots of mana): **Stone Spear** hurls a lance of rock. **EarthShatter** blasts a crater. **Rising Pillar** shoots a column of rock up under your feet! It's everyone's favourite.
+  - **Shaman**: **Earthen Wall** raises a wall of rock where you look. The **Wellspring Totem** heals friends and speeds up their mana. The **Thunderhead Totem** throws lightning at the nearest foe.
+  - Your class is saved with your hero.
+- **Heroes have health now**, with a red bar over the mana bar. There's **no fall damage**, so jumping off mountains is still free!
+- **Training Dummies!** Craft one (3 Logs + 2 Dirt at a Workbench) and practise your spells.
+  - It has a health bar and shakes when hit, and topples with a "TIMBERRR!" when you empty it.
+  - It throws little hay sacks back at you, so the healers have something to heal.
+- **Earthen Rock:** pillars and walls are real blocks with glowing cracks. They crumble away after 30 seconds, even if you save and come back.
+- **Smaller craters**, and spells that hit a dummy don't dig a hole round it.
+- **New Blender art and sounds:** the dummy, a glowing hammer, a stone spear, two carved totems, 8 spell icons, 4 class crests and 15 new sounds made from code. Listen for the hammer's clang, the shield chime, the totem thunk and the lightning crack.
+
+### Tests: 401 / 401 passing ✅
+- Health, shields, regeneration and the floor that stops anyone being knocked out.
+- Dummies take hits, spring back up, and only throw hay at whoever hit them last.
+- Spells hit a dummy's whole body, not just its feet.
+- Shields go on the partner you aim at; zones heal only the heroes standing inside them, and pulse on time.
+- Pillars need room overhead; walls run across your aim; totems find the ground under a cliff.
+- Earthen Rock timers survive a save, and old saves load as Adventurers.
+
+### Things we learned
+- A model can be taller than the block it stands in, so spells have to aim at the model, not the block. Our first dummy was un-hittable from the chest up!
+- Things the world does by itself (like rock crumbling after its caster went home) still need a name in the save, so the world got its own: "World".
+
+### Next up
+- [ ] Play-test 4.6 step F: the new icons, class crests and sounds
+- [ ] Roadmap **4.7 Playable Races & the Thunderhoof**
+
+---
+
 ## 2026-10-30 - Session 1 (part 30): Bags, Backpacks, Loot Sacks & Treasure Chests 🎒📦 Roadmap 4.5
 **Phase:** 4 - The Warcraft Injection
 

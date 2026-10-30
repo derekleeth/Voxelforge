@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RuneHammerLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: c0bac5ec91bab0942ad4d7d21b60969d, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 586d517372176304e9e025ac7661a23b, type: 3}
   glow: {r: 1, g: 0.78, b: 0.3, a: 1}
   coreShape: 0
   coreSize: 0.6
@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 900
   zoneModel: {fileID: 0}
   zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
   trailTime: 0.25
   lightIntensity: 5
   lightRange: 8
@@ -36,9 +38,9 @@ MonoBehaviour:
   castLight: 0
   castLoop: {fileID: 0}
   castLoopVolume: 0.5
-  release: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
+  release: {fileID: 8300000, guid: ba321dc9d6aff71468e35d71ae8a2528, type: 3}
   releaseVolume: 0.8
-  impact: {fileID: 8300000, guid: aa54dd91b7d3e3c4c87f0a38f3d61c55, type: 3}
+  impact: {fileID: 8300000, guid: 832a79a4548a3304295ae1a5c36a5379, type: 3}
   impactVolume: 1
   fizzle: {fileID: 0}
   maxDistance: 40

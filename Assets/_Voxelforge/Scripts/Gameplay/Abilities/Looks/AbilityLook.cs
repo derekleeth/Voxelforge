@@ -50,6 +50,11 @@ namespace Voxelforge.Gameplay
         [Tooltip("How bright the zone's ring on the ground is (0 = no ring, 1 = full).")]
         [SerializeField, Range(0f, 1f)] float zoneRing = 1f;
 
+        [Tooltip("Played on each pulse of a zone, or where a totem's strike lands. A zone's Impact sound plays when it's placed.")]
+        [SerializeField] AudioClip pulse;
+
+        [SerializeField, Range(0f, 2f)] float pulseVolume = 0.6f;
+
         [Tooltip("Seconds the trail takes to fade.")]
         [SerializeField, Range(0.05f, 1f)] float trailTime = 0.18f;
 
@@ -121,6 +126,8 @@ namespace Voxelforge.Gameplay
         public float CoreSpin => coreSpin;
         public Mesh ZoneModel => zoneModel;
         public float ZoneRing => zoneRing;
+        public AudioClip Pulse => pulse;
+        public float PulseVolume => pulseVolume;
         public float TrailTime => trailTime;
         public float LightIntensity => lightIntensity;
         public float LightRange => lightRange;

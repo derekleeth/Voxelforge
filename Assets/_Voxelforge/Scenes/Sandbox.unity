@@ -756,6 +756,7 @@ MonoBehaviour:
   sounds: {fileID: 11400000, guid: 73f908f424a3b2b429f49fbff3f8f2c6, type: 2}
   world: {fileID: 1325734895}
   drops: {fileID: 974320860}
+  looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   hitInterval: 0.22
   hitVolume: 0.6
   breakVolume: 0.9

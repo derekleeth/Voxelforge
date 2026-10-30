@@ -5,6 +5,73 @@
 
 ---
 
+## D-029: Classes, Health, Training Dummies, Zones, Totems & Earth Magic
+- **Date:** 2026-10-30
+- **Status:** Accepted (steps A-E play-tested 2026-10-30 by both players; step F's icons and sounds waiting on their play-test)
+
+### Decisions
+- **Heroes have health, but no fall damage.** `HeroHealth` (plain C#, tested) holds health, a shield that soaks up damage first, and 2/s regeneration after 5 s out of combat. `PlayerHealth` runs it on the host and tells every PC what happened as `HealthEvent`s (Damaged, Healed, Shielded, Absorbed, Incoming).
+  - Kian jumps off mountains on purpose, so falling never hurts.
+  - Nothing in 4.6 can knock a hero out: every hit passes a floor (10% for sparring). Knock-outs come with Phase 5 monsters.
+  - A red health bar sits over the mana bar, with the shield as a gold strip behind it.
+- **Training Dummy (block 15)** gives spells something to hit before Phase 5. It's a blast-proof Axe prop (3 Log + 2 Dirt at a Workbench).
+  - `CombatTargets` (host, scene) is where Phase 5 creatures will join. In 4.6 it finds dummies by scanning nearby blocks, only when something needs a target.
+  - The plan had a separate `TrainingDummies` component. It was folded into `CombatTargets`, since dummies are the only target for now.
+  - `SparringDummy` (plain C#, tested): 500 health. Emptying it topples it ("TIMBERRR!") and it springs back to full. Left alone for 10 s, it's forgotten.
+  - While being hit it lobs a hay sack every 3 s at whoever hit it last (8 damage, within 20 m), so heals and shields have something to undo.
+- **Spells hit a target's whole body.** Play-test: aiming at the dummy's chest flew over its one block and dug a pit around it.
+  - Flights and slams now test a 1 × 1.8 m box per target (`CombatTarget.RayHitsBody`) and report it as a hit on the target's block.
+  - A spell that hits a target spends itself on it: no crater. The target struck takes full damage; others in a blast take less with distance.
+  - Craters were also made smaller: Arcane Orb 3 → 2 m, Pyroblast 4 → 3 m, EarthShatter 4.5 → 3.5 m.
+  - Each target hurt gets a `TargetHit` cue (damage and health left). `TargetHealthBook` and `TargetBarsView` draw a bar over each dummy being fought, in each player's own view (Law #5).
+- **Classes are data.** `ClassDefinition` (health, mana, regen, loadout) is listed in a `ClassBook`, with permanent `HeroClassId`s:
+
+  | Class | Health / Mana / Regen | Bar |
+  |---|---|---|
+  | Adventurer | 100 / 100 / 10 | Arcane Orb, Pyroblast, EarthShatter |
+  | Runeforged Paladin | 150 / 80 / 8 | Rune Hammer, Bulwark Rune, Hallowed Forge |
+  | Geomancer Mage | 90 / 130 / 12 | Stone Spear, EarthShatter, Rising Pillar |
+  | Shaman | 110 / 110 / 10 | Earthen Wall, Wellspring Totem, Thunderhead Totem |
+
+  - `PlayerClass` is host-authoritative: the owner asks, and the host swaps the bar, pool and health, keeping the same share of each. Changing class is free for now.
+  - Colours and crests are looks, so they live in `HudSkin`.
+- **A class window per player** (`ClassPickerModel`/`View`, `PlayerClassMenu`), with a card per class showing its crest, colour, pools, blurb and three spells.
+  - Open it with `K` (`]` on the right-hand keyboard). Gamepads have no free button, so they press LT in the inventory window.
+  - `PlayerController.WindowOpen` now covers both windows for the hero freeze, free cursor and HUD.
+- **Save format 4:** each profile's class, plus Earthen Rock timers as seconds left. v1-v3 saves load as Adventurers.
+- **New deliveries:** `Shield`, `Zone`, `Pillar`, `Wall`, `Totem`. Walls and totems need ground in range before any mana is spent (`NoTarget`).
+  - **Shield** (`PlayerSupport`): on the partner nearest the aim (20 m, 12° cone, `SupportRules`), else the caster. `ShieldView` draws a gold bubble with rune rings.
+  - **Zone and Totem** (`AbilityZone`, a server-owned network object): `ZoneRules` pulses once at once, then every interval. A pulse can:
+    - heal heroes in it;
+    - boost their mana regen (`PlayerCaster.ServerBoostRegen`, renewed each pulse);
+    - strike the nearest target (reported on the caster's cue channel).
+  - Totems stand on a block (`EarthRules.TryFindTotemSpot` drops from a cliff face to the ground), end if that block goes, and are one of each kind per caster. `AbilityZoneView` draws the ring, motes, light, the totem model rising and lightning.
+  - **Pillar and Wall** (`EarthWorks`, host, scene): every block goes through `RequestModifyVoxel` (Law #3), skipping full cells and heroes.
+- **Earthen Rock (block 16)** is raised earth: packed slabs with glowing amber cracks.
+  - It drops nothing, and craters break it.
+  - It crumbles back to air after 30 s in the name of the new **`PlayerId.World`** (255), since its caster may have left. The registry never hands that ID out.
+  - Mined earth is forgotten, and crumbled earth leaves nothing in the save.
+- **Looks:** `AbilityLook` gained a core mesh and spin (the tumbling Rune Hammer, the Stone Spear), a zone model and ring brightness (totems), and a pulse sound.
+  - Blender models in `build_props.py`: Training Dummy, Rune Hammer, Stone Spear, two totems.
+  - New icons and four class crests in `build_spell_icons.py`; *Build Abilities* now sets new icons to import as sprites.
+  - The Earthen Rock texture is in `bake_block_textures.py`.
+  - 15 new synthesised sounds in `SfxBuilder`, including the Hallowed Forge hum loop, lightning, a crumble and a hay thwack. `WorldFoley` plays zone and crumble sounds, `PlayerFoley` the shield sounds.
+  - The Chest, Training Dummy and Earthen Rock got surface sounds; the Chest had none since 4.5.
+
+### Measured
+- Hallowed Forge healed a Paladin 70 → 100 over its 6 pulses. Wellspring healed 60 → 97 in about 8 s and raised a Shaman's mana regen from 10 to 15 a second.
+- Thunderhead hit a dummy for 25 every 2 s. A Rune Hammer at chest height did 45 and broke no blocks.
+- A Rising Pillar saved mid-way came back with about 17 s left and crumbled on time. Its blocks left the edit log.
+- Tests: 345 → 401.
+
+### Deferred on purpose
+- Knock-outs, respawning and hero-vs-hero damage: Phase 5.
+- Talents, and rearranging or saving custom action bars.
+- Remote PCs seeing Earthen Rock and Training Dummies: like every block, they only live on the host until Phase 7. Zones, shields, health and dummy bars already reach every PC.
+- A dust puff for crumbling earth (it has a sound, but no particles yet).
+
+---
+
 ## D-028: The Generous Bag, Wearable Bags, Loot Bags & Storage Chests
 - **Date:** 2026-10-30
 - **Status:** Accepted (play-tested 2026-10-30, both players sharing a chest)

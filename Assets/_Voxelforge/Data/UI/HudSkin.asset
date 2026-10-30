@@ -31,6 +31,9 @@ MonoBehaviour:
   cast: {r: 1, g: 0.78, b: 0.22, a: 1}
   refusal: {r: 1, g: 0.32, b: 0.22, a: 1}
   pickup: {r: 1, g: 0.92, b: 0.55, a: 1}
+  health: {r: 0.86, g: 0.16, b: 0.14, a: 1}
+  heal: {r: 0.38, g: 1, b: 0.42, a: 1}
+  shield: {r: 1, g: 0.86, b: 0.38, a: 1}
   elements:
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 0.85, g: 0.5, b: 1, a: 1}
@@ -40,6 +43,16 @@ MonoBehaviour:
   - {r: 0.45, g: 1, b: 0.4, a: 1}
   - {r: 0.6, g: 0.75, b: 1, a: 1}
   - {r: 1, g: 0.95, b: 0.55, a: 1}
+  classes:
+  - {r: 0.62, g: 0.5, b: 0.36, a: 1}
+  - {r: 1, g: 0.78, b: 0.25, a: 1}
+  - {r: 0.88, g: 0.48, b: 0.2, a: 1}
+  - {r: 0.2, g: 0.7, b: 0.85, a: 1}
+  classCrests:
+  - {fileID: 21300000, guid: 3d6f6064f1232784995a604f3c39ad4c, type: 3}
+  - {fileID: 21300000, guid: 10d6df604cb873f46bab85c43f80c1f7, type: 3}
+  - {fileID: 21300000, guid: 832d8c5e32082074d9576ba3c1a8199b, type: 3}
+  - {fileID: 21300000, guid: afaf0e35644b9ba41add78340a648244, type: 3}
   slotSize: 66
   slotGap: 6
   manaBarHeight: 22

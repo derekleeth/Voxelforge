@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WellspringTotemLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 7e9595453681a584bbf9d38e9b260ecc, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6ed5d6b8122055b4fa373adf5cddc72a, type: 3}
   glow: {r: 0.4, g: 1, b: 0.75, a: 1}
   coreShape: 0
   coreSize: 0.2
@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 0
   zoneModel: {fileID: -2035503299306695046, guid: 961c95f81aac7564ba06b8f2798e7803, type: 3}
   zoneRing: 0.6
+  pulse: {fileID: 8300000, guid: 61a891bd19fda2248b18574baf521e1e, type: 3}
+  pulseVolume: 0.4
   trailTime: 0.2
   lightIntensity: 3
   lightRange: 9
@@ -36,9 +38,9 @@ MonoBehaviour:
   castLight: 0
   castLoop: {fileID: 0}
   castLoopVolume: 0.5
-  release: {fileID: 8300000, guid: a7f32b34f69e4044eb43a0deadb6a89e, type: 3}
+  release: {fileID: 0}
   releaseVolume: 0.8
-  impact: {fileID: 0}
-  impactVolume: 0.8
+  impact: {fileID: 8300000, guid: 6f0f2562742f9f242b5a107b52f6f8df, type: 3}
+  impactVolume: 0.9
   fizzle: {fileID: 0}
   maxDistance: 40

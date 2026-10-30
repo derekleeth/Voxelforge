@@ -85,6 +85,9 @@ namespace Voxelforge.Gameplay
             new Color(0.62f, 0.5f, 0.36f), new Color(1f, 0.78f, 0.25f), new Color(0.88f, 0.48f, 0.2f), new Color(0.2f, 0.7f, 0.85f),
         };
 
+        [Tooltip("Each class's crest in the class window (Roadmap 4.6), in HeroClassId order. Build Abilities fills it.")]
+        public Sprite[] classCrests;
+
         [Header("Sizes (pixels at 1080p)")]
         [Range(32f, 120f)] public float slotSize = 66f;
         [Range(0f, 20f)] public float slotGap = 6f;
@@ -103,6 +106,12 @@ namespace Voxelforge.Gameplay
         {
             int i = (int)id;
             return classes != null && i < classes.Length ? classes[i] : Color.white;
+        }
+
+        public Sprite CrestFor(HeroClassId id)
+        {
+            int i = (int)id;
+            return classCrests != null && i < classCrests.Length ? classCrests[i] : null;
         }
 
         public Sprite IconFor(AbilityDefinition ability)

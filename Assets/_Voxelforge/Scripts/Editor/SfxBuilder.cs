@@ -121,12 +121,29 @@ namespace Voxelforge.Editor
             written.Add(Write("PyroRelease", PyroRelease(new Random(113))));
             written.Add(Write("PyroImpact", PyroImpact(new Random(127))));
             written.Add(Write("EarthSlam", EarthSlam(new Random(131))));
+            // Roadmap 4.6: the class spells, totems, earth, shields and the Training Dummy.
+            written.Add(Write("HammerThrow", HammerThrow(new Random(137))));
+            written.Add(Write("HammerClang", HammerClang(new Random(139))));
+            written.Add(Write("ShieldChime", ShieldChime()));
+            written.Add(Write("ShieldBlock", ShieldBlock(new Random(149))));
+            written.Add(Write("HolyHum", HolyHum()));
+            written.Add(Write("ForgeBless", ForgeBless(new Random(151))));
+            written.Add(Write("HealPulse", HealPulse()));
+            written.Add(Write("SpearLaunch", SpearLaunch(new Random(157))));
+            written.Add(Write("SpearImpact", SpearImpact(new Random(163))));
+            written.Add(Write("EarthRise", EarthRise(new Random(167))));
+            written.Add(Write("EarthCrumble", EarthCrumble(new Random(173))));
+            written.Add(Write("TotemPlant", TotemPlant(new Random(179))));
+            written.Add(Write("WaterPulse", WaterPulse(new Random(181))));
+            written.Add(Write("ThunderZap", ThunderZap(new Random(191))));
+            written.Add(Write("HayThwack", HayThwack(new Random(193))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
                 SetImportSettings(path, looping: path.EndsWith("TorchCrackle.wav", StringComparison.Ordinal) ||
                                                  path.EndsWith("CastHum.wav", StringComparison.Ordinal) ||
-                                                 path.EndsWith("FireRoar.wav", StringComparison.Ordinal));
+                                                 path.EndsWith("FireRoar.wav", StringComparison.Ordinal) ||
+                                                 path.EndsWith("HolyHum.wav", StringComparison.Ordinal));
 
             BuildAssets();
             AssetDatabase.SaveAssets();
@@ -408,6 +425,190 @@ namespace Voxelforge.Editor
             return Finish(buffer, 1f);
         }
 
+        // ---- Roadmap 4.6 ----
+
+        /// <summary>The Rune Hammer leaving the hand: a heavy whoosh of air with a bright ring of rune-metal in it.</summary>
+        static float[] HammerThrow(Random rng)
+        {
+            float[] buffer = New(0.7f);
+            AddNoise(buffer, rng, 0f, 0.18f, 0.7f, 250f, 3000f);
+            AddTone(buffer, 0f, 300f, 160f, 0.2f, 0.25f);
+            AddBell(buffer, 0.02f, 1175f, 0.35f, 0.2f);
+            AddTone(buffer, 0f, 80f, 55f, 0.08f, 0.5f);
+            return Finish(buffer, 0.75f);
+        }
+
+        /// <summary>The Rune Hammer landing: a big metal clang over a thud, and a golden ring fading.</summary>
+        static float[] HammerClang(Random rng)
+        {
+            float[] buffer = New(1.2f);
+            AddTone(buffer, 0f, 70f, 45f, 0.12f, 0.9f);
+            AddNoise(buffer, rng, 0f, 0.03f, 0.8f, 800f, 8000f);
+            AddBell(buffer, 0f, 520f, 0.5f, 0.55f);
+            AddBell(buffer, 0.005f, 784f, 0.4f, 0.3f);
+            foreach (float note in new[] { 1568f, 1976f })
+                AddTone(buffer, 0.02f, note, note, 0.4f, 0.08f);
+            return Finish(buffer, 0.9f);
+        }
+
+        /// <summary>Bulwark Rune going on: a rising major arpeggio of bells, warm and bright.</summary>
+        static float[] ShieldChime()
+        {
+            float[] buffer = New(1.3f);
+            float[] notes = { 659f, 784f, 988f, 1319f };
+            for (int i = 0; i < notes.Length; i++)
+                AddBell(buffer, i * 0.06f, notes[i], 0.6f, 0.35f);
+            AddTone(buffer, 0f, 330f, 330f, 0.5f, 0.2f);
+            return Finish(buffer, 0.7f);
+        }
+
+        /// <summary>A shield soaking up a hit: a short, high metal clink.</summary>
+        static float[] ShieldBlock(Random rng)
+        {
+            float[] buffer = New(0.4f);
+            AddBell(buffer, 0f, 1480f, 0.12f, 0.6f);
+            AddNoise(buffer, rng, 0f, 0.01f, 0.5f, 2000f, 9000f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>
+        /// Hallowed Forge's cast (a loop): a warm major chord breathing slowly, like a choir held under a forge's roar.
+        /// Every partial and swell fits whole times into two seconds, so it loops without a seam.
+        /// </summary>
+        static float[] HolyHum()
+        {
+            const float Seconds = 2f;
+            float[] buffer = New(Seconds);
+            (float frequency, float amp, float swell)[] partials =
+            {
+                (130.5f, 0.45f, 1f), (164.5f, 0.3f, 1.5f), (196f, 0.3f, 1f), (261f, 0.2f, 2f), (329f, 0.1f, 2.5f), (784f, 0.04f, 3f),
+            };
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float sample = 0f;
+                foreach ((float frequency, float amp, float swell) in partials)
+                    sample += Mathf.Sin(2f * Mathf.PI * frequency * t) * amp * (0.7f + 0.3f * Mathf.Sin(2f * Mathf.PI * swell * t));
+                buffer[i] = sample;
+            }
+            Normalize(buffer, 0.5f);
+            return buffer;
+        }
+
+        /// <summary>Hallowed Forge blessing the ground: an anvil strike, then a swelling bright chord.</summary>
+        static float[] ForgeBless(Random rng)
+        {
+            float[] buffer = New(1.6f);
+            AddBell(buffer, 0f, 880f, 0.4f, 0.5f);
+            AddNoise(buffer, rng, 0f, 0.02f, 0.5f, 1500f, 8000f);
+            foreach (float note in new[] { 523f, 659f, 784f, 1047f })
+                AddTone(buffer, 0.08f, note, note, 0.55f, 0.15f);
+            AddNoise(buffer, rng, 0.05f, 0.4f, 0.25f, 300f, 2500f);
+            return Finish(buffer, 0.8f);
+        }
+
+        /// <summary>A healing pulse: a soft, quick sparkle that won't tire the ear once a second.</summary>
+        static float[] HealPulse()
+        {
+            float[] buffer = New(0.6f);
+            foreach ((float start, float note) in new[] { (0f, 1319f), (0.04f, 1568f), (0.08f, 2093f) })
+                AddTone(buffer, start, note, note, 0.15f, 0.25f);
+            return Finish(buffer, 0.4f);
+        }
+
+        /// <summary>Stone Spear leaving the hands: grinding rock torn free, then a heavy rushing whoosh.</summary>
+        static float[] SpearLaunch(Random rng)
+        {
+            float[] buffer = New(0.8f);
+            AddGrains(buffer, rng, 0f, 0.15f, 14, 0.02f, 0.4f, 200f, 2500f);
+            AddNoise(buffer, rng, 0.05f, 0.2f, 0.7f, 120f, 1800f);
+            AddTone(buffer, 0f, 110f, 60f, 0.15f, 0.6f);
+            return Finish(buffer, 0.8f);
+        }
+
+        /// <summary>Stone Spear hitting: a sharp crack of stone and a thud, then a little rubble.</summary>
+        static float[] SpearImpact(Random rng)
+        {
+            float[] buffer = New(1f);
+            AddTone(buffer, 0f, 65f, 40f, 0.15f, 0.9f);
+            float[] crack = New(1f);
+            AddNoise(crack, rng, 0f, 0.03f, 1f, 600f, 7000f);
+            Add(buffer, Resonate(crack, 900f, 0.99f), 0.4f);
+            Add(buffer, crack, 0.6f);
+            AddGrains(buffer, rng, 0.05f, 0.5f, 20, 0.03f, 0.25f, 300f, 4000f);
+            return Finish(buffer, 0.9f);
+        }
+
+        /// <summary>Earth rising (Rising Pillar, Earthen Wall): a deep grinding rumble that climbs, with stone scraping.</summary>
+        static float[] EarthRise(Random rng)
+        {
+            float[] buffer = New(1.2f);
+            AddTone(buffer, 0f, 40f, 75f, 0.5f, 0.9f, sweepTime: 0.6f);
+            AddNoise(buffer, rng, 0f, 0.4f, 0.8f, 30f, 700f);
+            AddGrains(buffer, rng, 0f, 0.9f, 50, 0.03f, 0.3f, 200f, 3000f);
+            return Finish(buffer, 0.95f);
+        }
+
+        /// <summary>Earthen Rock crumbling away: dry dust and pebbles pattering down, no thud.</summary>
+        static float[] EarthCrumble(Random rng)
+        {
+            float[] buffer = New(1.1f);
+            AddNoise(buffer, rng, 0f, 0.25f, 0.4f, 300f, 4000f);
+            AddGrains(buffer, rng, 0f, 0.8f, 45, 0.02f, 0.35f, 600f, 6000f);
+            AddGrains(buffer, rng, 0.1f, 0.6f, 15, 0.04f, 0.3f, 150f, 1500f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>A totem planted: a heavy wooden thunk driven into the ground, and a puff of earth.</summary>
+        static float[] TotemPlant(Random rng)
+        {
+            float[] buffer = New(0.9f);
+            AddTone(buffer, 0f, 95f, 55f, 0.12f, 1f);
+            AddTone(buffer, 0f, 210f, 140f, 0.06f, 0.4f);
+            float[] knock = New(0.9f);
+            AddNoise(knock, rng, 0f, 0.02f, 1f, 200f, 2500f);
+            Add(buffer, Resonate(knock, 320f, 0.985f), 0.5f);
+            AddGrains(buffer, rng, 0.03f, 0.3f, 12, 0.03f, 0.2f, 300f, 3000f);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>The Wellspring's pulse: a soft water bloop with a little trickle after it.</summary>
+        static float[] WaterPulse(Random rng)
+        {
+            float[] buffer = New(0.7f);
+            AddTone(buffer, 0f, 420f, 900f, 0.06f, 0.6f, sweepTime: 0.05f);
+            AddTone(buffer, 0.12f, 520f, 1100f, 0.05f, 0.35f, sweepTime: 0.04f);
+            for (int i = 0; i < 6; i++)
+            {
+                float f = Range(rng, 900f, 1700f);
+                AddTone(buffer, 0.15f + Range(rng, 0f, 0.35f), f, f * 1.6f, 0.03f, Range(rng, 0.08f, 0.18f), sweepTime: 0.02f);
+            }
+            return Finish(buffer, 0.45f);
+        }
+
+        /// <summary>The Thunderhead's strike: a sharp electric crack and a short rumble of thunder.</summary>
+        static float[] ThunderZap(Random rng)
+        {
+            float[] buffer = New(1.4f);
+            AddNoise(buffer, rng, 0f, 0.015f, 1f, 1500f, 12000f);
+            for (int i = 0; i < 5; i++)
+                AddNoise(buffer, rng, Range(rng, 0f, 0.08f), 0.01f, 0.6f, 2000f, 10000f);
+            AddTone(buffer, 0f, 1200f, 300f, 0.05f, 0.3f, sweepTime: 0.05f);
+            AddNoise(buffer, rng, 0.04f, 0.35f, 0.7f, 30f, 500f);
+            AddTone(buffer, 0.04f, 55f, 35f, 0.3f, 0.6f);
+            return Finish(buffer, 0.9f);
+        }
+
+        /// <summary>A Training Dummy's hay sack landing on a hero: a soft, scratchy thump.</summary>
+        static float[] HayThwack(Random rng)
+        {
+            float[] buffer = New(0.5f);
+            AddTone(buffer, 0f, 110f, 70f, 0.06f, 0.7f);
+            AddNoise(buffer, rng, 0f, 0.05f, 0.6f, 400f, 5000f);
+            AddGrains(buffer, rng, 0.02f, 0.2f, 16, 0.015f, 0.3f, 1500f, 7000f);
+            return Finish(buffer, 0.7f);
+        }
+
         /// <summary>
         /// A torch: mostly the soft breathing roar of the flame, with a faint hiss on top and a few quiet crackles,
         /// and now and then a woody snap. Loops without a seam.
@@ -643,7 +844,8 @@ namespace Voxelforge.Editor
             {
                 ("Grass", "Grass"), ("Dirt", "Dirt"), ("Stone", "Stone"), ("ManaCrystalOre", "Crystal"), ("Sand", "Sand"),
                 ("Snow", "Snow"), ("Sandstone", "Stone"), ("RedRock", "Stone"), ("TreeTrunk", "Wood"), ("Log", "Wood"),
-                ("Torch", "Wood"), ("Workbench", "Wood"), ("HomeTotem", "Wood"),
+                ("Torch", "Wood"), ("Workbench", "Wood"), ("HomeTotem", "Wood"), ("Chest", "Wood"), ("TrainingDummy", "Wood"),
+                ("EarthenRock", "Stone"),
             };
             SerializedProperty list = serialized.FindProperty("blocks");
             list.arraySize = 0;
@@ -665,6 +867,9 @@ namespace Voxelforge.Editor
             serialized.FindProperty("pickupPop").objectReferenceValue = Clip("PickupPop");
             serialized.FindProperty("treeCreak").objectReferenceValue = Clip("TreeCreak");
             serialized.FindProperty("leafRustle").objectReferenceValue = Clip("LeafRustle");
+            serialized.FindProperty("earthCrumble").objectReferenceValue = Clip("EarthCrumble");
+            serialized.FindProperty("shieldBlock").objectReferenceValue = Clip("ShieldBlock");
+            serialized.FindProperty("hayThwack").objectReferenceValue = Clip("HayThwack");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;

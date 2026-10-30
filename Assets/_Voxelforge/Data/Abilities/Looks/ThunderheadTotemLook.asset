@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ThunderheadTotemLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: a7b77b0530885b14bb3c37843f311a25, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e39e84056ceabc348801896aa54e7f91, type: 3}
   glow: {r: 0.55, g: 0.75, b: 1, a: 1}
   coreShape: 0
   coreSize: 0.2
@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 0
   zoneModel: {fileID: -2904514972220652127, guid: 7de597488f663614ead036bc3440e1c9, type: 3}
   zoneRing: 0.25
+  pulse: {fileID: 8300000, guid: 773e5368f3c25d84c8310dc6c82f023a, type: 3}
+  pulseVolume: 0.9
   trailTime: 0.2
   lightIntensity: 4
   lightRange: 10
@@ -36,9 +38,9 @@ MonoBehaviour:
   castLight: 0
   castLoop: {fileID: 0}
   castLoopVolume: 0.5
-  release: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
+  release: {fileID: 0}
   releaseVolume: 0.9
-  impact: {fileID: 0}
-  impactVolume: 0.8
+  impact: {fileID: 8300000, guid: 6f0f2562742f9f242b5a107b52f6f8df, type: 3}
+  impactVolume: 0.9
   fizzle: {fileID: 0}
-  maxDistance: 40
+  maxDistance: 60

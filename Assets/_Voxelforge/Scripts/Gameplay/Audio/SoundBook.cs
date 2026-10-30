@@ -44,6 +44,15 @@ namespace Voxelforge.Gameplay
         [SerializeField] AudioClip treeCreak;
         [SerializeField] AudioClip leafRustle;
 
+        [Tooltip("Earthen Rock crumbling back to air when its spell's time is up (Roadmap 4.6).")]
+        [SerializeField] AudioClip earthCrumble;
+
+        [Tooltip("A hero's shield soaking up a hit (Roadmap 4.6, Bulwark Rune).")]
+        [SerializeField] AudioClip shieldBlock;
+
+        [Tooltip("A Training Dummy's hay sack landing on a hero (Roadmap 4.6).")]
+        [SerializeField] AudioClip hayThwack;
+
         [Header("Loops")]
         [SerializeField] AmbientLoop[] loops = Array.Empty<AmbientLoop>();
 
@@ -54,6 +63,9 @@ namespace Voxelforge.Gameplay
         public AudioClip PickupPop => pickupPop;
         public AudioClip TreeCreak => treeCreak;
         public AudioClip LeafRustle => leafRustle;
+        public AudioClip EarthCrumble => earthCrumble;
+        public AudioClip ShieldBlock => shieldBlock;
+        public AudioClip HayThwack => hayThwack;
         public AmbientLoop[] Loops => loops;
 
         /// <summary>How the block with this ID sounds. Never null if there's a default surface.</summary>

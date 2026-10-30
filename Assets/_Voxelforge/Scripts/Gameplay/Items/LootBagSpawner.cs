@@ -71,6 +71,8 @@ namespace Voxelforge.Gameplay
             public Transform To;
             public float Start;
             public float Seconds;
+            /// <summary>A Training Dummy's hay sack (Roadmap 4.6): it lands with a thwack, not a pop.</summary>
+            public bool Hay;
         }
 
         readonly List<Toss> _tosses = new List<Toss>();
@@ -275,6 +277,7 @@ namespace Voxelforge.Gameplay
             _tosses.Add(new Toss
             {
                 Model = model, From = from, FromPoint = fromPoint, To = to, Start = Time.time, Seconds = Mathf.Max(seconds, 0.05f),
+                Hay = from == null,
             });
         }
 
@@ -306,7 +309,9 @@ namespace Voxelforge.Gameplay
                 float t = (Time.time - toss.Start) / toss.Seconds;
                 if (t >= 1f || toss.To == null)
                 {
-                    if (toss.To != null)
+                    if (toss.To != null && toss.Hay)
+                        PlayThwack((float3)toss.To.position + new float3(0f, HeroMiddle, 0f));
+                    else if (toss.To != null)
                         PlayPop((float3)toss.To.position + new float3(0f, HeroMiddle, 0f), 0.8f);
                     Release(toss.Model);
                     _tosses.RemoveAt(i);
@@ -319,6 +324,12 @@ namespace Voxelforge.Gameplay
                 toss.Model.position = Vector3.Lerp(a, b, t) + Vector3.up * (4f * lift * t * (1f - t));
                 toss.Model.rotation = Quaternion.Euler(t * 540f, t * 200f, 0f);
             }
+        }
+
+        void PlayThwack(float3 position)
+        {
+            if (router != null && sounds != null && sounds.HayThwack != null)
+                router.Play(sounds.HayThwack, position, 0.8f, UnityEngine.Random.Range(0.9f, 1.1f), 20f);
         }
 
         void PlayPop(float3 position, float pitch)

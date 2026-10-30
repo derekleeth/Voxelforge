@@ -22,7 +22,7 @@ namespace Voxelforge.Editor
     /// sounds from <i>Voxelforge → Build Sound Effects</i>, so build those first.
     /// <para>The Runeforged Paladin's spells (Roadmap 4.6): <b>Rune Hammer</b> (a glowing hammer thrown end over end),
     /// <b>Bulwark Rune</b> (a shield on the partner you aim at, or you) and <b>Hallowed Forge</b> (a golden circle at your
-    /// feet that heals heroes in it). Until step F they borrow sounds from the older spells.</para>
+    /// feet that heals heroes in it).</para>
     /// <para>The Geomancer Mage's (Roadmap 4.6): <b>Stone Spear</b> (a heavy lance of rock with a short cast) and
     /// <b>Rising Pillar</b> (Earthen Rock rises under you, five blocks, and crumbles after 30 s), with EarthShatter.</para>
     /// <para>The Shaman's (Roadmap 4.6): <b>Earthen Wall</b> (a 5 x 3 wall of Earthen Rock where you aim, crumbling after
@@ -57,6 +57,7 @@ namespace Voxelforge.Editor
         const string SfxDir = "Assets/_Voxelforge/Art/Audio/Sfx";
         const string ClassDir = "Assets/_Voxelforge/Data/Classes";
         public const string ClassBookPath = ClassDir + "/ClassBook.asset";
+        const string HudSkinPath = "Assets/_Voxelforge/Data/UI/HudSkin.asset";
 
         [MenuItem("Voxelforge/Build Abilities")]
         public static void BuildMenu()
@@ -190,43 +191,46 @@ namespace Voxelforge.Editor
             AbilityLook runeHammerLook = MakeLook($"{LookDir}/RuneHammerLook.asset", runeHammer, paladinGold,
                 AbilityCoreShape.Gem, coreSize: 0.6f, trailTime: 0.25f, light: 5f, lightRange: 8f, muzzleSparks: 14,
                 impactSparks: 45, impactSpeed: 6f, castMotes: 0f, castLight: 0f,
-                castLoop: null, release: "BoltFire", impact: "OrbImpact", releaseVolume: 0.8f, impactVolume: 1f,
+                castLoop: null, release: "HammerThrow", impact: "HammerClang", releaseVolume: 0.8f, impactVolume: 1f,
                 coreMesh: LoadModelMesh(HammerModelPath, "RuneHammer"), coreSpin: 900f);
             AbilityLook bulwarkLook = MakeLook($"{LookDir}/BulwarkRuneLook.asset", bulwarkRune, new Color(1f, 0.86f, 0.42f),
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3f, lightRange: 6f, muzzleSparks: 0,
                 impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
-                castLoop: null, release: "OrbRelease", impact: null, releaseVolume: 0.7f, impactVolume: 0.8f);
+                castLoop: null, release: null, impact: "ShieldChime", releaseVolume: 0.7f, impactVolume: 0.8f);
             AbilityLook hallowedLook = MakeLook($"{LookDir}/HallowedForgeLook.asset", hallowedForge, paladinGold,
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3.5f, lightRange: 12f, muzzleSparks: 0,
                 impactSparks: 40, impactSpeed: 3f, castMotes: 70f, castLight: 3f,
-                castLoop: "CastHum", release: "OrbRelease", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
+                castLoop: "HolyHum", release: null, impact: "ForgeBless", releaseVolume: 0.9f, impactVolume: 0.9f,
+                pulse: "HealPulse", pulseVolume: 0.35f);
             // Geomancer: warm earth-amber, like the glowing cracks in Earthen Rock.
             var geomancerAmber = new Color(0.95f, 0.6f, 0.25f);
             AbilityLook stoneSpearLook = MakeLook($"{LookDir}/StoneSpearLook.asset", stoneSpear, geomancerAmber,
                 AbilityCoreShape.Gem, coreSize: 0.7f, trailTime: 0.3f, light: 4f, lightRange: 7f, muzzleSparks: 18,
                 impactSparks: 50, impactSpeed: 6f, castMotes: 60f, castLight: 2.5f,
-                castLoop: "CastHum", release: "BoltFire", impact: "EarthSlam", releaseVolume: 0.8f, impactVolume: 0.9f,
+                castLoop: "CastHum", release: "SpearLaunch", impact: "SpearImpact", releaseVolume: 0.8f, impactVolume: 0.9f,
                 debrisChunks: 25, debrisSpeed: 5f, debrisTint: new Color(0.35f, 0.25f, 0.15f, 0.25f), shake: 0.2f,
                 coreMesh: LoadModelMesh(SpearModelPath, "StoneSpear"));
             AbilityLook risingPillarLook = MakeLook($"{LookDir}/RisingPillarLook.asset", risingPillar, geomancerAmber,
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f, lightRange: 6f, muzzleSparks: 0,
                 impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
-                castLoop: null, release: "EarthSlam", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
+                castLoop: null, release: "EarthRise", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
             // Shaman: the wall shares the Geomancer's earth-amber; the totems are healing water and storm-blue.
             AbilityLook earthenWallLook = MakeLook($"{LookDir}/EarthenWallLook.asset", earthenWall, geomancerAmber,
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f, lightRange: 6f, muzzleSparks: 0,
                 impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
-                castLoop: null, release: "EarthSlam", impact: null, releaseVolume: 1f, impactVolume: 0.8f);
+                castLoop: null, release: "EarthRise", impact: null, releaseVolume: 1f, impactVolume: 0.8f);
             AbilityLook wellspringLook = MakeLook($"{LookDir}/WellspringTotemLook.asset", wellspring, new Color(0.4f, 1f, 0.75f),
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3f, lightRange: 9f, muzzleSparks: 0,
                 impactSparks: 25, impactSpeed: 3f, castMotes: 25f, castLight: 0f,
-                castLoop: null, release: "OrbRelease", impact: null, releaseVolume: 0.8f, impactVolume: 0.8f,
-                zoneModel: LoadModelMesh($"{ModelDir}/TotemWellspring.fbx", "TotemWellspring"), zoneRing: 0.6f);
+                castLoop: null, release: null, impact: "TotemPlant", releaseVolume: 0.8f, impactVolume: 0.9f,
+                zoneModel: LoadModelMesh($"{ModelDir}/TotemWellspring.fbx", "TotemWellspring"), zoneRing: 0.6f,
+                pulse: "WaterPulse", pulseVolume: 0.4f);
             AbilityLook thunderheadLook = MakeLook($"{LookDir}/ThunderheadTotemLook.asset", thunderhead, new Color(0.55f, 0.75f, 1f),
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 4f, lightRange: 10f, muzzleSparks: 0,
                 impactSparks: 30, impactSpeed: 6f, castMotes: 8f, castLight: 0f,
-                castLoop: null, release: "BoltFire", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f,
-                zoneModel: LoadModelMesh($"{ModelDir}/TotemThunderhead.fbx", "TotemThunderhead"), zoneRing: 0.25f);
+                castLoop: null, release: null, impact: "TotemPlant", releaseVolume: 0.9f, impactVolume: 0.9f,
+                zoneModel: LoadModelMesh($"{ModelDir}/TotemThunderhead.fbx", "TotemThunderhead"), zoneRing: 0.25f,
+                pulse: "ThunderZap", pulseVolume: 0.9f, maxDistance: 60f);
 
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
@@ -289,6 +293,16 @@ namespace Voxelforge.Editor
             EditorUtility.SetDirty(book);
             foreach (string error in book.Validate())
                 Debug.LogError($"[Voxelforge] Class book: {error}", book);
+
+            // Each class's crest for the class window (a look, so it lives in the HUD skin), in HeroClassId order.
+            var skin = AssetDatabase.LoadAssetAtPath<HudSkin>(HudSkinPath);
+            if (skin != null)
+            {
+                skin.classCrests = new Sprite[order.Length];
+                foreach (ClassDefinition definition in order)
+                    skin.classCrests[(int)definition.Id] = IconSprite($"Class{definition.name}");
+                EditorUtility.SetDirty(skin);
+            }
         }
 
         static ActionBarLoadout MakeLoadout(string name, params AbilityDefinition[] abilities)
@@ -326,12 +340,12 @@ namespace Voxelforge.Editor
             float castMotes, float castLight, string castLoop, string release, string impact, float releaseVolume,
             float impactVolume, int debrisChunks = 40, float debrisSpeed = 7f, Color debrisTint = default, float shake = 0.4f,
             float blastLight = 8f, float maxDistance = 40f, Mesh coreMesh = null, float coreSpin = 0f, Mesh zoneModel = null,
-            float zoneRing = 1f)
+            float zoneRing = 1f, string pulse = null, float pulseVolume = 0.6f)
         {
             var look = LoadOrCreate<AbilityLook>(path);
             var serialized = new SerializedObject(look);
             serialized.FindProperty("ability").objectReferenceValue = ability;
-            var icon = AssetDatabase.LoadAssetAtPath<Sprite>($"{IconDir}/{ability.name}.png");
+            Sprite icon = IconSprite(ability.name);
             if (icon != null)
                 serialized.FindProperty("icon").objectReferenceValue = icon;
             serialized.FindProperty("glow").colorValue = glow;
@@ -360,6 +374,8 @@ namespace Voxelforge.Editor
             serialized.FindProperty("coreSpin").floatValue = coreSpin;
             serialized.FindProperty("zoneModel").objectReferenceValue = zoneModel;
             serialized.FindProperty("zoneRing").floatValue = zoneRing;
+            serialized.FindProperty("pulse").objectReferenceValue = Clip(pulse);
+            serialized.FindProperty("pulseVolume").floatValue = pulseVolume;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(look);
             return look;
@@ -412,6 +428,23 @@ namespace Voxelforge.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
             return ability;
+        }
+
+        /// <summary>
+        /// The picture <c>Art/Textures/UI/Icons/&lt;name&gt;.png</c> from <c>build_spell_icons.py</c> as a sprite, setting it to
+        /// import as one first if it's new. Null if there's no such picture yet.
+        /// </summary>
+        static Sprite IconSprite(string name)
+        {
+            string path = $"{IconDir}/{name}.png";
+            if (AssetImporter.GetAtPath(path) is TextureImporter importer && importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.mipmapEnabled = false;
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         /// <summary>The mesh called <paramref name="name"/> in the model at <paramref name="path"/>, or null (with a warning).</summary>

@@ -1,4 +1,4 @@
-"""Renders Voxelforge's action bar spell icons (Roadmap 4.4).
+"""Renders Voxelforge's action bar spell icons (Roadmap 4.4) and the class crests (4.6).
 
 Run inside Tools/Blender/SpellIcons.blend (Text Editor, or exec over MCP). build_all() rebuilds every icon:
   - models each spell as a bold, flat-shaded toy (three-tone toon shading) with an inverted-hull ink outline
@@ -193,11 +193,237 @@ def earth_shatter():
     return (0.85, 0.6, 0.3)
 
 
+# ---- Roadmap 4.6: class spells and class crests ----
+
+def cube(name, size, location=(0, 0, 0), rotation=(0, 0, 0), scale=(1, 1, 1)):
+    return place(primitive(bpy.ops.mesh.primitive_cube_add, name, size=size), location, rotation, scale)
+
+
+def cylinder(name, radius, depth, location=(0, 0, 0), rotation=(0, 0, 0), vertices=16, scale=(1, 1, 1)):
+    obj = primitive(bpy.ops.mesh.primitive_cylinder_add, name, vertices=vertices, radius=radius, depth=depth)
+    return place(obj, location, rotation, scale)
+
+
+def cone(name, radius, depth, location=(0, 0, 0), rotation=(0, 0, 0), vertices=12):
+    obj = primitive(bpy.ops.mesh.primitive_cone_add, name, vertices=vertices, radius1=radius, radius2=0.0, depth=depth)
+    return place(obj, location, rotation)
+
+
+def prism(name, points, depth=0.18):
+    """A flat shape (x, z points on the screen, anticlockwise) given a little thickness toward the camera."""
+    bm = bmesh.new()
+    front = [bm.verts.new((x, -depth / 2, z)) for x, z in points]
+    back = [bm.verts.new((x, depth / 2, z)) for x, z in points]
+    bm.faces.new(front)
+    bm.faces.new(list(reversed(back)))
+    n = len(points)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((front[i], back[i], back[j], front[j]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return mesh_object(name, bm)
+
+
+def earth_blocks(prefix, cells, size=0.42, tilt=(18, 0, -28)):
+    """Blocks of glowing-cracked Earthen Rock at (column, row) cells, seen a little from above and to the side."""
+    from mathutils import Euler, Vector
+    earth = toon("Earthen_Rock", (0.25, 0.15, 0.08), (0.48, 0.32, 0.18), (0.72, 0.52, 0.3))
+    crack = toon("Earthen_Crack", (0.85, 0.42, 0.1), (1.0, 0.65, 0.2), (1.0, 0.9, 0.55))
+    turn = Euler([math.radians(r) for r in tilt]).to_matrix()
+    for i, (col, row) in enumerate(cells):
+        at = turn @ Vector((col * size, 0, row * size))
+        dress(cube(f"{prefix}{i}", size * 0.96, tuple(at), tilt), earth, 0.03)
+        # A glowing crack across each block's front.
+        front = at + turn @ Vector((0, -size * 0.5, 0))
+        dress(cube(f"{prefix}Crack{i}", size, tuple(front), tilt, (0.75, 0.04, 0.06)), crack, 0.0)
+
+
+def rune_hammer():
+    steel = toon("Hammer_Steel", (0.3, 0.33, 0.4), (0.62, 0.66, 0.74), (0.95, 0.97, 1.0))
+    gold = toon("Hammer_Gold", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
+    wood = toon("Hammer_Wood", (0.25, 0.12, 0.05), (0.45, 0.25, 0.12), (0.65, 0.42, 0.22))
+    glow = toon("Hammer_Rune", (0.9, 0.7, 0.2), (1.0, 0.92, 0.5), (1, 1, 1))
+    # Leaning right: the handle runs up along (0.57, 0.82) and the head lies across its top end.
+    tilt = (0, 35, 0)
+    dress(cylinder("Handle", 0.08, 1.5, (-0.2, 0, -0.3), tilt, 8), wood)
+    dress(cube("Head", 1, (0.25, 0, 0.36), tilt, (0.95, 0.5, 0.5)), steel)
+    for i, x in enumerate((-0.25, 0.25)):
+        dress(cube(f"Band{i}", 1, (0.25 + x * 0.82, 0, 0.36 - x * 0.57), tilt, (0.1, 0.56, 0.56)), gold, 0.03)
+    dress(cube("Rune", 1, (0.25, -0.26, 0.36), tilt, (0.32, 0.02, 0.22)), glow, 0.02)
+    dress(place(sphere("Pommel", 0.12), (-0.62, 0, -0.9)), gold, 0.03)
+    # Speed streaks behind it: it has been thrown.
+    for i, (z, length) in enumerate(((0.95, 0.6), (0.7, 0.9), (0.45, 0.5))):
+        dress(cylinder(f"Streak{i}", 0.035, length, (-0.75 - length * 0.3, -0.2, z), (0, 90, 0), 6), glow, 0.02)
+    return (1.0, 0.82, 0.3)
+
+
+def bulwark_rune():
+    gold = toon("Bulwark_Gold", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
+    steel = toon("Bulwark_Steel", (0.3, 0.33, 0.4), (0.62, 0.66, 0.74), (0.95, 0.97, 1.0))
+    glow = toon("Bulwark_Glow", (0.95, 0.75, 0.3), (1.0, 0.93, 0.6), (1, 1, 1))
+    # A round shield face on, with a gold rim and a glowing rune on its face.
+    dress(cylinder("Shield", 0.95, 0.18, (0, 0, 0), (90, 0, 0), 24), steel)
+    torus = primitive(bpy.ops.mesh.primitive_torus_add, "Rim", major_radius=0.95, minor_radius=0.09, major_segments=40,
+                      minor_segments=8)
+    dress(place(torus, (0, -0.05, 0), (90, 0, 0)), gold, 0.03, smooth=True)
+    stem = prism("RuneStem", [(-0.09, -0.6), (0.09, -0.6), (0.09, 0.6), (-0.09, 0.6)])
+    dress(place(stem, (0, -0.15, 0)), glow, 0.03)
+    for i, (x, z) in enumerate(((-0.3, 0.25), (0.3, 0.25), (-0.3, -0.25), (0.3, -0.25))):
+        arm = prism(f"RuneArm{i}", [(-0.25, -0.06), (0.25, -0.06), (0.25, 0.06), (-0.25, 0.06)])
+        dress(place(arm, (x * 0.6, -0.15, z), (0, 35 if x * z > 0 else -35, 0)), glow, 0.03)
+    return (1.0, 0.8, 0.35)
+
+
+def hallowed_forge():
+    gold = toon("Forge_Gold", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
+    iron = toon("Forge_Iron", (0.15, 0.15, 0.18), (0.32, 0.32, 0.36), (0.55, 0.55, 0.6))
+    flame = toon("Forge_Flame", (0.85, 0.35, 0.05), (1.0, 0.65, 0.15), (1.0, 0.95, 0.55))
+    # A golden ring on the ground seen at a slant, an anvil in it and holy flames rising round it.
+    torus = primitive(bpy.ops.mesh.primitive_torus_add, "Ring", major_radius=1.0, minor_radius=0.08, major_segments=48,
+                      minor_segments=8)
+    dress(place(torus, (0, 0, -0.55), (62, 0, 0)), gold, 0.03, smooth=True)
+    dress(cube("AnvilTop", 1, (0, 0, -0.08), (0, 0, 0), (0.75, 0.32, 0.18)), iron)
+    dress(cube("AnvilFoot", 1, (0, 0, -0.38), (0, 0, 0), (0.35, 0.28, 0.42)), iron)
+    dress(cone("AnvilHorn", 0.11, 0.35, (0.5, 0, -0.06), (0, 90, 0)), iron, 0.03)
+    for i in range(6):
+        a = i * math.pi / 3 + 0.3
+        dress(cone(f"Flame{i}", 0.13, 0.55 + 0.15 * (i % 2),
+                   (math.cos(a) * 0.95, math.sin(a) * 0.5, -0.4 + math.sin(a) * 0.14 + 0.3)), flame, 0.03, smooth=True)
+    return (1.0, 0.65, 0.2)
+
+
+def stone_spear():
+    rock = toon("Spear_Rock", (0.28, 0.17, 0.09), (0.55, 0.38, 0.22), (0.82, 0.68, 0.45))
+    crack = toon("Spear_Glow", (0.85, 0.42, 0.1), (1.0, 0.65, 0.2), (1.0, 0.9, 0.55))
+    # Pointing up and right along (0.64, 0.77), the point on the shaft's top end.
+    tilt = (0, 40, 0)
+    dress(cylinder("Shaft", 0.13, 1.6, (-0.2, 0, -0.25), tilt, 6), rock)
+    dress(cone("Point", 0.26, 0.85, (0.55, 0, 0.62), tilt, 6), rock)
+    dress(cylinder("Glow", 0.14, 0.12, (0.3, 0, 0.33), tilt, 6), crack, 0.02)
+    rng = random.Random(8)
+    for i, (x, z, s) in enumerate(((-0.75, -0.75, 0.2), (-0.45, -1.0, 0.14), (-1.0, -0.35, 0.16), (0.05, -0.85, 0.11))):
+        dress(cube(f"Chip{i}", s, (x, -0.2, z), (rng.uniform(-40, 40), rng.uniform(-40, 40), rng.uniform(-40, 40))),
+              rock, 0.025)
+    return (0.85, 0.55, 0.25)
+
+
+def rising_pillar():
+    earth_blocks("Pillar", [(0, -2), (0, -1), (0, 0), (0, 1)], size=0.5)
+    up = toon("Pillar_Up", (0.85, 0.5, 0.15), (1.0, 0.75, 0.3), (1.0, 0.95, 0.65))
+    arrow = prism("Arrow", [(-0.12, -0.3), (0.12, -0.3), (0.12, 0.1), (0.3, 0.1), (0.0, 0.45), (-0.3, 0.1), (-0.12, 0.1)])
+    dress(place(arrow, (0.0, -0.4, 0.95)), up, 0.03)
+    for i, x in enumerate((-0.75, 0.75)):
+        dress(cylinder(f"Rush{i}", 0.04, 0.9, (x, -0.3, -0.1), (0, 0, 0), 6), up, 0.02)
+    return (0.95, 0.6, 0.25)
+
+
+def earthen_wall():
+    earth_blocks("Wall", [(c, r) for r in (-1, 0, 1) for c in (-2, -1, 0, 1, 2)], size=0.42, tilt=(14, 0, -24))
+    return (0.95, 0.6, 0.25)
+
+
+def totem_post(prefix):
+    wood = toon("Totem_Wood", (0.28, 0.14, 0.06), (0.52, 0.3, 0.14), (0.75, 0.5, 0.28))
+    stone = toon("Totem_Stone", (0.3, 0.3, 0.33), (0.52, 0.52, 0.55), (0.75, 0.75, 0.78))
+    dress(cube(f"{prefix}Base", 1, (0, 0, -1.0), (0, 0, 0), (0.8, 0.6, 0.18)), stone)
+    dress(cube(f"{prefix}Post", 1, (0, 0, -0.35), (0, 0, 0), (0.42, 0.42, 1.2)), wood)
+
+
+def wellspring_totem():
+    totem_post("Well")
+    heal = toon("Well_Heal", (0.15, 0.6, 0.25), (0.35, 0.9, 0.45), (0.8, 1.0, 0.8))
+    water = toon("Well_Water", (0.1, 0.45, 0.6), (0.3, 0.8, 0.9), (0.85, 1.0, 1.0))
+    bowl = toon("Well_Bowl", (0.2, 0.1, 0.05), (0.38, 0.22, 0.1), (0.55, 0.35, 0.18))
+    for i, z in enumerate((-0.55, -0.3)):
+        dress(cube(f"Band{i}", 1, (0, 0, z), (0, 0, 0), (0.46, 0.46, 0.07)), heal, 0.02)
+    dress(cylinder("Bowl", 0.6, 0.28, (0, 0, 0.38), (0, 0, 0), 16), bowl)
+    dress(cylinder("Water", 0.55, 0.06, (0, -0.03, 0.54), (14, 0, 0), 16), water, 0.02)
+    drop = primitive(bpy.ops.mesh.primitive_uv_sphere_add, "Drop", radius=0.18, segments=16, ring_count=8)
+    dress(place(drop, (0, -0.1, 0.95), (0, 0, 0), (1, 1, 1.4)), water, 0.03, smooth=True)
+    dress(cone("DropTip", 0.13, 0.22, (0, -0.1, 1.2)), water, 0.03, smooth=True)
+    # A green plus floating beside it: it heals.
+    for i, (w, h) in enumerate(((0.36, 0.11), (0.11, 0.36))):
+        dress(cube(f"Plus{i}", 1, (0.8, -0.3, 0.55), (0, 0, 0), (w, 0.1, h)), heal, 0.025)
+    return (0.3, 0.9, 0.7)
+
+
+def thunderhead_totem():
+    totem_post("Thunder")
+    wood = toon("Thunder_Dark", (0.18, 0.1, 0.06), (0.32, 0.19, 0.1), (0.48, 0.3, 0.17))
+    gold = toon("Thunder_Gold", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
+    bolt = toon("Thunder_Bolt", (0.85, 0.75, 0.15), (1.0, 0.95, 0.4), (1, 1, 1))
+    dress(cube("Head", 1, (0, 0, 0.42), (0, 0, 0), (0.48, 0.42, 0.36)), wood)
+    dress(cone("Beak", 0.11, 0.3, (0, -0.32, 0.38), (90, 0, 0), 4), gold, 0.03)
+    for sx in (-1, 1):
+        wing = prism(f"Wing{sx}", [(0, -0.12), (0.85, 0.15), (0.95, 0.45), (0.55, 0.32), (0, 0.15)])
+        dress(place(wing, (sx * 0.18, 0, 0.3), (0, 0, 0), (sx, 1, 1)), wood, 0.03)
+    # A lightning bolt striking down beside it.
+    zig = prism("Bolt", [(0.15, 1.25), (-0.15, 0.55), (0.05, 0.55), (-0.25, -0.2), (0.25, 0.65), (0.05, 0.65), (0.35, 1.25)])
+    dress(place(zig, (0.75, -0.4, -0.3), (0, 0, 0), (0.9, 1, 0.9)), bolt, 0.03)
+    return (0.5, 0.7, 1.0)
+
+
+def crest_adventurer():
+    leather = toon("Crest_Pack", (0.3, 0.17, 0.08), (0.55, 0.34, 0.17), (0.78, 0.55, 0.32))
+    steel = toon("Crest_Steel", (0.3, 0.33, 0.4), (0.62, 0.66, 0.74), (0.95, 0.97, 1.0))
+    gold = toon("Crest_Gold", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
+    # A traveller's pack with a sword through its straps.
+    dress(cube("Pack", 1, (0, 0, -0.2), (0, 0, 0), (0.95, 0.5, 1.05)), leather)
+    dress(cube("Flap", 1, (0, -0.2, 0.15), (0, 0, 0), (1.0, 0.2, 0.42)), leather, 0.03)
+    dress(cube("Buckle", 1, (0, -0.32, 0.0), (0, 0, 0), (0.18, 0.05, 0.18)), gold, 0.02)
+    dress(cube("Blade", 1, (0.1, -0.35, 0.15), (0, -40, 0), (0.16, 0.06, 1.9)), steel, 0.03)
+    dress(cube("Guard", 1, (-0.25, -0.38, -0.26), (0, -40, 0), (0.55, 0.1, 0.1)), gold, 0.03)
+    return (0.62, 0.5, 0.36)
+
+
+def crest_paladin():
+    rune_hammer()
+    return (1.0, 0.78, 0.25)
+
+
+def crest_geomancer():
+    crystal = toon("Crest_Crystal", (0.55, 0.25, 0.05), (0.95, 0.6, 0.2), (1.0, 0.9, 0.55))
+    rock = toon("Crest_Rock", (0.28, 0.17, 0.09), (0.55, 0.38, 0.22), (0.82, 0.68, 0.45))
+    dress(cube("Rock", 1, (0, 0, -0.75), (10, 0, 15), (1.3, 0.8, 0.55)), rock)
+    for i, (x, h, r, tilt) in enumerate(((0, 0.95, 0.32, 0), (-0.5, 0.6, 0.22, 25), (0.48, 0.7, 0.24, -22))):
+        gem = dress(bipyramid(f"Crystal{i}", r, h, h * 0.25), crystal)
+        place(gem, (x, -0.1, -0.1 + h * 0.3), (0, tilt, 0))
+    return (0.88, 0.48, 0.2)
+
+
+def crest_shaman():
+    totem_post("Crest")
+    wood = toon("Crest_Face", (0.18, 0.1, 0.06), (0.32, 0.19, 0.1), (0.48, 0.3, 0.17))
+    paint = toon("Crest_Paint", (0.05, 0.45, 0.6), (0.2, 0.7, 0.85), (0.7, 0.95, 1.0))
+    feather = toon("Crest_Feather", (0.6, 0.3, 0.1), (0.9, 0.55, 0.2), (1.0, 0.85, 0.5))
+    dress(cube("Face", 1, (0, 0, 0.45), (0, 0, 0), (0.6, 0.45, 0.55)), wood)
+    for sx in (-1, 1):
+        dress(cube(f"Eye{sx}", 1, (sx * 0.14, -0.24, 0.52), (0, 0, 0), (0.12, 0.04, 0.08)), paint, 0.02)
+        for i, tilt in enumerate((20, 45)):
+            plume = cone(f"Feather{sx}{i}", 0.09, 0.6, (sx * (0.35 + 0.12 * i), 0, 0.85 + 0.05 * i), (0, sx * -tilt, 0))
+            dress(plume, feather, 0.025, smooth=True)
+    dress(cube("Mouth", 1, (0, -0.24, 0.3), (0, 0, 0), (0.3, 0.04, 0.06)), paint, 0.02)
+    return (0.2, 0.7, 0.85)
+
+
 SPELLS = {
     "ManaBolt": mana_bolt,
     "ArcaneOrb": arcane_orb,
     "Pyroblast": pyroblast,
     "EarthShatter": earth_shatter,
+    "RuneHammer": rune_hammer,
+    "BulwarkRune": bulwark_rune,
+    "HallowedForge": hallowed_forge,
+    "StoneSpear": stone_spear,
+    "RisingPillar": rising_pillar,
+    "EarthenWall": earthen_wall,
+    "WellspringTotem": wellspring_totem,
+    "ThunderheadTotem": thunderhead_totem,
+    # Class crests for the class window (Roadmap 4.6), named Class<ClassDefinition asset>.
+    "ClassAdventurer": crest_adventurer,
+    "ClassRuneforgedPaladin": crest_paladin,
+    "ClassGeomancerMage": crest_geomancer,
+    "ClassShaman": crest_shaman,
 }
 
 
@@ -299,9 +525,10 @@ def render_icon(name, build):
     print("wrote", path)
 
 
-def build_all():
+def build_all(only=None):
     for name, build in SPELLS.items():
-        render_icon(name, build)
+        if only is None or name in only:
+            render_icon(name, build)
 
 
 if __name__ == "__main__":

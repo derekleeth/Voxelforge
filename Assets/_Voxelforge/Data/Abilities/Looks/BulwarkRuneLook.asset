@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BulwarkRuneLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 48f35b685227072419ad36013e613c4c, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: bd5111595e73d44428b4a2cf26a79dc7, type: 3}
   glow: {r: 1, g: 0.86, b: 0.42, a: 1}
   coreShape: 0
   coreSize: 0.2
@@ -21,6 +21,8 @@ MonoBehaviour:
   coreSpin: 0
   zoneModel: {fileID: 0}
   zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
   trailTime: 0.2
   lightIntensity: 3
   lightRange: 6
@@ -36,9 +38,9 @@ MonoBehaviour:
   castLight: 0
   castLoop: {fileID: 0}
   castLoopVolume: 0.5
-  release: {fileID: 8300000, guid: a7f32b34f69e4044eb43a0deadb6a89e, type: 3}
+  release: {fileID: 0}
   releaseVolume: 0.7
-  impact: {fileID: 0}
+  impact: {fileID: 8300000, guid: eaa9b13c82a7e7f4f9f4b0822b0c8bc5, type: 3}
   impactVolume: 0.8
   fizzle: {fileID: 0}
   maxDistance: 40
