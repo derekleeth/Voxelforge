@@ -35,7 +35,7 @@
 - Things the world does by itself (like rock crumbling after its caster went home) still need a name in the save, so the world got its own: "World".
 
 ### Next up
-- [ ] Play-test 4.6 step F: the new icons, class crests and sounds
+- [x] Play-test 4.6 step F: the new icons, class crests and sounds ✅
 - [ ] Roadmap **4.7 Playable Races & the Thunderhoof**
 
 ---
