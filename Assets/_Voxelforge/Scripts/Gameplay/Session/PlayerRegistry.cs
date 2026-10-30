@@ -54,6 +54,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("What spells can hurt (Roadmap 4.6): Training Dummies for now, creatures in Phase 5.")]
         [SerializeField] CombatTargets targets;
 
+        [Tooltip("Earth raised by spells (Roadmap 4.6): Rising Pillar, Earthen Wall.")]
+        [SerializeField] EarthWorks earth;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -71,6 +74,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Host only: what spells can hurt (Roadmap 4.6).</summary>
         public CombatTargets Targets => targets;
+
+        /// <summary>Host only: earth raised by spells (Roadmap 4.6).</summary>
+        public EarthWorks Earth => earth;
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 
@@ -113,6 +119,9 @@ namespace Voxelforge.Gameplay
                 return null;
             }
 
+            // 255 is PlayerId.World (Roadmap 4.6): wrap round before reaching it. 254 joins in one session won't happen.
+            if (_nextId == byte.MaxValue)
+                _nextId = 1;
             var playerId = new PlayerId(_nextId++);
             PlayerController player = Instantiate(playerPrefab);
             player.ServerInitialize(playerId, localSlot, uuid, worldManager, this, spawnColumn, spawnTopY, profile);

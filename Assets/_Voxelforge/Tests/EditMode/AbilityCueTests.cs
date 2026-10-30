@@ -151,6 +151,8 @@ namespace Voxelforge.Tests
         [TestCase(typeof(PlayerSupport))]
         [TestCase(typeof(AbilityZone))]
         [TestCase(typeof(ZoneRules))]
+        [TestCase(typeof(EarthWorks))]
+        [TestCase(typeof(EarthTimers))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

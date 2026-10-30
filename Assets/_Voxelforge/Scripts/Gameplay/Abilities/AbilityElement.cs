@@ -35,6 +35,11 @@ namespace Voxelforge.Gameplay
         /// <see cref="AbilityZone"/>).
         /// </summary>
         Zone,
+        /// <summary>
+        /// A column of Earthen Rock rises under the caster one block at a time, lifting them (Roadmap 4.6, Rising Pillar;
+        /// <see cref="EarthWorks"/>).
+        /// </summary>
+        Pillar,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>

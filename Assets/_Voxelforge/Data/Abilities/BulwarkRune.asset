@@ -33,3 +33,6 @@ MonoBehaviour:
   duration: 15
   pulseInterval: 1
   aimCone: 12
+  earthHeight: 0
+  earthWidth: 0
+  earthStep: 0.08

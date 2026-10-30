@@ -39,5 +39,10 @@ namespace Voxelforge.Voxels
         /// hay bales back. A blast-proof solid prop; an axe removes it.
         /// </summary>
         public const ushort TrainingDummy = 15;
+        /// <summary>
+        /// Earth raised by a spell (Roadmap 4.6: Rising Pillar, Earthen Wall): packed slabs with glowing cracks. It
+        /// crumbles back to air after a while (<c>EarthWorks</c>) and drops nothing when mined.
+        /// </summary>
+        public const ushort EarthenRock = 16;
     }
 }

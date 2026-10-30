@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: StoneSpearLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: 37ee2a50d98053340953bb71c97d1312, type: 2}
+  icon: {fileID: 0}
+  glow: {r: 0.95, g: 0.6, b: 0.25, a: 1}
+  coreShape: 0
+  coreSize: 0.7
+  coreMesh: {fileID: 7750366800952002803, guid: 5b53c60c827454f4299c7f5e77b3df4c, type: 3}
+  coreSpin: 0
+  trailTime: 0.3
+  lightIntensity: 4
+  lightRange: 7
+  muzzleSparks: 18
+  impactSparks: 50
+  impactSpeed: 6
+  debrisChunks: 25
+  debrisSpeed: 5
+  debrisTint: {r: 0.35, g: 0.25, b: 0.15, a: 0.25}
+  shakeStrength: 0.2
+  blastLight: 8
+  castMotesPerSecond: 60
+  castLight: 2.5
+  castLoop: {fileID: 8300000, guid: f758a5df429b0764da732022f63cf5e7, type: 3}
+  castLoopVolume: 0.5
+  release: {fileID: 8300000, guid: 88978baaaa080de45a1ee4e4a72866b8, type: 3}
+  releaseVolume: 0.8
+  impact: {fileID: 8300000, guid: d99a921bb2ed1b3449d347347d0ec708, type: 3}
+  impactVolume: 0.9
+  fizzle: {fileID: 0}
+  maxDistance: 40

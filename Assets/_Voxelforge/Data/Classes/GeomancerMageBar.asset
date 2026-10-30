@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: GeomancerMageBar
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ActionBarLoadout
   slots:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 37ee2a50d98053340953bb71c97d1312, type: 2}
   - {fileID: 11400000, guid: e41f2045986f9624ead6b234eaa2887f, type: 2}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 78a0b25d267999b4c8b46379661c8931, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}

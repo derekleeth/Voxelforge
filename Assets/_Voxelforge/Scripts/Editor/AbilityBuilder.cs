@@ -23,6 +23,8 @@ namespace Voxelforge.Editor
     /// <para>The Runeforged Paladin's spells (Roadmap 4.6): <b>Rune Hammer</b> (a glowing hammer thrown end over end),
     /// <b>Bulwark Rune</b> (a shield on the partner you aim at, or you) and <b>Hallowed Forge</b> (a golden circle at your
     /// feet that heals heroes in it). Until step F they borrow sounds from the older spells.</para>
+    /// <para>The Geomancer Mage's (Roadmap 4.6): <b>Stone Spear</b> (a heavy lance of rock with a short cast) and
+    /// <b>Rising Pillar</b> (Earthen Rock rises under you, five blocks, and crumbles after 30 s), with EarthShatter.</para>
     /// <para>And the classes (Roadmap 4.6) in <c>Data/Classes/</c>: each <see cref="ClassDefinition"/>, its action bar
     /// loadout and the <see cref="ClassBook"/>, in the order the class window shows them.</para>
     /// </summary>
@@ -36,6 +38,9 @@ namespace Voxelforge.Editor
         public const string RuneHammerPath = AbilityDir + "/RuneHammer.asset";
         public const string BulwarkRunePath = AbilityDir + "/BulwarkRune.asset";
         public const string HallowedForgePath = AbilityDir + "/HallowedForge.asset";
+        public const string StoneSpearPath = AbilityDir + "/StoneSpear.asset";
+        public const string RisingPillarPath = AbilityDir + "/RisingPillar.asset";
+        const string SpearModelPath = "Assets/_Voxelforge/Art/Models/Props/StoneSpear.fbx";
         const string HammerModelPath = "Assets/_Voxelforge/Art/Models/Props/RuneHammer.fbx";
         public const string BookPath = AbilityDir + "/AbilityBook.asset";
         public const string LoadoutPath = AbilityDir + "/DefaultLoadout.asset";
@@ -94,10 +99,24 @@ namespace Voxelforge.Editor
                 speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Zone,
                 healAmount: 5f, duration: 6f, pulseInterval: 1f);
 
+            // ---- Geomancer Mage (Roadmap 4.6) ----
+            AbilityDefinition stoneSpear = MakeAbility(StoneSpearPath, AbilityIds.StoneSpear, "Stone Spear",
+                "Wrench a lance of rock from the earth and hurl it. Slow to call up, but it hits harder than anything quick.",
+                AbilityElement.Earth, manaCost: 20f, cooldown: 3f, castTime: 1f, range: 40f, aoeRadius: 0f,
+                speed: 45f, blockDamage: 80f, creatureDamage: 60f);
+            AbilityDefinition risingPillar = MakeAbility(RisingPillarPath, AbilityIds.RisingPillar, "Rising Pillar",
+                "A column of rock bursts up under your feet and lifts you five blocks high. It crumbles away after 30 seconds.",
+                AbilityElement.Earth, manaCost: 25f, cooldown: 12f, castTime: 0f, range: 0f, aoeRadius: 0f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Pillar,
+                duration: 30f, earthHeight: 5, earthStep: 0.08f);
+
             var book = LoadOrCreate<AbilityBook>(BookPath);
             var serialized = new SerializedObject(book);
             SerializedProperty list = serialized.FindProperty("abilities");
-            AbilityDefinition[] all = { manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge };
+            AbilityDefinition[] all =
+            {
+                manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar,
+            };
             list.arraySize = all.Length;
             for (int i = 0; i < all.Length; i++)
                 list.GetArrayElementAtIndex(i).objectReferenceValue = all[i];
@@ -156,6 +175,18 @@ namespace Voxelforge.Editor
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3.5f, lightRange: 12f, muzzleSparks: 0,
                 impactSparks: 40, impactSpeed: 3f, castMotes: 70f, castLight: 3f,
                 castLoop: "CastHum", release: "OrbRelease", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
+            // Geomancer: warm earth-amber, like the glowing cracks in Earthen Rock.
+            var geomancerAmber = new Color(0.95f, 0.6f, 0.25f);
+            AbilityLook stoneSpearLook = MakeLook($"{LookDir}/StoneSpearLook.asset", stoneSpear, geomancerAmber,
+                AbilityCoreShape.Gem, coreSize: 0.7f, trailTime: 0.3f, light: 4f, lightRange: 7f, muzzleSparks: 18,
+                impactSparks: 50, impactSpeed: 6f, castMotes: 60f, castLight: 2.5f,
+                castLoop: "CastHum", release: "BoltFire", impact: "EarthSlam", releaseVolume: 0.8f, impactVolume: 0.9f,
+                debrisChunks: 25, debrisSpeed: 5f, debrisTint: new Color(0.35f, 0.25f, 0.15f, 0.25f), shake: 0.2f,
+                coreMesh: LoadModelMesh(SpearModelPath, "StoneSpear"));
+            AbilityLook risingPillarLook = MakeLook($"{LookDir}/RisingPillarLook.asset", risingPillar, geomancerAmber,
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f, lightRange: 6f, muzzleSparks: 0,
+                impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: "EarthSlam", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
 
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
@@ -164,6 +195,7 @@ namespace Voxelforge.Editor
             AbilityLook[] allLooks =
             {
                 manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
+                stoneSpearLook, risingPillarLook,
             };
             list.arraySize = allLooks.Length;
             for (int i = 0; i < allLooks.Length; i++)
@@ -171,7 +203,7 @@ namespace Voxelforge.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(lookBook);
 
-            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge);
+            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar);
             return manaBolt;
         }
 
@@ -180,7 +212,8 @@ namespace Voxelforge.Editor
         /// left empty, and the class window says "Coming soon".
         /// </summary>
         static void BuildClasses(ActionBarLoadout adventurerBar, AbilityDefinition earthShatter, AbilityDefinition runeHammer,
-            AbilityDefinition bulwarkRune, AbilityDefinition hallowedForge)
+            AbilityDefinition bulwarkRune, AbilityDefinition hallowedForge, AbilityDefinition stoneSpear,
+            AbilityDefinition risingPillar)
         {
             if (!AssetDatabase.IsValidFolder(ClassDir))
                 AssetDatabase.CreateFolder("Assets/_Voxelforge/Data", "Classes");
@@ -197,7 +230,7 @@ namespace Voxelforge.Editor
                 "A scholar of stone who bends the land itself. Flings stone spears, shatters the ground into craters and " +
                 "rides a pillar of rock up out of trouble.",
                 maxHealth: 90f, maxMana: 130f, manaRegen: 12f,
-                MakeLoadout("GeomancerMageBar", null, earthShatter));
+                MakeLoadout("GeomancerMageBar", stoneSpear, earthShatter, risingPillar));
             ClassDefinition shaman = MakeClass("Shaman", HeroClassId.Shaman, "Shaman",
                 "A wise caller of the elements. Raises walls of living earth and plants totems that heal friends or call " +
                 "down lightning on foes.",
@@ -302,7 +335,8 @@ namespace Voxelforge.Editor
             AbilityElement element, float manaCost, float cooldown, float castTime, float range, float aoeRadius, float speed,
             float blockDamage, float creatureDamage, float craterFalloff = 0.25f, float craterFlatten = 1f,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float healAmount = 0f, float shieldAmount = 0f,
-            float duration = 0f, float pulseInterval = 1f, float aimCone = 12f)
+            float duration = 0f, float pulseInterval = 1f, float aimCone = 12f, int earthHeight = 0, int earthWidth = 0,
+            float earthStep = 0.08f)
         {
             var ability = LoadOrCreate<AbilityDefinition>(path);
             var serialized = new SerializedObject(ability);
@@ -327,6 +361,9 @@ namespace Voxelforge.Editor
             serialized.FindProperty("duration").floatValue = duration;
             serialized.FindProperty("pulseInterval").floatValue = pulseInterval;
             serialized.FindProperty("aimCone").floatValue = aimCone;
+            serialized.FindProperty("earthHeight").intValue = earthHeight;
+            serialized.FindProperty("earthWidth").intValue = earthWidth;
+            serialized.FindProperty("earthStep").floatValue = earthStep;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
             return ability;

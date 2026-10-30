@@ -429,6 +429,30 @@ def make_log_top(g):
     return g.outputs(g.shade(color, height, 0.7, 1.1), height, 0.85)
 
 
+def make_earthen_rock(g):
+    """Earth raised by magic (Roadmap 4.6): big packed slabs of brown earth with faint amber light in the cracks, so it
+    reads as a spell's work that won't last, not as natural ground."""
+    offset = (7.0, -5.0, 3.0, 9.0)
+    cells = g.torus(0.85, offset)
+    edge, _ = g.voronoi(cells, "DISTANCE_TO_EDGE", randomness=0.75)
+    _, cell_random = g.voronoi(cells, "F1", randomness=0.75)
+    grit = g.noise(g.torus(5.0, offset), detail=6, roughness=0.65)
+    clods = g.noise(g.torus(2.2, offset), detail=3, roughness=0.5)
+    bulge = g.remap(edge, 0.0, 0.2, smooth=True)
+    height = g.math("ADD", g.math("MULTIPLY", bulge, g.remap(cell_random, 0, 1, 0.7, 1.0)),
+                    g.math("ADD", g.math("MULTIPLY", grit, 0.1), g.math("MULTIPLY", clods, 0.08)))
+    height = g.math("MULTIPLY", height, 0.88, clamp=True)
+    base = g.ramp(cell_random, [(0.0, (0.34, 0.22, 0.13)), (0.5, (0.44, 0.30, 0.18)), (1.0, (0.53, 0.38, 0.23))])
+    base = g.mix(base, g.ramp(grit, [(0.3, (0.27, 0.18, 0.11)), (0.7, (0.60, 0.46, 0.30))]), 0.25)
+    # The cracks between slabs glow a warm amber, brightest deep in the crack.
+    crack = g.remap(edge, 0.02, 0.0, smooth=True)
+    color = g.mix(g.shade(base, height, 0.5, 1.12),
+                  g.ramp(crack, [(0.0, (0.78, 0.40, 0.12)), (1.0, (1.0, 0.78, 0.40))]), crack)
+    emission = g.math("MULTIPLY", crack, 0.55)
+    roughness = g.remap(crack, 0.0, 1.0, 0.88, 0.4)
+    return g.outputs(color, height, roughness, emission)
+
+
 # Layer name -> (recipe, normal strength, AO strength, tiles vertically). Names must match the BlockTexture assets
 # in Unity. Grass Side doesn't tile vertically (grass on top, dirt below), so its edges aren't wrapped into each other.
 LAYERS = {
@@ -443,6 +467,7 @@ LAYERS = {
     "ManaCrystalOre": (make_mana_crystal_ore, 5.0, 1.0, True),
     "LogBark": (make_log_bark, 4.0, 0.9, True),
     "LogTop": (make_log_top, 2.5, 0.6, False),
+    "EarthenRock": (make_earthen_rock, 4.5, 0.9, True),
 }
 
 

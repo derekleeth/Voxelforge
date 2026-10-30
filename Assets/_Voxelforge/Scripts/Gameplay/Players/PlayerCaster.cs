@@ -11,7 +11,7 @@ namespace Voxelforge.Gameplay
     /// This player's spells (Roadmap 4.1): their mana pool, cooldowns and cast bar. <b>The host</b> runs the rules
     /// (<see cref="AbilityCaster"/>) from the input it received, and when a cast finishes it hands the ability to its
     /// delivery: <see cref="PlayerStaff"/> for projectiles and ground slams, <see cref="PlayerSupport"/> for shields and
-    /// zones (CLAUDE.md Laws #1 and #2).
+    /// zones, <see cref="EarthWorks"/> for raised earth (CLAUDE.md Laws #1 and #2).
     /// <list type="bullet">
     /// <item>Holding Mine with a ranged item (the M.G.R.S.) casts that item's ability, as in D-019.</item>
     /// <item>The action bar buttons cast the slots of <see cref="PlayerActionBar"/> (4.4).</item>
@@ -235,6 +235,11 @@ namespace Voxelforge.Gameplay
                 case AbilityDelivery.Zone:
                     if (_support != null)
                         _support.ServerZone(ability);
+                    break;
+                case AbilityDelivery.Pillar:
+                    EarthWorks earth = _player.Registry != null ? _player.Registry.Earth : null;
+                    if (earth != null)
+                        earth.ServerRaisePillar(_player, ability);
                     break;
             }
         }

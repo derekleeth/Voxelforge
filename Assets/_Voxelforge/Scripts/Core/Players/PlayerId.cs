@@ -21,6 +21,13 @@ namespace Voxelforge.Core
         /// <summary>No player, e.g. a block the world generator placed.</summary>
         public static PlayerId None => default;
 
+        /// <summary>
+        /// The world itself, for changes nobody makes at the time, e.g. Earthen Rock crumbling back to air after a spell
+        /// raised it (Roadmap 4.6), maybe long after its caster left. Valid, so edits in its name are allowed and logged.
+        /// The host never hands it to a player.
+        /// </summary>
+        public static PlayerId World => new PlayerId(byte.MaxValue);
+
         public bool IsValid => Value != 0;
 
         public bool Equals(PlayerId other) => Value == other.Value;
@@ -33,6 +40,6 @@ namespace Voxelforge.Core
 
         public static bool operator !=(PlayerId a, PlayerId b) => !a.Equals(b);
 
-        public override string ToString() => IsValid ? $"P{Value}" : "None";
+        public override string ToString() => Value == byte.MaxValue ? "World" : IsValid ? $"P{Value}" : "None";
     }
 }

@@ -1,6 +1,6 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
 Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags, the
-drawstring loot bag and the Storage Chest (4.5), the Training Dummy and the Rune Hammer (4.6).
+drawstring loot bag and the Storage Chest (4.5), the Training Dummy, the Rune Hammer and the Stone Spear (4.6).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -900,6 +900,22 @@ def build_rune_hammer():
     return b
 
 
+# The Stone Spear (4.6): the Geomancer's lance of rock, flown as glowing light like the Rune Hammer but point first,
+# with no spin. Its origin is its middle; it points along +Y (Unity +Z, the way it flies).
+def build_stone_spear():
+    b = MeshBuilder()
+    along = Vector((0, 1, 0))
+    b.part("stone", cylinder((0, -0.6, 0), (0, 0.15, 0), 0.09, 0.16, 6, phase=0.3), grain=along)  # Shaft, thick at the head.
+    b.part("stone", cylinder((0, 0.15, 0), (0, 0.8, 0), 0.2, 0.0, 6, phase=0.3), grain=along)  # A big, rough point.
+    # Jagged shards jutting back from the head, like a rock that split off a cliff.
+    for i, angle in enumerate((0.0, 2.1, 4.2)):
+        out = Vector((math.cos(angle), 0, math.sin(angle)))
+        base = Vector((0, 0.3, 0)) + out * 0.12
+        tip = Vector((0, -0.1 - 0.05 * i, 0)) + out * 0.3
+        b.part("stone", cylinder(base, tip, 0.09, 0.0, 4, phase=angle), grain=along)
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -919,6 +935,7 @@ MODELS = {
     "ChestLid": build_chest_lid,
     "TrainingDummy": build_training_dummy,
     "RuneHammer": build_rune_hammer,
+    "StoneSpear": build_stone_spear,
 }
 
 

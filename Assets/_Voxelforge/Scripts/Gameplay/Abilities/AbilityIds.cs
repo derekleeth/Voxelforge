@@ -29,5 +29,11 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Runeforged Paladin (Roadmap 4.6): a golden circle at your feet that heals heroes standing in it.</summary>
         public const ushort HallowedForge = 7;
+
+        /// <summary>Geomancer Mage (Roadmap 4.6): a fast, heavy lance of stone.</summary>
+        public const ushort StoneSpear = 8;
+
+        /// <summary>Geomancer Mage (Roadmap 4.6): a column of Earthen Rock rises under you and lifts you up.</summary>
+        public const ushort RisingPillar = 9;
     }
 }

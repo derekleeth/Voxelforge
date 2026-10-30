@@ -41,6 +41,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("What's in the Storage Chests (Roadmap 4.5), saved with the world.")]
         [SerializeField] StorageChests chests;
 
+        [Tooltip("Earthen Rock raised by spells (Roadmap 4.6): its crumble timers are saved with the world.")]
+        [SerializeField] EarthWorks earth;
+
         [Tooltip("The save's folder name. -world <name> on the command line overrides it.")]
         [SerializeField] string worldName = "World1";
 
@@ -60,7 +63,7 @@ namespace Voxelforge.Gameplay
         Dictionary<PlayerUuid, PlayerProfile> _profiles = new Dictionary<PlayerUuid, PlayerProfile>();
         // Storage Chest contents (Roadmap 4.5) as loaded, carried through unchanged in a scene without StorageChests.
         Dictionary<int3, List<ItemStack>> _chests = new Dictionary<int3, List<ItemStack>>();
-        // Earthen Rock timers (Roadmap 4.6) as loaded, carried through unchanged until step D's EarthWorks keeps them.
+        // Earthen Rock timers (Roadmap 4.6) as loaded, carried through unchanged in a scene without EarthWorks.
         Dictionary<int3, float> _earth = new Dictionary<int3, float>();
         string _path;
         string _blockedReason;
@@ -191,6 +194,8 @@ namespace Voxelforge.Gameplay
             _profiles = save.Profiles;
             _chests = save.Chests;
             _earth = save.Earth;
+            if (earth != null)
+                earth.ServerRestore(save.Earth);
             if (chests != null)
                 chests.ServerRestore(save.Chests);
             LoadedFromSave = true;
@@ -284,7 +289,7 @@ namespace Voxelforge.Gameplay
                 Deltas = world.DeltaLog,
                 Profiles = _profiles,
                 Chests = chests != null ? chests.ServerSnapshot() : _chests,
-                Earth = _earth,
+                Earth = earth != null ? earth.ServerSnapshot() : _earth,
             });
             _encodeMs = timer.Elapsed.TotalMilliseconds;
 
