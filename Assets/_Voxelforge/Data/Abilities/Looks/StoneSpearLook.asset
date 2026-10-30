@@ -19,6 +19,8 @@ MonoBehaviour:
   coreSize: 0.7
   coreMesh: {fileID: 7750366800952002803, guid: 5b53c60c827454f4299c7f5e77b3df4c, type: 3}
   coreSpin: 0
+  zoneModel: {fileID: 0}
+  zoneRing: 1
   trailTime: 0.3
   lightIntensity: 4
   lightRange: 7

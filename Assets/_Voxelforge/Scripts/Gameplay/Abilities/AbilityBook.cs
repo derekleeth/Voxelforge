@@ -59,6 +59,11 @@ namespace Voxelforge.Gameplay
                 errors.Add($"'{name}' has a negative number.");
             if (ability.Delivery == AbilityDelivery.Projectile && !(ability.ProjectileSpeed > 0f && ability.Range > 0f))
                 errors.Add($"'{name}' is a projectile, so it needs a speed and range above 0.");
+            if (ability.NeedsAimedBlock && ability.Range <= 0f)
+                errors.Add($"'{name}' goes off where the caster aims, so it needs a range above 0.");
+            if ((ability.Delivery == AbilityDelivery.Zone || ability.Delivery == AbilityDelivery.Totem) &&
+                !(ability.Duration > 0f && ability.AoeRadius > 0f))
+                errors.Add($"'{name}' leaves a zone, so it needs a duration and radius above 0.");
             return errors;
         }
 

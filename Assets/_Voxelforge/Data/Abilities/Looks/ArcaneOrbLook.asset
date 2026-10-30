@@ -19,6 +19,8 @@ MonoBehaviour:
   coreSize: 0.45
   coreMesh: {fileID: 0}
   coreSpin: 0
+  zoneModel: {fileID: 0}
+  zoneRing: 1
   trailTime: 0.35
   lightIntensity: 6
   lightRange: 10

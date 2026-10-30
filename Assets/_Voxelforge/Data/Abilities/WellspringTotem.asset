@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 932fac5680c989645b848805131d9727, type: 3}
+  m_Name: WellspringTotem
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityDefinition
+  id: 11
+  displayName: Wellspring Totem
+  description: Plant a totem of healing water. For 20 seconds, heroes near it heal and their mana flows half as fast again.
+  element: 5
+  manaCost: 30
+  cooldown: 25
+  castTime: 0
+  castWhileMoving: 0
+  range: 20
+  aoeRadius: 8
+  craterFalloff: 0.25
+  craterFlatten: 1
+  delivery: 6
+  projectileSpeed: 0
+  blockDamage: 0
+  creatureDamage: 0
+  healAmount: 4
+  shieldAmount: 0
+  duration: 20
+  pulseInterval: 1
+  aimCone: 12
+  manaRegenBonus: 0.5
+  earthHeight: 0
+  earthWidth: 0
+  earthStep: 0.08

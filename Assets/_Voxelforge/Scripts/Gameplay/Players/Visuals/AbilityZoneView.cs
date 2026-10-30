@@ -6,8 +6,9 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// Draws an <see cref="AbilityZone"/> on every PC (Roadmap 4.6) from its spell's <see cref="AbilityLook"/>: a glowing
     /// ring on the ground at its edge, an inner ring, motes rising from inside the circle and a soft light, all in the
-    /// look's colour. It fades in when placed, flares on each pulse and fades out as its time runs out. Looks only:
-    /// the host has already healed whoever stood in it (Roadmap 4.2).
+    /// look's colour. It fades in when placed, flares on each pulse and fades out as its time runs out. A totem's model
+    /// rises out of the ground and sinks back, and a strike is a jagged bolt of lightning from its top to the target.
+    /// Looks only: the host has already healed or struck (Roadmap 4.2).
     /// </summary>
     [RequireComponent(typeof(AbilityZone))]
     public sealed class AbilityZoneView : MonoBehaviour
@@ -18,8 +19,15 @@ namespace Voxelforge.Gameplay
         [Tooltip("Art/Materials/Props/ManaBolt.mat: additive glow for the rings and motes.")]
         [SerializeField] Material glowMaterial;
 
+        [Tooltip("Art/Materials/Props/Props_Held.mat: the lit props material, for a totem's model.")]
+        [SerializeField] Material modelMaterial;
+
         [Tooltip("How much brighter than the look's colour the rings glow.")]
         [SerializeField, Range(1f, 10f)] float glowBoost = 3f;
+
+        const int BoltPoints = 12;
+        const float BoltSeconds = 0.22f;
+        const float RiseSeconds = 0.4f;
 
         const int RingPoints = 72;
         const float RingLift = 0.06f;
@@ -39,6 +47,11 @@ namespace Voxelforge.Gameplay
         float _lightIntensity = 3f;
         float _pulsedAt = float.NegativeInfinity;
         int _pulseSparks = 30;
+        float _ringStrength = 1f;
+        Transform _model;
+        LineRenderer _bolt;
+        Vector3 _boltTarget;
+        float _struckAt = float.NegativeInfinity;
         bool _built;
 
         void Awake() => _zone = GetComponent<AbilityZone>();
@@ -59,6 +72,7 @@ namespace Voxelforge.Gameplay
                 _glow = look.Glow;
                 _lightIntensity = look.LightIntensity;
                 _pulseSparks = look.ImpactSparks;
+                _ringStrength = look.ZoneRing;
             }
             _radius = ability != null ? Mathf.Max(ability.AoeRadius, 0.5f) : _radius;
             _duration = ability != null ? Mathf.Max(ability.Duration, 0.1f) : _duration;
@@ -68,7 +82,7 @@ namespace Voxelforge.Gameplay
 
             var light = new GameObject("Light");
             light.transform.SetParent(transform, false);
-            light.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+            light.transform.localPosition = new Vector3(0f, AbilityZone.StrikeHeight, 0f);
             _light = light.AddComponent<Light>();
             _light.type = LightType.Point;
             _light.shadows = LightShadows.None;
@@ -76,6 +90,28 @@ namespace Voxelforge.Gameplay
             _light.range = _radius * 2.2f;
 
             _motes = Motes(look != null ? look.CastMotesPerSecond : 40f);
+
+            if (look != null && look.ZoneModel != null)
+            {
+                var model = new GameObject("Totem");
+                model.transform.SetParent(transform, false);
+                model.AddComponent<MeshFilter>().sharedMesh = look.ZoneModel;
+                var renderer = model.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = modelMaterial;
+                _model = model.transform;
+            }
+            if (ability != null && ability.CreatureDamage > 0f)
+            {
+                var bolt = new GameObject("Lightning");
+                bolt.transform.SetParent(transform, false);
+                _bolt = bolt.AddComponent<LineRenderer>();
+                _bolt.sharedMaterial = glowMaterial;
+                _bolt.positionCount = BoltPoints;
+                _bolt.widthMultiplier = 0.09f;
+                _bolt.shadowCastingMode = ShadowCastingMode.Off;
+                _bolt.receiveShadows = false;
+                _bolt.enabled = false;
+            }
         }
 
         LineRenderer Ring(string name, float radius, float width)
@@ -136,9 +172,14 @@ namespace Voxelforge.Gameplay
             return motes;
         }
 
-        void OnPulsed(AbilityZone zone)
+        void OnPulsed(AbilityZone zone, bool struck, Vector3 target)
         {
             _pulsedAt = Time.time;
+            if (struck)
+            {
+                _struckAt = Time.time;
+                _boltTarget = target;
+            }
             if (_motes == null)
                 return;
             // A burst of sparks up out of the circle with every pulse.
@@ -167,6 +208,48 @@ namespace Voxelforge.Gameplay
             // The inner ring turns slowly, like a rune circle.
             _inner.transform.localRotation = Quaternion.Euler(90f, Time.time * 25f, 0f);
             _light.intensity = _lightIntensity * strength * (0.8f + pulse);
+            _outer.enabled = _inner.enabled = _ringStrength > 0f;
+            if (_ringStrength < 1f)
+            {
+                _outer.startColor = _outer.endColor = ring * _ringStrength;
+                _inner.startColor = _inner.endColor = inner * _ringStrength;
+            }
+
+            // A totem rises out of the ground when placed and sinks back as it ends.
+            if (_model != null)
+            {
+                float up = Mathf.Clamp01(age / RiseSeconds) * Mathf.Clamp01((_duration - age) / FadeOut);
+                up = 1f - (1f - up) * (1f - up);
+                _model.localPosition = new Vector3(0f, (up - 1f) * 1.8f, 0f);
+            }
+            DrawBolt();
+        }
+
+        /// <summary>A jagged bolt from the totem's top to what it struck, redrawn every frame so it crackles.</summary>
+        void DrawBolt()
+        {
+            if (_bolt == null)
+                return;
+            float left = 1f - (Time.time - _struckAt) / BoltSeconds;
+            _bolt.enabled = left > 0f;
+            if (!_bolt.enabled)
+                return;
+            Vector3 from = transform.position + Vector3.up * AbilityZone.StrikeHeight;
+            Vector3 to = _boltTarget;
+            Vector3 side = Vector3.Cross(to - from, Vector3.up).normalized;
+            if (side == Vector3.zero)
+                side = Vector3.right;
+            for (int i = 0; i < BoltPoints; i++)
+            {
+                float t = i / (float)(BoltPoints - 1);
+                // Kinks across the bolt, none at the ends, so it always leaves the totem and lands on the target.
+                float kink = i == 0 || i == BoltPoints - 1 ? 0f : Random.Range(-0.35f, 0.35f);
+                _bolt.SetPosition(i, Vector3.Lerp(from, to, t) + side * kink + Vector3.up * Random.Range(-0.2f, 0.2f) * kink);
+            }
+            Color colour = _glow * glowBoost * 2f * left;
+            colour.a = left;
+            _bolt.startColor = _bolt.endColor = colour;
+            _light.intensity += _lightIntensity * 3f * left;
         }
     }
 }

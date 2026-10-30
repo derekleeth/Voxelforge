@@ -35,5 +35,14 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Geomancer Mage (Roadmap 4.6): a column of Earthen Rock rises under you and lifts you up.</summary>
         public const ushort RisingPillar = 9;
+
+        /// <summary>Shaman (Roadmap 4.6): a wall of Earthen Rock rises where you aim.</summary>
+        public const ushort EarthenWall = 10;
+
+        /// <summary>Shaman (Roadmap 4.6): a totem that heals heroes near it and quickens their mana.</summary>
+        public const ushort WellspringTotem = 11;
+
+        /// <summary>Shaman (Roadmap 4.6): a totem that calls lightning down on the nearest foe.</summary>
+        public const ushort ThunderheadTotem = 12;
     }
 }

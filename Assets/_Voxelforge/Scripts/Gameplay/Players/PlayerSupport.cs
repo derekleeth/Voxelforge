@@ -6,8 +6,9 @@ using UnityEngine;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// This player's support spells (Roadmap 4.6): shields (<see cref="AbilityDelivery.Shield"/>, Bulwark Rune) and circles
-    /// on the ground (<see cref="AbilityDelivery.Zone"/>, Hallowed Forge). <see cref="PlayerCaster"/> decides <i>when</i>
+    /// This player's support spells (Roadmap 4.6): shields (<see cref="AbilityDelivery.Shield"/>, Bulwark Rune), circles
+    /// on the ground (<see cref="AbilityDelivery.Zone"/>, Hallowed Forge) and totems (<see cref="AbilityDelivery.Totem"/>,
+    /// the Shaman's, one of each kind). <see cref="PlayerCaster"/> decides <i>when</i>
     /// one goes off; then <b>the host</b> picks who it lands on from the aim it received (<see cref="SupportRules"/>) or
     /// spawns the zone at the hero's feet (<see cref="AbilityZone"/>). No position or target ever comes from a PC
     /// (CLAUDE.md Laws #1-#2).
@@ -22,6 +23,8 @@ namespace Voxelforge.Gameplay
         PlayerHealth _health;
         readonly List<float3> _partnerFeet = new List<float3>();
         readonly List<PlayerHealth> _partners = new List<PlayerHealth>();
+        // Host: this caster's standing totems, one per kind (Roadmap 4.6).
+        readonly Dictionary<ushort, AbilityZone> _totems = new Dictionary<ushort, AbilityZone>();
 
         void Awake()
         {
@@ -61,9 +64,28 @@ namespace Voxelforge.Gameplay
         {
             if (!IsServer || !IsSpawned || ability == null || zonePrefab == null)
                 return;
-            AbilityZone zone = Instantiate(zonePrefab, transform.position, Quaternion.identity);
-            zone.ServerInit(ability, _player.PlayerId, _player.Registry);
+            Spawn(ability, transform.position);
+        }
+
+        /// <summary>
+        /// Host only: <paramref name="ability"/>'s totem stands in <paramref name="cell"/> (on the block under it). A totem of
+        /// the same kind this hero already has is ended: one of each per Shaman.
+        /// </summary>
+        public void ServerTotem(AbilityDefinition ability, int3 cell)
+        {
+            if (!IsServer || !IsSpawned || ability == null || zonePrefab == null)
+                return;
+            if (_totems.TryGetValue(ability.Id, out AbilityZone old) && old != null && old.IsRunning)
+                old.ServerEnd();
+            _totems[ability.Id] = Spawn(ability, (float3)cell + new float3(0.5f, 0f, 0.5f));
+        }
+
+        AbilityZone Spawn(AbilityDefinition ability, Vector3 at)
+        {
+            AbilityZone zone = Instantiate(zonePrefab, at, Quaternion.identity);
+            zone.ServerInit(ability, _player);
             zone.NetworkObject.Spawn(destroyWithScene: true);
+            return zone;
         }
     }
 }

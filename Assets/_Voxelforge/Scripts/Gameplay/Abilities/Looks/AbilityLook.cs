@@ -43,6 +43,13 @@ namespace Voxelforge.Gameplay
         [Tooltip("How fast the core tumbles end over end, in degrees a second. 0 = it doesn't.")]
         [SerializeField, Range(0f, 2000f)] float coreSpin;
 
+        [Header("Zone (4.6)")]
+        [Tooltip("A model standing in the middle of a zone (a Shaman's totem), drawn with the props' lit material. Empty = none.")]
+        [SerializeField] Mesh zoneModel;
+
+        [Tooltip("How bright the zone's ring on the ground is (0 = no ring, 1 = full).")]
+        [SerializeField, Range(0f, 1f)] float zoneRing = 1f;
+
         [Tooltip("Seconds the trail takes to fade.")]
         [SerializeField, Range(0.05f, 1f)] float trailTime = 0.18f;
 
@@ -112,6 +119,8 @@ namespace Voxelforge.Gameplay
         public float CoreSize => coreSize;
         public Mesh CoreMesh => coreMesh;
         public float CoreSpin => coreSpin;
+        public Mesh ZoneModel => zoneModel;
+        public float ZoneRing => zoneRing;
         public float TrailTime => trailTime;
         public float LightIntensity => lightIntensity;
         public float LightRange => lightRange;

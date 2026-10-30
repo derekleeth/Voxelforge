@@ -1,6 +1,7 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
 Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags, the
-drawstring loot bag and the Storage Chest (4.5), the Training Dummy, the Rune Hammer and the Stone Spear (4.6).
+drawstring loot bag and the Storage Chest (4.5), the Training Dummy, the Rune Hammer, the Stone Spear and the
+Shaman's two totems (4.6).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -916,6 +917,58 @@ def build_stone_spear():
     return b
 
 
+# The Shaman's totems (4.6): carved posts the game stands on a block for 20 s (an AbilityLook zone model, drawn with the
+# props' lit material). Origin at the bottom centre of the block they stand in; chunky, about a hero tall, so they read
+# from across a fight. They rise out of the ground when planted.
+def totem_post(b, top, half, region_name):
+    b.part("stone", box((0, 0, 0.06), (0.7, 0.7, 0.12)))
+    b.part("stone", box((0, 0, 0.15), (0.54, 0.54, 0.06)))
+    b.part(region_name, box((0, 0, (0.18 + top) / 2), (half * 2, half * 2, top - 0.18)))
+    for z in (0.42, top - 0.12):  # Carved collars.
+        b.part("wood_dark", box((0, 0, z), (half * 2 + 0.05, half * 2 + 0.05, 0.07)))
+
+
+def build_totem_wellspring():
+    """Healing water: a carved post with a band of green healing runes, holding up a wide bowl of glowing water."""
+    b = MeshBuilder()
+    top, half = 1.15, 0.17
+    totem_post(b, top, half, "totem")
+    b.part("hearth", box((0, 0, 0.7), (half * 2 + 0.014, half * 2 + 0.014, 0.05)))
+    b.part("hearth", box((0, 0, 0.85), (half * 2 + 0.014, half * 2 + 0.014, 0.05)))
+    # The bowl, flaring out, with water brimming over its lip.
+    b.part("wood_dark", cylinder((0, 0, top), (0, 0, top + 0.22), 0.2, 0.42, 10, phase=math.pi / 10))
+    b.part("mana", cylinder((0, 0, top + 0.16), (0, 0, top + 0.25), 0.38, 0.38, 10, phase=math.pi / 10))
+    b.part("mana", gem((0, 0, top + 0.42), (0.09, 0.09, 0.15)))  # A rising drop.
+    for k in range(4):  # Little water drops round the rim.
+        a = k * math.pi / 2 + math.pi / 4
+        b.part("mana", gem((math.cos(a) * 0.36, math.sin(a) * 0.36, top + 0.3), (0.045, 0.045, 0.07)))
+    return b
+
+
+def build_totem_thunderhead():
+    """Storm: a dark post with a thunderbird on top, wings spread wide, rune-feathers glowing storm-blue, a gold beak."""
+    b = MeshBuilder()
+    top, half = 1.1, 0.16
+    totem_post(b, top, half, "wood_dark")
+    b.part("rune", box((0, -half - 0.003, 0.75), (0.24, 0.01, 0.3)))  # A glowing rune panel on the front.
+    # The thunderbird: a chunky body and head facing front (-Y), a hooked gold beak, wings out to the sides.
+    b.part("wood_dark", box((0, 0, top + 0.12), (0.34, 0.3, 0.24)))
+    b.part("wood_dark", box((0, -0.06, top + 0.34), (0.26, 0.26, 0.2)))
+    b.part("gold", convex([[Vector((-0.07, -0.19, top + 0.38)), Vector((0.07, -0.19, top + 0.38)), Vector((0, -0.36, top + 0.3))],
+                           [Vector((-0.07, -0.19, top + 0.3)), Vector((0, -0.36, top + 0.3)), Vector((0.07, -0.19, top + 0.3))],
+                           [Vector((-0.07, -0.19, top + 0.38)), Vector((-0.07, -0.19, top + 0.3)), Vector((0, -0.36, top + 0.3))],
+                           [Vector((0.07, -0.19, top + 0.38)), Vector((0, -0.36, top + 0.3)), Vector((0.07, -0.19, top + 0.3))],
+                           [Vector((-0.07, -0.19, top + 0.38)), Vector((0.07, -0.19, top + 0.38)), Vector((0.07, -0.19, top + 0.3)),
+                            Vector((-0.07, -0.19, top + 0.3))]]))
+    for sx in (-1, 1):
+        b.part("rune", gem((sx * 0.08, -0.19, top + 0.4), (0.03, 0.02, 0.03)))  # Glowing eyes.
+        # Wings: two big angled slabs, then a feathered tip, rising up and out.
+        lift = Matrix.Rotation(math.radians(sx * -24), 3, "Y")
+        b.part("wood_dark", box(Vector((sx * 0.38, 0.02, top + 0.22)), (0.48, 0.1, 0.22), lift), grain=Vector((1, 0, 0)))
+        b.part("rune", box(Vector((sx * 0.72, 0.02, top + 0.38)), (0.3, 0.08, 0.16), lift), grain=Vector((1, 0, 0)))
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -936,6 +989,8 @@ MODELS = {
     "TrainingDummy": build_training_dummy,
     "RuneHammer": build_rune_hammer,
     "StoneSpear": build_stone_spear,
+    "TotemWellspring": build_totem_wellspring,
+    "TotemThunderhead": build_totem_thunderhead,
 }
 
 

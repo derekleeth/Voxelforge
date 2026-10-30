@@ -89,4 +89,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityZoneView
   looks: {fileID: 11400000, guid: 341d8554278772e41a148395e0edee49, type: 2}
   glowMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  modelMaterial: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
   glowBoost: 3

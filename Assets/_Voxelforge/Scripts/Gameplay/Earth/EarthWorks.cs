@@ -9,7 +9,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Earth raised by spells (Roadmap 4.6), on <b>the host</b>. Rising Pillar lifts its caster on a column of Earthen
-    /// Rock one block at a time; every block goes in through <see cref="VoxelWorldManager.RequestModifyVoxel"/> in the
+    /// Rock one block at a time, and Earthen Wall raises a wall row by row where its caster aims; every block goes in through <see cref="VoxelWorldManager.RequestModifyVoxel"/> in the
     /// caster's name (CLAUDE.md Law #3), so it's logged, saved, remeshed and heard like any other block. Each block
     /// crumbles back to air after its spell's duration (in <see cref="PlayerId.World"/>'s name, since its caster may have
     /// left), and its timer is saved with the world (<see cref="WorldSaveManager"/>). Mined or broken early, it's simply
@@ -35,8 +35,22 @@ namespace Voxelforge.Gameplay
             public float Lifetime;
         }
 
+        // A wall rising one row per step.
+        sealed class Wall
+        {
+            public PlayerController Caster;
+            public PlayerId CasterId;
+            public readonly List<int3> Cells = new List<int3>();
+            public int Width;
+            public int NextCell;
+            public float Step;
+            public float NextAt;
+            public float Lifetime;
+        }
+
         readonly EarthTimers _timers = new EarthTimers();
         readonly List<Pillar> _pillars = new List<Pillar>();
+        readonly List<Wall> _walls = new List<Wall>();
         readonly List<int3> _expired = new List<int3>();
         float _nextCrumbleCheck;
 
@@ -72,6 +86,24 @@ namespace Voxelforge.Gameplay
             });
         }
 
+        /// <summary>
+        /// Host only: <paramref name="ability"/> (a <see cref="AbilityDelivery.Wall"/>) raises a wall standing on
+        /// <paramref name="anchor"/>, across <paramref name="aim"/>, one row per step. Cells that are full, or that a hero
+        /// stands in, are left as they are.
+        /// </summary>
+        public void ServerRaiseWall(PlayerController caster, AbilityDefinition ability, int3 anchor, float3 aim)
+        {
+            if (!IsServer || caster == null || ability == null || ability.EarthHeight <= 0 || ability.EarthWidth <= 0)
+                return;
+            var wall = new Wall
+            {
+                Caster = caster, CasterId = caster.PlayerId, Width = ability.EarthWidth, Step = ability.EarthStep,
+                NextAt = Time.time, Lifetime = ability.Duration,
+            };
+            EarthRules.WallCells(anchor, aim, ability.EarthWidth, ability.EarthHeight, wall.Cells);
+            _walls.Add(wall);
+        }
+
         /// <summary>Host only, at load (Roadmap 3.4): every saved block of earth and the seconds it had left.</summary>
         public void ServerRestore(IReadOnlyDictionary<int3, float> secondsLeft) => _timers.Restore(secondsLeft, Time.time);
 
@@ -94,6 +126,17 @@ namespace Voxelforge.Gameplay
                 if (pillar.StepsLeft <= 0)
                     _pillars.RemoveAt(i);
             }
+            for (int i = _walls.Count - 1; i >= 0; i--)
+            {
+                Wall wall = _walls[i];
+                while (wall.NextCell < wall.Cells.Count && now >= wall.NextAt)
+                {
+                    wall.NextAt += wall.Step;
+                    RaiseRow(wall);
+                }
+                if (wall.NextCell >= wall.Cells.Count)
+                    _walls.RemoveAt(i);
+            }
 
             if (_timers.Count > 0 && now >= _nextCrumbleCheck)
             {
@@ -110,21 +153,34 @@ namespace Voxelforge.Gameplay
                 return false;
             var cell = (int3)math.floor(feet + new float3(0f, 0.01f, 0f));
             VoxelWorld blocks = world.World;
-            if (!EarthRules.CanRise(blocks, cell) || SomeoneElseIn(cell, hero))
+            if (!EarthRules.CanRise(blocks, cell) || SomeoneElseIn(cell, hero, hero))
                 return false;
             // Up first, so the rock never fills the cell the hero is standing in.
             hero.ServerTeleport(new float3(feet.x, cell.y + 1f, feet.z), yaw);
             return Place(cell, hero.PlayerId, pillar.Lifetime);
         }
 
-        bool SomeoneElseIn(int3 cell, PlayerController hero)
+        void RaiseRow(Wall wall)
         {
-            PlayerRegistry players = hero.Registry;
+            VoxelWorld blocks = world.World;
+            int end = math.min(wall.NextCell + wall.Width, wall.Cells.Count);
+            for (; wall.NextCell < end; wall.NextCell++)
+            {
+                int3 cell = wall.Cells[wall.NextCell];
+                if (blocks.GetVoxel(cell).BlockId == BlockIds.Air && !SomeoneElseIn(cell, wall.Caster, null))
+                    Place(cell, wall.CasterId, wall.Lifetime);
+            }
+        }
+
+        /// <summary>A hero other than <paramref name="except"/> stands in <paramref name="cell"/>. <paramref name="from"/> says whose registry to ask.</summary>
+        static bool SomeoneElseIn(int3 cell, PlayerController from, PlayerController except)
+        {
+            PlayerRegistry players = from != null ? from.Registry : null;
             if (players == null)
                 return false;
             foreach (PlayerController other in players.Players)
             {
-                if (other != null && other != hero && other.Bounds.Overlaps(cell))
+                if (other != null && other != except && other.Bounds.Overlaps(cell))
                     return true;
             }
             return false;

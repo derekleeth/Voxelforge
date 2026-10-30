@@ -75,6 +75,59 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Wall_RunsAcrossTheAim_RowByRowFromTheBottom()
+        {
+            var cells = new List<int3>();
+            EarthRules.WallCells(new int3(10, 5, 10), new float3(0.2f, -0.3f, 1f), 5, 3, cells);
+            Assert.AreEqual(15, cells.Count);
+            Assert.AreEqual(new int3(8, 5, 10), cells[0], "Aimed along z: the wall runs along x, centred on the anchor.");
+            Assert.AreEqual(new int3(12, 5, 10), cells[4]);
+            Assert.AreEqual(new int3(8, 6, 10), cells[5], "The second row starts after the first.");
+            Assert.AreEqual(new int3(12, 7, 10), cells[14]);
+
+            cells.Clear();
+            EarthRules.WallCells(new int3(0, 0, 0), new float3(-1f, 0f, 0.3f), 5, 1, cells);
+            CollectionAssert.AreEqual(new[]
+            {
+                new int3(0, 0, -2), new int3(0, 0, -1), new int3(0, 0, 0), new int3(0, 0, 1), new int3(0, 0, 2),
+            }, cells, "Aimed along x: the wall runs along z.");
+        }
+
+        [Test]
+        public void Totem_StandsOnTheGround_DropsFromACliffFace_AndNeedsRoom()
+        {
+            var blocks = new NativeArray<BlockInfo>(BlockIds.Stone + 1, Allocator.Persistent);
+            blocks[BlockIds.Air] = new BlockInfo { Id = BlockIds.Air, Flags = BlockFlags.Registered | BlockFlags.Transparent };
+            blocks[BlockIds.Stone] = new BlockInfo { Id = BlockIds.Stone, Flags = BlockFlags.Registered | BlockFlags.Solid };
+            var world = new VoxelWorld(blocks);
+            try
+            {
+                world.CreateChunk(new ChunkCoord(0, 0, 0), new Voxel(BlockIds.Stone)); // Ground: stone up to y = 31.
+                world.CreateChunk(new ChunkCoord(0, 1, 0));
+                var editor = new VoxelWorldEditor(world, new VoxelDeltaLog(), null);
+                var p1 = new PlayerId(1);
+                // A cliff: a column of stone 3 high at x = 5.
+                for (int y = 32; y < 35; y++)
+                    editor.RequestModifyVoxel(new int3(5, y, 8), BlockIds.Stone, p1);
+
+                var top = new VoxelHit { Block = new int3(8, 31, 8), Normal = new int3(0, 1, 0) };
+                Assert.IsTrue(EarthRules.TryFindTotemSpot(world, top, 4, out int3 spot));
+                Assert.AreEqual(new int3(8, 32, 8), spot, "On top of the block aimed at.");
+
+                var face = new VoxelHit { Block = new int3(5, 34, 8), Normal = new int3(1, 0, 0) };
+                Assert.IsTrue(EarthRules.TryFindTotemSpot(world, face, 4, out spot));
+                Assert.AreEqual(new int3(6, 32, 8), spot, "Aimed at the cliff face: it drops to the ground at its foot.");
+
+                editor.RequestModifyVoxel(new int3(8, 33, 8), BlockIds.Stone, p1);
+                Assert.IsFalse(EarthRules.TryFindTotemSpot(world, top, 4, out _), "No room for the totem's top.");
+            }
+            finally
+            {
+                world.Dispose();
+            }
+        }
+
+        [Test]
         public void EarthenRock_IsARealBlock_ThatDropsNothing()
         {
             var registry = AssetDatabase.LoadAssetAtPath<BlockRegistry>(BlockRegistryPath);

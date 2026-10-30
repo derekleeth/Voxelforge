@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ShamanBar
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ActionBarLoadout
   slots:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 62371f499d22c6143837bca5c2378e36, type: 2}
+  - {fileID: 11400000, guid: 7e9595453681a584bbf9d38e9b260ecc, type: 2}
+  - {fileID: 11400000, guid: a7b77b0530885b14bb3c37843f311a25, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}

@@ -25,6 +25,9 @@ namespace Voxelforge.Editor
     /// feet that heals heroes in it). Until step F they borrow sounds from the older spells.</para>
     /// <para>The Geomancer Mage's (Roadmap 4.6): <b>Stone Spear</b> (a heavy lance of rock with a short cast) and
     /// <b>Rising Pillar</b> (Earthen Rock rises under you, five blocks, and crumbles after 30 s), with EarthShatter.</para>
+    /// <para>The Shaman's (Roadmap 4.6): <b>Earthen Wall</b> (a 5 x 3 wall of Earthen Rock where you aim, crumbling after
+    /// 30 s), <b>Wellspring Totem</b> (heals heroes within 8 m and quickens their mana) and <b>Thunderhead Totem</b>
+    /// (lightning on the nearest foe within 12 m every 2 s). Totems last 20 s, one of each per Shaman.</para>
     /// <para>And the classes (Roadmap 4.6) in <c>Data/Classes/</c>: each <see cref="ClassDefinition"/>, its action bar
     /// loadout and the <see cref="ClassBook"/>, in the order the class window shows them.</para>
     /// </summary>
@@ -41,6 +44,10 @@ namespace Voxelforge.Editor
         public const string StoneSpearPath = AbilityDir + "/StoneSpear.asset";
         public const string RisingPillarPath = AbilityDir + "/RisingPillar.asset";
         const string SpearModelPath = "Assets/_Voxelforge/Art/Models/Props/StoneSpear.fbx";
+        public const string EarthenWallPath = AbilityDir + "/EarthenWall.asset";
+        public const string WellspringTotemPath = AbilityDir + "/WellspringTotem.asset";
+        public const string ThunderheadTotemPath = AbilityDir + "/ThunderheadTotem.asset";
+        const string ModelDir = "Assets/_Voxelforge/Art/Models/Props";
         const string HammerModelPath = "Assets/_Voxelforge/Art/Models/Props/RuneHammer.fbx";
         public const string BookPath = AbilityDir + "/AbilityBook.asset";
         public const string LoadoutPath = AbilityDir + "/DefaultLoadout.asset";
@@ -110,12 +117,30 @@ namespace Voxelforge.Editor
                 speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Pillar,
                 duration: 30f, earthHeight: 5, earthStep: 0.08f);
 
+            // ---- Shaman (Roadmap 4.6) ----
+            AbilityDefinition earthenWall = MakeAbility(EarthenWallPath, AbilityIds.EarthenWall, "Earthen Wall",
+                "Call up a wall of living earth where you look, five blocks wide and three high. It crumbles after 30 seconds.",
+                AbilityElement.Earth, manaCost: 30f, cooldown: 15f, castTime: 0f, range: 20f, aoeRadius: 0f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Wall,
+                duration: 30f, earthHeight: 3, earthWidth: 5, earthStep: 0.1f);
+            AbilityDefinition wellspring = MakeAbility(WellspringTotemPath, AbilityIds.WellspringTotem, "Wellspring Totem",
+                "Plant a totem of healing water. For 20 seconds, heroes near it heal and their mana flows half as fast again.",
+                AbilityElement.Nature, manaCost: 30f, cooldown: 25f, castTime: 0f, range: 20f, aoeRadius: 8f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Totem,
+                healAmount: 4f, duration: 20f, pulseInterval: 1f, manaRegenBonus: 0.5f);
+            AbilityDefinition thunderhead = MakeAbility(ThunderheadTotemPath, AbilityIds.ThunderheadTotem, "Thunderhead Totem",
+                "Plant a storm totem. For 20 seconds it calls lightning down on the nearest foe within 12 metres.",
+                AbilityElement.Lightning, manaCost: 25f, cooldown: 20f, castTime: 0f, range: 20f, aoeRadius: 12f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 25f, delivery: AbilityDelivery.Totem,
+                duration: 20f, pulseInterval: 2f);
+
             var book = LoadOrCreate<AbilityBook>(BookPath);
             var serialized = new SerializedObject(book);
             SerializedProperty list = serialized.FindProperty("abilities");
             AbilityDefinition[] all =
             {
                 manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar,
+                earthenWall, wellspring, thunderhead,
             };
             list.arraySize = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -187,6 +212,21 @@ namespace Voxelforge.Editor
                 AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f, lightRange: 6f, muzzleSparks: 0,
                 impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
                 castLoop: null, release: "EarthSlam", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
+            // Shaman: the wall shares the Geomancer's earth-amber; the totems are healing water and storm-blue.
+            AbilityLook earthenWallLook = MakeLook($"{LookDir}/EarthenWallLook.asset", earthenWall, geomancerAmber,
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f, lightRange: 6f, muzzleSparks: 0,
+                impactSparks: 30, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: "EarthSlam", impact: null, releaseVolume: 1f, impactVolume: 0.8f);
+            AbilityLook wellspringLook = MakeLook($"{LookDir}/WellspringTotemLook.asset", wellspring, new Color(0.4f, 1f, 0.75f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3f, lightRange: 9f, muzzleSparks: 0,
+                impactSparks: 25, impactSpeed: 3f, castMotes: 25f, castLight: 0f,
+                castLoop: null, release: "OrbRelease", impact: null, releaseVolume: 0.8f, impactVolume: 0.8f,
+                zoneModel: LoadModelMesh($"{ModelDir}/TotemWellspring.fbx", "TotemWellspring"), zoneRing: 0.6f);
+            AbilityLook thunderheadLook = MakeLook($"{LookDir}/ThunderheadTotemLook.asset", thunderhead, new Color(0.55f, 0.75f, 1f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 4f, lightRange: 10f, muzzleSparks: 0,
+                impactSparks: 30, impactSpeed: 6f, castMotes: 8f, castLight: 0f,
+                castLoop: null, release: "BoltFire", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f,
+                zoneModel: LoadModelMesh($"{ModelDir}/TotemThunderhead.fbx", "TotemThunderhead"), zoneRing: 0.25f);
 
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
@@ -195,7 +235,7 @@ namespace Voxelforge.Editor
             AbilityLook[] allLooks =
             {
                 manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
-                stoneSpearLook, risingPillarLook,
+                stoneSpearLook, risingPillarLook, earthenWallLook, wellspringLook, thunderheadLook,
             };
             list.arraySize = allLooks.Length;
             for (int i = 0; i < allLooks.Length; i++)
@@ -203,7 +243,8 @@ namespace Voxelforge.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(lookBook);
 
-            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar);
+            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar, earthenWall,
+                wellspring, thunderhead);
             return manaBolt;
         }
 
@@ -213,7 +254,7 @@ namespace Voxelforge.Editor
         /// </summary>
         static void BuildClasses(ActionBarLoadout adventurerBar, AbilityDefinition earthShatter, AbilityDefinition runeHammer,
             AbilityDefinition bulwarkRune, AbilityDefinition hallowedForge, AbilityDefinition stoneSpear,
-            AbilityDefinition risingPillar)
+            AbilityDefinition risingPillar, AbilityDefinition earthenWall, AbilityDefinition wellspring, AbilityDefinition thunderhead)
         {
             if (!AssetDatabase.IsValidFolder(ClassDir))
                 AssetDatabase.CreateFolder("Assets/_Voxelforge/Data", "Classes");
@@ -235,7 +276,7 @@ namespace Voxelforge.Editor
                 "A wise caller of the elements. Raises walls of living earth and plants totems that heal friends or call " +
                 "down lightning on foes.",
                 maxHealth: 110f, maxMana: 110f, manaRegen: 10f,
-                MakeLoadout("ShamanBar"));
+                MakeLoadout("ShamanBar", earthenWall, wellspring, thunderhead));
 
             var book = LoadOrCreate<ClassBook>(ClassBookPath);
             var serialized = new SerializedObject(book);
@@ -284,7 +325,8 @@ namespace Voxelforge.Editor
             float trailTime, float light, float lightRange, int muzzleSparks, int impactSparks, float impactSpeed,
             float castMotes, float castLight, string castLoop, string release, string impact, float releaseVolume,
             float impactVolume, int debrisChunks = 40, float debrisSpeed = 7f, Color debrisTint = default, float shake = 0.4f,
-            float blastLight = 8f, float maxDistance = 40f, Mesh coreMesh = null, float coreSpin = 0f)
+            float blastLight = 8f, float maxDistance = 40f, Mesh coreMesh = null, float coreSpin = 0f, Mesh zoneModel = null,
+            float zoneRing = 1f)
         {
             var look = LoadOrCreate<AbilityLook>(path);
             var serialized = new SerializedObject(look);
@@ -316,6 +358,8 @@ namespace Voxelforge.Editor
             serialized.FindProperty("maxDistance").floatValue = maxDistance;
             serialized.FindProperty("coreMesh").objectReferenceValue = coreMesh;
             serialized.FindProperty("coreSpin").floatValue = coreSpin;
+            serialized.FindProperty("zoneModel").objectReferenceValue = zoneModel;
+            serialized.FindProperty("zoneRing").floatValue = zoneRing;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(look);
             return look;
@@ -336,7 +380,7 @@ namespace Voxelforge.Editor
             float blockDamage, float creatureDamage, float craterFalloff = 0.25f, float craterFlatten = 1f,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float healAmount = 0f, float shieldAmount = 0f,
             float duration = 0f, float pulseInterval = 1f, float aimCone = 12f, int earthHeight = 0, int earthWidth = 0,
-            float earthStep = 0.08f)
+            float earthStep = 0.08f, float manaRegenBonus = 0f)
         {
             var ability = LoadOrCreate<AbilityDefinition>(path);
             var serialized = new SerializedObject(ability);
@@ -364,6 +408,7 @@ namespace Voxelforge.Editor
             serialized.FindProperty("earthHeight").intValue = earthHeight;
             serialized.FindProperty("earthWidth").intValue = earthWidth;
             serialized.FindProperty("earthStep").floatValue = earthStep;
+            serialized.FindProperty("manaRegenBonus").floatValue = manaRegenBonus;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
             return ability;

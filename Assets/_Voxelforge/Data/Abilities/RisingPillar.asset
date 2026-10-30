@@ -33,6 +33,7 @@ MonoBehaviour:
   duration: 30
   pulseInterval: 1
   aimCone: 12
+  manaRegenBonus: 0
   earthHeight: 5
   earthWidth: 0
   earthStep: 0.08

@@ -40,6 +40,16 @@ namespace Voxelforge.Gameplay
         /// <see cref="EarthWorks"/>).
         /// </summary>
         Pillar,
+        /// <summary>
+        /// A wall of Earthen Rock rises row by row on the block the caster aims at, across their aim (Roadmap 4.6,
+        /// Earthen Wall; <see cref="EarthWorks"/>).
+        /// </summary>
+        Wall,
+        /// <summary>
+        /// A totem stands on the block the caster aims at and pulses while it lasts, as long as its block stands
+        /// (Roadmap 4.6, Shaman totems; <see cref="AbilityZone"/>). One of each per caster.
+        /// </summary>
+        Totem,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>

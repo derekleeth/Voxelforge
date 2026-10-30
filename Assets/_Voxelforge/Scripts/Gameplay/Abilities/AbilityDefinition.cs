@@ -76,6 +76,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("A Shield only goes on a partner this close to where the caster aims, in degrees; else on the caster.")]
         [SerializeField, Range(0f, 45f)] float aimCone = 12f;
 
+        [Tooltip("Extra mana regeneration a Zone or Totem gives heroes in it (0.5 = half as fast again).")]
+        [SerializeField, Range(0f, 3f)] float manaRegenBonus;
+
         [Header("Terrain (4.6)")]
         [Tooltip("How many blocks of Earthen Rock a Pillar raises, or how tall a Wall is. They crumble after Duration.")]
         [SerializeField, Range(0, 16)] int earthHeight;
@@ -108,6 +111,11 @@ namespace Voxelforge.Gameplay
         public float Duration => duration;
         public float PulseInterval => pulseInterval;
         public float AimCone => aimCone;
+        public float ManaRegenBonus => manaRegenBonus;
+
+        /// <summary>Whether it goes off on the block the caster aims at, so it needs one in range before any mana is spent.</summary>
+        public bool NeedsAimedBlock => delivery == AbilityDelivery.GroundSlam || delivery == AbilityDelivery.Wall ||
+                                       delivery == AbilityDelivery.Totem;
         public int EarthHeight => earthHeight;
         public int EarthWidth => earthWidth;
         public float EarthStep => earthStep;
@@ -118,7 +126,7 @@ namespace Voxelforge.Gameplay
             bool castWhileMoving = false, AbilityElement element = AbilityElement.Arcane,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float craterFalloff = 0.25f, float craterFlatten = 1f,
             float healAmount = 0f, float shieldAmount = 0f, float duration = 0f, float pulseInterval = 1f, float aimCone = 12f,
-            int earthHeight = 0, int earthWidth = 0, float earthStep = 0.08f)
+            int earthHeight = 0, int earthWidth = 0, float earthStep = 0.08f, float manaRegenBonus = 0f)
         {
             var definition = CreateInstance<AbilityDefinition>();
             definition.name = displayName;
@@ -144,6 +152,7 @@ namespace Voxelforge.Gameplay
             definition.earthHeight = earthHeight;
             definition.earthWidth = earthWidth;
             definition.earthStep = earthStep;
+            definition.manaRegenBonus = manaRegenBonus;
             return definition;
         }
     }

@@ -37,6 +37,8 @@ namespace Voxelforge.Gameplay
         const float DriftAllowed = 0.35f;
         // The host only sends mana when it changed by at least this much, or reached full.
         const float ManaSendStep = 0.5f;
+        // How far a wall or totem cast at a cliff face drops to find the ground under it, in blocks.
+        const int MaxGroundDrop = 4;
 
         readonly NetworkVariable<float> _mana = new NetworkVariable<float>();
         readonly NetworkVariable<float> _maxMana = new NetworkVariable<float>();
@@ -54,6 +56,10 @@ namespace Voxelforge.Gameplay
         PlayerButtons _previousButtons;
         float3 _castFeet;
         bool _toldNoMana;
+        // The class's regeneration, and a short boost on top of it from a Wellspring Totem (Roadmap 4.6).
+        float _baseRegen;
+        float _regenBonus;
+        float _regenBonusUntil;
 
         // Every PC.
         readonly Dictionary<ushort, float> _readyAtLocal = new Dictionary<ushort, float>();
@@ -98,6 +104,7 @@ namespace Voxelforge.Gameplay
             if (!IsServer)
                 return;
             _caster = new AbilityCaster(maxMana, manaRegen);
+            _baseRegen = manaRegen;
             _maxMana.Value = _caster.MaxMana;
             _mana.Value = _caster.Mana;
         }
@@ -127,9 +134,24 @@ namespace Voxelforge.Gameplay
             float share = _caster.MaxMana > 0f ? _caster.Mana / _caster.MaxMana : 1f;
             _caster.SetMaxMana(maxMana);
             _caster.SetMana(maxMana * share);
-            _caster.Regen = regen;
+            _baseRegen = regen;
             _maxMana.Value = _caster.MaxMana;
             _mana.Value = _caster.Mana;
+        }
+
+        /// <summary>
+        /// Host only: mana comes back <paramref name="bonus"/> faster again (0.5 = half as fast again) for
+        /// <paramref name="seconds"/>, e.g. while standing by a Wellspring Totem, which renews it every pulse (Roadmap 4.6).
+        /// The biggest boost going wins; boosts don't add up.
+        /// </summary>
+        public void ServerBoostRegen(float bonus, float seconds)
+        {
+            if (!IsServer)
+                return;
+            float now = Time.time;
+            if (now >= _regenBonusUntil || bonus >= _regenBonus)
+                _regenBonus = bonus;
+            _regenBonusUntil = Mathf.Max(_regenBonusUntil, now + seconds);
         }
 
         /// <summary>
@@ -154,6 +176,7 @@ namespace Voxelforge.Gameplay
             _previousButtons = input.Buttons;
             _finished.Clear();
 
+            _caster.Regen = _baseRegen * (1f + (now < _regenBonusUntil ? _regenBonus : 0f));
             AbilityDefinition wasCasting = _caster.Casting;
             bool moving = wasCasting != null && Moved(input);
             if (_caster.Tick(now, Time.fixedDeltaTime, moving, _finished, out CastCheck result) && result != CastCheck.Ok)
@@ -199,8 +222,8 @@ namespace Voxelforge.Gameplay
 
         CastCheck TryCast(AbilityDefinition ability, float now, PlayerInputFrame input)
         {
-            // A ground slam needs ground to slam, checked before any mana is spent.
-            if (ability.Delivery == AbilityDelivery.GroundSlam && !TryAimAtBlock(ability, input, out _))
+            // A ground slam, wall or totem needs ground in range, checked before any mana is spent.
+            if (ability.NeedsAimedBlock && !TryAimAtBlock(ability, input, out _))
                 return CastCheck.NoTarget;
             CastCheck check = _caster.TryBegin(ability, now, _finished);
             if (check == CastCheck.Ok && _caster.IsCasting)
@@ -240,6 +263,22 @@ namespace Voxelforge.Gameplay
                     EarthWorks earth = _player.Registry != null ? _player.Registry.Earth : null;
                     if (earth != null)
                         earth.ServerRaisePillar(_player, ability);
+                    break;
+                case AbilityDelivery.Wall:
+                    EarthWorks walls = _player.Registry != null ? _player.Registry.Earth : null;
+                    if (walls != null && TryAimAtBlock(ability, input, out VoxelHit wallHit))
+                    {
+                        // A wall stands on the ground under where the hero aims, even when they aim at a cliff face.
+                        int3 anchor = EarthRules.TryFindTotemSpot(_player.World, wallHit, MaxGroundDrop, out int3 spot)
+                            ? spot
+                            : wallHit.Block + wallHit.Normal;
+                        walls.ServerRaiseWall(_player, ability, anchor, _player.Aim.Direction(input));
+                    }
+                    break;
+                case AbilityDelivery.Totem:
+                    if (_support != null && TryAimAtBlock(ability, input, out VoxelHit totemHit) &&
+                        EarthRules.TryFindTotemSpot(_player.World, totemHit, MaxGroundDrop, out int3 totemSpot))
+                        _support.ServerTotem(ability, totemSpot);
                     break;
             }
         }
