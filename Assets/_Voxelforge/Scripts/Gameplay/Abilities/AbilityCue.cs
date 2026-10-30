@@ -18,6 +18,12 @@ namespace Voxelforge.Gameplay
         Impact,
         /// <summary>A projectile flew its whole range and fizzled at <see cref="AbilityCue.Position"/>.</summary>
         Fizzled,
+        /// <summary>
+        /// The ability hurt a target (a Training Dummy, Roadmap 4.6) whose middle is at <see cref="AbilityCue.Position"/>,
+        /// for <see cref="AbilityCue.TargetDamage"/>, leaving it <see cref="AbilityCue.TargetHealth"/> of
+        /// <see cref="AbilityCue.TargetMaxHealth"/>. One per target, so a crater over three dummies sends three.
+        /// </summary>
+        TargetHit,
     }
 
     /// <summary>
@@ -40,8 +46,12 @@ namespace Voxelforge.Gameplay
         public ushort BlockId;
         /// <summary>How many blocks an <see cref="AbilityCueKind.Impact"/> broke, for the combat text (Roadmap 4.4).</summary>
         public ushort BlocksBroken;
-        /// <summary>How much damage an <see cref="AbilityCueKind.Impact"/> did to targets (Training Dummies, Roadmap 4.6), for the combat text.</summary>
+        /// <summary>For <see cref="AbilityCueKind.TargetHit"/>: the damage the target took, its health left and its most health.</summary>
         public ushort TargetDamage;
+        public ushort TargetHealth;
+        public ushort TargetMaxHealth;
+        /// <summary>For <see cref="AbilityCueKind.TargetHit"/>: the hit emptied it (a dummy topples and springs back to full).</summary>
+        public bool Toppled;
         /// <summary>Why a cast stopped (<see cref="AbilityCueKind.CastStopped"/>).</summary>
         public CastCheck Reason;
 
@@ -56,20 +66,27 @@ namespace Voxelforge.Gameplay
             };
 
         /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> hit <paramref name="blockId"/> at <paramref name="point"/>, on the face <paramref name="normal"/>.</summary>
-        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId, int blocksBroken = 0,
-            float targetDamage = 0f) =>
+        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId, int blocksBroken = 0) =>
             new AbilityCue
             {
                 Kind = AbilityCueKind.Impact, AbilityId = abilityId, Position = point, Direction = normal, BlockId = blockId,
-                BlocksBroken = ClampCount(blocksBroken), TargetDamage = ClampCount(Mathf.RoundToInt(targetDamage)),
+                BlocksBroken = ClampCount(blocksBroken),
             };
 
-        public static AbilityCue End(in ManaBoltEnd end, ushort blockId, int blocksBroken = 0, float targetDamage = 0f) =>
+        public static AbilityCue End(in ManaBoltEnd end, ushort blockId, int blocksBroken = 0) =>
             new AbilityCue
             {
                 Kind = end.HitBlock ? AbilityCueKind.Impact : AbilityCueKind.Fizzled, AbilityId = end.AbilityId, ShotId = end.Id,
                 Position = end.Point, Direction = end.Normal, BlockId = blockId, BlocksBroken = ClampCount(blocksBroken),
-                TargetDamage = ClampCount(Mathf.RoundToInt(targetDamage)),
+            };
+
+        /// <summary>The ability hurt the target whose middle is at <paramref name="middle"/> (Roadmap 4.6).</summary>
+        public static AbilityCue HitTarget(ushort abilityId, Vector3 middle, in TargetDamage result) =>
+            new AbilityCue
+            {
+                Kind = AbilityCueKind.TargetHit, AbilityId = abilityId, Position = middle,
+                TargetDamage = ClampCount(Mathf.CeilToInt(result.Dealt)), TargetHealth = ClampCount(Mathf.CeilToInt(result.Health)),
+                TargetMaxHealth = ClampCount(Mathf.CeilToInt(result.MaxHealth)), Toppled = result.Toppled,
             };
 
         static ushort ClampCount(int count) => (ushort)Mathf.Clamp(count, 0, ushort.MaxValue);
@@ -94,7 +111,12 @@ namespace Voxelforge.Gameplay
                     serializer.SerializeValue(ref Direction);
                     serializer.SerializeValue(ref BlockId);
                     serializer.SerializeValue(ref BlocksBroken);
+                    break;
+                case AbilityCueKind.TargetHit:
                     serializer.SerializeValue(ref TargetDamage);
+                    serializer.SerializeValue(ref TargetHealth);
+                    serializer.SerializeValue(ref TargetMaxHealth);
+                    serializer.SerializeValue(ref Toppled);
                     break;
             }
         }

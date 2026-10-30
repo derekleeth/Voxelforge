@@ -52,18 +52,19 @@ namespace Voxelforge.Editor
                 speed: 40f, blockDamage: 45f, creatureDamage: 20f);
             AbilityDefinition arcaneOrb = MakeAbility(ArcaneOrbPath, AbilityIds.ArcaneOrb, "Arcane Orb",
                 "Gather your mana into a slow, heavy orb. Stand still while you cast it.",
-                AbilityElement.Arcane, manaCost: 30f, cooldown: 6f, castTime: 1.5f, range: 30f, aoeRadius: 3f,
-                speed: 18f, blockDamage: 120f, creatureDamage: 60f, craterFalloff: 0.15f, craterFlatten: 0.8f);
-            // Craters (Roadmap 4.3): blockDamage is at the middle, falling to craterFalloff of it at the edge, so with
-            // these numbers Pyroblast clears dirt across the whole crater, stone out to about 3.3 m and ore to 1.7 m.
+                AbilityElement.Arcane, manaCost: 30f, cooldown: 6f, castTime: 1.5f, range: 30f, aoeRadius: 2f,
+                speed: 18f, blockDamage: 100f, creatureDamage: 60f, craterFalloff: 0.15f, craterFlatten: 0.8f);
+            // Craters (Roadmap 4.3): blockDamage is at the middle, falling to craterFalloff of it at the edge. Made smaller
+            // after the 4.6 play-test (Orb 3 -> 2 m, Pyroblast 4 -> 3 m, EarthShatter 4.5 -> 3.5 m): with these numbers
+            // Pyroblast clears dirt across the whole crater and stone out to about 2.3 m.
             AbilityDefinition pyroblast = MakeAbility(PyroblastPath, AbilityIds.Pyroblast, "Pyroblast",
                 "Hurl a huge ball of fire that blasts a crater out of the ground. Stand still while you cast it.",
-                AbilityElement.Fire, manaCost: 45f, cooldown: 10f, castTime: 2.5f, range: 40f, aoeRadius: 4f,
-                speed: 22f, blockDamage: 240f, creatureDamage: 120f, craterFalloff: 0.1f, craterFlatten: 1f);
+                AbilityElement.Fire, manaCost: 45f, cooldown: 10f, castTime: 2.5f, range: 40f, aoeRadius: 3f,
+                speed: 22f, blockDamage: 200f, creatureDamage: 120f, craterFalloff: 0.1f, craterFlatten: 1f);
             AbilityDefinition earthShatter = MakeAbility(EarthShatterPath, AbilityIds.EarthShatter, "EarthShatter",
                 "Slam the ground where you look and shatter it into a wide, shallow bowl.",
-                AbilityElement.Earth, manaCost: 35f, cooldown: 8f, castTime: 0f, range: 20f, aoeRadius: 4.5f,
-                speed: 0f, blockDamage: 150f, creatureDamage: 80f, craterFalloff: 0.2f, craterFlatten: 0.45f,
+                AbilityElement.Earth, manaCost: 35f, cooldown: 8f, castTime: 0f, range: 20f, aoeRadius: 3.5f,
+                speed: 0f, blockDamage: 120f, creatureDamage: 80f, craterFalloff: 0.2f, craterFlatten: 0.45f,
                 delivery: AbilityDelivery.GroundSlam);
 
             var book = LoadOrCreate<AbilityBook>(BookPath);

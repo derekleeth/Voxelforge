@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Voxelforge.Voxels;
 
@@ -8,7 +10,8 @@ namespace Voxelforge.Gameplay
     /// combat text each. One overlay canvas holds a <see cref="PlayerHudPanel"/> per local player, and every frame each
     /// panel is fitted to <b>that player's own</b> part of the screen (<see cref="PlayerScreenArea"/>, CLAUDE.md Law #5),
     /// so it follows them through Dynamic and Classic splits and merges. Each panel also holds that player's inventory
-    /// window (4.5). The reticle, held item and crafting window stay in <see cref="PlayerHud"/>.
+    /// window (4.5), and bars over the Training Dummies being fought (4.6), from every hero's cues. The reticle, held
+    /// item and crafting window stay in <see cref="PlayerHud"/>.
     /// </summary>
     public sealed class CombatHud : MonoBehaviour
     {
@@ -37,6 +40,9 @@ namespace Voxelforge.Gameplay
         const int MaxSlots = 4;
 
         readonly PlayerHudPanel[] _panels = new PlayerHudPanel[MaxSlots];
+        readonly TargetHealthBook _targets = new TargetHealthBook();
+        readonly Dictionary<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>> _heroes =
+            new Dictionary<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>>();
         RectTransform _canvas;
         ItemLooks _looks;
         ItemIcons _icons;
@@ -61,6 +67,48 @@ namespace Voxelforge.Gameplay
             _canvas = (RectTransform)go.transform;
         }
 
+        void OnEnable()
+        {
+            PlayerController.AnySpawned += OnHeroSpawned;
+            PlayerController.AnyDespawned += OnHeroDespawned;
+        }
+
+        void OnDisable()
+        {
+            PlayerController.AnySpawned -= OnHeroSpawned;
+            PlayerController.AnyDespawned -= OnHeroDespawned;
+            foreach (KeyValuePair<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>> hero in _heroes)
+            {
+                if (hero.Key != null)
+                    hero.Key.Received -= hero.Value;
+            }
+            _heroes.Clear();
+            _targets.Clear();
+        }
+
+        // Every hero's hits on targets, so a partner's hits show on the bars too (Roadmap 4.6).
+        void OnHeroSpawned(PlayerController hero)
+        {
+            if (!hero.TryGetComponent(out PlayerAbilityCues cues) || _heroes.ContainsKey(cues))
+                return;
+            Action<AbilityCue, AbilityDefinition> listener = (cue, _) =>
+            {
+                if (cue.Kind == AbilityCueKind.TargetHit)
+                    _targets.Record(cue.Position, cue.TargetHealth, cue.TargetMaxHealth, cue.Toppled, Time.time);
+            };
+            _heroes[cues] = listener;
+            cues.Received += listener;
+        }
+
+        void OnHeroDespawned(PlayerController hero)
+        {
+            if (hero.TryGetComponent(out PlayerAbilityCues cues) && _heroes.TryGetValue(cues, out Action<AbilityCue, AbilityDefinition> listener))
+            {
+                cues.Received -= listener;
+                _heroes.Remove(cues);
+            }
+        }
+
         void OnDestroy()
         {
             for (int i = 0; i < _panels.Length; i++)
@@ -79,6 +127,7 @@ namespace Voxelforge.Gameplay
             float scale = Screen.height / 1080f;
             float now = Time.time;
             SplitMode mode = cameras.Layout.Mode;
+            _targets.Expire(now);
 
             for (int slot = 0; slot < MaxSlots; slot++)
             {
@@ -100,7 +149,7 @@ namespace Voxelforge.Gameplay
                 Rect text = mode == SplitMode.Merged
                     ? new Rect(r.x * Screen.width, (1f - r.y - r.height) * Screen.height, r.width * Screen.width, r.height * Screen.height)
                     : own;
-                panel.Tick(view, own, text, scale, now);
+                panel.Tick(view, own, text, scale, _targets, now);
             }
 
             VoxelWorld voxels = world != null ? world.World : null;

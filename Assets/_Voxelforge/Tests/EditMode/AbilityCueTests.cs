@@ -143,6 +143,8 @@ namespace Voxelforge.Tests
         [TestCase(typeof(HealthEvent))]
         [TestCase(typeof(SparringDummy))]
         [TestCase(typeof(CombatTargets))]
+        [TestCase(typeof(CombatTarget))]
+        [TestCase(typeof(TargetDamage))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

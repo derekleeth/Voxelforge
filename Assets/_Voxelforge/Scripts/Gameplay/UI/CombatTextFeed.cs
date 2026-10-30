@@ -46,6 +46,7 @@ namespace Voxelforge.Gameplay
             switch (kind)
             {
                 case CombatTextKind.CraterHit:
+                case CombatTextKind.Toppled:
                     return 1.6f;
                 case CombatTextKind.Refused:
                 case CombatTextKind.BagRefused:

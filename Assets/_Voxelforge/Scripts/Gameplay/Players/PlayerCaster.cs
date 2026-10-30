@@ -206,12 +206,13 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        /// <summary>Host: the block the hero aims at within <paramref name="ability"/>'s range.</summary>
+        /// <summary>Host: the block (or target's body, Roadmap 4.6) the hero aims at within <paramref name="ability"/>'s range.</summary>
         bool TryAimAtBlock(AbilityDefinition ability, PlayerInputFrame input, out VoxelHit hit)
         {
             hit = default;
             VoxelWorldManager world = _player.WorldManager;
-            return world != null && world.World != null && VoxelQueries.Raycast(world.World,
+            CombatTargets targets = _player.Registry != null ? _player.Registry.Targets : null;
+            return world != null && world.World != null && ManaBoltFlight.TryHit(world.World, targets,
                 _player.Aim.Eyes(transform.position), _player.Aim.Direction(input), ability.Range, out hit);
         }
 

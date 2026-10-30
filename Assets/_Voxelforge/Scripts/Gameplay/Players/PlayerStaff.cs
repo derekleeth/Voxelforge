@@ -58,8 +58,8 @@ namespace Voxelforge.Gameplay
             if (!IsServer || !IsSpawned || ability == null || world == null || world.World == null)
                 return;
             ushort blockId = world.World.GetVoxel(hit.Block).BlockId;
-            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage, out float dealt);
-            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken, dealt));
+            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken));
         }
 
         void FixedUpdate()
@@ -68,7 +68,7 @@ namespace Voxelforge.Gameplay
                 return;
             VoxelWorldManager world = _player.WorldManager;
             _ended.Clear();
-            _flight.Step(world != null ? world.World : null, Time.fixedDeltaTime, _ended);
+            _flight.Step(world != null ? world.World : null, Time.fixedDeltaTime, _ended, Targets);
             foreach (ManaBoltEnd end in _ended)
                 Strike(world, end);
         }
@@ -77,28 +77,28 @@ namespace Voxelforge.Gameplay
         {
             ushort blockId = BlockIds.Air;
             int broken = 0;
-            float dealt = 0f;
             if (end.HitBlock && world != null && world.World != null)
             {
                 blockId = world.World.GetVoxel(end.Hit.Block).BlockId;
                 AbilityBook book = _caster != null ? _caster.Book : null;
                 AbilityDefinition ability = null;
                 book?.TryGet(end.AbilityId, out ability);
-                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage, out dealt).Broken;
+                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage).Broken;
             }
-            _cues.ServerSend(AbilityCue.End(end, blockId, broken, dealt));
+            _cues.ServerSend(AbilityCue.End(end, blockId, broken));
         }
 
-        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage,
-            out float dealt)
+        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage)
         {
             bool area = ability != null && ability.AoeRadius > 0f;
-            dealt = HurtTargets(ability, point, block, area);
-
-            _damage.Clear();
-            // A spell hurts a Training Dummy instead of breaking it (a crater already passes it by: it's blast-proof).
             CombatTargets targets = Targets;
-            if (area || targets == null || !targets.IsTarget(block))
+            bool onTarget = targets != null && targets.IsTarget(block);
+            float dealt = HurtTargets(ability, point, block, area);
+
+            // A spell that hits a target spends itself on it: no crater, and the Training Dummy isn't broken
+            // (Roadmap 4.6 play-test: blasts dug a pit round the dummy). Craters only happen on the ground.
+            _damage.Clear();
+            if (!onTarget)
                 AbilityImpact.Resolve(ability, point, block, damage, _damage);
             VoxelBatchResult result = world.RequestDamageVoxels(_damage, _player.PlayerId, area);
             if (logHits)
@@ -110,9 +110,10 @@ namespace Voxelforge.Gameplay
         CombatTargets Targets => _player.Registry != null ? _player.Registry.Targets : null;
 
         /// <summary>
-        /// Host: the ability's creature damage (Roadmap 4.6) to the target it hit, or, for a crater, to every target in it:
-        /// full in the middle, falling to <see cref="AbilityDefinition.CraterFalloff"/> at the edge like the blocks.
-        /// Returns the total damage dealt.
+        /// Host: the ability's creature damage (Roadmap 4.6) to the target it hit, or, with an area, to every target in it:
+        /// full on the one it struck and in the middle, falling to <see cref="AbilityDefinition.CraterFalloff"/> at the
+        /// edge like the blocks.
+        /// Every target hurt gets its own <see cref="AbilityCueKind.TargetHit"/> cue. Returns the total damage dealt.
         /// </summary>
         float HurtTargets(AbilityDefinition ability, float3 point, int3 block, bool area)
         {
@@ -120,20 +121,26 @@ namespace Voxelforge.Gameplay
             if (targets == null || ability == null || ability.CreatureDamage <= 0f)
                 return 0f;
             if (!area)
-                return targets.IsTarget(block)
-                    ? targets.ServerDamage(new CombatTarget(block), ability.CreatureDamage, _player.PlayerId)
-                    : 0f;
+                return targets.IsTarget(block) ? Hurt(targets, ability, new CombatTarget(block), ability.CreatureDamage) : 0f;
 
             float dealt = 0f;
             _found.Clear();
             targets.FindAll(point, ability.AoeRadius, _found);
             foreach (CombatTarget target in _found)
             {
-                float t = math.saturate(math.distance(target.Position, point) / ability.AoeRadius);
-                float amount = ability.CreatureDamage * math.lerp(1f, ability.CraterFalloff, t);
-                dealt += targets.ServerDamage(target, amount, _player.PlayerId);
+                // The target the spell struck takes it all; others in the blast less, the further they are.
+                float t = target.Block.Equals(block) ? 0f : math.saturate(math.distance(target.Position, point) / ability.AoeRadius);
+                dealt += Hurt(targets, ability, target, ability.CreatureDamage * math.lerp(1f, ability.CraterFalloff, t));
             }
             return dealt;
+        }
+
+        float Hurt(CombatTargets targets, AbilityDefinition ability, in CombatTarget target, float amount)
+        {
+            TargetDamage result = targets.ServerDamage(target, amount, _player.PlayerId);
+            if (result.Dealt > 0f)
+                _cues.ServerSend(AbilityCue.HitTarget(ability.Id, target.Position, result));
+            return result.Dealt;
         }
     }
 }

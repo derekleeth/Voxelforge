@@ -76,14 +76,17 @@ namespace Voxelforge.Gameplay
             return true;
         }
 
-        /// <summary>Moves every bolt <paramref name="dt"/> seconds on, adding the ones that hit or fizzled to <paramref name="ended"/>.</summary>
-        public void Step(VoxelWorld world, float dt, List<ManaBoltEnd> ended)
+        /// <summary>
+        /// Moves every bolt <paramref name="dt"/> seconds on, adding the ones that hit or fizzled to <paramref name="ended"/>.
+        /// A bolt also hits the body of anything in <paramref name="targets"/> (Roadmap 4.6), reported as a hit on its block.
+        /// </summary>
+        public void Step(VoxelWorld world, float dt, List<ManaBoltEnd> ended, CombatTargets targets = null)
         {
             for (int i = _bolts.Count - 1; i >= 0; i--)
             {
                 ManaBolt bolt = _bolts[i];
                 float move = math.min(bolt.Speed * dt, bolt.Remaining);
-                if (world != null && VoxelQueries.Raycast(world, bolt.Position, bolt.Direction, move, out VoxelHit hit))
+                if (TryHit(world, targets, bolt.Position, bolt.Direction, move, out VoxelHit hit))
                 {
                     ended.Add(new ManaBoltEnd
                         { Id = bolt.Id, AbilityId = bolt.AbilityId, HitBlock = true, Hit = hit, Point = hit.Point, Normal = (float3)hit.Normal, Damage = bolt.Damage });
@@ -101,6 +104,26 @@ namespace Voxelforge.Gameplay
                 }
                 _bolts[i] = bolt;
             }
+        }
+
+        /// <summary>The nearer of the first block and the first target body along a ray.</summary>
+        internal static bool TryHit(VoxelWorld world, CombatTargets targets, float3 origin, float3 direction, float distance,
+            out VoxelHit hit)
+        {
+            hit = default;
+            bool block = false;
+            if (world != null && VoxelQueries.Raycast(world, origin, direction, distance, out VoxelHit blockHit))
+            {
+                block = true;
+                hit = blockHit;
+            }
+            if (targets != null && targets.Raycast(origin, direction, block ? hit.Distance : distance, out VoxelHit body) &&
+                (!block || body.Distance <= hit.Distance))
+            {
+                hit = body;
+                return true;
+            }
+            return block;
         }
 
         /// <summary>Drops every bolt without ending it, when the shooter leaves.</summary>

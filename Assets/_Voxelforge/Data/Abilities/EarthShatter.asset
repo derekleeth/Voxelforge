@@ -21,10 +21,10 @@ MonoBehaviour:
   castTime: 0
   castWhileMoving: 0
   range: 20
-  aoeRadius: 4.5
+  aoeRadius: 3.5
   craterFalloff: 0.2
   craterFlatten: 0.45
   delivery: 1
   projectileSpeed: 0
-  blockDamage: 150
+  blockDamage: 120
   creatureDamage: 80

@@ -142,6 +142,12 @@ namespace Voxelforge.Gameplay
                     colour = _skin.ElementColor(e.Element);
                     size *= 1.15f;
                     break;
+                case CombatTextKind.Toppled:
+                    words = $"TIMBERRR!\n<size=70%>{e.Amount}</size>";
+                    colour = _skin.ElementColor(e.Element);
+                    size *= 1.25f;
+                    burst = true;
+                    break;
                 case CombatTextKind.Hurt:
                     words = $"-{e.Amount}";
                     colour = _skin.health;

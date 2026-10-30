@@ -21,6 +21,8 @@ namespace Voxelforge.Gameplay
         Sent,
         /// <summary>A spell hurt a target (a Training Dummy, Roadmap 4.6) for <see cref="CombatTextEvent.Amount"/>.</summary>
         TargetHit,
+        /// <summary>A spell's hit (<see cref="CombatTextEvent.Amount"/>) emptied a target: the dummy topples (Roadmap 4.6).</summary>
+        Toppled,
         /// <summary>The hero lost <see cref="CombatTextEvent.Amount"/> health (Roadmap 4.6).</summary>
         Hurt,
         /// <summary>A hero was healed for <see cref="CombatTextEvent.Amount"/> (Roadmap 4.6).</summary>

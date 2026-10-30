@@ -1,6 +1,7 @@
 using System;
 using Unity.Mathematics;
 using UnityEngine;
+using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
@@ -68,17 +69,18 @@ namespace Voxelforge.Gameplay
         {
             switch (cue.Kind)
             {
+                case AbilityCueKind.TargetHit:
+                    Raise(new CombatTextEvent
+                    {
+                        Kind = cue.Toppled ? CombatTextKind.Toppled : CombatTextKind.TargetHit, Amount = cue.TargetDamage,
+                        AbilityId = ability.Id, Element = ability.Element, Position = (float3)cue.Position + new float3(0f, 0.6f, 0f),
+                    });
+                    break;
                 case AbilityCueKind.Impact:
-                    // A hit on a Training Dummy (Roadmap 4.6) shows the damage it took, not block damage.
-                    if (cue.TargetDamage > 0)
-                        Raise(new CombatTextEvent
-                        {
-                            Kind = CombatTextKind.TargetHit, Amount = cue.TargetDamage, AbilityId = ability.Id,
-                            Element = ability.Element, Position = (float3)cue.Position + new float3(0f, 0.6f, 0f),
-                        });
-                    bool crater = ability.AoeRadius > 0f && cue.BlocksBroken > 0;
-                    if (!crater && cue.TargetDamage > 0)
+                    // A hit on a Training Dummy (Roadmap 4.6) shows its damage with the TargetHit cue, not block damage.
+                    if (cue.BlockId == BlockIds.TrainingDummy)
                         break;
+                    bool crater = ability.AoeRadius > 0f && cue.BlocksBroken > 0;
                     Raise(new CombatTextEvent
                     {
                         Kind = crater ? CombatTextKind.CraterHit : CombatTextKind.SpellHit,

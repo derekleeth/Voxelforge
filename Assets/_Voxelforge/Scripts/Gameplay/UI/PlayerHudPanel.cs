@@ -23,6 +23,7 @@ namespace Voxelforge.Gameplay
         readonly ActionBarView _actionBar;
         readonly CastBarView _castBar;
         readonly CombatTextView _textView;
+        readonly TargetBarsView _targetBars;
         readonly CombatTextFeed _feed = new CombatTextFeed(TextCapacity);
 
         PlayerController _player;
@@ -47,6 +48,8 @@ namespace Voxelforge.Gameplay
             // than the half their bar sits in.
             _textArea = NestedCanvas($"Player {slot + 1} Combat Text", canvas);
             _textArea.gameObject.AddComponent<RectMask2D>();
+            // Target health bars (Roadmap 4.6) first, so combat text draws over them.
+            _targetBars = new TargetBarsView(_textArea, skin);
             _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName);
 
             // The inventory window (Roadmap 4.5) on top, on its own canvas so its slots don't rebuild the bar.
@@ -104,7 +107,8 @@ namespace Voxelforge.Gameplay
         /// <param name="ownArea">The player's own part of the screen (GUI pixels), for the bars.</param>
         /// <param name="textArea">Where their combat text may go (GUI pixels).</param>
         /// <param name="scale">GUI pixels per 1080p pixel.</param>
-        public void Tick(PlayerView view, Rect ownArea, Rect textArea, float scale, float now)
+        /// <param name="targets">Health of the targets being fought (Roadmap 4.6), shared by every panel.</param>
+        public void Tick(PlayerView view, Rect ownArea, Rect textArea, float scale, TargetHealthBook targets, float now)
         {
             Fit(_barArea, ownArea, scale);
             Fit(_textArea, textArea, scale);
@@ -118,6 +122,8 @@ namespace Voxelforge.Gameplay
             PlayerButtons buttons = _player != null ? _player.OwnerInput.Buttons : PlayerButtons.None;
             _actionBar.Tick(_bar, _caster, _health, buttons, now);
             _castBar.Tick(_caster, now);
+            if (_player != null)
+                _targetBars.Tick(targets, view, textArea, scale, _player.transform.position, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
 
