@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -9,7 +10,8 @@ namespace Voxelforge.Gameplay
     /// Everything one player carries (Roadmap 3.2, D-015; tools since 3.5; slots and worn bags since 4.5, D-028). Only
     /// the host changes it (CLAUDE.md Law #2); every PC sees the slots through a <see cref="NetworkList{T}"/> and the worn
     /// bags through a <see cref="NetworkVariable{T}"/>, so each player's inventory window can show them. The owning PC asks
-    /// for moves, sorting and bag swaps with RPCs that the host checks. Saved with the player's <see cref="PlayerProfile"/>.
+    /// for moves, sorting, bag swaps, dropping a stack as a <see cref="LootBag"/> and Send to Partner with RPCs that the
+    /// host checks. Saved with the player's <see cref="PlayerProfile"/>.
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
     public sealed class PlayerBlockBag : NetworkBehaviour
@@ -30,12 +32,26 @@ namespace Voxelforge.Gameplay
         float _lastRequestTime = float.NegativeInfinity;
         float _lastFullTold = float.NegativeInfinity;
         const float BagFullRepeatSeconds = 4f;
+        // How high a dropped stack leaves the hero, and how hard it's thrown forward and up.
+        const float DropHeight = 1.1f;
+        const float DropForward = 2.5f;
+        const float DropUp = 3f;
+        PlayerController _player;
 
         /// <summary>Owner only: the host put a picked-up stack in this bag (item, count), for the combat text (4.4).</summary>
         public event Action<ushort, int> PickedUp;
 
         /// <summary>Owner only: the host said no to something (a full bag), for the combat text.</summary>
         public event Action<BagRefusal> Refused;
+
+        /// <summary>Owner only: the host sent a stack to a partner (item, count), for the combat text.</summary>
+        public event Action<ushort, int> Sent;
+
+        /// <summary>
+        /// Every PC: one hero tossed something to another with Send to Partner (from, to, item), so the toss can be drawn
+        /// (<see cref="LootBagSpawner"/>). The items have already moved.
+        /// </summary>
+        public static event Action<PlayerBlockBag, PlayerBlockBag, ushort> Tossed;
 
         /// <summary>How many slots the bag has. Some may be empty.</summary>
         public int SlotCount => _synced.Count;
@@ -60,7 +76,11 @@ namespace Voxelforge.Gameplay
             return total;
         }
 
-        void Awake() => _server = new ItemStacks(BaseSlots, Rules);
+        void Awake()
+        {
+            _server = new ItemStacks(BaseSlots, Rules);
+            _player = GetComponent<PlayerController>();
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -235,6 +255,84 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Host only: Send to Partner (Roadmap 4.5). Gives slot <paramref name="index"/> to the nearest other hero,
+        /// wherever they are; what their bag can't take lands at their feet as a loot bag.
+        /// </summary>
+        public bool ServerSendToPartner(int index)
+        {
+            if (!CheckServer("send from") || index < 0 || index >= _server.Capacity || _server.Stacks[index].IsEmpty)
+                return false;
+            PlayerController partner = NearestPartner();
+            if (partner == null || !partner.TryGetComponent(out PlayerBlockBag partnerBag))
+            {
+                ServerTellRefused(BagRefusal.NoPartner);
+                return false;
+            }
+
+            ItemStack stack = ServerTakeSlot(index);
+            int given = partnerBag.ServerAdd(stack.ItemId, stack.Count);
+            if (given < stack.Count)
+            {
+                var rest = new[] { new ItemStack(stack.ItemId, (ushort)(stack.Count - given)) };
+                LootBagSpawner loot = _player.Registry != null ? _player.Registry.Loot : null;
+                if (loot != null)
+                    loot.ServerSpawn((float3)partner.transform.position + new float3(0f, 1f, 0f), rest, new float3(0f, 2f, 0f));
+                else
+                    _server.Add(rest[0].ItemId, rest[0].Count); // Nowhere to put it: keep it rather than lose it.
+            }
+            if (given > 0)
+                partnerBag.ServerTellPickedUp(stack.ItemId, given);
+            SentRpc(stack.ItemId, stack.Count);
+            TossRpc(partnerBag.NetworkObject, stack.ItemId);
+            return true;
+        }
+
+        /// <summary>Host only: drops slot <paramref name="index"/> in front of the hero as a loot bag (Roadmap 4.5).</summary>
+        public bool ServerDrop(int index)
+        {
+            LootBagSpawner loot = _player.Registry != null ? _player.Registry.Loot : null;
+            if (!CheckServer("drop from") || loot == null || index < 0 || index >= _server.Capacity || _server.Stacks[index].IsEmpty)
+                return false;
+            ItemStack stack = ServerTakeSlot(index);
+            float3 forward = transform.forward;
+            float3 at = (float3)transform.position + new float3(0f, DropHeight, 0f) + forward * 0.4f;
+            loot.ServerSpawn(at, new[] { stack }, forward * DropForward + new float3(0f, DropUp, 0f), _player.PlayerId);
+            return true;
+        }
+
+        /// <summary>Host: the closest other hero in the world, or null when playing alone.</summary>
+        PlayerController NearestPartner()
+        {
+            PlayerRegistry registry = _player.Registry;
+            if (registry == null)
+                return null;
+            PlayerController nearest = null;
+            float best = float.PositiveInfinity;
+            foreach (PlayerController other in registry.Players)
+            {
+                if (other == null || other == _player || !other.HasLanded)
+                    continue;
+                float distance = math.distancesq(other.transform.position, transform.position);
+                if (distance < best)
+                {
+                    best = distance;
+                    nearest = other;
+                }
+            }
+            return nearest;
+        }
+
+        [Rpc(SendTo.Owner)]
+        void SentRpc(ushort itemId, ushort count) => Sent?.Invoke(itemId, count);
+
+        [Rpc(SendTo.Everyone)]
+        void TossRpc(NetworkObjectReference to, ushort itemId)
+        {
+            if (to.TryGet(out NetworkObject target) && target.TryGetComponent(out PlayerBlockBag toBag))
+                Tossed?.Invoke(this, toBag, itemId);
+        }
+
+        /// <summary>
         /// Host only: refills the bag from a saved profile (Roadmap 3.4): worn bags first, so the slots exist, then
         /// every slot in its place.
         /// </summary>
@@ -272,6 +370,32 @@ namespace Voxelforge.Gameplay
         {
             if (socket >= 0 && socket < EquippedBags.SocketCount)
                 UnequipRpc((byte)socket);
+        }
+
+        public void RequestSendToPartner(int index)
+        {
+            if (index >= 0 && index < SlotCount)
+                SendToPartnerRpc((byte)index);
+        }
+
+        public void RequestDrop(int index)
+        {
+            if (index >= 0 && index < SlotCount)
+                DropRpc((byte)index);
+        }
+
+        [Rpc(SendTo.Server)]
+        void SendToPartnerRpc(byte index, RpcParams rpcParams = default)
+        {
+            if (Allowed(rpcParams))
+                ServerSendToPartner(index);
+        }
+
+        [Rpc(SendTo.Server)]
+        void DropRpc(byte index, RpcParams rpcParams = default)
+        {
+            if (Allowed(rpcParams) && _player.HasLanded)
+                ServerDrop(index);
         }
 
         [Rpc(SendTo.Server)]
@@ -360,5 +484,7 @@ namespace Voxelforge.Gameplay
         BagFull,
         /// <summary>Taking off a bag would leave its items nowhere to go.</summary>
         NoRoom,
+        /// <summary>Send to Partner with nobody else playing.</summary>
+        NoPartner,
     }
 }

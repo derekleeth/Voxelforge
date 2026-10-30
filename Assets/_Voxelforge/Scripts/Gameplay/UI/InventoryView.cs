@@ -174,14 +174,14 @@ namespace Voxelforge.Gameplay
             _scheme = scheme;
             _hints.text = scheme switch
             {
-                "Gamepad" => Hints(("A", "Pick up / Put"), ("X", "Use / Wear"), ("View", "Sort"), null,
-                    ("Stick", "Move"), ("LB RB", "Tabs"), ("B", "Close")),
-                "KeyboardRight" => Hints(("RCtrl", "Pick up / Put"), (";", "Use / Wear"), ("[", "Sort"), null,
-                    ("Arrows", "Move"), (". /", "Tabs"), ("Backspace", "Close")),
-                "KeyboardLeft" => Hints(("Space", "Pick up / Put"), ("F", "Use / Wear"), ("H", "Sort"), null,
-                    ("WASD", "Move"), ("Z C  1-5", "Tabs"), ("Tab", "Close")),
-                _ => Hints(("Click", "Pick up / Put"), ("Right-click", "Use / Wear"), ("H", "Sort"), null,
-                    ("1-5", "Tabs"), ("Wheel", "Scroll"), ("Tab", "Close")),
+                "Gamepad" => Hints(("A", "Pick up / Put"), ("X", "Use / Wear"), ("Y", "Send to partner"), ("RT", "Drop"), null,
+                    ("View", "Sort"), ("LB RB", "Tabs"), ("B", "Close")),
+                "KeyboardRight" => Hints(("RCtrl", "Pick up / Put"), (";", "Use / Wear"), ("'", "Send to partner"),
+                    ("RShift", "Drop"), null, ("Arrows", "Move"), ("[", "Sort"), (". /", "Tabs"), ("Backspace", "Close")),
+                "KeyboardLeft" => Hints(("Space", "Pick up / Put"), ("F", "Use / Wear"), ("G", "Send to partner"), ("Q", "Drop"),
+                    null, ("WASD", "Move"), ("H", "Sort"), ("Z C  1-5", "Tabs"), ("Tab", "Close")),
+                _ => Hints(("Click", "Pick up / Put"), ("Right-click", "Use / Wear"), ("G", "Send to partner"), null,
+                    ("Click outside", "Drop"), ("H", "Sort"), ("1-5", "Tabs"), ("Wheel", "Scroll"), ("Tab", "Close")),
             };
         }
 
@@ -363,6 +363,13 @@ namespace Voxelforge.Gameplay
                 float wheel = mouse.scroll.ReadValue().y;
                 if (wheel != 0f)
                     model.Scroll(wheel > 0f ? -1 : 1);
+            }
+            // A stack picked up and a click outside the window: throw it out as a loot bag (Roadmap 4.5).
+            if (!over && inventory.HeldSlot >= 0 && mouse.leftButton.wasPressedThisFrame &&
+                !RectTransformUtility.RectangleContainsScreenPoint(Root, point, null))
+            {
+                inventory.Drop();
+                return;
             }
             if (!over)
                 return;

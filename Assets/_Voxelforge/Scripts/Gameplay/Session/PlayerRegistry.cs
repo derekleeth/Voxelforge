@@ -45,6 +45,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("How many chunks around a Home Totem load while its owner hearths there (Roadmap 3.8).")]
         [SerializeField, Range(1, 4)] int hearthRadiusChunks = 2;
 
+        [Tooltip("Spawns loot bags (Roadmap 4.5): a player's dropped stacks, and saved items that no longer fit.")]
+        [SerializeField] LootBagSpawner loot;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -53,6 +56,9 @@ namespace Voxelforge.Gameplay
         public IReadOnlyList<PlayerController> Players => _players;
 
         public PlayerController PlayerPrefab => playerPrefab;
+
+        /// <summary>Host only: where loot bags come from (Roadmap 4.5), for players dropping and sending things.</summary>
+        public LootBagSpawner Loot => loot;
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 
@@ -104,7 +110,12 @@ namespace Voxelforge.Gameplay
                 // After spawning: the bag's list only syncs once it's on the network.
                 List<ItemStack> lost = bag.ServerRestore(profile.Bag, profile.Bags);
                 if (lost.Count > 0)
-                    Debug.LogWarning($"{lost.Count} saved stacks didn't fit in {uuid}'s bag.", this);
+                {
+                    // Rare (a bag's size changed): leave them in a loot bag where the player comes back.
+                    Debug.LogWarning($"{lost.Count} saved stacks didn't fit in {uuid}'s bag; they're in a loot bag at their feet.", this);
+                    if (loot != null)
+                        loot.ServerSpawn((float3)player.transform.position + new float3(0f, 1f, 0f), lost, float3.zero);
+                }
             }
             player.TryGetComponent(out PlayerHearth hearth);
             if (profile != null && hearth != null)

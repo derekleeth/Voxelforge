@@ -51,6 +51,7 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.BagRefused:
                     return 1.2f;
                 case CombatTextKind.Pickup:
+                case CombatTextKind.Sent:
                     return 1.4f;
                 default:
                     return 1f;

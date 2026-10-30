@@ -8,7 +8,9 @@ namespace Voxelforge.Gameplay
     /// One player's inventory window (Roadmap 4.5, D-028), owner-side. The Inventory button opens it in their own view
     /// (<see cref="InventoryView"/>, CLAUDE.md Law #5). While it's open <see cref="PlayerController"/> stops the hero and
     /// hands the controls to this: the stick moves the cursor, Select Next / Previous change tab, Jump picks a stack up and
-    /// puts it down, Interact holds an item or wears a bag, and Home sorts. Every change is only a request: the
+    /// puts it down, Interact holds an item or wears a bag, Home sorts, Toggle Ghost sends the stack to the nearest partner
+    /// and Mine drops it as a loot bag (the mouse player drops by clicking outside the window with a stack picked up).
+    /// Every change is only a request: the
     /// <see cref="PlayerBlockBag"/> asks the host, which decides (Law #2), and the window just shows the synced slots.
     /// </summary>
     [RequireComponent(typeof(PlayerController), typeof(PlayerBlockBag))]
@@ -114,6 +116,11 @@ namespace Voxelforge.Gameplay
                 Use();
             if ((pressed & PlayerButtons.Home) != 0)
                 Sort();
+            if ((pressed & PlayerButtons.ToggleGhost) != 0)
+                SendToPartner();
+            // The mouse player's Mine is the left click, which the window uses; they drop by clicking outside it.
+            if ((pressed & PlayerButtons.Mine) != 0 && Scheme != "KeyboardMouse")
+                Drop();
         }
 
         // The d-pad is action slots 1-4 (up, right, down, left) on a gamepad.
@@ -195,6 +202,35 @@ namespace Voxelforge.Gameplay
                 _hands.OwnerSelect(itemId);
                 Say("In hand!");
             }
+        }
+
+        /// <summary>The stack picked up, else the one under the cursor; -1 if neither.</summary>
+        int ChosenSlot()
+        {
+            if (HeldSlot >= 0)
+                return HeldSlot;
+            int slot = _model.CursorSlot;
+            return slot >= 0 && !_slots[slot].IsEmpty ? slot : -1;
+        }
+
+        /// <summary>Send to Partner (Roadmap 4.5): tosses the chosen stack to the nearest other hero.</summary>
+        public void SendToPartner()
+        {
+            int slot = ChosenSlot();
+            HeldSlot = -1;
+            if (slot >= 0)
+                _bag.RequestSendToPartner(slot);
+        }
+
+        /// <summary>Drops the chosen stack in front of the hero as a loot bag.</summary>
+        public void Drop()
+        {
+            int slot = ChosenSlot();
+            HeldSlot = -1;
+            if (slot < 0)
+                return;
+            _bag.RequestDrop(slot);
+            Say("Dropped!");
         }
 
         public void Sort()

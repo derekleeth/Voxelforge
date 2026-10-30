@@ -1,5 +1,6 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
-Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8) and the three wearable bags (4.5).
+Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags and the
+drawstring loot bag (4.5).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -754,6 +755,38 @@ def build_bag_rucksack():
     return b
 
 
+def build_loot_bag():
+    """The drawstring loot bag (Roadmap 4.5): a plump canvas sack gathered at the neck with a rope tie and a frilled top.
+    Origin at its bottom centre, like a world prop, about 0.4 m tall."""
+    b = MeshBuilder()
+    # (height, radius) up the sack: a rounded bottom, a full belly, then pinched in at the neck.
+    profile = [(0.0, 0.07), (0.035, 0.15), (0.1, 0.19), (0.18, 0.2), (0.25, 0.17), (0.3, 0.1), (0.33, 0.05)]
+    sides = 10
+    for (z0, r0), (z1, r1) in zip(profile, profile[1:]):
+        b.part("canvas", cylinder((0, 0, z0), (0, 0, z1), r0, r1, sides, caps=False, phase=0.3), grain=Vector((0, 0, 1)))
+    b.part("canvas", cylinder((0, 0, -0.001), (0, 0, 0.0), 0.07, 0.07, sides, phase=0.3))  # The bottom.
+    # The gathered frill above the tie: flaring out to a ruffled rim, dipping into the opening in the middle.
+    n = 12
+    neck = [Vector((math.cos(k * 2 * math.pi / n) * 0.05, math.sin(k * 2 * math.pi / n) * 0.05, 0.33)) for k in range(n)]
+    rim = [Vector((math.cos(k * 2 * math.pi / n) * r, math.sin(k * 2 * math.pi / n) * r, 0.42 - (0.015 if k % 2 else 0.0)))
+           for k, r in ((k, 0.115 if k % 2 == 0 else 0.08) for k in range(n))]
+    hollow = Vector((0, 0, 0.385))
+    frill = []
+    for k in range(n):
+        j = (k + 1) % n
+        side = [neck[k], neck[j], rim[j], rim[k]]
+        frill.append(facing(side, centre(side) - Vector((0, 0, centre(side).z))))
+        frill.append(facing([rim[k], rim[j], hollow], Vector((0, 0, 1))))
+    b.part("canvas", frill, grain=Vector((0, 0, 1)))
+    # Rope wound round the neck, with a loose end hanging down.
+    b.part("rope", cylinder((0, 0, 0.315), (0, 0, 0.345), 0.068, 0.062, sides, phase=0.3), grain=Vector((0, 0, 1)))
+    b.part("rope", sweep([(0.06, -0.03, 0.33), (0.125, -0.075, 0.28), (0.185, -0.115, 0.205)], [(0.026, 0.026)] * 3,
+                         Vector((0, 1, 0))), grain=Vector((0, 0, 1)))
+    # A patch sewn on the belly.
+    b.part("leather", box((0, -0.19, 0.15), (0.11, 0.03, 0.09)))
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -767,6 +800,7 @@ MODELS = {
     "BagSatchel": build_bag_satchel,
     "BagPack": build_bag_pack,
     "BagRucksack": build_bag_rucksack,
+    "LootBag": build_loot_bag,
 }
 
 

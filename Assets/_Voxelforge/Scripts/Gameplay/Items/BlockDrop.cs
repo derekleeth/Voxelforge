@@ -117,48 +117,9 @@ namespace Voxelforge.Gameplay
                 return;
             }
 
-            // Pushed out of a block placed on top of it.
-            float half = size * 0.5f;
-            if (IsSolid(position))
-            {
-                position.y = math.floor(position.y) + 1f + half;
-                _velocity = float3.zero;
-            }
-
-            _velocity.y -= gravity * dt;
-            bool grounded = false;
-            for (int axis = 0; axis < 3; axis++)
-            {
-                float step = _velocity[axis] * dt;
-                if (step == 0f)
-                    continue;
-                float3 next = position;
-                next[axis] += step;
-                float3 edge = next;
-                edge[axis] += math.sign(step) * half;
-                if (IsSolid(edge))
-                {
-                    if (axis == 1 && step < 0f)
-                    {
-                        grounded = true;
-                        next.y = math.floor(edge.y) + 1f + half; // Sit exactly on the block top.
-                    }
-                    else
-                    {
-                        next[axis] = position[axis];
-                    }
-                    _velocity[axis] = 0f;
-                }
-                position = next;
-            }
-
-            if (grounded)
-                _velocity.xz *= 0.8f; // Slide to a stop.
-            IsResting = grounded && math.lengthsq(_velocity.xz) < 0.01f;
+            IsResting = DropPhysics.Step(_world, ref position, ref _velocity, size * 0.5f, gravity, dt);
             transform.position = position;
         }
-
-        bool IsSolid(float3 point) => VoxelBodyMotor.IsSolid((int3)math.floor(point), _world);
 
         void Update()
         {

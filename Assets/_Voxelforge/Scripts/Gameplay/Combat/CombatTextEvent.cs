@@ -17,6 +17,8 @@ namespace Voxelforge.Gameplay
         Pickup,
         /// <summary>The host said no to something in the bag (<see cref="CombatTextEvent.BagReason"/>, Roadmap 4.5).</summary>
         BagRefused,
+        /// <summary><see cref="CombatTextEvent.Amount"/> of <see cref="CombatTextEvent.ItemId"/> went to a partner (Roadmap 4.5).</summary>
+        Sent,
     }
 
     /// <summary>
@@ -30,7 +32,7 @@ namespace Voxelforge.Gameplay
         /// <summary>The spell, for <see cref="CombatTextKind.SpellHit"/>, <see cref="CombatTextKind.CraterHit"/> and <see cref="CombatTextKind.ManaSpent"/>.</summary>
         public ushort AbilityId;
         public AbilityElement Element;
-        /// <summary>For <see cref="CombatTextKind.Pickup"/>.</summary>
+        /// <summary>For <see cref="CombatTextKind.Pickup"/> and <see cref="CombatTextKind.Sent"/>.</summary>
         public ushort ItemId;
         /// <summary>For <see cref="CombatTextKind.Refused"/>.</summary>
         public CastCheck Reason;

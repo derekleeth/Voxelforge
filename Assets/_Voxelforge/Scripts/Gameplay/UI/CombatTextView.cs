@@ -117,9 +117,19 @@ namespace Voxelforge.Gameplay
                     size *= 0.85f;
                     break;
                 case CombatTextKind.BagRefused:
-                    words = e.BagReason == BagRefusal.BagFull ? "Bag full!" : "No room to take that bag off!";
+                    words = e.BagReason switch
+                    {
+                        BagRefusal.BagFull => "Bag full!",
+                        BagRefusal.NoPartner => "Nobody to send to!",
+                        _ => "No room to take that bag off!",
+                    };
                     colour = _skin.refusal;
                     size *= 0.85f;
+                    break;
+                case CombatTextKind.Sent:
+                    words = $"Sent {e.Amount} {_itemName?.Invoke(e.ItemId) ?? "?"}!";
+                    colour = _skin.pickup;
+                    size *= 0.7f;
                     break;
                 case CombatTextKind.Pickup:
                     words = $"+{e.Amount} {_itemName?.Invoke(e.ItemId) ?? "?"}";

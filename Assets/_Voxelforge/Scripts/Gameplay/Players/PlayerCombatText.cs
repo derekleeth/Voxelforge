@@ -40,6 +40,7 @@ namespace Voxelforge.Gameplay
             {
                 _bag.PickedUp += OnPickedUp;
                 _bag.Refused += OnBagRefused;
+                _bag.Sent += OnSent;
             }
         }
 
@@ -51,6 +52,7 @@ namespace Voxelforge.Gameplay
             {
                 _bag.PickedUp -= OnPickedUp;
                 _bag.Refused -= OnBagRefused;
+                _bag.Sent -= OnSent;
             }
         }
 
@@ -87,6 +89,9 @@ namespace Voxelforge.Gameplay
 
         void OnBagRefused(BagRefusal reason) =>
             Raise(new CombatTextEvent { Kind = CombatTextKind.BagRefused, BagReason = reason, Position = Head });
+
+        void OnSent(ushort itemId, int count) =>
+            Raise(new CombatTextEvent { Kind = CombatTextKind.Sent, ItemId = itemId, Amount = count, Position = Head });
 
         void Raise(in CombatTextEvent e) => Raised?.Invoke(e);
     }
