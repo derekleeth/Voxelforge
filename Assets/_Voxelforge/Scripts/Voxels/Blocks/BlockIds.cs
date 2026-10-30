@@ -34,5 +34,10 @@ namespace Voxelforge.Voxels
         /// apart so it can open. Breaking it spills what's inside as loot bags.
         /// </summary>
         public const ushort Chest = 14;
+        /// <summary>
+        /// A Training Dummy (Roadmap 4.6): a straw dummy on a post that spells hurt instead of breaking, and that throws
+        /// hay bales back. A blast-proof solid prop; an axe removes it.
+        /// </summary>
+        public const ushort TrainingDummy = 15;
     }
 }

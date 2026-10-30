@@ -25,6 +25,7 @@ namespace Voxelforge.Gameplay
         readonly ManaBoltFlight _flight = new ManaBoltFlight();
         readonly List<ManaBoltEnd> _ended = new List<ManaBoltEnd>();
         readonly List<VoxelDamageRequest> _damage = new List<VoxelDamageRequest>();
+        readonly List<CombatTarget> _found = new List<CombatTarget>();
 
         PlayerController _player;
         PlayerCaster _caster;
@@ -57,8 +58,8 @@ namespace Voxelforge.Gameplay
             if (!IsServer || !IsSpawned || ability == null || world == null || world.World == null)
                 return;
             ushort blockId = world.World.GetVoxel(hit.Block).BlockId;
-            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
-            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken));
+            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage, out float dealt);
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken, dealt));
         }
 
         void FixedUpdate()
@@ -76,27 +77,63 @@ namespace Voxelforge.Gameplay
         {
             ushort blockId = BlockIds.Air;
             int broken = 0;
+            float dealt = 0f;
             if (end.HitBlock && world != null && world.World != null)
             {
                 blockId = world.World.GetVoxel(end.Hit.Block).BlockId;
                 AbilityBook book = _caster != null ? _caster.Book : null;
                 AbilityDefinition ability = null;
                 book?.TryGet(end.AbilityId, out ability);
-                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage).Broken;
+                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage, out dealt).Broken;
             }
-            _cues.ServerSend(AbilityCue.End(end, blockId, broken));
+            _cues.ServerSend(AbilityCue.End(end, blockId, broken, dealt));
         }
 
-        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage)
+        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage,
+            out float dealt)
         {
-            _damage.Clear();
-            AbilityImpact.Resolve(ability, point, block, damage, _damage);
             bool area = ability != null && ability.AoeRadius > 0f;
+            dealt = HurtTargets(ability, point, block, area);
+
+            _damage.Clear();
+            // A spell hurts a Training Dummy instead of breaking it (a crater already passes it by: it's blast-proof).
+            CombatTargets targets = Targets;
+            if (area || targets == null || !targets.IsTarget(block))
+                AbilityImpact.Resolve(ability, point, block, damage, _damage);
             VoxelBatchResult result = world.RequestDamageVoxels(_damage, _player.PlayerId, area);
             if (logHits)
                 Debug.Log($"[Voxelforge] {_player.PlayerId}'s {(ability != null ? ability.DisplayName : "bolt")} hit {block}: " +
-                          $"{result.Broken} broken, {result.Damaged} damaged, {result.Skipped} untouched.", this);
+                          $"{result.Broken} broken, {result.Damaged} damaged, {result.Skipped} untouched, {dealt:0} to targets.", this);
             return result;
+        }
+
+        CombatTargets Targets => _player.Registry != null ? _player.Registry.Targets : null;
+
+        /// <summary>
+        /// Host: the ability's creature damage (Roadmap 4.6) to the target it hit, or, for a crater, to every target in it:
+        /// full in the middle, falling to <see cref="AbilityDefinition.CraterFalloff"/> at the edge like the blocks.
+        /// Returns the total damage dealt.
+        /// </summary>
+        float HurtTargets(AbilityDefinition ability, float3 point, int3 block, bool area)
+        {
+            CombatTargets targets = Targets;
+            if (targets == null || ability == null || ability.CreatureDamage <= 0f)
+                return 0f;
+            if (!area)
+                return targets.IsTarget(block)
+                    ? targets.ServerDamage(new CombatTarget(block), ability.CreatureDamage, _player.PlayerId)
+                    : 0f;
+
+            float dealt = 0f;
+            _found.Clear();
+            targets.FindAll(point, ability.AoeRadius, _found);
+            foreach (CombatTarget target in _found)
+            {
+                float t = math.saturate(math.distance(target.Position, point) / ability.AoeRadius);
+                float amount = ability.CreatureDamage * math.lerp(1f, ability.CraterFalloff, t);
+                dealt += targets.ServerDamage(target, amount, _player.PlayerId);
+            }
+            return dealt;
         }
     }
 }

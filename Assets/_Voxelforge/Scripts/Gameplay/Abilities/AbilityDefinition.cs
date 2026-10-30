@@ -57,7 +57,7 @@ namespace Voxelforge.Gameplay
         [Tooltip("Block damage per hit, like mining damage (Stone has 60 durability). In a crater, this is at the middle.")]
         [SerializeField, Min(0f)] float blockDamage;
 
-        [Tooltip("Damage to creatures. Nothing has health until Phase 5, so it's only kept for now.")]
+        [Tooltip("Damage to targets: Training Dummies (Roadmap 4.6), creatures in Phase 5. In a crater, this is at the middle.")]
         [SerializeField, Min(0f)] float creatureDamage;
 
         public ushort Id => id;

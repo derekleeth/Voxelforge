@@ -5,7 +5,8 @@ using UnityEngine.UI;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// One player's action bar (Roadmap 4.4): nine slots on a parchment strip with the mana bar above it. Each slot shows
+    /// One player's action bar (Roadmap 4.4): nine slots on a parchment strip with the mana bar above it, and the health
+    /// bar above that with the shield in gold behind it (4.6). Each slot shows
     /// the spell's icon, the key that casts it for this player's controls, a cooldown sweep with the seconds left, a cold
     /// grey when there isn't enough mana, a squash when pressed and a flash when the spell goes off. It only reads what
     /// the host shared (<see cref="PlayerActionBar"/>, <see cref="PlayerCaster"/>).
@@ -36,6 +37,12 @@ namespace Voxelforge.Gameplay
         readonly Slot[] _slots = new Slot[PlayerActionBar.SlotCount];
         readonly Image _manaFill;
         readonly TextMeshProUGUI _manaText;
+        readonly Image _healthFill;
+        readonly Image _shieldFill;
+        readonly TextMeshProUGUI _healthText;
+        int _healthShown = -1;
+        int _maxHealthShown = -1;
+        int _shieldShown = -1;
         PlayerButtons _previousButtons;
         int _manaShown = -1;
         int _maxManaShown = -1;
@@ -88,6 +95,27 @@ namespace Voxelforge.Gameplay
             _manaText = HudWidgets.SmallLabel("Amount", mana, skin, skin.manaBarHeight * 1.05f, Color.white,
                 TextAlignmentOptions.Center);
             HudWidgets.Stretch(_manaText.rectTransform);
+
+            // Health sits on top of the mana (Roadmap 4.6). The shield is a gold strip behind the red, reaching past it.
+            RectTransform health = HudWidgets.Place(HudWidgets.Rect("Health", Root), new Vector2(0.5f, 1f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 8f + skin.manaBarHeight), new Vector2(width - Padding * 2f, skin.manaBarHeight));
+            HudWidgets.Stretch(HudWidgets.Image("Back", health, skin.barBack, Color.white).rectTransform, 2f);
+            _shieldFill = Fill("Shield", health, skin.shield);
+            _healthFill = Fill("Fill", health, skin.health);
+            HudWidgets.Stretch(HudWidgets.Image("Frame", health, skin.barFrame, Color.white, Image.Type.Sliced).rectTransform, -3f);
+            _healthText = HudWidgets.SmallLabel("Amount", health, skin, skin.manaBarHeight * 1.05f, Color.white,
+                TextAlignmentOptions.Center);
+            HudWidgets.Stretch(_healthText.rectTransform);
+        }
+
+        Image Fill(string name, RectTransform bar, Color colour)
+        {
+            Image fill = HudWidgets.Image(name, bar, _skin.barFill, colour);
+            fill.type = Image.Type.Filled;
+            fill.fillMethod = Image.FillMethod.Horizontal;
+            fill.fillAmount = 0f;
+            HudWidgets.Stretch(fill.rectTransform, 2f);
+            return fill;
         }
 
         public RectTransform Root { get; }
@@ -95,8 +123,8 @@ namespace Voxelforge.Gameplay
         /// <summary>Width of the strip in 1080p pixels.</summary>
         public float Width => Padding * 2f + _skin.slotSize * PlayerActionBar.SlotCount + _skin.slotGap * (PlayerActionBar.SlotCount - 1);
 
-        /// <summary>Height of the strip and the mana bar on it.</summary>
-        public float Height => _skin.slotSize + Padding * 2f + 4f + _skin.manaBarHeight;
+        /// <summary>Height of the strip and the mana and health bars on it.</summary>
+        public float Height => _skin.slotSize + Padding * 2f + 8f + _skin.manaBarHeight * 2f;
 
         /// <summary>The key that casts each slot, for this player's controls (Roadmap 4.4).</summary>
         public static string HotkeyLabel(string scheme, int slot)
@@ -134,7 +162,7 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        public void Tick(PlayerActionBar bar, PlayerCaster caster, PlayerButtons buttons, float now)
+        public void Tick(PlayerActionBar bar, PlayerCaster caster, PlayerHealth health, PlayerButtons buttons, float now)
         {
             PlayerButtons pressed = buttons & ~_previousButtons;
             _previousButtons = buttons;
@@ -185,6 +213,33 @@ namespace Voxelforge.Gameplay
                 _maxManaShown = maxShown;
                 _manaText.SetText("{0} / {1}", (float)shown, (float)maxShown);
             }
+            TickHealth(health);
+        }
+
+        void TickHealth(PlayerHealth health)
+        {
+            float current = health != null ? health.Health : 0f;
+            float max = health != null ? health.MaxHealth : 0f;
+            float shield = health != null ? health.Shield : 0f;
+            float fill = max > 0f ? Mathf.Clamp01(current / max) : 0f;
+            float shieldFill = max > 0f && shield > 0f ? Mathf.Clamp01((current + shield) / max) : 0f;
+            if (!Mathf.Approximately(_healthFill.fillAmount, fill))
+                _healthFill.fillAmount = fill;
+            if (!Mathf.Approximately(_shieldFill.fillAmount, shieldFill))
+                _shieldFill.fillAmount = shieldFill;
+
+            int shown = Mathf.CeilToInt(current);
+            int maxShown = Mathf.RoundToInt(max);
+            int shieldShown = Mathf.CeilToInt(shield);
+            if (shown == _healthShown && maxShown == _maxHealthShown && shieldShown == _shieldShown)
+                return;
+            _healthShown = shown;
+            _maxHealthShown = maxShown;
+            _shieldShown = shieldShown;
+            if (shieldShown > 0)
+                _healthText.SetText("{0} / {1}  +{2}", (float)shown, (float)maxShown, (float)shieldShown);
+            else
+                _healthText.SetText("{0} / {1}", (float)shown, (float)maxShown);
         }
 
         static void SetCooldown(Slot s, float ready, float secondsLeft)

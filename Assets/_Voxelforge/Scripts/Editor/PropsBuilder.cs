@@ -23,6 +23,8 @@ namespace Voxelforge.Editor
     /// extra slots, and workbench recipes for now (5.6 Leatherworking will make them from hides).</item>
     /// <item>The Storage Chest (Roadmap 4.5): block 14, its body prop (the lid is drawn by <see cref="ChestLids"/>), its
     /// item and its recipe (8 Logs, anywhere).</item>
+    /// <item>The Training Dummy (Roadmap 4.6): block 15, its prop, its item and its recipe (3 Logs + 2 Dirt at a
+    /// workbench).</item>
     /// </list>
     /// </summary>
     public static class PropsBuilder
@@ -88,7 +90,11 @@ namespace Voxelforge.Editor
             // Blast-proof like the totem: a partner's spell shouldn't scatter a base's storage.
             BlockDefinition chest = MakeBlock("Chest", BlockIds.Chest, durability: 60, solid: true, needsSupport: false,
                 light: 0, HarvestKind.Axe, new Color32(160, 110, 60, 255), blastProof: true, displayName: "Storage Chest");
-            AddToList(registry, "blocks", torch, workbench, homeTotem, chest);
+            // Blast-proof too: spells hurt a dummy instead of breaking it (CombatTargets); an axe removes it.
+            BlockDefinition dummy = MakeBlock("TrainingDummy", BlockIds.TrainingDummy, durability: 40, solid: true,
+                needsSupport: false, light: 0, HarvestKind.Axe, new Color32(196, 172, 124, 255), blastProof: true,
+                displayName: "Training Dummy");
+            AddToList(registry, "blocks", torch, workbench, homeTotem, chest, dummy);
             SetHarvestKinds(registry);
 
             // ---- Prop decorations ----
@@ -97,7 +103,9 @@ namespace Voxelforge.Editor
             Mesh workbenchMesh = LoadMesh("Workbench");
             Mesh totemMesh = LoadMesh("HomeTotem");
             Mesh chestBodyMesh = LoadMesh("ChestBody");
-            if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null || totemMesh == null || chestBodyMesh == null)
+            Mesh dummyMesh = LoadMesh("TrainingDummy");
+            if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null || totemMesh == null || chestBodyMesh == null ||
+                dummyMesh == null)
                 return;
             var floorLight = new DecorationLight
             {
@@ -116,7 +124,8 @@ namespace Voxelforge.Editor
                     new DecorationLight { enabled = true, color = HomeGlow, intensity = 1.6f, range = 7f, offset = new Vector3(0f, 0.6f, 0f), flicker = 0.12f },
                     castShadows: true),
                 // Just the body: ChestLids draws the lid so it can open (Roadmap 4.5).
-                MakeProp("Chest", chestBodyMesh, world, chest, PropAttach.Any, default, castShadows: true));
+                MakeProp("Chest", chestBodyMesh, world, chest, PropAttach.Any, default, castShadows: true),
+                MakeProp("TrainingDummy", dummyMesh, world, dummy, PropAttach.Any, default, castShadows: true));
 
             // ---- Items ----
             ItemDefinition woodenPickaxe = MakeItem("WoodenPickaxe", ItemIds.WoodenPickaxe, "Wooden Pickaxe", held, new ToolPower(2f, 1f, 1.5f));
@@ -140,14 +149,17 @@ namespace Voxelforge.Editor
                 "DelversRucksack", dropSize: 1.8f, heldScale: 0.45f, upright: true, bagSlots: 16);
             ItemDefinition chestItem = MakeItem("Chest", BlockIds.Chest, "Storage Chest", held, default, "ChestItem", dropSize: 1.3f,
                 heldScale: 0.3f, upright: true);
+            ItemDefinition dummyItem = MakeItem("TrainingDummy", BlockIds.TrainingDummy, "Training Dummy", held, default,
+                "TrainingDummyItem", dropSize: 1.2f, heldScale: 0.3f, upright: true);
             var items = LoadOrCreate<ItemRegistry>($"{ItemDir}/ItemRegistry.asset");
             AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs, totemItem,
-                satchel, pack, rucksack, chestItem);
+                satchel, pack, rucksack, chestItem, dummyItem);
 
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
             registry.TryGet(BlockIds.Stone, out BlockDefinition stone);
             registry.TryGet(BlockIds.ManaCrystalOre, out BlockDefinition mana);
+            registry.TryGet(BlockIds.Dirt, out BlockDefinition dirt);
             var book = LoadOrCreate<RecipeBook>($"{ItemDir}/RecipeBook.asset");
             SetList(book, "recipes",
                 MakeRecipe("Workbench", new ItemAmount(workbench, 1), false, new ItemAmount(log, 4)),
@@ -165,7 +177,9 @@ namespace Voxelforge.Editor
                 MakeRecipe("TravelersPack", new ItemAmount(pack, 1), true, new ItemAmount(log, 8), new ItemAmount(stone, 4)),
                 MakeRecipe("DelversRucksack", new ItemAmount(rucksack, 1), true,
                     new ItemAmount(log, 10), new ItemAmount(stone, 6), new ItemAmount(mana, 3)),
-                MakeRecipe("Chest", new ItemAmount(chest, 1), false, new ItemAmount(log, 8)));
+                MakeRecipe("Chest", new ItemAmount(chest, 1), false, new ItemAmount(log, 8)),
+                // Roadmap 4.6: something to practise spells on.
+                MakeRecipe("TrainingDummy", new ItemAmount(dummy, 1), true, new ItemAmount(log, 3), new ItemAmount(dirt, 2)));
             MakeBoltMaterial();
 
             AssetDatabase.SaveAssets();
@@ -300,6 +314,7 @@ namespace Voxelforge.Editor
                     case BlockIds.Workbench:
                     case BlockIds.HomeTotem:
                     case BlockIds.Chest:
+                    case BlockIds.TrainingDummy:
                         kind = HarvestKind.Axe;
                         break;
                     default:

@@ -1,6 +1,6 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
 Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags, the
-drawstring loot bag and the Storage Chest (4.5).
+drawstring loot bag and the Storage Chest (4.5), and the Training Dummy (4.6).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -845,6 +845,41 @@ def build_chest_lid():
     return b
 
 
+# The Training Dummy (4.6): a burlap sparring dummy on a post, standing in its block like any prop. Front faces -Y
+# (Unity -Z). It's taller than its block on purpose (a hero's height); only the bottom block is solid.
+def build_training_dummy():
+    """Chunky on purpose (ROADMAP style guide): a fat stuffed body, a big sack head and stubby arms, so it reads from
+    far away against the 1 m grid."""
+    b = MeshBuilder()
+    # Crossed feet and a thick post.
+    for angle in (0.0, 90.0):
+        turn = Matrix.Rotation(math.radians(angle), 3, "Z")
+        b.part("wood_dark", box(Vector((0, 0, 0.06)), (0.9, 0.16, 0.12), turn), grain=turn @ Vector((1, 0, 0)))
+    b.part("wood", cylinder((0, 0, 0.0), (0, 0, 1.2), 0.1, 0.085, 8, phase=math.pi / 8))
+    # A stuffed burlap body, barrel-round and widest at the chest.
+    b.part("canvas", cylinder((0, 0, 0.42), (0, 0, 0.55), 0.2, 0.3, 12, phase=math.pi / 12))
+    b.part("canvas", cylinder((0, 0, 0.55), (0, 0, 0.95), 0.3, 0.36, 12, phase=math.pi / 12))
+    b.part("canvas", cylinder((0, 0, 0.95), (0, 0, 1.15), 0.36, 0.2, 12, phase=math.pi / 12))
+    # Stubby stuffed arms on a cross-bar, tied off with rope at the cuffs.
+    b.part("wood", cylinder((-0.58, 0, 1.0), (0.58, 0, 1.0), 0.05, 0.05, 6), grain=Vector((1, 0, 0)))
+    for sx in (-1, 1):
+        b.part("canvas", cylinder((sx * 0.3, 0, 1.0), (sx * 0.52, 0, 0.98), 0.13, 0.11, 8), grain=Vector((1, 0, 0)))
+        b.part("rope", cylinder((sx * 0.5, 0, 0.98), (sx * 0.56, 0, 0.98), 0.12, 0.12, 8), grain=Vector((1, 0, 0)))
+    # Thick rope round the waist and the neck.
+    b.part("rope", cylinder((0, 0, 0.58), (0, 0, 0.67), 0.315, 0.32, 12, phase=math.pi / 12))
+    b.part("rope", cylinder((0, 0, 1.13), (0, 0, 1.2), 0.15, 0.15, 8))
+    # A big, round stuffed sack head, gathered at the neck and tied off in a tuft on top.
+    b.part("canvas", cylinder((0, 0, 1.18), (0, 0, 1.3), 0.15, 0.25, 12, phase=math.pi / 12))
+    b.part("canvas", cylinder((0, 0, 1.3), (0, 0, 1.5), 0.25, 0.26, 12, phase=math.pi / 12))
+    b.part("canvas", cylinder((0, 0, 1.5), (0, 0, 1.62), 0.26, 0.09, 12, phase=math.pi / 12))
+    b.part("rope", cylinder((0, 0, 1.6), (0, 0, 1.66), 0.07, 0.07, 8))
+    b.part("canvas", cylinder((0, 0, 1.66), (0, 0, 1.76), 0.06, 0.11, 8))
+    # A target painted on the chest: a leather ring round a gold bullseye.
+    b.part("leather", cylinder((0, -0.3, 0.8), (0, -0.345, 0.8), 0.16, 0.16, 12), grain=Vector((0, -1, 0)))
+    b.part("gold", cylinder((0, -0.34, 0.8), (0, -0.36, 0.8), 0.065, 0.065, 10), grain=Vector((0, -1, 0)))
+    return b
+
+
 MODELS = {
     "WoodenPickaxe": build_wooden_pickaxe,
     "StonePickaxe": build_stone_pickaxe,
@@ -862,6 +897,7 @@ MODELS = {
     "Chest": build_chest,
     "ChestBody": build_chest_body,
     "ChestLid": build_chest_lid,
+    "TrainingDummy": build_training_dummy,
 }
 
 

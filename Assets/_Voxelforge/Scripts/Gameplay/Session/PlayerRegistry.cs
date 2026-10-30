@@ -51,6 +51,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("What's in every Storage Chest (Roadmap 4.5), for heroes opening one.")]
         [SerializeField] StorageChests chests;
 
+        [Tooltip("What spells can hurt (Roadmap 4.6): Training Dummies for now, creatures in Phase 5.")]
+        [SerializeField] CombatTargets targets;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -65,6 +68,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Host only: the Storage Chests' contents (Roadmap 4.5).</summary>
         public StorageChests Chests => chests;
+
+        /// <summary>Host only: what spells can hurt (Roadmap 4.6).</summary>
+        public CombatTargets Targets => targets;
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 

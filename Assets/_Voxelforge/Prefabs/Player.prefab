@@ -31,6 +31,7 @@ GameObject:
   - component: {fileID: 8489302776999847508}
   - component: {fileID: 4276024312031293881}
   - component: {fileID: 7073484678100323289}
+  - component: {fileID: 5778312443207847284}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -461,6 +462,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerChest
   ShowTopMostFoldoutHeaderGroup: 1
   minRequestInterval: 0.05
+--- !u!114 &5778312443207847284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ea30e46b5b90814083f7b3650c49d67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerHealth
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxHealth: 100
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

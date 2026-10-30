@@ -19,6 +19,16 @@ namespace Voxelforge.Gameplay
         BagRefused,
         /// <summary><see cref="CombatTextEvent.Amount"/> of <see cref="CombatTextEvent.ItemId"/> went to a partner (Roadmap 4.5).</summary>
         Sent,
+        /// <summary>A spell hurt a target (a Training Dummy, Roadmap 4.6) for <see cref="CombatTextEvent.Amount"/>.</summary>
+        TargetHit,
+        /// <summary>The hero lost <see cref="CombatTextEvent.Amount"/> health (Roadmap 4.6).</summary>
+        Hurt,
+        /// <summary>A hero was healed for <see cref="CombatTextEvent.Amount"/> (Roadmap 4.6).</summary>
+        Healed,
+        /// <summary>A hero got a shield of <see cref="CombatTextEvent.Amount"/> (Roadmap 4.6).</summary>
+        Shielded,
+        /// <summary>The hero's shield soaked up <see cref="CombatTextEvent.Amount"/> damage (Roadmap 4.6).</summary>
+        Absorbed,
     }
 
     /// <summary>

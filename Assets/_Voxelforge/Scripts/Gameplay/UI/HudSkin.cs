@@ -63,6 +63,12 @@ namespace Voxelforge.Gameplay
         public Color cast = new Color(1f, 0.78f, 0.22f);
         public Color refusal = new Color(1f, 0.32f, 0.22f);
         public Color pickup = new Color(1f, 0.92f, 0.55f);
+        [Tooltip("The health bar and damage a hero takes (Roadmap 4.6).")]
+        public Color health = new Color(0.86f, 0.16f, 0.14f);
+        [Tooltip("Healing numbers (Roadmap 4.6).")]
+        public Color heal = new Color(0.38f, 1f, 0.42f);
+        [Tooltip("The shield over the health bar and shield numbers (Roadmap 4.6).")]
+        public Color shield = new Color(1f, 0.86f, 0.38f);
 
         [Tooltip("Spell hit numbers by element, in AbilityElement order: Physical, Arcane, Fire, Frost, Earth, Nature, " +
                  "Lightning, Holy.")]

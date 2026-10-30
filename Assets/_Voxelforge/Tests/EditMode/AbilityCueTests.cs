@@ -138,6 +138,11 @@ namespace Voxelforge.Tests
         [TestCase(typeof(PlayerAbilityCues))]
         [TestCase(typeof(PlayerActionBar))]
         [TestCase(typeof(ActionBarLoadout))]
+        [TestCase(typeof(HeroHealth))]
+        [TestCase(typeof(PlayerHealth))]
+        [TestCase(typeof(HealthEvent))]
+        [TestCase(typeof(SparringDummy))]
+        [TestCase(typeof(CombatTargets))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

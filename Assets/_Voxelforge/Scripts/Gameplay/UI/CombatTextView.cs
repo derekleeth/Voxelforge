@@ -137,6 +137,29 @@ namespace Voxelforge.Gameplay
                     colour = _skin.pickup;
                     size *= 0.7f;
                     break;
+                case CombatTextKind.TargetHit:
+                    words = e.Amount.ToString();
+                    colour = _skin.ElementColor(e.Element);
+                    size *= 1.15f;
+                    break;
+                case CombatTextKind.Hurt:
+                    words = $"-{e.Amount}";
+                    colour = _skin.health;
+                    break;
+                case CombatTextKind.Healed:
+                    words = $"+{e.Amount}";
+                    colour = _skin.heal;
+                    break;
+                case CombatTextKind.Shielded:
+                    words = $"SHIELD +{e.Amount}";
+                    colour = _skin.shield;
+                    size *= 0.85f;
+                    break;
+                case CombatTextKind.Absorbed:
+                    words = $"BLOCKED {e.Amount}";
+                    colour = _skin.shield;
+                    size *= 0.75f;
+                    break;
                 default:
                     words = string.Empty;
                     break;

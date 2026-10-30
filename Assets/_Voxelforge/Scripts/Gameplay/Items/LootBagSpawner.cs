@@ -12,7 +12,8 @@ namespace Voxelforge.Gameplay
     /// a partner's overflow, a broken chest), pulls them toward the nearest hero who can take them and puts their stacks
     /// in that hero's bag, as <see cref="BlockDropSpawner"/> does for blocks. On <b>every PC</b> it also draws the little
     /// sack flying from one hero to another when someone uses Send to Partner (<see cref="PlayerBlockBag.Tossed"/>):
-    /// looks only, as the host has already moved the items.
+    /// looks only, as the host has already moved the items. The same lob draws a Training Dummy's hay sack flying at a
+    /// hero (<see cref="HealthEventKind.Incoming"/>, Roadmap 4.6); the host lands the hit itself.
     /// </summary>
     public sealed class LootBagSpawner : MonoBehaviour
     {
@@ -64,9 +65,12 @@ namespace Voxelforge.Gameplay
         struct Toss
         {
             public Transform Model;
+            /// <summary>The thrower, or null to throw from <see cref="FromPoint"/> (a Training Dummy).</summary>
             public Transform From;
+            public Vector3 FromPoint;
             public Transform To;
             public float Start;
+            public float Seconds;
         }
 
         readonly List<Toss> _tosses = new List<Toss>();
@@ -81,12 +85,47 @@ namespace Voxelforge.Gameplay
         {
             LootBag.Spawned += OnSpawned;
             PlayerBlockBag.Tossed += OnTossed;
+            PlayerController.AnySpawned += OnHeroSpawned;
+            PlayerController.AnyDespawned += OnHeroDespawned;
         }
 
         void OnDisable()
         {
             LootBag.Spawned -= OnSpawned;
             PlayerBlockBag.Tossed -= OnTossed;
+            PlayerController.AnySpawned -= OnHeroSpawned;
+            PlayerController.AnyDespawned -= OnHeroDespawned;
+            foreach (PlayerHealth health in _heroes.Keys)
+            {
+                if (health != null)
+                    health.Changed -= _heroes[health];
+            }
+            _heroes.Clear();
+        }
+
+        // Every hero's health, for hay sacks thrown at them (Roadmap 4.6).
+        readonly Dictionary<PlayerHealth, System.Action<HealthEvent>> _heroes = new Dictionary<PlayerHealth, System.Action<HealthEvent>>();
+
+        void OnHeroSpawned(PlayerController hero)
+        {
+            if (!hero.TryGetComponent(out PlayerHealth health) || _heroes.ContainsKey(health))
+                return;
+            System.Action<HealthEvent> listener = e =>
+            {
+                if (e.Kind == HealthEventKind.Incoming)
+                    StartToss(null, e.SourcePosition, health.transform, e.Amount);
+            };
+            _heroes[health] = listener;
+            health.Changed += listener;
+        }
+
+        void OnHeroDespawned(PlayerController hero)
+        {
+            if (hero.TryGetComponent(out PlayerHealth health) && _heroes.TryGetValue(health, out System.Action<HealthEvent> listener))
+            {
+                health.Changed -= listener;
+                _heroes.Remove(health);
+            }
         }
 
         void OnSpawned(LootBag bag)
@@ -216,7 +255,13 @@ namespace Voxelforge.Gameplay
 
         void OnTossed(PlayerBlockBag from, PlayerBlockBag to, ushort itemId)
         {
-            if (lootBagPrefab == null || from == null || to == null)
+            if (from != null && to != null)
+                StartToss(from.transform, from.transform.position + Vector3.up * 1.1f, to.transform, tossSeconds);
+        }
+
+        void StartToss(Transform from, Vector3 fromPoint, Transform to, float seconds)
+        {
+            if (lootBagPrefab == null || to == null)
                 return;
             Transform model = _freeModels.Count > 0 ? _freeModels.Pop() : MakeTossModel();
             if (model == null)
@@ -227,7 +272,10 @@ namespace Voxelforge.Gameplay
                 _tosses.RemoveAt(0);
             }
             model.gameObject.SetActive(true);
-            _tosses.Add(new Toss { Model = model, From = from.transform, To = to.transform, Start = Time.time });
+            _tosses.Add(new Toss
+            {
+                Model = model, From = from, FromPoint = fromPoint, To = to, Start = Time.time, Seconds = Mathf.Max(seconds, 0.05f),
+            });
         }
 
         Transform MakeTossModel()
@@ -255,8 +303,8 @@ namespace Voxelforge.Gameplay
             for (int i = _tosses.Count - 1; i >= 0; i--)
             {
                 Toss toss = _tosses[i];
-                float t = (Time.time - toss.Start) / tossSeconds;
-                if (t >= 1f || toss.From == null || toss.To == null)
+                float t = (Time.time - toss.Start) / toss.Seconds;
+                if (t >= 1f || toss.To == null)
                 {
                     if (toss.To != null)
                         PlayPop((float3)toss.To.position + new float3(0f, HeroMiddle, 0f), 0.8f);
@@ -265,7 +313,7 @@ namespace Voxelforge.Gameplay
                     continue;
                 }
                 // From the thrower's hands to the catcher's middle, following both as they move, in a lob.
-                Vector3 a = toss.From.position + Vector3.up * 1.1f;
+                Vector3 a = toss.From != null ? toss.From.position + Vector3.up * 1.1f : toss.FromPoint;
                 Vector3 b = toss.To.position + Vector3.up * HeroMiddle;
                 float lift = tossHeight * Mathf.Clamp(Vector3.Distance(a, b) / 8f, 0.4f, 3f);
                 toss.Model.position = Vector3.Lerp(a, b, t) + Vector3.up * (4f * lift * t * (1f - t));

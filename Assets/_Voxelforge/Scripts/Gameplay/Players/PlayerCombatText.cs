@@ -7,7 +7,7 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// Turns what the host said about this hero into <see cref="CombatTextEvent"/>s for the floating combat text in their
     /// own view (Roadmap 4.4): spell hits and craters from <see cref="AbilityCue"/>s, mana spent when a spell goes off,
-    /// refused casts and items picked up. It only listens, so it can't change the game (Roadmap 4.2).
+    /// refused casts and items picked up, and damage, heals and shields from <see cref="PlayerHealth"/> (4.6). It only listens, so it can't change the game (Roadmap 4.2).
     /// </summary>
     [RequireComponent(typeof(PlayerController), typeof(PlayerAbilityCues), typeof(PlayerCaster))]
     public sealed class PlayerCombatText : MonoBehaviour
@@ -21,6 +21,7 @@ namespace Voxelforge.Gameplay
         PlayerAbilityCues _cues;
         PlayerCaster _caster;
         PlayerBlockBag _bag;
+        PlayerHealth _health;
 
         /// <summary>Every PC for hits and mana; the owner's PC for refusals and pickups.</summary>
         public event Action<CombatTextEvent> Raised;
@@ -30,6 +31,7 @@ namespace Voxelforge.Gameplay
             _cues = GetComponent<PlayerAbilityCues>();
             _caster = GetComponent<PlayerCaster>();
             _bag = GetComponent<PlayerBlockBag>();
+            _health = GetComponent<PlayerHealth>();
         }
 
         void OnEnable()
@@ -42,6 +44,8 @@ namespace Voxelforge.Gameplay
                 _bag.Refused += OnBagRefused;
                 _bag.Sent += OnSent;
             }
+            if (_health != null)
+                _health.Changed += OnHealth;
         }
 
         void OnDisable()
@@ -54,6 +58,8 @@ namespace Voxelforge.Gameplay
                 _bag.Refused -= OnBagRefused;
                 _bag.Sent -= OnSent;
             }
+            if (_health != null)
+                _health.Changed -= OnHealth;
         }
 
         float3 Head => (float3)transform.position + new float3(0f, overHead, 0f);
@@ -63,7 +69,16 @@ namespace Voxelforge.Gameplay
             switch (cue.Kind)
             {
                 case AbilityCueKind.Impact:
+                    // A hit on a Training Dummy (Roadmap 4.6) shows the damage it took, not block damage.
+                    if (cue.TargetDamage > 0)
+                        Raise(new CombatTextEvent
+                        {
+                            Kind = CombatTextKind.TargetHit, Amount = cue.TargetDamage, AbilityId = ability.Id,
+                            Element = ability.Element, Position = (float3)cue.Position + new float3(0f, 0.6f, 0f),
+                        });
                     bool crater = ability.AoeRadius > 0f && cue.BlocksBroken > 0;
+                    if (!crater && cue.TargetDamage > 0)
+                        break;
                     Raise(new CombatTextEvent
                     {
                         Kind = crater ? CombatTextKind.CraterHit : CombatTextKind.SpellHit,
@@ -79,6 +94,31 @@ namespace Voxelforge.Gameplay
                     });
                     break;
             }
+        }
+
+        void OnHealth(HealthEvent e)
+        {
+            CombatTextKind kind;
+            switch (e.Kind)
+            {
+                case HealthEventKind.Damaged:
+                    kind = CombatTextKind.Hurt;
+                    break;
+                case HealthEventKind.Healed:
+                    kind = CombatTextKind.Healed;
+                    break;
+                case HealthEventKind.Shielded:
+                    kind = CombatTextKind.Shielded;
+                    break;
+                case HealthEventKind.Absorbed:
+                    kind = CombatTextKind.Absorbed;
+                    break;
+                default:
+                    return;
+            }
+            int amount = Mathf.RoundToInt(e.Amount);
+            if (amount > 0)
+                Raise(new CombatTextEvent { Kind = kind, Amount = amount, AbilityId = e.AbilityId, Position = Head });
         }
 
         void OnRefused(CastCheck reason) =>

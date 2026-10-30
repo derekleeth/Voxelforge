@@ -52,6 +52,7 @@ namespace Voxelforge.Gameplay
                     return 1.2f;
                 case CombatTextKind.Pickup:
                 case CombatTextKind.Sent:
+                case CombatTextKind.Shielded:
                     return 1.4f;
                 default:
                     return 1f;

@@ -27,6 +27,7 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerCaster _caster;
+        PlayerHealth _health;
         PlayerActionBar _bar;
         PlayerAbilityCues _cues;
         PlayerCombatText _combatText;
@@ -79,6 +80,7 @@ namespace Voxelforge.Gameplay
 
             _player = player;
             _caster = player != null ? player.GetComponent<PlayerCaster>() : null;
+            _health = player != null ? player.GetComponent<PlayerHealth>() : null;
             _bar = player != null ? player.GetComponent<PlayerActionBar>() : null;
             _cues = player != null ? player.GetComponent<PlayerAbilityCues>() : null;
             _combatText = player != null ? player.GetComponent<PlayerCombatText>() : null;
@@ -114,7 +116,7 @@ namespace Voxelforge.Gameplay
                 _barGroup.localScale = new Vector3(shrink, shrink, 1f);
 
             PlayerButtons buttons = _player != null ? _player.OwnerInput.Buttons : PlayerButtons.None;
-            _actionBar.Tick(_bar, _caster, buttons, now);
+            _actionBar.Tick(_bar, _caster, _health, buttons, now);
             _castBar.Tick(_caster, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
