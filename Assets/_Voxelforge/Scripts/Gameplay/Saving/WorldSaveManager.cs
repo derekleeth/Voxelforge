@@ -362,6 +362,10 @@ namespace Voxelforge.Gameplay
                     profile.Race = race.Race;
                     profile.RaceChosen = race.HasChosen;
                 }
+                // Explored cells only ever grow, so a new count means new cells (Roadmap 4.8). The save gets its own
+                // copy, so encoding it never races the explorer.
+                if (player.TryGetComponent(out PlayerExplorer explorer) && explorer.Map.Count != profile.Explored.Count)
+                    profile.Explored = explorer.Map.Snapshot();
             }
         }
 

@@ -150,6 +150,7 @@ namespace Voxelforge.Tests
             p1.Class = HeroClassId.Shaman;
             p1.Race = RaceId.Thunderhoof;
             p1.RaceChosen = true;
+            p1.Explored = new HashSet<int2> { new int2(0, 0), new int2(-1, -1), new int2(-40, 12), new int2(7, -300) };
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
@@ -196,6 +197,7 @@ namespace Voxelforge.Tests
                 Assert.AreEqual(want.Class, got.Class, "Class (v4).");
                 Assert.AreEqual(want.Race, got.Race, "Race (v5).");
                 Assert.AreEqual(want.RaceChosen, got.RaceChosen, "Race chosen (v5).");
+                CollectionAssert.AreEquivalent(want.Explored, got.Explored, "Explored map cells (v6).");
             }
             CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock and its time left (v4).");
 
@@ -326,15 +328,35 @@ namespace Voxelforge.Tests
             }
         }
 
+        [Test]
+        public void Version5Save_StillLoads_WithNothingExplored()
+        {
+            WorldSave save = OldSample(keepV4: true, keepV5: true);
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 5), out WorldSave loaded));
+            Assert.AreEqual(2, loaded.Profiles.Count);
+            foreach (PlayerProfile want in save.Profiles.Values)
+            {
+                PlayerProfile got = loaded.Profiles[want.Uuid];
+                Assert.AreEqual(want.Race, got.Race, "The race survives.");
+                Assert.AreEqual(want.RaceChosen, got.RaceChosen);
+                Assert.IsNotNull(got.Explored);
+                Assert.AreEqual(0, got.Explored.Count, "Before 4.8 nobody had a map.");
+            }
+        }
+
         /// <summary>
-        /// The sample with nothing older formats can't hold: no race (v5); and unless <paramref name="keepV4"/>, no worn
+        /// The sample with nothing older formats can't hold: no explored cells (v6); unless <paramref name="keepV5"/>, no
+        /// race (v5); and unless <paramref name="keepV4"/>, no worn
         /// bags, class, chests or earth either.
         /// </summary>
-        static WorldSave OldSample(bool keepV4 = false)
+        static WorldSave OldSample(bool keepV4 = false, bool keepV5 = false)
         {
             WorldSave save = SampleSave();
             foreach (PlayerProfile profile in save.Profiles.Values)
             {
+                profile.Explored.Clear();
+                if (keepV5)
+                    continue;
                 profile.Race = RaceId.Wayfarer;
                 profile.RaceChosen = false;
                 if (keepV4)
@@ -342,7 +364,7 @@ namespace Voxelforge.Tests
                 profile.Bags = default;
                 profile.Class = HeroClassId.Adventurer;
             }
-            if (keepV4)
+            if (keepV4 || keepV5)
                 return save;
             save.Chests.Clear();
             save.Earth.Clear();
@@ -350,7 +372,8 @@ namespace Voxelforge.Tests
         }
 
         /// <summary>
-        /// A whole v2, v3 or v4 save file for <paramref name="save"/> (from <see cref="OldSample"/>). A v5 body ends each
+        /// A whole v2-v5 save file for <paramref name="save"/> (from <see cref="OldSample"/>, so nothing is explored). A v6
+        /// body has the explored count (0) just before the end marker, cut for every older version. A v5 body ends each
         /// profile with 4 ushorts of worn bags (v3), a class byte (v4) and a race byte and chosen bool (v5), then has the
         /// chests (v3), the earth (v4) and the end marker; older bodies are the same with those cut out. Below v4 the
         /// sample must have no chests or earth, so their counts are the only bytes to cut.
@@ -358,6 +381,9 @@ namespace Voxelforge.Tests
         static byte[] OlderFile(WorldSave save, int version)
         {
             var body = new List<byte>(WorldSaveFile.EncodeBody(save));
+            body.RemoveRange(body.Count - 8, 4); // The explored count (0), just before the end marker (v6).
+            if (version >= 5)
+                return SaveFileBytes(body, version);
             int profilesEnd = ProfilesEnd(save);
             if (version < 4)
                 body.RemoveRange(profilesEnd + 4, 4); // The earth count (0).
@@ -372,7 +398,11 @@ namespace Voxelforge.Tests
                 body.RemoveRange(cut - tail, tail);
                 cut -= FullProfileBytes(profiles[p]);
             }
+            return SaveFileBytes(body, version);
+        }
 
+        static byte[] SaveFileBytes(List<byte> body, int version)
+        {
             using var memory = new MemoryStream();
             memory.Write(new[] { (byte)'V', (byte)'F', (byte)'S', (byte)'V' }, 0, 4);
             memory.Write(BitConverter.GetBytes(version), 0, 4);
@@ -391,8 +421,8 @@ namespace Voxelforge.Tests
         {
             byte[] full = WorldSaveFile.EncodeBody(save);
             var empty = new WorldSave { Seed = save.Seed, GeneratorVersion = save.GeneratorVersion, SavedUtc = save.SavedUtc, Deltas = save.Deltas };
-            // The same body with no profiles, chests or earth is: header + deltas + 3 zero counts + end marker.
-            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4;
+            // The same body with no profiles, chests, earth or explored cells is: header + deltas + 4 zero counts + end marker.
+            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4;
             int profiles = 0;
             foreach (PlayerProfile profile in save.Profiles.Values)
                 profiles += FullProfileBytes(profile);

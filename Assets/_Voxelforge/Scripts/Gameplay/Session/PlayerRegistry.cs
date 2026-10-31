@@ -147,6 +147,8 @@ namespace Voxelforge.Gameplay
             // After spawning, so the action bar, mana and health it sets are all on the network (Roadmap 4.6).
             if (player.TryGetComponent(out PlayerClass heroClass))
                 heroClass.ServerRestore(profile != null ? profile.Class : HeroClassId.Adventurer);
+            if (profile != null && player.TryGetComponent(out PlayerExplorer explorer))
+                explorer.ServerRestore(profile.Explored);
             if (chunkLoader != null)
             {
                 chunkLoader.Register(player);

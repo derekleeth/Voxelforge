@@ -59,9 +59,10 @@ namespace Voxelforge.Gameplay
         /// <summary>
         /// 1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). 3: each profile's worn bags, and the Storage
         /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). 5: each
-        /// profile's race and whether they've chosen it (4.7). Older saves still load.
+        /// profile's race and whether they've chosen it (4.7). 6: each player's explored map cells, after the earth
+        /// (4.8). Older saves still load.
         /// </summary>
-        public const int FormatVersion = 5;
+        public const int FormatVersion = 6;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -121,6 +122,28 @@ namespace Voxelforge.Gameplay
                     writer.Write(block.Key.y);
                     writer.Write(block.Key.z);
                     writer.Write(block.Value);
+                }
+
+                // Explored map cells (v6), kept apart from the profiles so they can grow without moving anything else.
+                int explorers = 0;
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    if (profile.Explored != null && profile.Explored.Count > 0)
+                        explorers++;
+                }
+                writer.Write(explorers);
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    if (profile.Explored == null || profile.Explored.Count == 0)
+                        continue;
+                    writer.Write(profile.Uuid.High);
+                    writer.Write(profile.Uuid.Low);
+                    writer.Write(profile.Explored.Count);
+                    foreach (int2 cell in profile.Explored)
+                    {
+                        writer.Write(cell.x);
+                        writer.Write(cell.y);
+                    }
                 }
                 writer.Write(EndMarker);
             }
@@ -249,6 +272,25 @@ namespace Voxelforge.Gameplay
                     {
                         var block = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
                         result.Earth[block] = reader.ReadSingle();
+                    }
+                }
+
+                if (format >= 6)
+                {
+                    int explorers = reader.ReadInt32();
+                    if (explorers < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int p = 0; p < explorers; p++)
+                    {
+                        var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
+                        int cellCount = reader.ReadInt32();
+                        if (cellCount < 0)
+                            return WorldLoadResult.Corrupt;
+                        var cells = new HashSet<int2>();
+                        for (int c = 0; c < cellCount; c++)
+                            cells.Add(new int2(reader.ReadInt32(), reader.ReadInt32()));
+                        if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
+                            profile.Explored = cells;
                     }
                 }
 
