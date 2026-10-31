@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 4935959392201245843}
   - component: {fileID: 368659319514688893}
   - component: {fileID: 6126350313353818499}
+  - component: {fileID: 8078124071735052176}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -626,6 +627,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerKnockout
   ShowTopMostFoldoutHeaderGroup: 1
   homeWaitSeconds: 10
+--- !u!114 &8078124071735052176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45940f2a15a96984e9bb5532cda768bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerTargeting
+  ShowTopMostFoldoutHeaderGroup: 1
+  range: 40
+  keepRange: 45
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

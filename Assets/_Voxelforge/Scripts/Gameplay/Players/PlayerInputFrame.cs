@@ -53,6 +53,11 @@ namespace Voxelforge.Gameplay
         /// use Select, which used to be Home: they hearth from inside the map instead.
         /// </summary>
         Map = 1 << 20,
+        /// <summary>
+        /// Target the nearest enemy, or the next one on each press (Roadmap 5.2, <see cref="PlayerTargeting"/>): Tab, T,
+        /// Numpad Enter or R3.
+        /// </summary>
+        Target = 1 << 21,
     }
 
     public static class ActionSlotButtons

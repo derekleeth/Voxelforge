@@ -154,6 +154,30 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void TargetKey_PicksTheNearest_ThenCyclesOutward_AndWrapsRound()
+        {
+            var scratch = new System.Collections.Generic.List<(ulong id, float distance)>();
+            var creatures = new System.Collections.Generic.List<ICombatCreature>
+            {
+                new StandingCreature { CreatureId = 10, Feet = new float3(20f, 0f, 0f) },
+                new StandingCreature { CreatureId = 11, Feet = new float3(5f, 0f, 0f) },
+                new StandingCreature { CreatureId = 12, Feet = new float3(0f, 0f, 12f) },
+                new StandingCreature { CreatureId = 13, Feet = new float3(2f, 0f, 0f), IsTargetable = false },
+                new StandingCreature { CreatureId = 14, Feet = new float3(60f, 0f, 0f) },
+            };
+
+            ulong first = TargetCycle.Next(creatures, float3.zero, 40f, 0, scratch);
+            Assert.AreEqual(11UL, first, "The nearest one that can be hit (13 is defeated).");
+            ulong second = TargetCycle.Next(creatures, float3.zero, 40f, first, scratch);
+            Assert.AreEqual(12UL, second);
+            ulong third = TargetCycle.Next(creatures, float3.zero, 40f, second, scratch);
+            Assert.AreEqual(10UL, third);
+            Assert.AreEqual(11UL, TargetCycle.Next(creatures, float3.zero, 40f, third, scratch), "Round to the nearest again; 14 is out of range.");
+            Assert.AreEqual(11UL, TargetCycle.Next(creatures, float3.zero, 40f, 99, scratch), "A target that's gone starts over.");
+            Assert.AreEqual(0UL, TargetCycle.Next(creatures, new float3(500f, 0f, 500f), 40f, 11, scratch), "Nobody in range.");
+        }
+
+        [Test]
         public void Book_KeepsOneEntryPerTarget_WithItsLatestHealth()
         {
             var book = new TargetHealthBook();

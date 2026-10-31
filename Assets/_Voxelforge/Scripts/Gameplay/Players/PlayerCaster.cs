@@ -45,6 +45,11 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerHands _hands;
+        PlayerTargeting _targeting;
+        // The M.G.R.S. (or another held tool) cast this one: it only locks on when the camera is near the target.
+        AbilityDefinition _heldCast;
+        // cos 40°: how close to the target the camera must point for a held tool's shot to lock on to it.
+        const float HeldToolLockOn = 0.766f;
         PlayerStaff _staff;
         PlayerAbilityCues _cues;
         PlayerActionBar _actionBar;
@@ -92,6 +97,7 @@ namespace Voxelforge.Gameplay
             _cues = GetComponent<PlayerAbilityCues>();
             _actionBar = GetComponent<PlayerActionBar>();
             _support = GetComponent<PlayerSupport>();
+            _targeting = GetComponent<PlayerTargeting>();
         }
 
         void OnEnable() => _cues.Received += OnCue;
@@ -194,6 +200,8 @@ namespace Voxelforge.Gameplay
                 if (input.IsPressed(PlayerButtons.Mine) && _hands.TryGetHeldAbility(out AbilityDefinition held))
                 {
                     CastCheck check = TryCast(held, now, input);
+                    if (check == CastCheck.Ok)
+                        _heldCast = held;
                     if (check == CastCheck.NotEnoughMana && !_toldNoMana)
                     {
                         _toldNoMana = true;
@@ -214,6 +222,8 @@ namespace Voxelforge.Gameplay
             {
                 _cues.ServerSend(AbilityCue.Cast(AbilityCueKind.Released, ability.Id, transform.position));
                 Deliver(ability, input);
+                if (ability == _heldCast)
+                    _heldCast = null;
             }
 
             float mana = _caster.Mana;
@@ -246,7 +256,7 @@ namespace Voxelforge.Gameplay
             switch (ability.Delivery)
             {
                 case AbilityDelivery.Projectile:
-                    _staff.ServerLaunch(ability, _player.Aim.Eyes(transform.position), _player.Aim.Direction(input));
+                    _staff.ServerLaunch(ability, _player.Aim.Eyes(transform.position), AimDirection(ability, input));
                     break;
                 case AbilityDelivery.GroundSlam:
                     if (TryAimAtBlock(ability, input, out VoxelHit hit, out CombatTarget struck))
@@ -303,7 +313,28 @@ namespace Voxelforge.Gameplay
             VoxelWorldManager world = _player.WorldManager;
             CombatTargets targets = _player.Registry != null ? _player.Registry.Targets : null;
             return world != null && world.World != null && ManaBoltFlight.TryHit(world.World, targets,
-                _player.Aim.Eyes(transform.position), _player.Aim.Direction(input), ability.Range, out hit, out struck);
+                _player.Aim.Eyes(transform.position), AimDirection(ability, input), ability.Range, out hit, out struck);
+        }
+
+        /// <summary>
+        /// Host: which way <paramref name="ability"/> goes. A bolt or ground slam from the action bar goes at the hero's
+        /// target, if they have one (Roadmap 5.2, <see cref="PlayerTargeting"/>). A held tool like the M.G.R.S. does too,
+        /// but only while the camera points roughly at the target, so turning away to mine still digs where the camera
+        /// aims. Everything else goes where their camera aims.
+        /// </summary>
+        float3 AimDirection(AbilityDefinition ability, PlayerInputFrame input)
+        {
+            float3 aim = _player.Aim.Direction(input);
+            if ((ability.Delivery != AbilityDelivery.Projectile && ability.Delivery != AbilityDelivery.GroundSlam) ||
+                _targeting == null || !_targeting.ServerTryGetTargetMiddle(out float3 middle))
+                return aim;
+            float3 toTarget = middle - _player.Aim.Eyes(transform.position);
+            if (math.lengthsq(toTarget) <= 0.01f)
+                return aim;
+            toTarget = math.normalize(toTarget);
+            if (ability == _heldCast && math.dot(toTarget, aim) < HeldToolLockOn)
+                return aim;
+            return toTarget;
         }
 
         /// <summary>Every PC: keeps the cast bar and cooldowns in step with what the host said.</summary>

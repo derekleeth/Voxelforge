@@ -57,6 +57,7 @@ namespace Voxelforge.Gameplay
         PlayerRaceMenu _raceMenu;
         PlayerWorldMap _worldMap;
         PlayerHealth _health;
+        PlayerTargeting _targeting;
         uint _nextSequence;
         // Buttons still held from inside the inventory window, ignored until let go so closing it doesn't also jump.
         PlayerButtons _swallowed;
@@ -253,6 +254,7 @@ namespace Voxelforge.Gameplay
             _raceMenu = GetComponent<PlayerRaceMenu>();
             _worldMap = GetComponent<PlayerWorldMap>();
             _health = GetComponent<PlayerHealth>();
+            _targeting = GetComponent<PlayerTargeting>();
         }
 
         public override void OnNetworkSpawn()
@@ -396,9 +398,12 @@ namespace Voxelforge.Gameplay
             };
             VoxelBodyMotor.Step(ref _body, input, motor, _worldManager.World, Time.fixedDeltaTime);
 
-            // Face where we walk. Standing still keeps the last facing.
-            if (math.lengthsq(input.Move) > 0.01f)
-                _yaw = math.fmod(MoveDirection.TurnToward(_yaw, MoveDirection.YawOf(input.Move), turnSpeed * Time.fixedDeltaTime), 360f);
+            // Face where we walk. Standing still faces the target (Roadmap 5.2), or keeps the last facing.
+            float2 facing = input.Move;
+            if (math.lengthsq(facing) <= 0.01f && _targeting != null && _targeting.ServerTryGetTargetMiddle(out float3 target))
+                facing = target.xz - _body.FeetPosition(motor).xz;
+            if (math.lengthsq(facing) > 0.01f)
+                _yaw = math.fmod(MoveDirection.TurnToward(_yaw, MoveDirection.YawOf(facing), turnSpeed * Time.fixedDeltaTime), 360f);
             if (_grounded.Value != _body.Grounded)
                 _grounded.Value = _body.Grounded;
         }

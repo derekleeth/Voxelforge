@@ -162,7 +162,7 @@ namespace Voxelforge.Gameplay
                 Rect text = mode == SplitMode.Merged
                     ? new Rect(r.x * Screen.width, (1f - r.y - r.height) * Screen.height, r.width * Screen.width, r.height * Screen.height)
                     : own;
-                panel.Tick(view, own, text, scale, _targets, mapTiles, _markers, now);
+                panel.Tick(view, own, text, scale, _targets, targets, mapTiles, _markers, now);
             }
 
             VoxelWorld voxels = world != null ? world.World : null;

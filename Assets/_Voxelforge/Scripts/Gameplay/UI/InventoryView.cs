@@ -230,9 +230,9 @@ namespace Voxelforge.Gameplay
                 "KeyboardRight" => Hints(("RCtrl", "Pick up / Put"), (";", use), ("'", "Send to partner"),
                     ("RShift", "Drop"), null, ("Arrows", "Move"), ("[", "Sort"), (". /", "Tabs"), ("Backspace", "Close")),
                 "KeyboardLeft" => Hints(("Space", "Pick up / Put"), ("F", use), ("G", "Send to partner"), ("Q", "Drop"),
-                    null, ("WASD", "Move"), ("H", "Sort"), ("Z C  1-5", "Tabs"), ("Tab", "Close")),
+                    null, ("WASD", "Move"), ("H", "Sort"), ("Z C  1-5", "Tabs"), ("B", "Close")),
                 _ => Hints(("Click", "Pick up / Put"), ("Right-click", use), ("G", "Send to partner"), null,
-                    ("Click outside", "Drop"), ("H", "Sort"), ("1-5", "Tabs"), ("Wheel", "Scroll"), ("Tab", "Close")),
+                    ("Click outside", "Drop"), ("H", "Sort"), ("1-5", "Tabs"), ("Wheel", "Scroll"), ("B", "Close")),
             };
         }
 

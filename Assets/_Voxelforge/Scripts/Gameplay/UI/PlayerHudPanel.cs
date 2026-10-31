@@ -30,6 +30,7 @@ namespace Voxelforge.Gameplay
         readonly CastBarView _castBar;
         readonly CombatTextView _textView;
         readonly TargetBarsView _targetBars;
+        readonly TargetMarkerView _targetMarker;
         readonly RectTransform _mapArea;
         readonly MinimapView _minimap;
         readonly RectTransform _worldMapArea;
@@ -50,6 +51,7 @@ namespace Voxelforge.Gameplay
         PlayerExplorer _explorer;
         PlayerWorldMap _worldMap;
         PlayerKnockout _knockout;
+        PlayerTargeting _targeting;
         string _scheme;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
@@ -68,6 +70,7 @@ namespace Voxelforge.Gameplay
             _textArea.gameObject.AddComponent<RectMask2D>();
             // Target health bars (Roadmap 4.6) first, so combat text draws over them.
             _targetBars = new TargetBarsView(_textArea, skin);
+            _targetMarker = new TargetMarkerView(_textArea, skin);
             _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName);
 
             // The minimap (Roadmap 4.8), on its own canvas: it moves every frame, and nothing else should rebuild for it.
@@ -149,6 +152,7 @@ namespace Voxelforge.Gameplay
             _explorer = player != null ? player.GetComponent<PlayerExplorer>() : null;
             _worldMap = player != null ? player.GetComponent<PlayerWorldMap>() : null;
             _knockout = player != null ? player.GetComponent<PlayerKnockout>() : null;
+            _targeting = player != null ? player.GetComponent<PlayerTargeting>() : null;
             if (_worldMap != null)
                 _worldMap.Scheme = controlScheme;
             if (_cues != null)
@@ -176,10 +180,11 @@ namespace Voxelforge.Gameplay
         /// <param name="textArea">Where their combat text may go (GUI pixels).</param>
         /// <param name="scale">GUI pixels per 1080p pixel.</param>
         /// <param name="targets">Health of the targets being fought (Roadmap 4.6), shared by every panel.</param>
+        /// <param name="creatures">Every creature in the world, for this player's target marker (Roadmap 5.2).</param>
         /// <param name="mapTiles">The painted map (Roadmap 4.8), shared by every panel. Null before the world starts.</param>
         /// <param name="markers">This frame's map markers: every hero and Home Totem (Roadmap 4.8).</param>
         public void Tick(PlayerView view, Rect ownArea, Rect textArea, float scale, TargetHealthBook targets,
-            MapTileCache mapTiles, List<MapMarker> markers, float now)
+            CombatTargets creatures, MapTileCache mapTiles, List<MapMarker> markers, float now)
         {
             Fit(_barArea, ownArea, scale);
             Fit(_textArea, textArea, scale);
@@ -204,6 +209,7 @@ namespace Voxelforge.Gameplay
             _castBar.Tick(_caster, now);
             if (_player != null)
                 _targetBars.Tick(targets, view, textArea, scale, _player.transform.position, now);
+            _targetMarker.Tick(_targeting, creatures, view, textArea, scale, _player != null ? _player.TeamColor : Color.white, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
             Fit(_knockoutArea, ownArea, scale);
