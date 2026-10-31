@@ -32,8 +32,11 @@ namespace Voxelforge.Editor
         public const string MaterialFolder = Folder + "/Materials";
         public const string ControllerPath = Folder + "/Hero.controller";
 
-        /// <summary>Speed (m/s) each locomotion clip plays at. The motor's walk speed is 5 m/s, which is a run.</summary>
-        const float WalkSpeed = 2f, RunSpeed = 5f;
+        /// <summary>
+        /// Speed (m/s) each locomotion clip plays at. The motor's walk speed is 5 m/s, which is a run, and a sprint
+        /// (Roadmap 4.8) is 8 m/s: the Run clip again, played faster so the feet keep up.
+        /// </summary>
+        const float WalkSpeed = 2f, RunSpeed = 5f, SprintSpeed = 8f;
 
         static readonly (string Name, bool Loop)[] Clips =
         {
@@ -189,6 +192,10 @@ namespace Voxelforge.Editor
             tree.AddChild(LoadClip("Idle"), 0f);
             tree.AddChild(LoadClip("Walk"), WalkSpeed);
             tree.AddChild(LoadClip("Run"), RunSpeed);
+            tree.AddChild(LoadClip("Run"), SprintSpeed);
+            ChildMotion[] children = tree.children;
+            children[^1].timeScale = SprintSpeed / RunSpeed;
+            tree.children = children;
             locomotion.iKOnFeet = true;
             machine.defaultState = locomotion;
 

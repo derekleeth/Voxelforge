@@ -25,6 +25,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Blocks of open space a spawn point needs above the ground.")]
         [SerializeField, Min(1)] int spawnClearance = 2;
 
+        [Tooltip("How many times walking speed a sprinting hero runs at (Roadmap 4.8). 1.6 turns 5 m/s into 8.")]
+        [SerializeField, Min(1f)] float sprintMultiplier = 1.6f;
+
         [Tooltip("How fast the hero turns to face where they walk, in degrees per second.")]
         [SerializeField, Min(1f)] float turnSpeed = 720f;
 
@@ -329,7 +332,8 @@ namespace Voxelforge.Gameplay
                 {
                     // The hero stands still while a window has the controls (Roadmap 4.5); the camera still turns.
                     frame.Move = float2.zero;
-                    _swallowed = frame.Buttons;
+                    _inputSource.CancelSprint();
+                    _swallowed = frame.Buttons & ~PlayerButtons.Sprint;
                     frame.Buttons = PlayerButtons.None;
                 }
                 else
@@ -364,6 +368,7 @@ namespace Voxelforge.Gameplay
             {
                 Move = MoveDirection.ToWorld(_latestInput.Move, _latestInput.ViewYaw),
                 Jump = _latestInput.IsPressed(PlayerButtons.Jump),
+                SpeedScale = SprintScale(_latestInput, sprintMultiplier),
             };
             VoxelBodyMotor.Step(ref _body, input, motor, _worldManager.World, Time.fixedDeltaTime);
 
@@ -373,6 +378,13 @@ namespace Voxelforge.Gameplay
             if (_grounded.Value != _body.Grounded)
                 _grounded.Value = _body.Grounded;
         }
+
+        /// <summary>
+        /// How fast this frame says to move (Roadmap 4.8): <paramref name="multiplier"/> while Sprint is held and the hero
+        /// is really moving, otherwise walking speed. The host decides, so a PC can't sprint while standing still.
+        /// </summary>
+        internal static float SprintScale(in PlayerInputFrame frame, float multiplier) =>
+            frame.IsPressed(PlayerButtons.Sprint) && math.length(frame.Move) >= SprintLatch.MoveDeadZone ? multiplier : 1f;
 
         bool TryPlaceOnGround()
         {

@@ -53,6 +53,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("A Training Dummy's hay sack landing on a hero (Roadmap 4.6).")]
         [SerializeField] AudioClip hayThwack;
 
+        [Tooltip("Air rushing past a sprinting hero (Roadmap 4.8). Loops, and gets louder the faster they run.")]
+        [SerializeField] AudioClip sprintWind;
+
         [Header("Loops")]
         [SerializeField] AmbientLoop[] loops = Array.Empty<AmbientLoop>();
 
@@ -66,6 +69,7 @@ namespace Voxelforge.Gameplay
         public AudioClip EarthCrumble => earthCrumble;
         public AudioClip ShieldBlock => shieldBlock;
         public AudioClip HayThwack => hayThwack;
+        public AudioClip SprintWind => sprintWind;
         public AmbientLoop[] Loops => loops;
 
         /// <summary>How the block with this ID sounds. Never null if there's a default surface.</summary>

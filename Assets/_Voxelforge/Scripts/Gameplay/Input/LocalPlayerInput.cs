@@ -35,7 +35,9 @@ namespace Voxelforge.Gameplay
         readonly InputAction _actionShift;
         readonly InputAction _inventory;
         readonly InputAction _classMenu;
+        readonly InputAction _sprint;
         PadSlotChord _padChord;
+        SprintLatch _sprintLatch;
         InputUser _user;
 
         public LocalPlayerInput(byte localSlot, InputActionAsset template)
@@ -59,6 +61,7 @@ namespace Voxelforge.Gameplay
             _actionShift = _actions.FindAction("Player/ActionShift", throwIfNotFound: true);
             _inventory = _actions.FindAction("Player/Inventory", throwIfNotFound: true);
             _classMenu = _actions.FindAction("Player/ClassMenu", throwIfNotFound: true);
+            _sprint = _actions.FindAction("Player/Sprint", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -79,6 +82,14 @@ namespace Voxelforge.Gameplay
 
         /// <summary>True for the keyboard + mouse scheme, where look input is mouse movement rather than a stick.</summary>
         public bool UsesMouse => ControlScheme == "KeyboardMouse";
+
+        /// <summary>
+        /// Sprint is a toggle (click the stick once) rather than a hold (Roadmap 4.8). Gamepads toggle and keyboards hold
+        /// unless this is set; the settings menu (6.3) can offer it.
+        /// </summary>
+        public bool? SprintToggleOverride { get; set; }
+
+        bool SprintToggles => SprintToggleOverride ?? ControlScheme == "Gamepad";
 
         /// <summary>Set by the roster while this player's device is unplugged.</summary>
         public bool IsDisconnected { get; internal set; }
@@ -133,9 +144,13 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.ClassMenu;
             buttons |= ReadActionSlots();
 
+            var move = (float2)_move.ReadValue<Vector2>();
+            if (_sprintLatch.Update(_sprint.IsPressed(), SprintToggles, math.length(move)))
+                buttons |= PlayerButtons.Sprint;
+
             return new PlayerInputFrame
             {
-                Move = (float2)_move.ReadValue<Vector2>(),
+                Move = move,
                 ViewYaw = ViewYaw,
                 ViewPitch = ViewPitch,
                 Buttons = buttons,
@@ -169,6 +184,8 @@ namespace Voxelforge.Gameplay
             }
             return buttons;
         }
+
+        public void CancelSprint() => _sprintLatch.Reset();
 
         /// <summary>
         /// Camera look input: mouse movement in pixels this frame, or the right stick (-1 to 1). Stays on this PC; the

@@ -7,5 +7,8 @@ namespace Voxelforge.Gameplay
     public interface IPlayerInputSource
     {
         PlayerInputFrame Read();
+
+        /// <summary>Forget a toggled sprint (Roadmap 4.8), e.g. when one of the player's windows takes the controls.</summary>
+        void CancelSprint() { }
     }
 }

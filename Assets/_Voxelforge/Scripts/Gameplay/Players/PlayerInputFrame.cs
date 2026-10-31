@@ -43,6 +43,11 @@ namespace Voxelforge.Gameplay
         /// Gamepads have no button left, so they open it from the inventory window with Place (LT).
         /// </summary>
         ClassMenu = 1 << 18,
+        /// <summary>
+        /// Run faster (Roadmap 4.8). Already worked out on the owner's PC from a toggle or a hold (<see cref="SprintLatch"/>),
+        /// so the host just reads it as "sprinting now".
+        /// </summary>
+        Sprint = 1 << 19,
     }
 
     public static class ActionSlotButtons

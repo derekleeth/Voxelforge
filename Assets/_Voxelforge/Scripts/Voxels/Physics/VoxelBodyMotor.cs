@@ -54,8 +54,9 @@ namespace Voxelforge.Voxels
             if (moveLength > 1f)
                 move /= moveLength;
 
-            body.Velocity.x = move.x * settings.WalkSpeed;
-            body.Velocity.z = move.y * settings.WalkSpeed;
+            float speed = input.Speed(settings);
+            body.Velocity.x = move.x * speed;
+            body.Velocity.z = move.y * speed;
             bool jumped = input.Jump && body.Grounded;
             if (jumped)
                 body.Velocity.y = settings.JumpSpeed;

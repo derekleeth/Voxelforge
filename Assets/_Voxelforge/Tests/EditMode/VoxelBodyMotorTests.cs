@@ -47,6 +47,19 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void SpeedScale_ZeroWalksAndSprintScalesSpeed()
+        {
+            CreateRoomWithFloor();
+            var walker = BodyStandingAt(new float3(4.5f, 1f, 4.5f));
+            var sprinter = walker;
+            Run(ref walker, new MotorInput { Move = new float2(1f, 0f) }, 5);
+            Run(ref sprinter, new MotorInput { Move = new float2(1f, 0f), SpeedScale = 1.6f }, 5);
+
+            Assert.AreEqual(_settings.WalkSpeed, walker.Velocity.x, 1e-4f);
+            Assert.AreEqual(_settings.WalkSpeed * 1.6f, sprinter.Velocity.x, 1e-4f);
+        }
+
+        [Test]
         public void Body_FallsAndLandsOnFloor()
         {
             CreateRoomWithFloor();

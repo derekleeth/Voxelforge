@@ -46,5 +46,13 @@ namespace Voxelforge.Voxels
         /// <summary>Wanted direction on the ground plane (x, z), length 0-1.</summary>
         public float2 Move;
         public bool Jump;
+
+        /// <summary>
+        /// How many times <see cref="MotorSettings.WalkSpeed"/> to move at, e.g. 1.6 while sprinting (Roadmap 4.8).
+        /// 0 (the default) means 1, so code that never sets it walks as before.
+        /// </summary>
+        public float SpeedScale;
+
+        public float Speed(in MotorSettings settings) => settings.WalkSpeed * (SpeedScale > 0f ? SpeedScale : 1f);
     }
 }

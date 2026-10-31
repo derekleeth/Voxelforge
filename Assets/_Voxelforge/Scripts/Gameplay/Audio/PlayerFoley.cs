@@ -11,6 +11,7 @@ namespace Voxelforge.Gameplay
     /// under the foot (<see cref="HeroFootIK.StepCount"/>), a jump whoosh, a landing thump that gets heavier with the
     /// fall, and its spells (4.2): a hum while casting, then the release, impact and fizzle sounds of the spell's
     /// <see cref="AbilityLook"/>, from the <see cref="AbilityCue"/>s the host sends (<see cref="PlayerAbilityCues"/>).
+    /// A sprinting hero (4.8) also has wind rushing past them, from how fast they're really moving.
     /// Presentation only: it reads what each PC already knows and plays it through the <see cref="SoundRouter"/>.
     /// </summary>
     public sealed class PlayerFoley : MonoBehaviour
@@ -35,6 +36,17 @@ namespace Voxelforge.Gameplay
         [Tooltip("Falling this fast (m/s) or faster lands at full volume.")]
         [SerializeField, Min(1f)] float heavyLandSpeed = 14f;
 
+        [Tooltip("Ground speed (m/s) where sprint wind starts to be heard. Walking is 5 m/s and sprinting 8.")]
+        [SerializeField, Min(0f)] float windFromSpeed = 5.8f;
+
+        [Tooltip("Ground speed (m/s) where sprint wind is at full volume.")]
+        [SerializeField, Min(0f)] float windFullSpeed = 7.8f;
+
+        [SerializeField, Range(0f, 2f)] float windVolume = 0.35f;
+
+        [Tooltip("How quickly the wind fades in and out, per second.")]
+        [SerializeField, Min(0.1f)] float windFade = 4f;
+
         sealed class Hero
         {
             public PlayerController Player;
@@ -54,6 +66,8 @@ namespace Voxelforge.Gameplay
             public float AirTime;
             public float FallSpeed;
             public bool JumpPlayed;
+            public int WindLoop;
+            public float Wind;
         }
 
         readonly List<Hero> _heroes = new List<Hero>();
@@ -112,6 +126,7 @@ namespace Voxelforge.Gameplay
             if (hero.Health != null)
                 hero.Health.Changed -= hero.OnHealth;
             StopCastLoop(hero);
+            StopWind(hero);
             _heroes.RemoveAt(index);
         }
 
@@ -184,6 +199,31 @@ namespace Voxelforge.Gameplay
                 hero.JumpPlayed = false;
             }
             hero.WasGrounded = grounded;
+            UpdateWind(hero);
+        }
+
+        /// <summary>Roadmap 4.8: wind fades in as a hero runs faster than walking, and away when they slow down.</summary>
+        void UpdateWind(Hero hero)
+        {
+            float speed = hero.Animator != null ? hero.Animator.Speed : 0f;
+            float target = math.saturate((speed - windFromSpeed) / math.max(0.01f, windFullSpeed - windFromSpeed));
+            hero.Wind = math.lerp(hero.Wind, target, 1f - math.exp(-windFade * Time.deltaTime));
+            if (hero.Wind < 0.01f)
+            {
+                StopWind(hero);
+                return;
+            }
+            float3 chest = Chest(hero.Player);
+            if (hero.WindLoop == 0)
+                hero.WindLoop = router.StartLoop(sounds.SprintWind, chest, 0f, 14f, SoundCategory.Sfx);
+            router.MoveLoop(hero.WindLoop, chest, hero.Wind * windVolume);
+        }
+
+        void StopWind(Hero hero)
+        {
+            if (hero.WindLoop != 0 && router != null)
+                router.StopLoop(hero.WindLoop);
+            hero.WindLoop = 0;
         }
 
         /// <summary>
