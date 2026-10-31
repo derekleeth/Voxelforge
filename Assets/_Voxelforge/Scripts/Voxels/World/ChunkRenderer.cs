@@ -8,7 +8,12 @@ namespace Voxelforge.Voxels
     /// <see cref="Mesh"/> that is overwritten every time the chunk is remeshed.
     /// <para>
     /// Pooled: when its chunk unloads, <see cref="ChunkMeshScheduler"/> deactivates it and later moves it to another
-    /// chunk with <see cref="Reuse"/>, so streaming doesn't create and destroy GameObjects and meshes all the time.
+    /// chunk with <see cref="Reuse"/>, so streaming doesn't create and destroy GameObjects all the time.
+    /// </para>
+    /// <para>
+    /// Each reuse gets a <b>new</b> <see cref="Mesh"/>, though. URP's GPU Resident Drawer doesn't see a mesh change while
+    /// its renderer is off, so a refilled old mesh kept the old chunk's bounds for GPU occlusion culling, and whole
+    /// chunks of ground stayed hidden after a reload until the renderer was toggled (found in 4.8 play-testing).
     /// </para>
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -17,6 +22,7 @@ namespace Voxelforge.Voxels
         const MeshUpdateFlags ApplyFlags = MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices;
 
         Mesh _mesh;
+        MeshFilter _filter;
         MeshRenderer _renderer;
 
         public ChunkCoord Coord { get; private set; }
@@ -30,20 +36,21 @@ namespace Voxelforge.Voxels
             go.transform.SetParent(parent, false);
 
             var chunkRenderer = go.AddComponent<ChunkRenderer>();
-            chunkRenderer._mesh = new Mesh();
-            go.GetComponent<MeshFilter>().sharedMesh = chunkRenderer._mesh;
+            chunkRenderer._filter = go.GetComponent<MeshFilter>();
             chunkRenderer._renderer = go.GetComponent<MeshRenderer>();
             chunkRenderer._renderer.sharedMaterial = material;
             chunkRenderer.Reuse(coord);
             return chunkRenderer;
         }
 
-        /// <summary>Moves this renderer to <paramref name="coord"/> with an empty mesh, and activates it.</summary>
+        /// <summary>Moves this renderer to <paramref name="coord"/> with a new, empty mesh, and activates it.</summary>
         internal void Reuse(ChunkCoord coord)
         {
             Coord = coord;
             name = $"Chunk {coord.X},{coord.Y},{coord.Z}";
-            _mesh.name = name;
+            DestroyMesh();
+            _mesh = new Mesh { name = name };
+            _filter.sharedMesh = _mesh;
             transform.localPosition = new Vector3(coord.WorldOrigin.x, coord.WorldOrigin.y, coord.WorldOrigin.z);
             Clear();
             gameObject.SetActive(true);
@@ -70,12 +77,17 @@ namespace Voxelforge.Voxels
             _renderer.enabled = false;
         }
 
-        void OnDestroy()
+        void DestroyMesh()
         {
+            if (_mesh == null)
+                return;
             if (Application.isPlaying)
                 Destroy(_mesh);
             else
                 DestroyImmediate(_mesh);
+            _mesh = null;
         }
+
+        void OnDestroy() => DestroyMesh();
     }
 }
