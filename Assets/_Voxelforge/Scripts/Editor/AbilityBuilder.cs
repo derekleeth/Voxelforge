@@ -30,6 +30,8 @@ namespace Voxelforge.Editor
     /// (lightning on the nearest foe within 12 m every 2 s). Totems last 20 s, one of each per Shaman.</para>
     /// <para>And the classes (Roadmap 4.6) in <c>Data/Classes/</c>: each <see cref="ClassDefinition"/>, its action bar
     /// loadout and the <see cref="ClassBook"/>, in the order the class window shows them.</para>
+    /// <para>The races (Roadmap 4.7) in <c>Data/Races/</c>, with their racials: <b>Hoofquake</b> (the Thunderhoof's stomp,
+    /// a 6 m stun) and <b>Second Wind</b> (the Wayfarer's quick heal of a quarter of their health).</para>
     /// </summary>
     public static class AbilityBuilder
     {
@@ -58,6 +60,10 @@ namespace Voxelforge.Editor
         const string ClassDir = "Assets/_Voxelforge/Data/Classes";
         public const string ClassBookPath = ClassDir + "/ClassBook.asset";
         const string HudSkinPath = "Assets/_Voxelforge/Data/UI/HudSkin.asset";
+        public const string HoofquakePath = AbilityDir + "/Hoofquake.asset";
+        public const string SecondWindPath = AbilityDir + "/SecondWind.asset";
+        const string RaceDir = "Assets/_Voxelforge/Data/Races";
+        public const string RaceBookPath = RaceDir + "/RaceBook.asset";
 
         [MenuItem("Voxelforge/Build Abilities")]
         public static void BuildMenu()
@@ -135,13 +141,24 @@ namespace Voxelforge.Editor
                 speed: 0f, blockDamage: 0f, creatureDamage: 25f, delivery: AbilityDelivery.Totem,
                 duration: 20f, pulseInterval: 2f);
 
+            // ---- Racials (Roadmap 4.7): free to cast, slot 9, on long cooldowns ----
+            AbilityDefinition hoofquake = MakeAbility(HoofquakePath, AbilityIds.Hoofquake, "Hoofquake",
+                "Rear up and stamp the ground. Foes within 6 metres are knocked about and stunned for 2 seconds.",
+                AbilityElement.Earth, manaCost: 0f, cooldown: 45f, castTime: 0f, range: 0f, aoeRadius: 6f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 20f, craterFalloff: 0.5f, delivery: AbilityDelivery.Quake,
+                duration: 2f);
+            AbilityDefinition secondWind = MakeAbility(SecondWindPath, AbilityIds.SecondWind, "Second Wind",
+                "Catch your breath like an old road-hand and heal a quarter of your health at once.",
+                AbilityElement.Nature, manaCost: 0f, cooldown: 120f, castTime: 0f, range: 0f, aoeRadius: 0f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.SelfHeal, healAmount: 0.25f);
+
             var book = LoadOrCreate<AbilityBook>(BookPath);
             var serialized = new SerializedObject(book);
             SerializedProperty list = serialized.FindProperty("abilities");
             AbilityDefinition[] all =
             {
                 manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar,
-                earthenWall, wellspring, thunderhead,
+                earthenWall, wellspring, thunderhead, hoofquake, secondWind,
             };
             list.arraySize = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -232,6 +249,18 @@ namespace Voxelforge.Editor
                 zoneModel: LoadModelMesh($"{ModelDir}/TotemThunderhead.fbx", "TotemThunderhead"), zoneRing: 0.25f,
                 pulse: "ThunderZap", pulseVolume: 0.9f, maxDistance: 60f);
 
+            // Racials: Hoofquake is all slam (dust, rock and a heavy shake); Second Wind is a soft green breath.
+            AbilityLook hoofquakeLook = MakeLook($"{LookDir}/HoofquakeLook.asset", hoofquake, new Color(0.85f, 0.65f, 0.35f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 1.5f, lightRange: 6f, muzzleSparks: 0,
+                impactSparks: 60, impactSpeed: 6f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: null, impact: "Hoofquake", releaseVolume: 0.8f, impactVolume: 1.4f,
+                debrisChunks: 70, debrisSpeed: 7f, debrisTint: new Color(0.4f, 0.3f, 0.18f, 0.3f), shake: 0.8f,
+                blastLight: 0f, maxDistance: 50f);
+            AbilityLook secondWindLook = MakeLook($"{LookDir}/SecondWindLook.asset", secondWind, new Color(0.55f, 1f, 0.6f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f, lightRange: 5f, muzzleSparks: 20,
+                impactSparks: 0, impactSpeed: 3f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: "SecondWind", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
+
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
             serialized.FindProperty("defaultLook").objectReferenceValue = manaBoltLook;
@@ -239,7 +268,8 @@ namespace Voxelforge.Editor
             AbilityLook[] allLooks =
             {
                 manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
-                stoneSpearLook, risingPillarLook, earthenWallLook, wellspringLook, thunderheadLook,
+                stoneSpearLook, risingPillarLook, earthenWallLook, wellspringLook, thunderheadLook, hoofquakeLook,
+                secondWindLook,
             };
             list.arraySize = allLooks.Length;
             for (int i = 0; i < allLooks.Length; i++)
@@ -249,7 +279,63 @@ namespace Voxelforge.Editor
 
             BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar, earthenWall,
                 wellspring, thunderhead);
+            BuildRaces(hoofquake, secondWind);
             return manaBolt;
+        }
+
+        /// <summary>The races (Roadmap 4.7), in the order the race window shows them, and the <see cref="RaceBook"/>.</summary>
+        static void BuildRaces(AbilityDefinition hoofquake, AbilityDefinition secondWind)
+        {
+            if (!AssetDatabase.IsValidFolder(RaceDir))
+                AssetDatabase.CreateFolder("Assets/_Voxelforge/Data", "Races");
+
+            RaceDefinition wayfarer = MakeRace("Wayfarer", RaceId.Wayfarer, "Wayfarer",
+                "Hardy folk of the long roads, who'll sleep under any sky but always find their way home. Every hearth " +
+                "from the Meadows to the Peaks has a Wayfarer story told round it.",
+                homeland: "Meadows", bonusHealth: 0f, bonusMana: 10f, bonusManaRegen: 0f, secondWind,
+                RacialPassive.Hearthbound, "Hearthbound",
+                "The road always leads home: your Home Totem hearth takes half as long.", passiveValue: 0.5f);
+            RaceDefinition thunderhoof = MakeRace("Thunderhoof", RaceId.Thunderhoof, "Thunderhoof",
+                "Big, gentle bull-folk of the windswept plains, slow to anger and hard to move. They follow the herds " +
+                "between the mesas and listen to the land, and their shamans are the oldest in the world.",
+                homeland: "Thunderhoof Plains", bonusHealth: 20f, bonusMana: 0f, bonusManaRegen: 0f, hoofquake,
+                RacialPassive.HerbSense, "Herb-Sense",
+                "You know the plants of the plains by smell: gathering herbs gives half as many again.", passiveValue: 0.5f);
+
+            var book = LoadOrCreate<RaceBook>(RaceBookPath);
+            var serialized = new SerializedObject(book);
+            SerializedProperty list = serialized.FindProperty("races");
+            RaceDefinition[] order = { wayfarer, thunderhoof };
+            list.arraySize = order.Length;
+            for (int i = 0; i < order.Length; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = order[i];
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(book);
+            foreach (string error in book.Validate())
+                Debug.LogError($"[Voxelforge] Race book: {error}", book);
+        }
+
+        static RaceDefinition MakeRace(string name, RaceId id, string displayName, string description, string homeland,
+            float bonusHealth, float bonusMana, float bonusManaRegen, AbilityDefinition racial, RacialPassive passive,
+            string passiveName, string passiveDescription, float passiveValue)
+        {
+            var definition = LoadOrCreate<RaceDefinition>($"{RaceDir}/{name}.asset");
+            var serialized = new SerializedObject(definition);
+            serialized.FindProperty("id").intValue = (int)id;
+            serialized.FindProperty("displayName").stringValue = displayName;
+            serialized.FindProperty("description").stringValue = description;
+            serialized.FindProperty("homeland").stringValue = homeland;
+            serialized.FindProperty("bonusHealth").floatValue = bonusHealth;
+            serialized.FindProperty("bonusMana").floatValue = bonusMana;
+            serialized.FindProperty("bonusManaRegen").floatValue = bonusManaRegen;
+            serialized.FindProperty("racialAbility").objectReferenceValue = racial;
+            serialized.FindProperty("passive").intValue = (int)passive;
+            serialized.FindProperty("passiveName").stringValue = passiveName;
+            serialized.FindProperty("passiveDescription").stringValue = passiveDescription;
+            serialized.FindProperty("passiveValue").floatValue = passiveValue;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(definition);
+            return definition;
         }
 
         /// <summary>

@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: HoofquakeLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: 3b216bf6ff1d9f64b9ad1a3d1cedeecd, type: 2}
+  icon: {fileID: 0}
+  glow: {r: 0.85, g: 0.65, b: 0.35, a: 1}
+  coreShape: 0
+  coreSize: 0.2
+  coreMesh: {fileID: 0}
+  coreSpin: 0
+  zoneModel: {fileID: 0}
+  zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
+  trailTime: 0.2
+  lightIntensity: 1.5
+  lightRange: 6
+  muzzleSparks: 0
+  impactSparks: 60
+  impactSpeed: 6
+  debrisChunks: 70
+  debrisSpeed: 7
+  debrisTint: {r: 0.4, g: 0.3, b: 0.18, a: 0.3}
+  shakeStrength: 0.8
+  blastLight: 0
+  castMotesPerSecond: 0
+  castLight: 0
+  castLoop: {fileID: 0}
+  castLoopVolume: 0.5
+  release: {fileID: 0}
+  releaseVolume: 0.8
+  impact: {fileID: 0}
+  impactVolume: 1.4
+  fizzle: {fileID: 0}
+  maxDistance: 50

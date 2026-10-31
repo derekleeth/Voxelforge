@@ -46,6 +46,7 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerCrafter _crafter;
+        PlayerRace _race;
 
         // Host state.
         int3 _homeBlock;
@@ -84,7 +85,10 @@ namespace Voxelforge.Gameplay
         /// <summary>Every PC: the hero is casting, and how far through it they are (0-1).</summary>
         public bool IsCasting => _castingLocal;
 
-        public float CastProgress => _castingLocal ? Mathf.Clamp01((Time.time - _castStartLocal) / castSeconds) : 0f;
+        public float CastProgress => _castingLocal ? Mathf.Clamp01((Time.time - _castStartLocal) / CastSeconds) : 0f;
+
+        /// <summary>How long this hero's hearth cast takes: shorter for a Hearthbound race (Roadmap 4.7).</summary>
+        float CastSeconds => RaceRules.HearthSeconds(castSeconds, _race != null ? _race.Definition : null);
 
         /// <summary>Owner only: a short message, or null.</summary>
         public string Message => Time.time < _messageUntil ? _message : null;
@@ -99,6 +103,7 @@ namespace Voxelforge.Gameplay
         {
             _player = GetComponent<PlayerController>();
             _crafter = GetComponent<PlayerCrafter>();
+            _race = GetComponent<PlayerRace>();
         }
 
         /// <summary>Host, just after spawning: the home this player had last time (Roadmap 3.4 profile).</summary>
@@ -208,7 +213,7 @@ namespace Voxelforge.Gameplay
             }
 
             float elapsed = Time.time - _castStart;
-            if (elapsed < castSeconds)
+            if (elapsed < CastSeconds)
                 return;
 
             VoxelWorldManager world = _player.WorldManager;
@@ -220,7 +225,7 @@ namespace Voxelforge.Gameplay
             }
             if (!HomeTotems.IsReady(world.World, _homeBlock))
             {
-                if (elapsed > castSeconds + loadWaitSeconds)
+                if (elapsed > CastSeconds + loadWaitSeconds)
                     EndCast(HearthRefusal.TooFar);
                 return; // Still streaming in.
             }

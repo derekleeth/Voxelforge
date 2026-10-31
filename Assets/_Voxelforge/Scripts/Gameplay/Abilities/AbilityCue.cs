@@ -24,6 +24,8 @@ namespace Voxelforge.Gameplay
         /// <see cref="AbilityCue.TargetMaxHealth"/>. One per target, so a crater over three dummies sends three.
         /// </summary>
         TargetHit,
+        /// <summary>The ability stunned a target whose middle is at <see cref="AbilityCue.Position"/> (Roadmap 4.7, Hoofquake).</summary>
+        TargetStunned,
     }
 
     /// <summary>
@@ -88,6 +90,10 @@ namespace Voxelforge.Gameplay
                 TargetDamage = ClampCount(Mathf.CeilToInt(result.Dealt)), TargetHealth = ClampCount(Mathf.CeilToInt(result.Health)),
                 TargetMaxHealth = ClampCount(Mathf.CeilToInt(result.MaxHealth)), Toppled = result.Toppled,
             };
+
+        /// <summary>The ability stunned the target whose middle is at <paramref name="middle"/> (Roadmap 4.7).</summary>
+        public static AbilityCue StunTarget(ushort abilityId, Vector3 middle) =>
+            new AbilityCue { Kind = AbilityCueKind.TargetStunned, AbilityId = abilityId, Position = middle };
 
         static ushort ClampCount(int count) => (ushort)Mathf.Clamp(count, 0, ushort.MaxValue);
 

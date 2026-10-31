@@ -59,6 +59,17 @@ namespace Voxelforge.Gameplay
             target.ServerShield(ability.ShieldAmount, ability.Duration, _player.PlayerId, ability.Id);
         }
 
+        /// <summary>
+        /// Host only: <paramref name="ability"/> heals the hero at once by its Heal Amount as a share of their max health
+        /// (a <see cref="AbilityDelivery.SelfHeal"/>, Roadmap 4.7 Second Wind).
+        /// </summary>
+        public void ServerSelfHeal(AbilityDefinition ability)
+        {
+            if (!IsServer || !IsSpawned || ability == null || ability.HealAmount <= 0f)
+                return;
+            _health.ServerHeal(_health.MaxHealth * ability.HealAmount, _player.PlayerId, ability.Id);
+        }
+
         /// <summary>Host only: <paramref name="ability"/>'s circle on the ground, centred on the hero's feet.</summary>
         public void ServerZone(AbilityDefinition ability)
         {

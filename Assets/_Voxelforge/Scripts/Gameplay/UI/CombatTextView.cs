@@ -161,6 +161,12 @@ namespace Voxelforge.Gameplay
                     colour = _skin.shield;
                     size *= 0.85f;
                     break;
+                case CombatTextKind.Stunned:
+                    words = "STUNNED!";
+                    colour = _skin.ElementColor(e.Element);
+                    size *= 1.1f;
+                    burst = true;
+                    break;
                 case CombatTextKind.Absorbed:
                     words = $"BLOCKED {e.Amount}";
                     colour = _skin.shield;

@@ -141,6 +141,9 @@ namespace Voxelforge.Gameplay
             player.TryGetComponent(out PlayerHearth hearth);
             if (profile != null && hearth != null)
                 hearth.ServerRestore(profile.HasHome, profile.HomeBlock);
+            // Race first (Roadmap 4.7): the class adds the race's bonuses and racial in when it's applied.
+            if (player.TryGetComponent(out PlayerRace race))
+                race.ServerRestore(profile != null ? profile.Race : RaceId.Wayfarer, profile != null && profile.RaceChosen);
             // After spawning, so the action bar, mana and health it sets are all on the network (Roadmap 4.6).
             if (player.TryGetComponent(out PlayerClass heroClass))
                 heroClass.ServerRestore(profile != null ? profile.Class : HeroClassId.Adventurer);

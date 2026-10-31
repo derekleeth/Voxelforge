@@ -44,5 +44,11 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Shaman (Roadmap 4.6): a totem that calls lightning down on the nearest foe.</summary>
         public const ushort ThunderheadTotem = 12;
+
+        /// <summary>Thunderhoof racial (Roadmap 4.7): a stomp that shakes the ground round you and stuns foes in it.</summary>
+        public const ushort Hoofquake = 13;
+
+        /// <summary>Wayfarer racial (Roadmap 4.7): catch your breath and heal a quarter of your health at once.</summary>
+        public const ushort SecondWind = 14;
     }
 }

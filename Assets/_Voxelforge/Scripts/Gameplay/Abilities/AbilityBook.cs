@@ -64,6 +64,10 @@ namespace Voxelforge.Gameplay
             if ((ability.Delivery == AbilityDelivery.Zone || ability.Delivery == AbilityDelivery.Totem) &&
                 !(ability.Duration > 0f && ability.AoeRadius > 0f))
                 errors.Add($"'{name}' leaves a zone, so it needs a duration and radius above 0.");
+            if (ability.Delivery == AbilityDelivery.Quake && ability.AoeRadius <= 0f)
+                errors.Add($"'{name}' is a stomp, so it needs a radius above 0.");
+            if (ability.Delivery == AbilityDelivery.SelfHeal && !(ability.HealAmount > 0f && ability.HealAmount <= 1f))
+                errors.Add($"'{name}' heals a share of max health, so its heal amount must be above 0 and at most 1.");
             return errors;
         }
 

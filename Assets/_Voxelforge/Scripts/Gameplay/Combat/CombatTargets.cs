@@ -225,6 +225,22 @@ namespace Voxelforge.Gameplay
             return new TargetDamage(dealt, dummy.Health, SparringDummy.MaxHealth, toppled);
         }
 
+        /// <summary>
+        /// Host only: stuns <paramref name="target"/> for <paramref name="seconds"/> in <paramref name="instigator"/>'s name
+        /// (Roadmap 4.7, Hoofquake). A Training Dummy stops sparring; Phase 5 creatures will stop moving and fighting.
+        /// Heroes are never stunned: there's no friendly crowd control.
+        /// </summary>
+        public bool ServerStun(in CombatTarget target, float seconds, PlayerId instigator)
+        {
+            if (!IsServer || seconds <= 0f || !IsTarget(target.Block))
+                return false;
+            float now = Time.time;
+            if (!_dummies.TryGetValue(target.Block, out SparringDummy dummy))
+                _dummies[target.Block] = dummy = new SparringDummy(now);
+            dummy.Stun(now, seconds, instigator);
+            return true;
+        }
+
         void FixedUpdate()
         {
             if (!IsServer || (_dummies.Count == 0 && _bales.Count == 0))

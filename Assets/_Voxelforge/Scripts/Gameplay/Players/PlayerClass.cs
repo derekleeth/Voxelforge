@@ -10,7 +10,7 @@ namespace Voxelforge.Gameplay
     /// gives the hero the class's action bar (<see cref="PlayerActionBar"/>), mana pool (<see cref="PlayerCaster"/>) and
     /// health (<see cref="PlayerHealth"/>) (CLAUDE.md Law #2). Every PC sees the class through a network variable. It's
     /// saved in the player's profile and comes back with them (<see cref="PlayerRegistry"/>). Changing class is free for
-    /// now.
+    /// now. The hero's race (<see cref="PlayerRace"/>, Roadmap 4.7) adds to the pools and puts its racial in slot 9.
     /// </summary>
     [RequireComponent(typeof(PlayerController), typeof(PlayerActionBar), typeof(PlayerCaster))]
     public sealed class PlayerClass : NetworkBehaviour
@@ -26,6 +26,7 @@ namespace Voxelforge.Gameplay
         PlayerActionBar _actionBar;
         PlayerCaster _caster;
         PlayerHealth _health;
+        PlayerRace _race;
         float _lastRequestTime = float.NegativeInfinity;
 
         public ClassBook Book => classes;
@@ -46,6 +47,7 @@ namespace Voxelforge.Gameplay
             _actionBar = GetComponent<PlayerActionBar>();
             _caster = GetComponent<PlayerCaster>();
             _health = GetComponent<PlayerHealth>();
+            _race = GetComponent<PlayerRace>();
         }
 
         public override void OnNetworkSpawn()
@@ -99,12 +101,21 @@ namespace Voxelforge.Gameplay
                 Apply(definition);
         }
 
+        /// <summary>Host only: the hero's race changed, so their pools and slot 9 do too (Roadmap 4.7).</summary>
+        public void ServerReapply()
+        {
+            if (IsServer && Definition is ClassDefinition definition)
+                Apply(definition);
+        }
+
         void Apply(ClassDefinition definition)
         {
-            _actionBar.ServerSetLoadout(definition.Loadout);
-            _caster.ServerSetPool(definition.MaxMana, definition.ManaRegen);
+            RaceDefinition race = _race != null ? _race.Definition : null;
+            HeroPools pools = RaceRules.Pools(definition, race);
+            _actionBar.ServerSetLoadout(definition.Loadout, race);
+            _caster.ServerSetPool(pools.MaxMana, pools.ManaRegen);
             if (_health != null)
-                _health.ServerSetMaxHealth(definition.MaxHealth);
+                _health.ServerSetMaxHealth(pools.MaxHealth);
             _class.Value = definition.Id;
         }
     }

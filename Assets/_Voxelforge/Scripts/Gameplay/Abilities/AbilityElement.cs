@@ -50,6 +50,16 @@ namespace Voxelforge.Gameplay
         /// (Roadmap 4.6, Shaman totems; <see cref="AbilityZone"/>). One of each per caster.
         /// </summary>
         Totem,
+        /// <summary>
+        /// A stomp at the caster's feet that hurts and stuns every foe within its radius, with no crater (Roadmap 4.7,
+        /// Hoofquake; <see cref="PlayerStaff.ServerQuake"/>). The stun lasts the ability's Duration.
+        /// </summary>
+        Quake,
+        /// <summary>
+        /// Heals the caster at once by a share of their own max health: Heal Amount 0.25 is a quarter (Roadmap 4.7,
+        /// Second Wind; <see cref="PlayerSupport.ServerSelfHeal"/>).
+        /// </summary>
+        SelfHeal,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>

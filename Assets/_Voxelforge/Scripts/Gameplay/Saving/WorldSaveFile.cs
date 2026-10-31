@@ -58,10 +58,10 @@ namespace Voxelforge.Gameplay
     {
         /// <summary>
         /// 1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). 3: each profile's worn bags, and the Storage
-        /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). Older
-        /// saves still load.
+        /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). 5: each
+        /// profile's race and whether they've chosen it (4.7). Older saves still load.
         /// </summary>
-        public const int FormatVersion = 4;
+        public const int FormatVersion = 5;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -100,6 +100,8 @@ namespace Voxelforge.Gameplay
                     for (int i = 0; i < EquippedBags.SocketCount; i++)
                         writer.Write(profile.Bags[i]);
                     writer.Write((byte)profile.Class);
+                    writer.Write((byte)profile.Race);
+                    writer.Write(profile.RaceChosen);
                 }
 
                 writer.Write(save.Chests.Count);
@@ -214,6 +216,11 @@ namespace Voxelforge.Gameplay
                     }
                     if (format >= 4)
                         profile.Class = (HeroClassId)reader.ReadByte();
+                    if (format >= 5)
+                    {
+                        profile.Race = (RaceId)reader.ReadByte();
+                        profile.RaceChosen = reader.ReadBoolean();
+                    }
                     if (profile.Uuid.IsValid)
                         result.Profiles[profile.Uuid] = profile;
                 }

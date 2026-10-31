@@ -280,6 +280,13 @@ namespace Voxelforge.Gameplay
                         EarthRules.TryFindTotemSpot(_player.World, totemHit, MaxGroundDrop, out int3 totemSpot))
                         _support.ServerTotem(ability, totemSpot);
                     break;
+                case AbilityDelivery.Quake:
+                    _staff.ServerQuake(ability);
+                    break;
+                case AbilityDelivery.SelfHeal:
+                    if (_support != null)
+                        _support.ServerSelfHeal(ability);
+                    break;
             }
         }
 

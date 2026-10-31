@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9a736e5322e1af468a5d76f37a95cb3, type: 3}
+  m_Name: Thunderhoof
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RaceDefinition
+  id: 1
+  displayName: Thunderhoof
+  description: Big, gentle bull-folk of the windswept plains, slow to anger and hard to move. They follow the herds between the mesas and listen to the land, and their shamans are the oldest in the world.
+  homeland: Thunderhoof Plains
+  bonusHealth: 20
+  bonusMana: 0
+  bonusManaRegen: 0
+  racialAbility: {fileID: 11400000, guid: 3b216bf6ff1d9f64b9ad1a3d1cedeecd, type: 2}
+  passive: 2
+  passiveName: Herb-Sense
+  passiveDescription: 'You know the plants of the plains by smell: gathering herbs gives half as many again.'
+  passiveValue: 0.5

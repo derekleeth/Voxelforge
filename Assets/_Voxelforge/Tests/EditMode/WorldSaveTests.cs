@@ -148,6 +148,8 @@ namespace Voxelforge.Tests
             p1.Bags[0] = 1010;
             p1.Bags[2] = 1012;
             p1.Class = HeroClassId.Shaman;
+            p1.Race = RaceId.Thunderhoof;
+            p1.RaceChosen = true;
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
@@ -192,6 +194,8 @@ namespace Voxelforge.Tests
                 CollectionAssert.AreEqual(want.Bag, got.Bag, "Bag slots come back in the same order.");
                 Assert.AreEqual(want.Bags, got.Bags, "Worn bags (v3).");
                 Assert.AreEqual(want.Class, got.Class, "Class (v4).");
+                Assert.AreEqual(want.Race, got.Race, "Race (v5).");
+                Assert.AreEqual(want.RaceChosen, got.RaceChosen, "Race chosen (v5).");
             }
             CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock and its time left (v4).");
 
@@ -304,41 +308,69 @@ namespace Voxelforge.Tests
             }
         }
 
-        /// <summary>The sample with nothing older formats can't hold (worn bags, class, chests, earth).</summary>
-        static WorldSave OldSample()
+        [Test]
+        public void Version4Save_StillLoads_WithEveryoneYetToChooseARace()
+        {
+            WorldSave save = OldSample(keepV4: true);
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 4), out WorldSave loaded));
+            Assert.AreEqual(2, loaded.Profiles.Count);
+            CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock is still there (v4).");
+            Assert.AreEqual(save.Chests.Count, loaded.Chests.Count);
+            foreach (PlayerProfile want in save.Profiles.Values)
+            {
+                PlayerProfile got = loaded.Profiles[want.Uuid];
+                CollectionAssert.AreEqual(want.Bag, got.Bag);
+                Assert.AreEqual(want.Class, got.Class, "The class survives.");
+                Assert.AreEqual(RaceId.Wayfarer, got.Race);
+                Assert.IsFalse(got.RaceChosen, "Before 4.7 nobody chose: they get the race window once.");
+            }
+        }
+
+        /// <summary>
+        /// The sample with nothing older formats can't hold: no race (v5); and unless <paramref name="keepV4"/>, no worn
+        /// bags, class, chests or earth either.
+        /// </summary>
+        static WorldSave OldSample(bool keepV4 = false)
         {
             WorldSave save = SampleSave();
             foreach (PlayerProfile profile in save.Profiles.Values)
             {
+                profile.Race = RaceId.Wayfarer;
+                profile.RaceChosen = false;
+                if (keepV4)
+                    continue;
                 profile.Bags = default;
                 profile.Class = HeroClassId.Adventurer;
             }
+            if (keepV4)
+                return save;
             save.Chests.Clear();
             save.Earth.Clear();
             return save;
         }
 
         /// <summary>
-        /// A whole v2 or v3 save file for <paramref name="save"/> (from <see cref="OldSample"/>). A v4 body ends each
-        /// profile with 4 ushorts of worn bags (v3) and a class byte (v4), then has the chest count (v3), the earth count
-        /// (v4) and the end marker; older bodies are the same with those cut out.
+        /// A whole v2, v3 or v4 save file for <paramref name="save"/> (from <see cref="OldSample"/>). A v5 body ends each
+        /// profile with 4 ushorts of worn bags (v3), a class byte (v4) and a race byte and chosen bool (v5), then has the
+        /// chests (v3), the earth (v4) and the end marker; older bodies are the same with those cut out. Below v4 the
+        /// sample must have no chests or earth, so their counts are the only bytes to cut.
         /// </summary>
         static byte[] OlderFile(WorldSave save, int version)
         {
             var body = new List<byte>(WorldSaveFile.EncodeBody(save));
-            int end = body.Count - 4;
-            body.RemoveRange(end - 4, 4); // The earth count (0).
-            end -= 4;
+            int profilesEnd = ProfilesEnd(save);
+            if (version < 4)
+                body.RemoveRange(profilesEnd + 4, 4); // The earth count (0).
             if (version < 3)
-                body.RemoveRange(end - 4, 4); // The chest count (0).
-            int cut = end - 4;
+                body.RemoveRange(profilesEnd, 4); // The chest count (0).
+            int cut = profilesEnd;
             // Cut each profile's newer tail, from the last profile backwards.
-            int tail = version < 3 ? 8 + 1 : 1;
+            int tail = version < 3 ? 8 + 1 + 2 : version < 4 ? 1 + 2 : 2;
             var profiles = new List<PlayerProfile>(save.Profiles.Values);
             for (int p = profiles.Count - 1; p >= 0; p--)
             {
                 body.RemoveRange(cut - tail, tail);
-                cut -= 9 + ProfileBytesWithoutBags(profiles[p]);
+                cut -= FullProfileBytes(profiles[p]);
             }
 
             using var memory = new MemoryStream();
@@ -349,9 +381,25 @@ namespace Voxelforge.Tests
             return memory.ToArray();
         }
 
-        // UUID 16, name (length byte + UTF-8), feet 12, yaw 4, bag count 4 + 4 per slot, home 1 + 12.
-        static int ProfileBytesWithoutBags(PlayerProfile profile) =>
-            16 + 1 + System.Text.Encoding.UTF8.GetByteCount(profile.Name) + 12 + 4 + 4 + 4 * profile.Bag.Count + 13;
+        // UUID 16, name (length byte + UTF-8), feet 12, yaw 4, bag count 4 + 4 per slot, home 1 + 12, worn bags 8,
+        // class 1, race 1 + chosen 1.
+        static int FullProfileBytes(PlayerProfile profile) =>
+            16 + 1 + System.Text.Encoding.UTF8.GetByteCount(profile.Name) + 12 + 4 + 4 + 4 * profile.Bag.Count + 13 + 8 + 1 + 2;
+
+        /// <summary>Where the profiles end in a v5 body: after the generator version, seed, time, deltas and profile count.</summary>
+        static int ProfilesEnd(WorldSave save)
+        {
+            byte[] full = WorldSaveFile.EncodeBody(save);
+            var empty = new WorldSave { Seed = save.Seed, GeneratorVersion = save.GeneratorVersion, SavedUtc = save.SavedUtc, Deltas = save.Deltas };
+            // The same body with no profiles, chests or earth is: header + deltas + 3 zero counts + end marker.
+            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4;
+            int profiles = 0;
+            foreach (PlayerProfile profile in save.Profiles.Values)
+                profiles += FullProfileBytes(profile);
+            int end = header + 4 + profiles;
+            Assert.LessOrEqual(end + 12, full.Length);
+            return end;
+        }
 
         [Test]
         public void LocalPlayerIdentities_AreStablePerSlot_AndSurviveARestart()

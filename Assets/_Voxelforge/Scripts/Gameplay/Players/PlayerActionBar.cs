@@ -30,11 +30,14 @@ namespace Voxelforge.Gameplay
                 _slots.Value = defaultLoadout.ToSlots();
         }
 
-        /// <summary>Host only: fills the bar from <paramref name="loadout"/> (a class's spells, Roadmap 4.6).</summary>
-        public void ServerSetLoadout(ActionBarLoadout loadout)
+        /// <summary>
+        /// Host only: fills the bar from <paramref name="loadout"/> (a class's spells, Roadmap 4.6), with
+        /// <paramref name="race"/>'s racial ability in slot 9 (Roadmap 4.7).
+        /// </summary>
+        public void ServerSetLoadout(ActionBarLoadout loadout, RaceDefinition race = null)
         {
             if (IsServer && loadout != null)
-                _slots.Value = loadout.ToSlots();
+                _slots.Value = RaceRules.Bar(loadout, race);
         }
 
         /// <summary>Every PC: the ability in slot <paramref name="slot"/> (0-8), as the host shared it.</summary>

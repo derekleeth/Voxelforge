@@ -31,6 +31,8 @@ namespace Voxelforge.Gameplay
         Shielded,
         /// <summary>The hero's shield soaked up <see cref="CombatTextEvent.Amount"/> damage (Roadmap 4.6).</summary>
         Absorbed,
+        /// <summary>A spell stunned a target (Roadmap 4.7, Hoofquake).</summary>
+        Stunned,
     }
 
     /// <summary>

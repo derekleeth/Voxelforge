@@ -61,13 +61,13 @@ namespace Voxelforge.Gameplay
         [SerializeField, Min(0f)] float creatureDamage;
 
         [Header("Support (4.6)")]
-        [Tooltip("Health a Zone gives each hero in it every pulse.")]
+        [Tooltip("Health a Zone gives each hero in it every pulse. For a Self Heal, the share of max health (0.25 = a quarter).")]
         [SerializeField, Min(0f)] float healAmount;
 
         [Tooltip("Damage a Shield soaks up.")]
         [SerializeField, Min(0f)] float shieldAmount;
 
-        [Tooltip("Seconds a Shield or Zone lasts.")]
+        [Tooltip("Seconds a Shield or Zone lasts, or how long a Quake stuns.")]
         [SerializeField, Min(0f)] float duration;
 
         [Tooltip("Seconds between a Zone's pulses.")]

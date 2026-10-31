@@ -357,6 +357,11 @@ namespace Voxelforge.Gameplay
                 }
                 if (player.TryGetComponent(out PlayerClass heroClass))
                     profile.Class = heroClass.Class;
+                if (player.TryGetComponent(out PlayerRace race))
+                {
+                    profile.Race = race.Race;
+                    profile.RaceChosen = race.HasChosen;
+                }
             }
         }
 

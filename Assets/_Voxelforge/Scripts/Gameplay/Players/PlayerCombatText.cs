@@ -76,9 +76,19 @@ namespace Voxelforge.Gameplay
                         AbilityId = ability.Id, Element = ability.Element, Position = (float3)cue.Position + new float3(0f, 0.6f, 0f),
                     });
                     break;
+                case AbilityCueKind.TargetStunned:
+                    Raise(new CombatTextEvent
+                    {
+                        Kind = CombatTextKind.Stunned, AbilityId = ability.Id, Element = ability.Element,
+                        Position = (float3)cue.Position + new float3(0f, 1.1f, 0f),
+                    });
+                    break;
                 case AbilityCueKind.Impact:
                     // A hit on a Training Dummy (Roadmap 4.6) shows its damage with the TargetHit cue, not block damage.
                     if (cue.BlockId == BlockIds.TrainingDummy)
+                        break;
+                    // A stomp (Roadmap 4.7) doesn't hurt the ground; its stuns and hits say what it did.
+                    if (ability.Delivery == AbilityDelivery.Quake)
                         break;
                     bool crater = ability.AoeRadius > 0f && cue.BlocksBroken > 0;
                     Raise(new CombatTextEvent

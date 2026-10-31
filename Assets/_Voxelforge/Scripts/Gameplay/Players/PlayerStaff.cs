@@ -8,7 +8,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// This player's projectiles and blasts (Roadmap 3.6, 4.1, 4.3): the M.G.R.S.'s Mana Bolts, any other projectile
-    /// ability, and ground slams. <see cref="PlayerCaster"/> decides <i>when</i> one goes off; then <b>the host</b>
+    /// ability, ground slams, and stomps that stun (Roadmap 4.7). <see cref="PlayerCaster"/> decides <i>when</i> one goes off; then <b>the host</b>
     /// launches it from the hero's eyes along their aim (<see cref="PlayerController.Aim"/>), moves it
     /// (<see cref="ManaBoltFlight"/>), works out what the hit damages, one block or a whole crater
     /// (<see cref="AbilityImpact"/>), and applies it through <see cref="VoxelWorldManager.RequestDamageVoxels"/> in this
@@ -60,6 +60,39 @@ namespace Voxelforge.Gameplay
             ushort blockId = world.World.GetVoxel(hit.Block).BlockId;
             VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
             _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken));
+        }
+
+        /// <summary>
+        /// Host only: <paramref name="ability"/> stomps the ground at the hero's feet (a <see cref="AbilityDelivery.Quake"/>,
+        /// Roadmap 4.7 Hoofquake). Every target within its radius is hurt, more near the middle, and stunned for its
+        /// duration. The ground shakes but isn't damaged.
+        /// </summary>
+        public void ServerQuake(AbilityDefinition ability)
+        {
+            VoxelWorldManager world = _player.WorldManager;
+            if (!IsServer || !IsSpawned || ability == null)
+                return;
+            float3 feet = transform.position;
+            int3 under = (int3)math.floor(feet - new float3(0f, 0.5f, 0f));
+            ushort blockId = world != null && world.World != null ? world.World.GetVoxel(under).BlockId : BlockIds.Air;
+            // The burst first, so the numbers and stuns land on a ground that's already shaking.
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, feet, new float3(0f, 1f, 0f), blockId));
+
+            CombatTargets targets = Targets;
+            if (targets == null || ability.AoeRadius <= 0f)
+                return;
+            // Measured from the hero's middle, so dummies a step up or down are still in reach.
+            float3 middle = feet + new float3(0f, 0.9f, 0f);
+            HurtTargets(ability, middle, new int3(int.MinValue), area: true);
+            if (ability.Duration <= 0f)
+                return;
+            _found.Clear();
+            targets.FindAll(middle, ability.AoeRadius, _found);
+            foreach (CombatTarget target in _found)
+            {
+                if (targets.ServerStun(target, ability.Duration, _player.PlayerId))
+                    _cues.ServerSend(AbilityCue.StunTarget(ability.Id, target.Position));
+            }
         }
 
         void FixedUpdate()
