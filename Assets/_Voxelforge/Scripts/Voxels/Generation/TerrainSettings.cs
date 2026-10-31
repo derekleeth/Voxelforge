@@ -109,6 +109,11 @@ namespace Voxelforge.Voxels
                 }
                 CheckBlock(registry, biome.SurfaceBlock, $"'{biome.Name}' Surface Block", errors);
                 CheckBlock(registry, biome.SubsurfaceBlock, $"'{biome.Name}' Subsurface Block", errors);
+                if (biome.HasMesas)
+                {
+                    CheckBlock(registry, biome.MesaBlock, $"'{biome.Name}' Mesa Block", errors);
+                    CheckBlock(registry, biome.MesaBandBlock, $"'{biome.Name}' Mesa Band Block", errors);
+                }
             }
             return errors;
         }
@@ -200,6 +205,28 @@ namespace Voxelforge.Voxels
         [Tooltip("How much Mana Crystal Ore grows underneath. 1 = normal.")]
         [SerializeField, Range(0f, 2f)] float oreRichness = 1f;
 
+        [Header("Mesas (Roadmap 4.7)")]
+        [Tooltip("How tall flat-topped mesas rise above the ground, in blocks. 0 = no mesas.")]
+        [SerializeField, Min(0f)] float mesaHeight;
+
+        [Tooltip("How big mesas are. Smaller numbers make bigger, further-apart mesas.")]
+        [SerializeField, Range(0.002f, 0.08f)] float mesaFrequency = 0.012f;
+
+        [Tooltip("Higher = fewer, smaller mesas (noise above this becomes mesa).")]
+        [SerializeField, Range(0f, 1f)] float mesaThreshold = 0.55f;
+
+        [Tooltip("How wide a mesa's cliff is, in noise units. Smaller = steeper sides.")]
+        [SerializeField, Range(0.01f, 0.3f)] float mesaEdge = 0.06f;
+
+        [Tooltip("The rock a mesa's banded cliffs are made of, under its grass cap.")]
+        [SerializeField] BlockDefinition mesaBlock;
+
+        [Tooltip("The rock of every other band in a mesa's cliffs.")]
+        [SerializeField] BlockDefinition mesaBandBlock;
+
+        [Tooltip("How many blocks thick each band of rock is.")]
+        [SerializeField, Range(1, 8)] int mesaBandHeight = 3;
+
         [Header("Trees")]
         [Tooltip("Chance that each tree spot grows a tree. 0 = no trees, 1 = a tree in every spot.")]
         [SerializeField, Range(0f, 1f)] float treeChance;
@@ -215,6 +242,9 @@ namespace Voxelforge.Voxels
         public BlockDefinition SurfaceBlock => surfaceBlock;
         public BlockDefinition SubsurfaceBlock => subsurfaceBlock;
         public float TreeChance => treeChance;
+        public bool HasMesas => mesaHeight > 0f;
+        public BlockDefinition MesaBlock => mesaBlock;
+        public BlockDefinition MesaBandBlock => mesaBandBlock;
 
         public BiomeInfo ToBiomeInfo()
         {
@@ -233,6 +263,13 @@ namespace Voxelforge.Voxels
                 SubsurfaceDepth = subsurfaceDepth,
                 OreRichness = oreRichness,
                 TreeChance = treeChance,
+                MesaHeight = mesaHeight,
+                MesaFrequency = mesaFrequency,
+                MesaThreshold = mesaThreshold,
+                MesaEdge = math.max(mesaEdge, 0.001f),
+                MesaBlock = mesaBlock != null ? mesaBlock.Id : BlockIds.Stone,
+                MesaBandBlock = mesaBandBlock != null ? mesaBandBlock.Id : (mesaBlock != null ? mesaBlock.Id : BlockIds.Stone),
+                MesaBandHeight = math.max(mesaBandHeight, 1),
                 GrassTint = new float3(grassTint.r, grassTint.g, grassTint.b),
                 FoliageTint = new float3(foliageTint.r, foliageTint.g, foliageTint.b),
             };
@@ -285,6 +322,14 @@ namespace Voxelforge.Voxels
         public int SubsurfaceDepth;
         public float OreRichness;
         public float TreeChance;
+        /// <summary>0 = no mesas (Roadmap 4.7).</summary>
+        public float MesaHeight;
+        public float MesaFrequency;
+        public float MesaThreshold;
+        public float MesaEdge;
+        public ushort MesaBlock;
+        public ushort MesaBandBlock;
+        public int MesaBandHeight;
         public float3 GrassTint;
         public float3 FoliageTint;
     }

@@ -22,7 +22,7 @@ namespace Voxelforge.Tests
         /// Recorded output of <see cref="GoldenChunk_MatchesRecordedHash"/>. If this test fails, terrain output changed:
         /// that's fine on purpose (update this and bump <see cref="TerrainSampler.GeneratorVersion"/>), a bug otherwise.
         /// </summary>
-        const uint GoldenHash = 1617711878u; // GeneratorVersion 2: trees.
+        const uint GoldenHash = 3653086797u; // GeneratorVersion 3: Thunderhoof Plains and mesas.
 
         TerrainSettings _settings;
         BlockRegistry _registry;
@@ -48,10 +48,10 @@ namespace Voxelforge.Tests
         }
 
         [Test]
-        public void ProjectTerrainSettings_IsValid_WithFourBiomes()
+        public void ProjectTerrainSettings_IsValid_WithFiveBiomes()
         {
             CollectionAssert.IsEmpty(_settings.Validate(_registry));
-            Assert.AreEqual(4, _settings.Biomes.Count);
+            Assert.AreEqual(5, _settings.Biomes.Count);
         }
 
         [Test]

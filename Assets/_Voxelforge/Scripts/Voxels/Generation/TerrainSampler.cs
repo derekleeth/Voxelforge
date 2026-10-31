@@ -15,6 +15,11 @@ namespace Voxelforge.Voxels
         public float OreRichness;
         /// <summary>Trunk blocks stacked on the ground here (see <see cref="TreePlacement"/>). 0 = no tree.</summary>
         public int TreeHeight;
+        /// <summary>
+        /// How much of this column is mesa (Roadmap 4.7): 0 on open ground, 1 on a mesa's flat top, in between on its
+        /// cliffs. Blended across biome borders like the height.
+        /// </summary>
+        public float Mesa;
     }
 
     /// <summary>
@@ -31,7 +36,13 @@ namespace Voxelforge.Voxels
         /// Bump this whenever terrain output changes on purpose (new rules or new settings values).
         /// Saves (Roadmap 3.4) record it, so an old save can tell it was made by a different generator.
         /// </summary>
-        public const int GeneratorVersion = 2; // 2: trees (Roadmap 2.6).
+        public const int GeneratorVersion = 3; // 2: trees (Roadmap 2.6). 3: Thunderhoof Plains and mesas (4.7).
+
+        /// <summary>A mesa's cliff shows banded rock where at least this much of the column is mesa; below it, the usual layers.</summary>
+        public const float MesaRockFrom = 0.15f;
+
+        /// <summary>Only a mesa's flat top (at least this much mesa) gets its biome's grass; its cliffs are bare rock.</summary>
+        public const float MesaCapFrom = 0.9f;
 
         /// <summary>Spreads climate noise (which mostly stays near 0) across the whole -1..1 climate map.</summary>
         const float ClimateStretch = 1.6f;
@@ -45,10 +56,12 @@ namespace Voxelforge.Voxels
         const uint CavernSalt = 6;
         const uint OreSalt = 7;
         const uint BiomeSaltBase = 100;
+        const uint MesaSaltBase = 200;
 
         TerrainParams _params;
         NativeArray<BiomeInfo> _biomes; // Borrowed, not disposed here.
         NativeArray<float2> _biomeOffsets;
+        NativeArray<float2> _mesaOffsets;
         NativeArray<float> _weights;
         float2 _temperatureOffset;
         float2 _ruggednessOffset;
@@ -66,8 +79,12 @@ namespace Voxelforge.Voxels
             _biomes = biomes;
             _biomeOffsets = new NativeArray<float2>(biomes.Length, allocator, NativeArrayOptions.UninitializedMemory);
             _weights = new NativeArray<float>(biomes.Length, allocator, NativeArrayOptions.UninitializedMemory);
+            _mesaOffsets = new NativeArray<float2>(biomes.Length, allocator, NativeArrayOptions.UninitializedMemory);
             for (int i = 0; i < biomes.Length; i++)
+            {
                 _biomeOffsets[i] = seed.NoiseOffset(BiomeSaltBase + (uint)i).xy;
+                _mesaOffsets[i] = seed.NoiseOffset(MesaSaltBase + (uint)i).xy;
+            }
 
             _temperatureOffset = seed.NoiseOffset(TemperatureSalt).xy;
             _ruggednessOffset = seed.NoiseOffset(RuggednessSalt).xy;
@@ -160,6 +177,7 @@ namespace Voxelforge.Voxels
 
             float height = 0f;
             float oreRichness = 0f;
+            float mesa = 0f;
             for (int i = 0; i < _biomes.Length; i++)
             {
                 float w = _weights[i];
@@ -167,6 +185,12 @@ namespace Voxelforge.Voxels
                     continue;
                 height += w * BiomeHeight(i, position);
                 oreRichness += w * _biomes[i].OreRichness;
+                if (_biomes[i].MesaHeight > 0f)
+                {
+                    float m = w * MesaShape(i, position);
+                    height += m * _biomes[i].MesaHeight;
+                    mesa += m;
+                }
             }
 
             var column = new TerrainColumn
@@ -174,6 +198,7 @@ namespace Voxelforge.Voxels
                 Height = math.max((int)math.floor(height), 1),
                 Biome = SurfaceBiome(climate, x, z),
                 OreRichness = oreRichness,
+                Mesa = mesa,
             };
             column.TreeHeight = TreeHeightAt(x, z, column);
             return column;
@@ -213,7 +238,12 @@ namespace Voxelforge.Voxels
 
         ushort SurfaceBlock(in TerrainColumn column)
         {
-            return column.Height >= _params.SnowLine ? _params.SnowBlock : _biomes[column.Biome].SurfaceBlock;
+            if (column.Height >= _params.SnowLine)
+                return _params.SnowBlock;
+            BiomeInfo biome = _biomes[column.Biome];
+            if (biome.MesaHeight > 0f && column.Mesa >= MesaRockFrom && column.Mesa < MesaCapFrom)
+                return MesaBand(column.Height, biome);
+            return biome.SurfaceBlock;
         }
 
         /// <summary>The block at world position <paramref name="w"/>, inside the column <paramref name="column"/>.</summary>
@@ -228,9 +258,31 @@ namespace Voxelforge.Voxels
             int depth = column.Height - w.y;
             if (depth == 0)
                 return SurfaceBlock(column);
+            // A mesa (Roadmap 4.7): banded rock from its grass cap down to the plain it rose from.
+            if (biome.MesaHeight > 0f && column.Mesa >= MesaRockFrom &&
+                depth <= (int)(column.Mesa * biome.MesaHeight) + biome.SubsurfaceDepth)
+                return MesaBand(w.y, biome);
             if (depth <= biome.SubsurfaceDepth)
                 return biome.SubsurfaceBlock;
             return IsOre(w, column.OreRichness) ? _params.OreBlock : _params.StoneBlock;
+        }
+
+        /// <summary>Which of a mesa's two rocks is at height <paramref name="y"/>: level bands, the same all round the mesa.</summary>
+        static ushort MesaBand(int y, in BiomeInfo biome)
+        {
+            int band = (int)math.floor((float)y / biome.MesaBandHeight);
+            return (band & 1) == 0 ? biome.MesaBlock : biome.MesaBandBlock;
+        }
+
+        /// <summary>
+        /// How much a biome's mesa lifts the ground here, 0-1: 0 off the mesa, 1 on its flat top, and a short steep climb
+        /// between them (<see cref="BiomeInfo.MesaEdge"/>).
+        /// </summary>
+        float MesaShape(int index, float2 position)
+        {
+            BiomeInfo biome = _biomes[index];
+            float n = noise.snoise(position * biome.MesaFrequency + _mesaOffsets[index]);
+            return math.smoothstep(biome.MesaThreshold, biome.MesaThreshold + biome.MesaEdge, n);
         }
 
         float BiomeHeight(int index, float2 position)
@@ -317,6 +369,8 @@ namespace Voxelforge.Voxels
         {
             if (_biomeOffsets.IsCreated)
                 _biomeOffsets.Dispose();
+            if (_mesaOffsets.IsCreated)
+                _mesaOffsets.Dispose();
             if (_weights.IsCreated)
                 _weights.Dispose();
         }

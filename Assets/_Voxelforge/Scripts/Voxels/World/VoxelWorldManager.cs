@@ -81,6 +81,20 @@ namespace Voxelforge.Voxels
 
         public ChunkGenerationScheduler Generator => _generator;
 
+        /// <summary>
+        /// The name of the biome whose blocks cover column (<paramref name="x"/>, <paramref name="z"/>), for the debug
+        /// overlay (Roadmap 4.7: finding the Thunderhoof Plains). Builds a sampler each call, so not for gameplay.
+        /// </summary>
+        public string BiomeNameAt(int x, int z)
+        {
+            if (terrainSettings == null || terrainSettings.Biomes.Count == 0)
+                return "?";
+            using var biomes = terrainSettings.CreateBiomeLookup(Unity.Collections.Allocator.Temp);
+            using var sampler = new TerrainSampler(Seed, terrainSettings.ToTerrainParams(), biomes, Unity.Collections.Allocator.Temp);
+            BiomeSettings biome = terrainSettings.Biomes[sampler.SurfaceBiome(x, z)];
+            return biome != null ? biome.Name : "?";
+        }
+
         public ChunkMeshScheduler Scheduler => _scheduler;
 
         /// <summary>Every block players have changed. Saves (3.4) and joining players (6.2) need it.</summary>

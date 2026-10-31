@@ -234,6 +234,8 @@ namespace Voxelforge.Gameplay
                 Vector3 p = player.transform.position;
                 string state = player.IsWaitingForGround ? "waiting for ground" : player.Grounded ? "grounded" : "airborne";
                 _text.Append($"\n{player.PlayerId}  slot {player.LocalSlot}  ({p.x:F1}, {p.y:F1}, {p.z:F1})  {state}");
+                if (world != null)
+                    _text.Append($"  {world.BiomeNameAt(Mathf.FloorToInt(p.x), Mathf.FloorToInt(p.z))}");
             }
 
             AppendLocalSlots();

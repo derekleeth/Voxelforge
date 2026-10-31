@@ -20,6 +20,8 @@ MonoBehaviour:
   castShadows: 1
   lodDistance: 60
   maxDistance: 120
+  propBlock: {fileID: 0}
+  attach: 0
   surfaces:
   - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
   density: 0.02
@@ -28,6 +30,15 @@ MonoBehaviour:
     weight: 1
   - biome: Red Crags (Redridge style)
     weight: 1
+  - biome: Thunderhoof Plains
+    weight: 0.2
   minScale: 0.8
   maxScale: 1.4
   modelTrunkHeight: 5
+  light:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
