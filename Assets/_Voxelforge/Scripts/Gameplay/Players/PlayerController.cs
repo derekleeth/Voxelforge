@@ -264,6 +264,20 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Every PC: the hero's body changed (a race's model, Roadmap 4.7, <see cref="HeroBody"/>), so tint its cloth,
+        /// in material slot <paramref name="materialIndex"/>, instead.
+        /// </summary>
+        public void SetTeamColorRenderer(Renderer renderer, int materialIndex)
+        {
+            teamColorRenderer = renderer;
+            teamColorMaterialIndex = materialIndex;
+            if (_teamColorMaterial != null)
+                Destroy(_teamColorMaterial);
+            _teamColorMaterial = null;
+            TintTeamColor();
+        }
+
+        /// <summary>
         /// Gives the team-color cloth its own copy of the material in this slot's color. A material copy rather
         /// than a property block keeps the SRP Batcher working.
         /// </summary>

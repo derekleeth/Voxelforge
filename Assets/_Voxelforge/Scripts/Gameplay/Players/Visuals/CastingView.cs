@@ -28,6 +28,7 @@ namespace Voxelforge.Gameplay
         PlayerController _player;
         Transform _leftHand;
         Transform _rightHand;
+        HeroBody _body;
         ParticleSystem _motes;
         Light _light;
         float _emitCarry;
@@ -40,9 +41,13 @@ namespace Voxelforge.Gameplay
             _caster = GetComponent<PlayerCaster>();
             _cues = GetComponent<PlayerAbilityCues>();
             _player = GetComponent<PlayerController>();
+            _body = GetComponent<HeroBody>();
         }
 
-        void Start()
+        void Start() => FindHands(null);
+
+        /// <summary>The hands the motes gather in; found again when the body changes (Roadmap 4.7, <see cref="HeroBody"/>).</summary>
+        void FindHands(RaceLook look)
         {
             if (animator != null && animator.isHuman)
             {
@@ -51,9 +56,19 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        void OnEnable() => _cues.Received += OnCue;
+        void OnEnable()
+        {
+            _cues.Received += OnCue;
+            if (_body != null)
+                _body.BodyChanged += FindHands;
+        }
 
-        void OnDisable() => _cues.Received -= OnCue;
+        void OnDisable()
+        {
+            _cues.Received -= OnCue;
+            if (_body != null)
+                _body.BodyChanged -= FindHands;
+        }
 
         void OnDestroy()
         {

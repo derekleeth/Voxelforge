@@ -43,6 +43,7 @@ namespace Voxelforge.Gameplay
         PlayerController _player;
         PlayerAbilityCues _cues;
         Transform _hand;
+        HeroBody _body;
         Transform _pivot;
         MeshFilter _filter;
         MeshRenderer _renderer;
@@ -61,6 +62,31 @@ namespace Voxelforge.Gameplay
             _miner = GetComponent<PlayerMiner>();
             _player = GetComponent<PlayerController>();
             _cues = GetComponent<PlayerAbilityCues>();
+            _body = GetComponent<HeroBody>();
+        }
+
+        void OnEnable()
+        {
+            if (_body != null)
+                _body.BodyChanged += Fit;
+        }
+
+        void OnDisable()
+        {
+            if (_body != null)
+                _body.BodyChanged -= Fit;
+        }
+
+        /// <summary>
+        /// A race's body (Roadmap 4.7, <see cref="HeroBody"/>): the hand is a new bone (HeroBody has already moved the
+        /// pivot onto it), and bigger hands hold bigger things.
+        /// </summary>
+        void Fit(RaceLook look)
+        {
+            if (animator != null && animator.isHuman)
+                _hand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+            if (_pivot != null)
+                _pivot.localScale = Vector3.one * (look != null ? look.HeldItemScale : 1f);
         }
 
         void Start()
@@ -95,6 +121,8 @@ namespace Voxelforge.Gameplay
             _light.enabled = false;
             _flickerSeed = Random.Range(0f, 100f);
             model.SetActive(false);
+            if (_body != null)
+                Fit(_body.Look);
         }
 
         void OnDestroy()

@@ -64,6 +64,7 @@ namespace Voxelforge.Editor
         public const string SecondWindPath = AbilityDir + "/SecondWind.asset";
         const string RaceDir = "Assets/_Voxelforge/Data/Races";
         public const string RaceBookPath = RaceDir + "/RaceBook.asset";
+        public const string RaceLookBookPath = RaceDir + "/Looks/RaceLookBook.asset";
 
         [MenuItem("Voxelforge/Build Abilities")]
         public static void BuildMenu()
@@ -313,6 +314,53 @@ namespace Voxelforge.Editor
             EditorUtility.SetDirty(book);
             foreach (string error in book.Validate())
                 Debug.LogError($"[Voxelforge] Race book: {error}", book);
+
+            // How each race looks (presentation, Roadmap 4.2): its body from Blender, and how gear sits on it.
+            if (!AssetDatabase.IsValidFolder($"{RaceDir}/Looks"))
+                AssetDatabase.CreateFolder(RaceDir, "Looks");
+            RaceLook wayfarerLook = MakeRaceLook("Wayfarer", RaceId.Wayfarer, "Assets/_Voxelforge/Art/Models/Hero/Hero.fbx",
+                backpackOffset: Vector3.zero, backpackScale: 1f, heldItemScale: 1f, footstepPitch: 1f, footstepVolume: 1f);
+            // The Thunderhoof: a broader back under the hump, big hands, and heavy, low hoofbeats.
+            RaceLook thunderhoofLook = MakeRaceLook("Thunderhoof", RaceId.Thunderhoof,
+                "Assets/_Voxelforge/Art/Models/Thunderhoof/Thunderhoof.fbx", backpackOffset: new Vector3(0f, 0.04f, -0.12f),
+                backpackScale: 1.3f, heldItemScale: 1.3f, footstepPitch: 0.78f, footstepVolume: 1.3f);
+            var lookBook = LoadOrCreate<RaceLookBook>(RaceLookBookPath);
+            serialized = new SerializedObject(lookBook);
+            list = serialized.FindProperty("looks");
+            RaceLook[] looks = { wayfarerLook, thunderhoofLook };
+            list.arraySize = looks.Length;
+            for (int i = 0; i < looks.Length; i++)
+                list.GetArrayElementAtIndex(i).objectReferenceValue = looks[i];
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(lookBook);
+        }
+
+        static RaceLook MakeRaceLook(string name, RaceId race, string modelPath, Vector3 backpackOffset, float backpackScale,
+            float heldItemScale, float footstepPitch, float footstepVolume)
+        {
+            var look = LoadOrCreate<RaceLook>($"{RaceDir}/Looks/{name}Look.asset");
+            var serialized = new SerializedObject(look);
+            serialized.FindProperty("race").intValue = (int)race;
+            var body = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+            Avatar avatar = null;
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(modelPath))
+            {
+                if (asset is Avatar found)
+                    avatar = found;
+            }
+            if (body == null || avatar == null)
+                Debug.LogWarning($"[Voxelforge] No body or avatar in {modelPath} yet: run its Blender build, then Rebuild Hero Animator.");
+            serialized.FindProperty("body").objectReferenceValue = body;
+            serialized.FindProperty("avatar").objectReferenceValue = avatar;
+            serialized.FindProperty("teamClothSlot").intValue = 1;
+            serialized.FindProperty("backpackOffset").vector3Value = backpackOffset;
+            serialized.FindProperty("backpackScale").floatValue = backpackScale;
+            serialized.FindProperty("heldItemScale").floatValue = heldItemScale;
+            serialized.FindProperty("footstepPitch").floatValue = footstepPitch;
+            serialized.FindProperty("footstepVolume").floatValue = footstepVolume;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(look);
+            return look;
         }
 
         static RaceDefinition MakeRace(string name, RaceId id, string displayName, string description, string homeland,

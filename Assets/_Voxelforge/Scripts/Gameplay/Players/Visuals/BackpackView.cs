@@ -28,7 +28,35 @@ namespace Voxelforge.Gameplay
         MeshRenderer _renderer;
         ushort _shown = ushort.MaxValue;
 
-        void Awake() => _bag = GetComponent<PlayerBlockBag>();
+        HeroBody _body;
+
+        void Awake()
+        {
+            _bag = GetComponent<PlayerBlockBag>();
+            _body = GetComponent<HeroBody>();
+        }
+
+        void OnEnable()
+        {
+            if (_body != null)
+                _body.BodyChanged += Fit;
+        }
+
+        void OnDisable()
+        {
+            if (_body != null)
+                _body.BodyChanged -= Fit;
+        }
+
+        /// <summary>A race's body (Roadmap 4.7, <see cref="HeroBody"/>): the bag sits a little differently on its back.</summary>
+        void Fit(RaceLook look)
+        {
+            if (_filter == null)
+                return;
+            Transform t = _filter.transform;
+            t.localPosition = backPosition + (look != null ? look.BackpackOffset : Vector3.zero);
+            t.localScale = Vector3.one * (look != null ? look.BackpackScale : 1f);
+        }
 
         void Start()
         {
@@ -56,6 +84,8 @@ namespace Voxelforge.Gameplay
             block.SetFloat(ClassicDrawId, 1f);
             _renderer.SetPropertyBlock(block);
             model.SetActive(false);
+            if (_body != null)
+                Fit(_body.Look);
         }
 
         void OnDestroy()

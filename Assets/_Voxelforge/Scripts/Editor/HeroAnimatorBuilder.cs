@@ -16,6 +16,9 @@ namespace Voxelforge.Editor
     /// because the host's motor moves the player, not the animation).</item>
     /// <item><b>Materials:</b> <c>Hero_Body</c> and <c>Hero_TeamCloth</c>, URP Lit with the baked albedo. The
     /// player tints its own copy of Hero_TeamCloth per slot.</item>
+    /// <item><b>Races (Roadmap 4.7):</b> every other race's body in <see cref="RaceModels"/> (the Thunderhoof, from
+    /// <c>build_thunderhoof.py</c>) is imported the same way, with its own Humanoid avatar and materials. They all
+    /// share <c>Hero.controller</c>: Humanoid retargeting plays the same clips on any of them.</item>
     /// <item><b>Animator:</b> a Locomotion blend tree on <c>Speed</c> (Idle, Walk, Run), and Jump, Fall and Land
     /// driven by <c>Grounded</c> and <c>VerticalSpeed</c>. IK Pass is on for <c>HeroFootIK</c>.</item>
     /// </list>
@@ -37,22 +40,41 @@ namespace Voxelforge.Editor
             ("Idle", true), ("Walk", true), ("Run", true), ("Jump", false), ("Fall", true), ("Land", false),
         };
 
+        /// <summary>
+        /// Every race's body (Roadmap 4.7): its folder and name. Each folder holds <c>Name.fbx</c>,
+        /// <c>Textures/Name_Albedo.png</c>, and gets <c>Materials/Name_Body</c> and <c>Name_TeamCloth</c>.
+        /// </summary>
+        public static readonly (string Folder, string Name)[] RaceModels =
+        {
+            (Folder, "Hero"),
+            ("Assets/_Voxelforge/Art/Models/Thunderhoof", "Thunderhoof"),
+        };
+
         [MenuItem("Voxelforge/Rebuild Hero Animator")]
         public static void Rebuild()
         {
-            ImportModel();
+            foreach ((string folder, string name) in RaceModels)
+            {
+                // The Wayfarer must be there; a race whose Blender build hasn't been run yet is skipped.
+                if (name != "Hero" && AssetImporter.GetAtPath($"{folder}/{name}.fbx") == null)
+                {
+                    Debug.LogWarning($"[Voxelforge] No {folder}/{name}.fbx yet: run its Blender build script.");
+                    continue;
+                }
+                ImportModel($"{folder}/{name}.fbx");
+                BuildMaterials(folder, name);
+            }
             foreach ((string name, bool loop) in Clips)
                 ImportAnimation(name, loop);
-            BuildMaterials();
             BuildController();
             AssetDatabase.SaveAssets();
             Debug.Log($"[Voxelforge] Rebuilt the hero animator at {ControllerPath}.");
         }
 
-        static Avatar ImportModel()
+        static Avatar ImportModel(string modelPath)
         {
-            var importer = (ModelImporter)AssetImporter.GetAtPath(ModelPath)
-                ?? throw new FileNotFoundException($"Download the rigged hero from Mixamo to {ModelPath}.");
+            var importer = (ModelImporter)AssetImporter.GetAtPath(modelPath)
+                ?? throw new FileNotFoundException($"Download the rigged hero from Mixamo to {modelPath}.");
             importer.animationType = ModelImporterAnimationType.Human;
             importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             // Keep the Blender slots so BuildMaterials can remap them to our own materials by name.
@@ -60,9 +82,9 @@ namespace Voxelforge.Editor
             importer.importAnimation = false;
             importer.SaveAndReimport();
 
-            Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().FirstOrDefault();
+            Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(modelPath).OfType<Avatar>().FirstOrDefault();
             if (avatar == null || !avatar.isHuman)
-                throw new InvalidOperationException($"{ModelPath} didn't make a valid Humanoid avatar. Check its rig in the Inspector.");
+                throw new InvalidOperationException($"{modelPath} didn't make a valid Humanoid avatar. Check its rig in the Inspector.");
             return avatar;
         }
 
@@ -108,22 +130,26 @@ namespace Voxelforge.Editor
                 .OfType<AnimationClip>()
                 .First(c => !c.name.StartsWith("__preview__", StringComparison.Ordinal));
 
-        static void BuildMaterials()
+        static void BuildMaterials(string folder, string name)
         {
-            var albedo = AssetDatabase.LoadAssetAtPath<Texture2D>(AlbedoPath);
-            Directory.CreateDirectory(MaterialFolder);
-            var materials = new[] { MakeMaterial("Hero_Body", albedo), MakeMaterial("Hero_TeamCloth", albedo) };
+            var albedo = AssetDatabase.LoadAssetAtPath<Texture2D>($"{folder}/Textures/{name}_Albedo.png");
+            string materialFolder = $"{folder}/Materials";
+            Directory.CreateDirectory(materialFolder);
+            var materials = new[]
+            {
+                MakeMaterial(materialFolder, $"{name}_Body", albedo), MakeMaterial(materialFolder, $"{name}_TeamCloth", albedo),
+            };
 
             // Hand the materials to the model by the names Blender gave its slots.
-            var importer = (ModelImporter)AssetImporter.GetAtPath(ModelPath);
+            var importer = (ModelImporter)AssetImporter.GetAtPath($"{folder}/{name}.fbx");
             foreach (Material material in materials)
                 importer.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), material.name), material);
             importer.SaveAndReimport();
         }
 
-        static Material MakeMaterial(string name, Texture2D albedo)
+        static Material MakeMaterial(string folder, string name, Texture2D albedo)
         {
-            string path = $"{MaterialFolder}/{name}.mat";
+            string path = $"{folder}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)
             {

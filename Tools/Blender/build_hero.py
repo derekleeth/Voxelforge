@@ -202,10 +202,12 @@ def build_hero():
     return hero
 
 
-def _join_pieces():
-    """Applies each piece's modifiers and merges them into one mesh. Each face remembers its part's color
-    (corner color "Part") and part (face attribute "PartIndex", an index into PARTS)."""
-    names = list(PARTS)
+def _join_pieces(name="Hero", parts=None):
+    """Applies each piece's modifiers and merges them into one mesh called name. Each face remembers its part's
+    color (corner color "Part") and part (face attribute "PartIndex", an index into parts, default PARTS).
+    build_thunderhoof.py (Roadmap 4.7) passes its own name and parts."""
+    parts = parts or PARTS
+    names = list(parts)
     depsgraph = bpy.context.evaluated_depsgraph_get()
     bm = bmesh.new()
     color_layer = bm.loops.layers.float_color.new("Part")
@@ -217,7 +219,7 @@ def _join_pieces():
         before = set(bm.faces)
         bm.from_mesh(mesh)
         evaluated.to_mesh_clear()
-        color = (*PARTS[part][0], 1.0)
+        color = (*parts[part][0], 1.0)
         for face in bm.faces:
             if face in before:
                 continue
@@ -229,13 +231,15 @@ def _join_pieces():
         mesh = obj.data
         bpy.data.objects.remove(obj, do_unlink=True)
         bpy.data.meshes.remove(mesh)
-    return _object_from_bmesh("Hero", bm)
+    return _object_from_bmesh(name, bm)
 
 
-def _assign_material_slots(hero):
+def _assign_material_slots(hero, parts=None, materials=("Hero_Body", "Hero_TeamCloth")):
+    """Gives the mesh its two slots, body then team cloth, and puts each face in its part's slot."""
+    parts = parts or PARTS
     mesh = hero.data
     mesh.materials.clear()
-    for name in ("Hero_Body", "Hero_TeamCloth"):
+    for name in materials:
         mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
         mat.use_nodes = True
         bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
@@ -245,10 +249,10 @@ def _assign_material_slots(hero):
         bsdf.inputs["Roughness"].default_value = 0.8
         mesh.materials.append(mat)
     # Material indices are set here, not while joining: Blender clamps them to the slots a mesh has.
-    names = list(PARTS)
-    parts = mesh.attributes["PartIndex"].data
-    for poly, part in zip(mesh.polygons, parts):
-        poly.material_index = 1 if PARTS[names[part.value]][1] == "Hero_TeamCloth" else 0
+    names = list(parts)
+    indices = mesh.attributes["PartIndex"].data
+    for poly, part in zip(mesh.polygons, indices):
+        poly.material_index = 1 if parts[names[part.value]][1] == materials[1] else 0
 
 
 ALBEDO_PATH = os.path.join(REPO, "Assets", "_Voxelforge", "Art", "Models", "Hero", "Textures", "Hero_Albedo.png")

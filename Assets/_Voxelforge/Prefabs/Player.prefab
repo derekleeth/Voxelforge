@@ -38,6 +38,7 @@ GameObject:
   - component: {fileID: 7719699045505043243}
   - component: {fileID: 2139443151922194105}
   - component: {fileID: 6284663128493950415}
+  - component: {fileID: 4088277328797704884}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -566,6 +567,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerRaceMenu
   retryAfter: 1.5
+--- !u!114 &4088277328797704884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9741c53ba78e54146babbecf9953a0d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HeroBody
+  looks: {fileID: 11400000, guid: d8795e3a433056d46911023f4267dcb5, type: 2}
+  animator: {fileID: 2811615453234438372}
+  prefabRace: 0
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

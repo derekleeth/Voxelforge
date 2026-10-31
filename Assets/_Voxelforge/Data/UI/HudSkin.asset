@@ -53,6 +53,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 10d6df604cb873f46bab85c43f80c1f7, type: 3}
   - {fileID: 21300000, guid: 832d8c5e32082074d9576ba3c1a8199b, type: 3}
   - {fileID: 21300000, guid: afaf0e35644b9ba41add78340a648244, type: 3}
+  races:
+  - {r: 0.32, g: 0.55, b: 0.36, a: 1}
+  - {r: 0.72, g: 0.38, b: 0.18, a: 1}
+  raceCrests: []
+  racePortraits: []
   slotSize: 66
   slotGap: 6
   manaBarHeight: 22
