@@ -62,6 +62,18 @@ namespace Voxelforge.Voxels
 
         public bool TryGetChunk(ChunkCoord coord, out VoxelChunk chunk) => _chunks.TryGetValue(coord, out chunk);
 
+        /// <summary>
+        /// A chunk was added. Its blocks may still be filled in later this frame (generation copies them in and puts saved
+        /// edits back), so listeners should read them later, e.g. in their next update. The nav grid (Roadmap 5.1) does.
+        /// </summary>
+        internal event Action<ChunkCoord> ChunkAdded;
+
+        /// <summary>A chunk was unloaded and its memory freed.</summary>
+        internal event Action<ChunkCoord> ChunkRemoved;
+
+        /// <summary>One block changed through <see cref="SetVoxel"/>: the world position and the new block.</summary>
+        internal event Action<int3, Voxel> VoxelChanged;
+
         /// <summary>The block at a world position. Positions in unloaded chunks read as Air.</summary>
         public Voxel GetVoxel(int3 world)
         {
@@ -84,6 +96,7 @@ namespace Voxelforge.Voxels
             MarkDirty(coord);
             foreach (int3 offset in AllNeighbourOffsets)
                 MarkDirty(new ChunkCoord(coord.Value + offset));
+            ChunkAdded?.Invoke(coord);
             return chunk;
         }
 
@@ -100,6 +113,7 @@ namespace Voxelforge.Voxels
 
             chunk.Dispose();
             _dirtySet.Remove(coord); // Its queue entry is skipped by TryTakeDirty.
+            ChunkRemoved?.Invoke(coord);
             return true;
         }
 
@@ -126,6 +140,7 @@ namespace Voxelforge.Voxels
             for (int z = low.z; z <= high.z; z++)
             for (int x = low.x; x <= high.x; x++)
                 MarkDirty(new ChunkCoord(coord.Value + new int3(x, y, z)));
+            VoxelChanged?.Invoke(world, voxel);
             return true;
         }
 

@@ -740,6 +740,11 @@ MonoBehaviour:
   jumpVolume: 0.5
   minLandAirTime: 0.3
   heavyLandSpeed: 14
+  windFromSpeed: 5.8
+  windFullSpeed: 7.8
+  windVolume: 0.35
+  windFade: 4
+  mapVolume: 0.45
 --- !u!114 &444543918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1705,6 +1710,7 @@ GameObject:
   - component: {fileID: 2147055196}
   - component: {fileID: 2147055195}
   - component: {fileID: 2147055201}
+  - component: {fileID: 2147055202}
   m_Layer: 0
   m_Name: Session
   m_TagString: Untagged
@@ -1874,6 +1880,25 @@ MonoBehaviour:
   joinService: {fileID: 2145343289}
   maxLocalPlayers: 4
   allowSplitKeyboard: 0
+--- !u!114 &2147055202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147055194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b773953ae35788448a7eb15b400cdbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.NavTestCritters
+  networkManager: {fileID: 2147055199}
+  world: {fileID: 1325734895}
+  players: {fileID: 2147055197}
+  critterPrefab: {fileID: 8387424761606797261, guid: 6fc7e20ec786bf64789dbbaf231ef395, type: 3}
+  spawnDistance: 8
+  maxCritters: 16
+  showPaths: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

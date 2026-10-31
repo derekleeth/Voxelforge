@@ -73,6 +73,8 @@ namespace Voxelforge.Voxels
         bool _hasSavedWorld;
         float _meshingStartTime = -1f;
         MapTileCache _mapTiles;
+        VoxelNavGrid _navGrid;
+        NavPathService _paths;
 
         /// <summary>The block data. Only this assembly can edit it.</summary>
         public VoxelWorld World => _world;
@@ -105,6 +107,12 @@ namespace Voxelforge.Voxels
         public MapTileCache MapTiles => _mapTiles ??= _generator != null && _world != null
             ? new MapTileCache(Seed, _generator.Terrain, _generator.Biomes, _world.Blocks, capacity: 288, maxJobsInFlight: 6)
             : null;
+
+        /// <summary>Where creatures can walk (Roadmap 5.1): one solid bit per block, kept up to date with every edit.</summary>
+        public VoxelNavGrid NavGrid => _navGrid;
+
+        /// <summary>Finds creature paths over the <see cref="NavGrid"/> on worker threads (Roadmap 5.1).</summary>
+        public NavPathService Paths => _paths;
 
         /// <summary>Every block players have changed. Saves (3.4) and joining players (6.2) need it.</summary>
         public VoxelDeltaLog DeltaLog => _editor?.DeltaLog;
@@ -177,6 +185,8 @@ namespace Voxelforge.Voxels
             _editor.EditApplied += edit => EditApplied?.Invoke(edit);
             _editor.BlockDamaged += damage => BlockDamaged?.Invoke(damage);
             _generator.DeltaLog = _editor.DeltaLog;
+            _navGrid = new VoxelNavGrid(_world);
+            _paths = new NavPathService(_navGrid);
             if (crackMaterial != null)
                 _crackRenderer = new BlockCrackRenderer(crackMaterial);
             CreateDecorations();
@@ -231,6 +241,9 @@ namespace Voxelforge.Voxels
         void Update()
         {
             _generator.Update();
+            // Last frame's path searches ran while it rendered. Collect them before the nav grid takes new chunks in.
+            _paths.CollectFinished();
+            _navGrid.Update();
 
             if (logMeshingTime && _meshingStartTime < 0f && _world.DirtyCount > 0)
                 _meshingStartTime = Time.realtimeSinceStartup;
@@ -256,9 +269,14 @@ namespace Voxelforge.Voxels
             }
         }
 
+        // Path searches start late in the frame and run while it renders; Update collects them.
+        void LateUpdate() => _paths?.ScheduleQueued();
+
         void OnDestroy()
         {
             // Jobs read world memory, so stop them before freeing it.
+            _paths?.Dispose(); // Path jobs read the nav grid.
+            _navGrid?.Dispose();
             _scheduler?.Dispose();
             _mapTiles?.Dispose(); // Borrows the generator's biomes and the world's blocks.
             _crackRenderer?.Dispose();

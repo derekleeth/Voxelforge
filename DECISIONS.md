@@ -5,6 +5,40 @@
 
 ---
 
+## D-032: Our Own Voxel Nav Grid Instead of Unity's NavMesh
+- **Date:** 2026-10-31
+- **Status:** Accepted (play-tested 2026-10-31: critters chased heroes round big spell craters, trenches and walls, up steps and down ledges, in split screen)
+
+### Decisions
+- **No Unity NavMesh (and no `com.unity.ai.navigation` package).** Roadmap 5.1 said "NavMesh", but the game has no colliders anywhere (D-007):
+  - Unity would bake from the chunk *render* meshes, and those don't match what's solid. Tree trunks are solid but invisible, and chunks still generating count as solid.
+  - It re-voxelizes a whole tile after one block edit. Our world already *is* a grid, so a rebuild is one bit flip.
+  - A `NavMeshAgent` wants to move the creature itself. Ours move like heroes: the host runs `VoxelBodyMotor` for them, with the same collision, gravity and auto-step.
+- **`VoxelNavGrid` is the "NavMesh":** one solid bit per block, 1,024 rows of 32 bits (4 KB) per chunk, in the chunk's own (y, z) row order.
+  - A chunk that arrives is baked by a Burst `NavBakeJob` from a copy of its blocks (Law #4). Until then it counts as solid, like the motor.
+  - All-air and all-stone chunks keep no bits at all (`OpenChunk` / `SolidChunk` slots).
+  - `VoxelWorld` gained internal `ChunkAdded`, `ChunkRemoved` and `VoxelChanged` events. A block edit (still only via `RequestModifyVoxel`, Law #3) flips its bit at once. An edit during a bake marks it stale and it bakes again.
+  - Every change stamps its chunk with a new, ever-growing number (`Stamp`). Stamps stay after unloads, so an unload is a change too.
+- **Same rules as the motor, so paths never ask for the impossible** (`NavGridView`, shared by jobs and the main thread):
+  - A cell is standable with a solid block under it and `Height` open blocks above (2 for a hero-sized body).
+  - Moves: 8 directions on the level; **step up 1** only with head room to rise (exactly the motor's auto-step check); **drop up to 3**. Diagonals need both side cells open, so corners are never cut.
+- **`FindPathJob`** is Burst A* with octile distance:
+  - It stops after `MaxNodes` (4,000) cells or `MaxRange` (64 blocks) and then returns a **Partial** path to the closest cell it found, so a creature that can't reach you still comes as close as it can.
+  - The cell path is pulled tight (straight lines that keep the body's radius off walls), so creatures walk straight across open ground.
+- **`NavPathService`** queues searches. `VoxelWorldManager` starts up to 8 in `LateUpdate` and collects them early next `Update`, so they run while the frame renders. Path jobs register as readers of the grid, and every grid change waits for them first.
+- **`NavPathFollower`** (plain C#) turns a path plus the body's feet into `MotorInput`. It asks for a new path (at most every 0.5 s) when a chunk the path crosses changed since it was planned, the target moved 1.5 blocks, it stopped making progress for 1 s (it also hops), or it reached the end of a partial path.
+- **`NavTestCritter` is a play-test stand-in** (Gameplay/Debug) until 5.2's mobs. The host moves it; a server-authority `NetworkTransform` shows it (Law #2). Each one chases one hero by `PlayerId` (Law #1). Keys: **F7** spawn one per hero, **F8** path lines (green complete, amber partial), **F9** clear. F6 stays the split-screen toggle.
+
+### Measured
+- Tests: 453 → 477.
+
+### Deferred on purpose
+- Jumping across gaps and up 2-block ledges: creatures only auto-step for now. 5.2 mobs may add jump links.
+- Bodies wider than one block (a big boss in 5.9) will need a widened (eroded) footprint check.
+- The grid also runs on non-host PCs; it's cheap, and remote clients don't build worlds until Phase 7.
+
+---
+
 ## D-031: Sprint, the Parchment Map, Fog of War & Party Markers
 - **Date:** 2026-10-31
 - **Status:** Accepted (play-tested 2026-10-31 in split screen: sprint in both styles, minimap and World Map, partner and totem markers, hearthing from the map, fog after reload, wind and map sounds)

@@ -5,6 +5,37 @@
 
 ---
 
+## 2026-10-31 - Session 1 (part 34): Monsters Can Find You Now! 🧭👾 Roadmap 5.1
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- **Creatures can find their way around the world!** We built our own "nav grid" instead of using Unity's NavMesh. Details in DECISIONS.md **D-032**.
+  - Our world is already made of blocks, so the grid just remembers one tiny bit per block: solid or open.
+  - Creatures use the **same rules as heroes**: climb a 1-block step (if there's room for their head), drop down up to 3 blocks, and never cut through a wall's corner.
+  - The path-finding (A*, a famous way to find the shortest route) runs on worker threads, so the game never slows down while monsters think.
+- **Dig or build, and they rethink!** When a block changes, its chunk gets a new "change number". A creature whose path crosses that chunk notices and finds a new way, about twice a second at most.
+- **Can't reach you?** It walks as close as it can get and waits, then tries again.
+- **Test critters:** little purple block-creatures with glowing eyes, standing in for real monsters until 5.2.
+  - **F7** drops one near every hero, and each one chases the hero it landed by.
+  - **F8** shows their paths: green means "I can reach you", amber means "this is as close as I can get".
+  - **F9** sends them all away. (F6 is still the split-screen toggle!)
+
+### Tests: 477 / 477 passing ✅
+- The grid matches the motor's idea of "solid" block for block, even while chunks are still baking.
+- Paths go round walls, through gaps, up 1-block steps (not 2), and down 3-block drops (not 4), with negative coordinates too.
+- Diagonal walls can't be squeezed through, unloaded chunks are walls, and a search that runs out of budget still gives the closest path.
+- A real motor body walks to its goal, climbs a step, and repaths when a wall is built in front of it or its target moves.
+
+### Things we learned
+- Sometimes the best tool is the one you build yourself: Unity's NavMesh would have looked at the *drawn* blocks, but tree trunks are solid and invisible, so monsters would have walked straight into them!
+- Always search *every* file for a key before using it. F6 was already the split-screen key in the input actions file.
+
+### Next up
+- [x] Play-test 5.1: critters went round huge spell craters, round trenches and walls, up steps and down ledges ✅
+- [ ] Roadmap **5.2 Overland Monsters & Roaming AI** (3 real mobs that patrol, chase and fight on the nav grid)
+
+---
+
 ## 2026-10-31 - Session 1 (part 33): Maps, Fog & Running Fast! 🗺️💨 Roadmap 4.8
 **Phase:** 4 - The Warcraft Injection
 
