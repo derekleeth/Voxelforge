@@ -189,6 +189,7 @@ MonoBehaviour:
   items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
   world: {fileID: 1325734895}
   blockMaterial: {fileID: 2100000, guid: 5ee5e8c52c9196249955d2e268fc5f7d, type: 2}
+  targets: {fileID: 224526125}
   visible: 1
   sortingOrder: 10
 --- !u!1 &122390141

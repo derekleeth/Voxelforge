@@ -73,7 +73,10 @@ namespace Voxelforge.Gameplay
         {
             VoxelWorld world = player != null ? player.World : null;
             float speed = _heroAnimator != null ? _heroAnimator.Speed : 0f;
-            float targetWeight = world != null && player.Grounded ? 1f - math.saturate((speed - fadeStartSpeed) / 4f) : 0f;
+            // No feet to plant while lying knocked out (Roadmap 5.2).
+            float targetWeight = world != null && player.Grounded && !player.IsKnockedOut
+                ? 1f - math.saturate((speed - fadeStartSpeed) / 4f)
+                : 0f;
             float t = 1f - math.exp(-smoothing * Time.deltaTime);
             _weight = math.lerp(_weight, targetWeight, t);
 

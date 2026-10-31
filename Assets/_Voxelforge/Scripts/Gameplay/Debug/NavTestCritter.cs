@@ -11,13 +11,18 @@ namespace Voxelforge.Gameplay
     /// chosen by <see cref="PlayerId"/> when it's spawned (CLAUDE.md Law #1), around walls, up steps and down ledges.
     /// Dig a trench or build a wall in its way and it finds a new way round.
     /// <para>
+    /// Since 5.2 step A it's also a <see cref="ICombatCreature"/>: spells hurt and stun it, it's defeated at 0 health,
+    /// and it bites its hero when it catches them, with a little knockback, which can knock them out. That tests
+    /// creature targets and knock-outs before the real mobs exist.
+    /// </para>
+    /// <para>
     /// <b>The host</b> moves it with the same <see cref="VoxelBodyMotor"/> heroes use, steered by a
     /// <see cref="NavPathFollower"/>, and a server-authority <c>NetworkTransform</c> shows it on every PC (Law #2).
     /// <see cref="NavTestCritters"/> spawns them.
     /// </para>
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
-    public sealed class NavTestCritter : NetworkBehaviour
+    public sealed class NavTestCritter : NetworkBehaviour, ICombatCreature
     {
         [SerializeField] MotorSettings motor = new MotorSettings
         {
@@ -36,6 +41,21 @@ namespace Voxelforge.Gameplay
 
         [SerializeField, Min(1f)] float turnSpeed = 540f;
 
+        [Header("Fighting (Roadmap 5.2 step A)")]
+        [SerializeField, Min(1f)] float maxHealth = 60f;
+
+        [Tooltip("Damage of one bite. It can knock a hero out.")]
+        [SerializeField, Min(0f)] float biteDamage = 12f;
+
+        [Tooltip("Seconds between bites while it's close enough.")]
+        [SerializeField, Min(0.1f)] float biteEvery = 1.5f;
+
+        [Tooltip("How hard a bite shoves the hero away, in metres per second.")]
+        [SerializeField, Min(0f)] float biteShove = 5f;
+
+        [Tooltip("Seconds it lies there after being defeated, before it leaves the world.")]
+        [SerializeField, Min(0f)] float defeatedSeconds = 0.75f;
+
         [Tooltip("Draws its path, host only. Turned on and off by NavTestCritters.")]
         [SerializeField] LineRenderer pathLine;
 
@@ -50,12 +70,25 @@ namespace Voxelforge.Gameplay
         float3 _previousFeet;
         float _yaw, _previousYaw;
         bool _showPath;
+        float _health;
+        float _nextBiteAt;
+        float _stunnedUntil = float.NegativeInfinity;
+        float _despawnAt = float.PositiveInfinity;
+        bool _defeated;
 
         /// <summary>Host only: the hero it chases.</summary>
         public PlayerId Target => _target;
 
         /// <summary>Host only: what it's doing, for the debug readout.</summary>
         public NavPathFollower Follower => _follower;
+
+        public ulong CreatureId => NetworkObjectId;
+
+        public bool IsTargetable => IsSpawned && !_defeated;
+
+        public float3 Feet => IsServer && _placed ? _body.FeetPosition(motor) : (float3)transform.position;
+
+        public float3 HalfExtents => motor.HalfExtents;
 
         /// <summary>Host only, before spawning: where it stands and who it chases.</summary>
         internal void ServerInitialize(VoxelWorldManager world, PlayerRegistry players, PlayerId target, float3 feet)
@@ -67,7 +100,30 @@ namespace Voxelforge.Gameplay
             _body = new VoxelBody { Position = feet + new float3(0f, motor.HalfExtents.y + 0.001f, 0f) };
             _previousFeet = feet;
             _placed = true;
+            _health = maxHealth;
             transform.position = feet;
+        }
+
+        public TargetDamage ServerDamage(float amount, PlayerId instigator)
+        {
+            if (!IsServer || _defeated || amount <= 0f)
+                return default;
+            float dealt = math.min(amount, _health);
+            _health -= dealt;
+            if (_health <= 0f)
+            {
+                _defeated = true;
+                _despawnAt = Time.time + defeatedSeconds;
+            }
+            return new TargetDamage(dealt, _health, maxHealth, _defeated);
+        }
+
+        public bool ServerStun(float seconds, PlayerId instigator)
+        {
+            if (!IsServer || _defeated || seconds <= 0f)
+                return false;
+            _stunnedUntil = math.max(_stunnedUntil, Time.time + seconds);
+            return true;
         }
 
         /// <summary>Host only: shows or hides its path line.</summary>
@@ -82,6 +138,13 @@ namespace Voxelforge.Gameplay
         {
             if (pathLine != null)
                 pathLine.enabled = IsServer && _showPath;
+            CombatCreatures.RaiseSpawned(this);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            CombatCreatures.RaiseDespawned(this);
+            base.OnNetworkDespawn();
         }
 
         void FixedUpdate()
@@ -93,8 +156,22 @@ namespace Voxelforge.Gameplay
             _previousYaw = _yaw;
             float3 feet = _previousFeet;
             MotorInput input = default;
-            if (_players != null && _players.TryGet(_target, out PlayerRecord record) && record.Controller != null &&
-                record.Controller.HasLanded)
+            if (_defeated)
+            {
+                if (Time.time >= _despawnAt)
+                {
+                    NetworkObject.Despawn();
+                    return;
+                }
+                _follower.Stop();
+            }
+            else if (Time.time < _stunnedUntil)
+            {
+                _follower.Stop();
+            }
+            // It leaves a knocked-out hero alone (Roadmap 5.2).
+            else if (_players != null && _players.TryGet(_target, out PlayerRecord record) && record.Controller != null &&
+                record.Controller.HasLanded && !record.Controller.IsKnockedOut)
             {
                 BodyBounds hero = record.Controller.Bounds;
                 float3 heroFeet = hero.Center - new float3(0f, hero.HalfExtents.y, 0f);
@@ -107,6 +184,8 @@ namespace Voxelforge.Gameplay
                 if (_resting)
                 {
                     _follower.Stop();
+                    if (distance < stopDistance + 0.5f && Time.time >= _nextBiteAt)
+                        Bite(record.Controller, feet);
                 }
                 else
                 {
@@ -122,6 +201,16 @@ namespace Voxelforge.Gameplay
             VoxelBodyMotor.Step(ref _body, input, motor, _world.World, Time.fixedDeltaTime);
             if (math.lengthsq(input.Move) > 0.01f)
                 _yaw = math.fmod(MoveDirection.TurnToward(_yaw, MoveDirection.YawOf(input.Move), turnSpeed * Time.fixedDeltaTime), 360f);
+        }
+
+        void Bite(PlayerController hero, float3 feet)
+        {
+            _nextBiteAt = Time.time + biteEvery;
+            if (!hero.TryGetComponent(out PlayerHealth health))
+                return;
+            health.ServerDamage(biteDamage, PlayerId.None, (Vector3)(feet + new float3(0f, 0.5f, 0f)), floorShare: 0f);
+            float3 away = math.normalizesafe(((float3)hero.transform.position - feet) * new float3(1f, 0f, 1f));
+            hero.ServerShove(away * biteShove + new float3(0f, biteShove * 0.6f, 0f));
         }
 
         void Update()

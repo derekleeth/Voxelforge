@@ -16,6 +16,11 @@ namespace Voxelforge.Voxels
         /// Visuals use it to glide over the step instead of popping.
         /// </summary>
         public float StepOffset;
+        /// <summary>
+        /// Sideways speed from being knocked back (Roadmap 5.2), on top of walking. It fades by itself
+        /// (<see cref="VoxelBodyMotor.Shove"/>).
+        /// </summary>
+        public float2 Shove;
 
         /// <summary>The world position of the feet (bottom centre of the box).</summary>
         public float3 FeetPosition(in MotorSettings settings) => Position - new float3(0f, settings.HalfExtents.y, 0f);
@@ -38,6 +43,24 @@ namespace Voxelforge.Voxels
         /// <summary>Longest move in one sub-step. Under half a block, so a wall can't be skipped.</summary>
         const float MaxSubStep = 0.45f;
 
+        /// <summary>How fast a knockback fades per second, on the ground and in the air (a toss carries further).</summary>
+        public const float ShoveGroundDrag = 6f;
+        public const float ShoveAirDrag = 1.5f;
+
+        /// <summary>
+        /// Knocks the body back (Roadmap 5.2): <paramref name="impulse"/>'s x and z add sideways speed that fades
+        /// (<see cref="ShoveGroundDrag"/>), and a positive y lifts it off the ground.
+        /// </summary>
+        public static void Shove(ref VoxelBody body, float3 impulse)
+        {
+            body.Shove += impulse.xz;
+            if (impulse.y > 0f)
+            {
+                body.Velocity.y = math.max(body.Velocity.y, impulse.y);
+                body.Grounded = false;
+            }
+        }
+
         public static void Step(ref VoxelBody body, in MotorInput input, in MotorSettings settings, VoxelWorld world, float dt)
         {
             body.StepOffset = 0f;
@@ -55,8 +78,14 @@ namespace Voxelforge.Voxels
                 move /= moveLength;
 
             float speed = input.Speed(settings);
-            body.Velocity.x = move.x * speed;
-            body.Velocity.z = move.y * speed;
+            body.Velocity.x = move.x * speed + body.Shove.x;
+            body.Velocity.z = move.y * speed + body.Shove.y;
+            if (!body.Shove.Equals(float2.zero))
+            {
+                body.Shove *= math.exp(-(body.Grounded ? ShoveGroundDrag : ShoveAirDrag) * dt);
+                if (math.lengthsq(body.Shove) < 0.01f)
+                    body.Shove = float2.zero;
+            }
             bool jumped = input.Jump && body.Grounded;
             if (jumped)
                 body.Velocity.y = settings.JumpSpeed;

@@ -31,10 +31,19 @@ namespace Voxelforge.Gameplay
         [Tooltip("Seconds of smoothing on the Speed parameter, so walk/run blends don't twitch.")]
         [SerializeField, Min(0f)] float speedDamping = 0.1f;
 
+        [Tooltip("How far back the hero topples when knocked out (Roadmap 5.2), in degrees.")]
+        [SerializeField, Range(0f, 90f)] float knockedOutTilt = 84f;
+
+        [Tooltip("Lifts the toppled hero so they lie on the ground instead of half in it, in metres.")]
+        [SerializeField, Range(0f, 0.5f)] float knockedOutLift = 0.14f;
+
         float3 _lastRootPosition;
         bool _wasGrounded;
         float _stepOffset;
         bool _hasLastPosition;
+        Quaternion _restRotation = Quaternion.identity;
+        // 0 standing, 1 lying flat (Roadmap 5.2).
+        float _fallen;
 
         /// <summary>Ground speed in m/s, measured from how the player actually moved.</summary>
         public float Speed { get; private set; }
@@ -47,6 +56,7 @@ namespace Voxelforge.Gameplay
                 player = GetComponentInParent<PlayerController>();
             if (animator != null)
                 animator.applyRootMotion = false;
+            _restRotation = transform.localRotation;
         }
 
         void OnEnable() => _hasLastPosition = false;
@@ -72,7 +82,13 @@ namespace Voxelforge.Gameplay
                 _stepOffset -= moved.y;
             _wasGrounded = grounded;
             _stepOffset = math.clamp(_stepOffset * math.exp(-stepCatchUp * dt), -1.5f, 1.5f);
-            transform.localPosition = new Vector3(0f, _stepOffset, 0f);
+
+            // Knocked out (Roadmap 5.2): topple onto their back with a little bounce, and spring back up on waking.
+            bool down = player.IsKnockedOut;
+            _fallen = Mathf.MoveTowards(_fallen, down ? 1f : 0f, dt * (down ? 2.2f : 3.5f));
+            float pose = down ? BounceOut(_fallen) : _fallen * _fallen * (3f - 2f * _fallen);
+            transform.localPosition = new Vector3(0f, _stepOffset + knockedOutLift * pose, 0f);
+            transform.localRotation = _fallen > 0f ? _restRotation * Quaternion.Euler(-knockedOutTilt * pose, 0f, 0f) : _restRotation;
 
             Speed = math.length(moved.xz) / dt;
             VerticalSpeed = grounded ? 0f : moved.y / dt;
@@ -82,6 +98,18 @@ namespace Voxelforge.Gameplay
                 animator.SetFloat(VerticalSpeedId, VerticalSpeed);
                 animator.SetBool(GroundedId, grounded);
             }
+        }
+
+        // Falls past flat and settles back, like a plank dropped on the floor.
+        static float BounceOut(float t)
+        {
+            if (t < 0.7f)
+            {
+                float k = t / 0.7f;
+                return k * k;
+            }
+            float settle = (t - 0.7f) / 0.3f;
+            return 1f - 0.12f * Mathf.Sin(settle * Mathf.PI) * (1f - settle);
         }
     }
 }

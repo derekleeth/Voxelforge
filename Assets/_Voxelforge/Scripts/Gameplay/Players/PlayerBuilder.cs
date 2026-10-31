@@ -119,7 +119,7 @@ namespace Voxelforge.Gameplay
                 return;
 
             VoxelWorldManager world = _player.WorldManager;
-            if (world == null || !_player.HasLanded || blockId == BlockIds.Air || !ItemIds.IsBlock(blockId) ||
+            if (world == null || !_player.HasLanded || _player.IsKnockedOut || blockId == BlockIds.Air || !ItemIds.IsBlock(blockId) ||
                 Time.time - _lastPlaceTime < minPlaceInterval)
                 return;
 

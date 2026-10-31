@@ -9,8 +9,9 @@ namespace Voxelforge.Gameplay
     /// This hero's health and shield (Roadmap 4.6). <b>The host</b> runs the rules (<see cref="HeroHealth"/>) and is the
     /// only one that hurts, heals or shields a hero; every PC sees the numbers through network variables and hears
     /// what happened as <see cref="HealthEvent"/>s, for the health bar and combat text in that player's own view.
-    /// <para>There's no fall damage on purpose. In 4.6 only a sparring Training Dummy hurts heroes, and never below
-    /// <see cref="SparringFloor"/>, so nobody is knocked out until Phase 5 brings monsters.</para>
+    /// <para>There's no fall damage on purpose. A sparring Training Dummy never takes a hero below
+    /// <see cref="SparringFloor"/>, but a creature can knock them out (Roadmap 5.2): <see cref="IsKnockedOut"/> is set on
+    /// every PC, and <see cref="PlayerKnockout"/> wakes them at home when <see cref="ServerReadyToWake"/> says so.</para>
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
     public sealed class PlayerHealth : NetworkBehaviour
@@ -27,6 +28,7 @@ namespace Voxelforge.Gameplay
         readonly NetworkVariable<float> _health = new NetworkVariable<float>();
         readonly NetworkVariable<float> _maxHealth = new NetworkVariable<float>();
         readonly NetworkVariable<float> _shield = new NetworkVariable<float>();
+        readonly NetworkVariable<bool> _knockedOut = new NetworkVariable<bool>();
 
         // Host state.
         HeroHealth _rules;
@@ -38,6 +40,15 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Every PC: damage the shield will still soak up.</summary>
         public float Shield => _shield.Value;
+
+        /// <summary>Every PC: the hero's health ran out and they're lying there until they wake (Roadmap 5.2).</summary>
+        public bool IsKnockedOut => _knockedOut.Value;
+
+        /// <summary>Host only: a knocked-out hero has waited long enough to wake.</summary>
+        public bool ServerReadyToWake => IsServer && _rules != null && _rules.ReadyToWake(Time.time);
+
+        /// <summary>Host only: when a knocked-out hero may wake (<see cref="Time.time"/>).</summary>
+        public float ServerWakeAt => _rules != null ? _rules.WakeAt : 0f;
 
         /// <summary>Every PC: something happened to this hero's health.</summary>
         public event Action<HealthEvent> Changed;
@@ -59,7 +70,8 @@ namespace Voxelforge.Gameplay
 
         /// <summary>
         /// Host only: hurts the hero. Their shield soaks up what it can first, and health never goes under
-        /// <paramref name="floorShare"/> of max (sparring uses <see cref="SparringFloor"/>).
+        /// <paramref name="floorShare"/> of max (sparring uses <see cref="SparringFloor"/>; creatures pass 0, so they can
+        /// knock a hero out).
         /// </summary>
         public DamageResult ServerDamage(float amount, PlayerId source, Vector3 sourcePosition, float floorShare = SparringFloor,
             ushort abilityId = AbilityIds.None)
@@ -71,8 +83,27 @@ namespace Voxelforge.Gameplay
                 Tell(HealthEventKind.Damaged, result.Taken, source, abilityId, sourcePosition);
             else if (result.Absorbed > 0f)
                 Tell(HealthEventKind.Absorbed, result.Absorbed, source, abilityId, sourcePosition);
+            if (result.KnockedOut)
+            {
+                _knockedOut.Value = true;
+                Tell(HealthEventKind.KnockedOut, HeroHealth.KnockOutSeconds, source, abilityId, sourcePosition);
+            }
             Send(force: true);
             return result;
+        }
+
+        /// <summary>
+        /// Host only: wakes a knocked-out hero with <see cref="HeroHealth.WakeShare"/> of their health, once
+        /// <see cref="PlayerKnockout"/> has put them back at home.
+        /// </summary>
+        public void ServerWake()
+        {
+            if (!IsServer || _rules == null || !_rules.IsKnockedOut)
+                return;
+            _rules.Wake();
+            _knockedOut.Value = false;
+            Tell(HealthEventKind.Woke, _rules.Current, PlayerId.None, AbilityIds.None, transform.position);
+            Send(force: true);
         }
 
         /// <summary>Host only: heals the hero. Returns how much it really healed (nothing past full).</summary>

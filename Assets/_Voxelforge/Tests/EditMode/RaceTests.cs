@@ -173,9 +173,12 @@ namespace Voxelforge.Tests
         [Test]
         public void StunCue_SaysWhereTheTargetWas()
         {
-            AbilityCue cue = AbilityCue.StunTarget(AbilityIds.Hoofquake, new UnityEngine.Vector3(1f, 2f, 3f));
+            var target = new CombatTarget(new Unity.Mathematics.int3(1, 2, 3));
+            AbilityCue cue = AbilityCue.StunTarget(AbilityIds.Hoofquake, target);
             Assert.AreEqual(AbilityCueKind.TargetStunned, cue.Kind);
             Assert.AreEqual(AbilityIds.Hoofquake, cue.AbilityId);
+            Assert.AreEqual((UnityEngine.Vector3)target.Position, cue.Position);
+            Assert.AreEqual(target.Key, cue.Target);
         }
     }
 }

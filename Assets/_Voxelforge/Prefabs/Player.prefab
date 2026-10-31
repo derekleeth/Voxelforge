@@ -41,6 +41,7 @@ GameObject:
   - component: {fileID: 4088277328797704884}
   - component: {fileID: 4935959392201245843}
   - component: {fileID: 368659319514688893}
+  - component: {fileID: 6126350313353818499}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -611,6 +612,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aab12ad8fbcd14f4ba04f24dd6de6581, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerWorldMap
+--- !u!114 &6126350313353818499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb7228562571bae4f9bc3ebf161effba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerKnockout
+  ShowTopMostFoldoutHeaderGroup: 1
+  homeWaitSeconds: 10
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0
@@ -660,6 +675,8 @@ MonoBehaviour:
   animator: {fileID: 2811615453234438372}
   stepCatchUp: 25
   speedDamping: 0.1
+  knockedOutTilt: 84
+  knockedOutLift: 0.14
 --- !u!1001 &8533838549555420533
 PrefabInstance:
   m_ObjectHideFlags: 0

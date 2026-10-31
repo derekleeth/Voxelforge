@@ -60,6 +60,30 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Shove_PushesTheBodyAway_AndFadesOut()
+        {
+            // Roadmap 5.2: a boar's charge or a creature's bite knocks a hero back.
+            CreateRoomWithFloor();
+            var body = BodyStandingAt(new float3(8.5f, 1f, 8.5f));
+            VoxelBodyMotor.Shove(ref body, new float3(6f, 3f, 0f));
+            Assert.IsFalse(body.Grounded, "An upward shove lifts it off the ground.");
+
+            Run(ref body, default, 1);
+            Assert.Greater(body.Velocity.x, 5f, "It flies away even with no input.");
+            Assert.Greater(body.Position.y, 1f + _settings.HalfExtents.y, "And up.");
+
+            Run(ref body, default, 150);
+            Assert.AreEqual(float2.zero, body.Shove, "The push fades out by itself.");
+            Assert.IsTrue(body.Grounded);
+            Assert.Greater(body.FeetPosition(_settings).x, 10f, "It landed further along than it started.");
+
+            // Walking still works on top of a push, and after it.
+            Run(ref body, new MotorInput { Move = new float2(0f, 1f) }, 5);
+            Assert.AreEqual(_settings.WalkSpeed, body.Velocity.z, 1e-4f);
+            Assert.AreEqual(0f, body.Velocity.x, 1e-4f);
+        }
+
+        [Test]
         public void Body_FallsAndLandsOnFloor()
         {
             CreateRoomWithFloor();

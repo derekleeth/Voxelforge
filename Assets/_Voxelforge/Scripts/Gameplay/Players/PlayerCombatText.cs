@@ -72,7 +72,9 @@ namespace Voxelforge.Gameplay
                 case AbilityCueKind.TargetHit:
                     Raise(new CombatTextEvent
                     {
-                        Kind = cue.Toppled ? CombatTextKind.Toppled : CombatTextKind.TargetHit, Amount = cue.TargetDamage,
+                        Kind = !cue.Toppled ? CombatTextKind.TargetHit
+                            : cue.Target.IsCreature ? CombatTextKind.Defeated : CombatTextKind.Toppled,
+                        Amount = cue.TargetDamage,
                         AbilityId = ability.Id, Element = ability.Element, Position = (float3)cue.Position + new float3(0f, 0.6f, 0f),
                     });
                     break;
@@ -84,8 +86,9 @@ namespace Voxelforge.Gameplay
                     });
                     break;
                 case AbilityCueKind.Impact:
-                    // A hit on a Training Dummy (Roadmap 4.6) shows its damage with the TargetHit cue, not block damage.
-                    if (cue.BlockId == BlockIds.TrainingDummy)
+                    // A hit on a Training Dummy (Roadmap 4.6) or a creature (5.2) shows its damage with the TargetHit
+                    // cue, not block damage.
+                    if (cue.OnTarget || cue.BlockId == BlockIds.TrainingDummy)
                         break;
                     // A stomp (Roadmap 4.7) doesn't hurt the ground; its stuns and hits say what it did.
                     if (ability.Delivery == AbilityDelivery.Quake)

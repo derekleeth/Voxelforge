@@ -154,6 +154,8 @@ namespace Voxelforge.Gameplay
                 chunkLoader.Register(player);
                 if (hearth != null)
                     chunkLoader.Register(hearth, hearthRadiusChunks); // Only has a position while hearthing.
+                if (player.TryGetComponent(out PlayerKnockout knockout))
+                    chunkLoader.Register(knockout, hearthRadiusChunks); // Only while knocked out (Roadmap 5.2).
             }
 
             _records.Add(playerId, new PlayerRecord(ownerClientId, localSlot, uuid, player));
@@ -173,6 +175,8 @@ namespace Voxelforge.Gameplay
                     chunkLoader.Unregister(player);
                     if (player != null && player.TryGetComponent(out PlayerHearth hearth))
                         chunkLoader.Unregister(hearth);
+                    if (player != null && player.TryGetComponent(out PlayerKnockout knockout))
+                        chunkLoader.Unregister(knockout);
                 }
             }
             _records.Clear();

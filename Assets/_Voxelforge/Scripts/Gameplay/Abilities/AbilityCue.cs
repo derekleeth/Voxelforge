@@ -48,11 +48,24 @@ namespace Voxelforge.Gameplay
         public ushort BlockId;
         /// <summary>How many blocks an <see cref="AbilityCueKind.Impact"/> broke, for the combat text (Roadmap 4.4).</summary>
         public ushort BlocksBroken;
+        /// <summary>
+        /// For an <see cref="AbilityCueKind.Impact"/>: it struck a target's body (a Training Dummy or a creature), whose
+        /// damage comes in its own <see cref="AbilityCueKind.TargetHit"/> cue.
+        /// </summary>
+        public bool OnTarget;
+        /// <summary>
+        /// For <see cref="AbilityCueKind.TargetHit"/> and <see cref="AbilityCueKind.TargetStunned"/>: which target
+        /// (Roadmap 5.2), so its health bar can follow it as it walks.
+        /// </summary>
+        public TargetKey Target;
         /// <summary>For <see cref="AbilityCueKind.TargetHit"/>: the damage the target took, its health left and its most health.</summary>
         public ushort TargetDamage;
         public ushort TargetHealth;
         public ushort TargetMaxHealth;
-        /// <summary>For <see cref="AbilityCueKind.TargetHit"/>: the hit emptied it (a dummy topples and springs back to full).</summary>
+        /// <summary>
+        /// For <see cref="AbilityCueKind.TargetHit"/>: the hit emptied it (a dummy topples and springs back to full; a
+        /// creature is defeated).
+        /// </summary>
         public bool Toppled;
         /// <summary>Why a cast stopped (<see cref="AbilityCueKind.CastStopped"/>).</summary>
         public CastCheck Reason;
@@ -68,11 +81,12 @@ namespace Voxelforge.Gameplay
             };
 
         /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> hit <paramref name="blockId"/> at <paramref name="point"/>, on the face <paramref name="normal"/>.</summary>
-        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId, int blocksBroken = 0) =>
+        public static AbilityCue Blast(ushort abilityId, Vector3 point, Vector3 normal, ushort blockId, int blocksBroken = 0,
+            bool onTarget = false) =>
             new AbilityCue
             {
                 Kind = AbilityCueKind.Impact, AbilityId = abilityId, Position = point, Direction = normal, BlockId = blockId,
-                BlocksBroken = ClampCount(blocksBroken),
+                BlocksBroken = ClampCount(blocksBroken), OnTarget = onTarget,
             };
 
         public static AbilityCue End(in ManaBoltEnd end, ushort blockId, int blocksBroken = 0) =>
@@ -80,20 +94,21 @@ namespace Voxelforge.Gameplay
             {
                 Kind = end.HitBlock ? AbilityCueKind.Impact : AbilityCueKind.Fizzled, AbilityId = end.AbilityId, ShotId = end.Id,
                 Position = end.Point, Direction = end.Normal, BlockId = blockId, BlocksBroken = ClampCount(blocksBroken),
+                OnTarget = end.Target.IsValid,
             };
 
-        /// <summary>The ability hurt the target whose middle is at <paramref name="middle"/> (Roadmap 4.6).</summary>
-        public static AbilityCue HitTarget(ushort abilityId, Vector3 middle, in TargetDamage result) =>
+        /// <summary>The ability hurt <paramref name="target"/> (Roadmap 4.6), telling where its middle was.</summary>
+        public static AbilityCue HitTarget(ushort abilityId, in CombatTarget target, in TargetDamage result) =>
             new AbilityCue
             {
-                Kind = AbilityCueKind.TargetHit, AbilityId = abilityId, Position = middle,
+                Kind = AbilityCueKind.TargetHit, AbilityId = abilityId, Position = target.Position, Target = target.Key,
                 TargetDamage = ClampCount(Mathf.CeilToInt(result.Dealt)), TargetHealth = ClampCount(Mathf.CeilToInt(result.Health)),
                 TargetMaxHealth = ClampCount(Mathf.CeilToInt(result.MaxHealth)), Toppled = result.Toppled,
             };
 
-        /// <summary>The ability stunned the target whose middle is at <paramref name="middle"/> (Roadmap 4.7).</summary>
-        public static AbilityCue StunTarget(ushort abilityId, Vector3 middle) =>
-            new AbilityCue { Kind = AbilityCueKind.TargetStunned, AbilityId = abilityId, Position = middle };
+        /// <summary>The ability stunned <paramref name="target"/> (Roadmap 4.7).</summary>
+        public static AbilityCue StunTarget(ushort abilityId, in CombatTarget target) =>
+            new AbilityCue { Kind = AbilityCueKind.TargetStunned, AbilityId = abilityId, Position = target.Position, Target = target.Key };
 
         static ushort ClampCount(int count) => (ushort)Mathf.Clamp(count, 0, ushort.MaxValue);
 
@@ -117,14 +132,27 @@ namespace Voxelforge.Gameplay
                     serializer.SerializeValue(ref Direction);
                     serializer.SerializeValue(ref BlockId);
                     serializer.SerializeValue(ref BlocksBroken);
+                    serializer.SerializeValue(ref OnTarget);
+                    break;
+                case AbilityCueKind.TargetStunned:
+                    SerializeTarget(serializer);
                     break;
                 case AbilityCueKind.TargetHit:
+                    SerializeTarget(serializer);
                     serializer.SerializeValue(ref TargetDamage);
                     serializer.SerializeValue(ref TargetHealth);
                     serializer.SerializeValue(ref TargetMaxHealth);
                     serializer.SerializeValue(ref Toppled);
                     break;
             }
+        }
+
+        void SerializeTarget<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            ulong key = Target.Value;
+            serializer.SerializeValue(ref key);
+            if (serializer.IsReader)
+                Target = new TargetKey(key);
         }
     }
 }

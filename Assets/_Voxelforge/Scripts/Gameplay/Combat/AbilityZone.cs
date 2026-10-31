@@ -156,7 +156,7 @@ namespace Voxelforge.Gameplay
             // The hit goes out on the caster's own channel, so their combat text and the dummy's bar show it like any spell.
             if (result.Dealt > 0f && _casterHero != null && _casterHero.IsSpawned &&
                 _casterHero.TryGetComponent(out PlayerAbilityCues cues))
-                cues.ServerSend(AbilityCue.HitTarget(_ability.Id, point, result));
+                cues.ServerSend(AbilityCue.HitTarget(_ability.Id, target, result));
             return true;
         }
 

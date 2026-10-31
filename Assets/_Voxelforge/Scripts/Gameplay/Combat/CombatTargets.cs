@@ -7,7 +7,20 @@ using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
-    /// <summary>Something spells can hurt (Roadmap 4.6). In 4.6 that's a Training Dummy block; Phase 5 adds creatures.</summary>
+    /// <summary>What kind of thing a <see cref="CombatTarget"/> is.</summary>
+    public enum CombatTargetKind : byte
+    {
+        None,
+        /// <summary>A Training Dummy block (Roadmap 4.6).</summary>
+        Dummy,
+        /// <summary>A creature that walks the world (Roadmap 5.2, <see cref="ICombatCreature"/>).</summary>
+        Creature,
+    }
+
+    /// <summary>
+    /// Something spells can hurt: a Training Dummy block (Roadmap 4.6) or a creature (5.2). For a creature it's a snapshot
+    /// of where it stood when it was found.
+    /// </summary>
     public readonly struct CombatTarget
     {
         /// <summary>
@@ -16,16 +29,49 @@ namespace Voxelforge.Gameplay
         /// </summary>
         public const float BodyHeight = 1.8f;
 
+        public readonly CombatTargetKind Kind;
+
         /// <summary>The Training Dummy's block.</summary>
         public readonly int3 Block;
 
-        public CombatTarget(int3 block) => Block = block;
+        /// <summary>The creature's <see cref="ICombatCreature.CreatureId"/>.</summary>
+        public readonly ulong CreatureId;
 
         /// <summary>Its middle, where spells aim and numbers float from.</summary>
-        public float3 Position => (float3)Block + new float3(0.5f, BodyHeight * 0.5f, 0.5f);
+        public readonly float3 Position;
 
         /// <summary>Just over its head, where its health bar floats.</summary>
-        public float3 Top => (float3)Block + new float3(0.5f, BodyHeight + 0.35f, 0.5f);
+        public readonly float3 Top;
+
+        /// <summary>A Training Dummy standing in <paramref name="block"/>.</summary>
+        public CombatTarget(int3 block)
+        {
+            Kind = CombatTargetKind.Dummy;
+            Block = block;
+            CreatureId = 0;
+            Position = (float3)block + new float3(0.5f, BodyHeight * 0.5f, 0.5f);
+            Top = (float3)block + new float3(0.5f, BodyHeight + 0.35f, 0.5f);
+        }
+
+        CombatTarget(ICombatCreature creature)
+        {
+            Kind = CombatTargetKind.Creature;
+            CreatureId = creature.CreatureId;
+            float3 feet = creature.Feet;
+            float height = creature.HalfExtents.y;
+            Block = (int3)math.floor(feet);
+            Position = feet + new float3(0f, height, 0f);
+            Top = feet + new float3(0f, height * 2f + 0.35f, 0f);
+        }
+
+        /// <summary><paramref name="creature"/>, where it stands now.</summary>
+        public static CombatTarget Of(ICombatCreature creature) => new CombatTarget(creature);
+
+        public bool IsValid => Kind != CombatTargetKind.None;
+
+        /// <summary>Which target this is on every PC, for cues and health bars.</summary>
+        public TargetKey Key => Kind == CombatTargetKind.Dummy ? TargetKey.Dummy(Block)
+            : Kind == CombatTargetKind.Creature ? TargetKey.Creature(CreatureId) : TargetKey.None;
 
         /// <summary>
         /// Where a ray from <paramref name="origin"/> along the unit <paramref name="direction"/> first enters the body of
@@ -33,9 +79,17 @@ namespace Voxelforge.Gameplay
         /// body hits at once with a zero <paramref name="normal"/>.
         /// </summary>
         public static bool RayHitsBody(int3 block, float3 origin, float3 direction, float maxDistance, out float distance,
+            out int3 normal) =>
+            RayHitsBox(block, (float3)block + new float3(1f, BodyHeight, 1f), origin, direction, maxDistance, out distance, out normal);
+
+        /// <summary>
+        /// Where a ray from <paramref name="origin"/> along the unit <paramref name="direction"/> first enters the box from
+        /// <paramref name="lo"/> to <paramref name="hi"/>, within <paramref name="maxDistance"/>. A ray starting inside
+        /// hits at once with a zero <paramref name="normal"/>.
+        /// </summary>
+        public static bool RayHitsBox(float3 lo, float3 hi, float3 origin, float3 direction, float maxDistance, out float distance,
             out int3 normal)
         {
-            float3 lo = block, hi = (float3)block + new float3(1f, BodyHeight, 1f);
             distance = 0f;
             normal = int3.zero;
             float enter = 0f, exit = maxDistance;
@@ -90,10 +144,14 @@ namespace Voxelforge.Gameplay
 
     /// <summary>
     /// Everything spells can hurt (Roadmap 4.6), on <b>the host</b>. Spells and totems ask here for targets near a point
-    /// and hurt them here, so Phase 5's creatures only have to join this list. For now the only targets are Training
-    /// Dummies: blocks that spells hurt instead of breaking (<see cref="SparringDummy"/>) and that throw hay bales back
-    /// at whoever hit them, so heals and shields have something to undo. Hay bales never take a hero under
-    /// <see cref="PlayerHealth.SparringFloor"/>.
+    /// and hurt them here. There are two kinds:
+    /// <list type="bullet">
+    /// <item>Training Dummies: blocks that spells hurt instead of breaking (<see cref="SparringDummy"/>) and that throw hay
+    /// bales back at whoever hit them, so heals and shields have something to undo. Hay bales never take a hero under
+    /// <see cref="PlayerHealth.SparringFloor"/>.</item>
+    /// <item>Creatures (Roadmap 5.2, <see cref="ICombatCreature"/>), which join the list on every PC as they spawn, so
+    /// every PC can also find one by its <see cref="TargetKey"/> to draw its health bar.</item>
+    /// </list>
     /// <b>Not a singleton:</b> systems get it through <see cref="PlayerRegistry.Targets"/> (CLAUDE.md Law #1).
     /// </summary>
     public sealed class CombatTargets : MonoBehaviour
@@ -126,45 +184,121 @@ namespace Voxelforge.Gameplay
         readonly Dictionary<int3, SparringDummy> _dummies = new Dictionary<int3, SparringDummy>();
         readonly List<int3> _forget = new List<int3>();
         readonly List<Bale> _bales = new List<Bale>();
+        readonly List<ICombatCreature> _creatures = new List<ICombatCreature>();
+        readonly Dictionary<ulong, ICombatCreature> _creaturesById = new Dictionary<ulong, ICombatCreature>();
 
         bool IsServer => networkManager == null || networkManager.IsServer || !networkManager.IsListening;
 
         VoxelWorld Blocks => world != null ? world.World : null;
 
-        /// <summary>Host only: is there a target standing in <paramref name="block"/>?</summary>
+        /// <summary>Every PC: the creatures in the world now (Roadmap 5.2).</summary>
+        public IReadOnlyList<ICombatCreature> Creatures => _creatures;
+
+        void OnEnable()
+        {
+            CombatCreatures.AnySpawned += Add;
+            CombatCreatures.AnyDespawned += Remove;
+        }
+
+        void OnDisable()
+        {
+            CombatCreatures.AnySpawned -= Add;
+            CombatCreatures.AnyDespawned -= Remove;
+            _creatures.Clear();
+            _creaturesById.Clear();
+        }
+
+        /// <summary>Every PC: lists a creature that came into the world. <see cref="CombatCreatures"/> calls it.</summary>
+        public void Add(ICombatCreature creature)
+        {
+            if (creature == null || _creaturesById.ContainsKey(creature.CreatureId))
+                return;
+            _creatures.Add(creature);
+            _creaturesById.Add(creature.CreatureId, creature);
+        }
+
+        /// <summary>Every PC: forgets a creature that left the world.</summary>
+        public void Remove(ICombatCreature creature)
+        {
+            if (creature == null || !_creaturesById.TryGetValue(creature.CreatureId, out ICombatCreature known) ||
+                !ReferenceEquals(known, creature))
+                return;
+            _creaturesById.Remove(creature.CreatureId);
+            _creatures.Remove(creature);
+        }
+
+        /// <summary>Every PC: the creature with this <see cref="ICombatCreature.CreatureId"/>, if it's still in the world.</summary>
+        public bool TryGetCreature(ulong creatureId, out ICombatCreature creature) =>
+            _creaturesById.TryGetValue(creatureId, out creature);
+
+        /// <summary>Host only: is there a Training Dummy standing in <paramref name="block"/>?</summary>
         public bool IsTarget(int3 block)
         {
             VoxelWorld blocks = Blocks;
             return blocks != null && blocks.GetVoxel(block).BlockId == BlockIds.TrainingDummy;
         }
 
+        /// <summary>Host only: is <paramref name="target"/> still there to be hurt?</summary>
+        public bool IsTarget(in CombatTarget target)
+        {
+            switch (target.Kind)
+            {
+                case CombatTargetKind.Dummy:
+                    return IsTarget(target.Block);
+                case CombatTargetKind.Creature:
+                    return _creaturesById.TryGetValue(target.CreatureId, out ICombatCreature creature) && creature.IsTargetable;
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Host only: the first target body a ray hits within <paramref name="maxDistance"/>, reported like a block hit
-        /// on the target's own block, so flights and slams treat it like any other hit (<see cref="IsTarget"/>).
+        /// (a dummy's own block, or the block at the point it struck a creature), with the target it <paramref name="struck"/>.
         /// </summary>
-        public bool Raycast(float3 origin, float3 direction, float maxDistance, out VoxelHit hit)
+        public bool Raycast(float3 origin, float3 direction, float maxDistance, out VoxelHit hit, out CombatTarget struck)
         {
             hit = default;
-            VoxelWorld blocks = Blocks;
-            if (blocks == null || maxDistance <= 0f)
+            struck = default;
+            if (maxDistance <= 0f)
                 return false;
             direction = math.normalizesafe(direction);
-            float3 end = origin + direction * maxDistance;
-            // A body reaches above its block, so look a little lower than the ray for blocks whose body it might cross.
-            int3 lo = (int3)math.floor(math.min(origin, end) - new float3(0f, CombatTarget.BodyHeight - 1f, 0f));
-            int3 hi = (int3)math.floor(math.max(origin, end));
             float best = float.MaxValue;
-            for (int y = lo.y; y <= hi.y; y++)
-            for (int z = lo.z; z <= hi.z; z++)
-            for (int x = lo.x; x <= hi.x; x++)
+            VoxelWorld blocks = Blocks;
+            if (blocks != null)
             {
-                var block = new int3(x, y, z);
-                if (blocks.GetVoxel(block).BlockId != BlockIds.TrainingDummy ||
-                    !CombatTarget.RayHitsBody(block, origin, direction, maxDistance, out float distance, out int3 normal) ||
+                float3 end = origin + direction * maxDistance;
+                // A body reaches above its block, so look a little lower than the ray for blocks whose body it might cross.
+                int3 lo = (int3)math.floor(math.min(origin, end) - new float3(0f, CombatTarget.BodyHeight - 1f, 0f));
+                int3 hi = (int3)math.floor(math.max(origin, end));
+                for (int y = lo.y; y <= hi.y; y++)
+                for (int z = lo.z; z <= hi.z; z++)
+                for (int x = lo.x; x <= hi.x; x++)
+                {
+                    var block = new int3(x, y, z);
+                    if (blocks.GetVoxel(block).BlockId != BlockIds.TrainingDummy ||
+                        !CombatTarget.RayHitsBody(block, origin, direction, maxDistance, out float distance, out int3 normal) ||
+                        distance >= best)
+                        continue;
+                    best = distance;
+                    hit = new VoxelHit { Block = block, Normal = normal, Distance = distance, Point = origin + direction * distance };
+                    struck = new CombatTarget(block);
+                }
+            }
+
+            foreach (ICombatCreature creature in _creatures)
+            {
+                if (!creature.IsTargetable)
+                    continue;
+                float3 feet = creature.Feet, half = creature.HalfExtents;
+                float3 boxLo = feet - new float3(half.x, 0f, half.z), boxHi = feet + new float3(half.x, half.y * 2f, half.z);
+                if (!CombatTarget.RayHitsBox(boxLo, boxHi, origin, direction, maxDistance, out float distance, out int3 normal) ||
                     distance >= best)
                     continue;
                 best = distance;
-                hit = new VoxelHit { Block = block, Normal = normal, Distance = distance, Point = origin + direction * distance };
+                float3 point = origin + direction * distance;
+                hit = new VoxelHit { Block = (int3)math.floor(point), Normal = normal, Distance = distance, Point = point };
+                struck = CombatTarget.Of(creature);
             }
             return best < float.MaxValue;
         }
@@ -174,22 +308,37 @@ namespace Voxelforge.Gameplay
         {
             nearest = default;
             float best = float.MaxValue;
-            VoxelWorld blocks = Blocks;
-            if (blocks == null || radius <= 0f)
+            if (radius <= 0f)
                 return false;
-            int3 lo = (int3)math.floor(point - radius), hi = (int3)math.floor(point + radius);
-            for (int y = lo.y; y <= hi.y; y++)
-            for (int z = lo.z; z <= hi.z; z++)
-            for (int x = lo.x; x <= hi.x; x++)
+            VoxelWorld blocks = Blocks;
+            if (blocks != null)
             {
-                var block = new int3(x, y, z);
-                if (blocks.GetVoxel(block).BlockId != BlockIds.TrainingDummy)
+                int3 lo = (int3)math.floor(point - radius), hi = (int3)math.floor(point + radius);
+                for (int y = lo.y; y <= hi.y; y++)
+                for (int z = lo.z; z <= hi.z; z++)
+                for (int x = lo.x; x <= hi.x; x++)
+                {
+                    var block = new int3(x, y, z);
+                    if (blocks.GetVoxel(block).BlockId != BlockIds.TrainingDummy)
+                        continue;
+                    float distance = math.distancesq(new CombatTarget(block).Position, point);
+                    if (distance <= radius * radius && distance < best)
+                    {
+                        best = distance;
+                        nearest = new CombatTarget(block);
+                    }
+                }
+            }
+            foreach (ICombatCreature creature in _creatures)
+            {
+                if (!creature.IsTargetable)
                     continue;
-                float distance = math.distancesq(new CombatTarget(block).Position, point);
+                CombatTarget target = CombatTarget.Of(creature);
+                float distance = math.distancesq(target.Position, point);
                 if (distance <= radius * radius && distance < best)
                 {
                     best = distance;
-                    nearest = new CombatTarget(block);
+                    nearest = target;
                 }
             }
             return best < float.MaxValue;
@@ -198,26 +347,39 @@ namespace Voxelforge.Gameplay
         /// <summary>Host only: every target within <paramref name="radius"/> metres of <paramref name="point"/>, added to <paramref name="found"/>.</summary>
         public void FindAll(float3 point, float radius, List<CombatTarget> found)
         {
-            VoxelWorld blocks = Blocks;
-            if (blocks == null || radius <= 0f)
+            if (radius <= 0f)
                 return;
-            int3 lo = (int3)math.floor(point - radius), hi = (int3)math.floor(point + radius);
-            for (int y = lo.y; y <= hi.y; y++)
-            for (int z = lo.z; z <= hi.z; z++)
-            for (int x = lo.x; x <= hi.x; x++)
+            VoxelWorld blocks = Blocks;
+            if (blocks != null)
             {
-                var block = new int3(x, y, z);
-                if (blocks.GetVoxel(block).BlockId == BlockIds.TrainingDummy &&
-                    math.distancesq(new CombatTarget(block).Position, point) <= radius * radius)
-                    found.Add(new CombatTarget(block));
+                int3 lo = (int3)math.floor(point - radius), hi = (int3)math.floor(point + radius);
+                for (int y = lo.y; y <= hi.y; y++)
+                for (int z = lo.z; z <= hi.z; z++)
+                for (int x = lo.x; x <= hi.x; x++)
+                {
+                    var block = new int3(x, y, z);
+                    if (blocks.GetVoxel(block).BlockId == BlockIds.TrainingDummy &&
+                        math.distancesq(new CombatTarget(block).Position, point) <= radius * radius)
+                        found.Add(new CombatTarget(block));
+                }
+            }
+            foreach (ICombatCreature creature in _creatures)
+            {
+                if (!creature.IsTargetable)
+                    continue;
+                CombatTarget target = CombatTarget.Of(creature);
+                if (math.distancesq(target.Position, point) <= radius * radius)
+                    found.Add(target);
             }
         }
 
         /// <summary>Host only: hurts <paramref name="target"/> in <paramref name="instigator"/>'s name.</summary>
         public TargetDamage ServerDamage(in CombatTarget target, float amount, PlayerId instigator)
         {
-            if (!IsServer || amount <= 0f || !IsTarget(target.Block))
+            if (!IsServer || amount <= 0f || !IsTarget(target))
                 return default;
+            if (target.Kind == CombatTargetKind.Creature)
+                return _creaturesById[target.CreatureId].ServerDamage(amount, instigator);
             float now = Time.time;
             if (!_dummies.TryGetValue(target.Block, out SparringDummy dummy))
                 _dummies[target.Block] = dummy = new SparringDummy(now);
@@ -227,13 +389,15 @@ namespace Voxelforge.Gameplay
 
         /// <summary>
         /// Host only: stuns <paramref name="target"/> for <paramref name="seconds"/> in <paramref name="instigator"/>'s name
-        /// (Roadmap 4.7, Hoofquake). A Training Dummy stops sparring; Phase 5 creatures will stop moving and fighting.
+        /// (Roadmap 4.7, Hoofquake). A Training Dummy stops sparring; a creature stops moving and fighting.
         /// Heroes are never stunned: there's no friendly crowd control.
         /// </summary>
         public bool ServerStun(in CombatTarget target, float seconds, PlayerId instigator)
         {
-            if (!IsServer || seconds <= 0f || !IsTarget(target.Block))
+            if (!IsServer || seconds <= 0f || !IsTarget(target))
                 return false;
+            if (target.Kind == CombatTargetKind.Creature)
+                return _creaturesById[target.CreatureId].ServerStun(seconds, instigator);
             float now = Time.time;
             if (!_dummies.TryGetValue(target.Block, out SparringDummy dummy))
                 _dummies[target.Block] = dummy = new SparringDummy(now);

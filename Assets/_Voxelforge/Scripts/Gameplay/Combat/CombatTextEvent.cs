@@ -33,6 +33,8 @@ namespace Voxelforge.Gameplay
         Absorbed,
         /// <summary>A spell stunned a target (Roadmap 4.7, Hoofquake).</summary>
         Stunned,
+        /// <summary>A spell's hit (<see cref="CombatTextEvent.Amount"/>) defeated a creature (Roadmap 5.2).</summary>
+        Defeated,
     }
 
     /// <summary>

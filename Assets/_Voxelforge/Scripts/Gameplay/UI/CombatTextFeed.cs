@@ -47,6 +47,7 @@ namespace Voxelforge.Gameplay
             {
                 case CombatTextKind.CraterHit:
                 case CombatTextKind.Toppled:
+                case CombatTextKind.Defeated:
                 case CombatTextKind.Stunned:
                     return 1.6f;
                 case CombatTextKind.Refused:

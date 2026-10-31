@@ -242,7 +242,8 @@ namespace Voxelforge.Gameplay
             bool moved = math.length(input.Move) > MoveDeadzone ||
                          (input.Buttons & (PlayerButtons.Jump | PlayerButtons.Mine)) != 0 ||
                          math.distance(((float3)transform.position).xz, _castFeet.xz) > DriftAllowed;
-            if (moved)
+            // Knocked out mid-cast (Roadmap 5.2): they'll wake at home anyway.
+            if (moved || _player.IsKnockedOut)
             {
                 EndCast(HearthRefusal.Interrupted);
                 return;
@@ -286,7 +287,7 @@ namespace Voxelforge.Gameplay
         [Rpc(SendTo.Server)]
         void RequestHearthRpc(RpcParams rpcParams = default)
         {
-            if (rpcParams.Receive.SenderClientId != OwnerClientId || !_player.HasLanded)
+            if (rpcParams.Receive.SenderClientId != OwnerClientId || !_player.HasLanded || _player.IsKnockedOut)
                 return;
             if (_casting)
             {

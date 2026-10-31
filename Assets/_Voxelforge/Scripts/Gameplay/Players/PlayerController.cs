@@ -56,6 +56,7 @@ namespace Voxelforge.Gameplay
         PlayerClassMenu _classMenu;
         PlayerRaceMenu _raceMenu;
         PlayerWorldMap _worldMap;
+        PlayerHealth _health;
         uint _nextSequence;
         // Buttons still held from inside the inventory window, ignored until let go so closing it doesn't also jump.
         PlayerButtons _swallowed;
@@ -70,6 +71,7 @@ namespace Voxelforge.Gameplay
         VoxelWorldManager _worldManager;
         PlayerRegistry _registry;
         int2 _spawnColumn;
+        int2 _worldSpawnColumn;
         int _spawnTopY;
         bool _placed;
         VoxelBody _body;
@@ -136,8 +138,25 @@ namespace Voxelforge.Gameplay
         /// <summary>Owner only: this frame's controls as pressed, even while a window has them (<see cref="PlayerInventory"/>).</summary>
         public PlayerInputFrame OwnerRawInput { get; private set; }
 
-        /// <summary>Host only: the newest frame received from the owner. Host-side actions such as mining read it.</summary>
-        public PlayerInputFrame ServerInput => _latestInput;
+        /// <summary>
+        /// Host only: the newest frame received from the owner. Host-side actions such as mining read it. A knocked-out
+        /// hero (Roadmap 5.2) has no movement and no buttons, only where they look.
+        /// </summary>
+        public PlayerInputFrame ServerInput
+        {
+            get
+            {
+                if (!IsKnockedOut)
+                    return _latestInput;
+                PlayerInputFrame frame = _latestInput;
+                frame.Move = float2.zero;
+                frame.Buttons = PlayerButtons.None;
+                return frame;
+            }
+        }
+
+        /// <summary>Every PC: this hero was knocked out and is waiting to wake at home (Roadmap 5.2, <see cref="PlayerKnockout"/>).</summary>
+        public bool IsKnockedOut => _health != null && _health.IsKnockedOut;
 
         /// <summary>Which block this hero aims at.</summary>
         public PlayerAim Aim => aim;
@@ -167,7 +186,7 @@ namespace Voxelforge.Gameplay
             _uuid = uuid;
             _worldManager = worldManager;
             _registry = registry;
-            _spawnColumn = spawnColumn;
+            _spawnColumn = _worldSpawnColumn = spawnColumn;
             _spawnTopY = spawnTopY;
             _hasSavedSpot = profile != null;
             if (_hasSavedSpot)
@@ -233,6 +252,7 @@ namespace Voxelforge.Gameplay
             _classMenu = GetComponent<PlayerClassMenu>();
             _raceMenu = GetComponent<PlayerRaceMenu>();
             _worldMap = GetComponent<PlayerWorldMap>();
+            _health = GetComponent<PlayerHealth>();
         }
 
         public override void OnNetworkSpawn()
@@ -330,9 +350,10 @@ namespace Voxelforge.Gameplay
                 frame.HeldItem = _hands != null ? _hands.OwnerSelected : BlockIds.Air;
                 OwnerRawInput = frame;
                 frame.Buttons &= ~(PlayerButtons.Inventory | PlayerButtons.ClassMenu | PlayerButtons.Map);
-                if (WindowOpen)
+                if (WindowOpen || IsKnockedOut)
                 {
-                    // The hero stands still while a window has the controls (Roadmap 4.5); the camera still turns.
+                    // The hero stands still while a window has the controls (Roadmap 4.5), or while knocked out (5.2);
+                    // the camera still turns.
                     frame.Move = float2.zero;
                     _inputSource.CancelSprint();
                     _swallowed = frame.Buttons & ~PlayerButtons.Sprint;
@@ -366,11 +387,12 @@ namespace Voxelforge.Gameplay
 
             _previousPosition = _body.FeetPosition(motor);
             _previousYaw = _yaw;
+            PlayerInputFrame frame = ServerInput;
             var input = new MotorInput
             {
-                Move = MoveDirection.ToWorld(_latestInput.Move, _latestInput.ViewYaw),
-                Jump = _latestInput.IsPressed(PlayerButtons.Jump),
-                SpeedScale = SprintScale(_latestInput, sprintMultiplier),
+                Move = MoveDirection.ToWorld(frame.Move, frame.ViewYaw),
+                Jump = frame.IsPressed(PlayerButtons.Jump),
+                SpeedScale = SprintScale(frame, sprintMultiplier),
             };
             VoxelBodyMotor.Step(ref _body, input, motor, _worldManager.World, Time.fixedDeltaTime);
 
@@ -427,6 +449,24 @@ namespace Voxelforge.Gameplay
             if (TryGetComponent(out NetworkTransform networkTransform))
                 networkTransform.Teleport(feet, Quaternion.Euler(0f, yaw, 0f), transform.localScale);
         }
+
+        /// <summary>Host only: knocks the hero back (Roadmap 5.2): a boar's charge or a rhino's toss (<see cref="VoxelBodyMotor.Shove"/>).</summary>
+        internal void ServerShove(float3 impulse)
+        {
+            if (IsServer && _placed)
+                VoxelBodyMotor.Shove(ref _body, impulse);
+        }
+
+        /// <summary>Host only: the middle of the column new heroes land on, for a knocked-out hero with no Home Totem (Roadmap 5.2).</summary>
+        internal float3 WorldSpawnViewer => new float3(_worldSpawnColumn.x + 0.5f, 0f, _worldSpawnColumn.y + 0.5f);
+
+        /// <summary>
+        /// Host only: the ground of the world's spawn column, once its terrain is loaded (Roadmap 5.2). False while it's
+        /// still streaming in.
+        /// </summary>
+        internal bool TryFindWorldSpawn(out float3 feet) =>
+            SpawnPointFinder.TryFindSurface(_worldManager.World, _worldSpawnColumn.x, _worldSpawnColumn.y, _spawnTopY,
+                spawnClearance, out feet);
 
         bool IsGenerated(float3 position) =>
             _worldManager.World.TryGetChunk(VoxelMath.WorldToChunk(VoxelMath.WorldPositionToBlock(position)), out _);

@@ -32,6 +32,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Materials/VoxelBlocks.mat: for block pictures in the inventory window.")]
         [SerializeField] Material blockMaterial;
 
+        [Tooltip("Where creatures stand now, so their health bars follow them (Roadmap 5.2).")]
+        [SerializeField] CombatTargets targets;
+
         [SerializeField] bool visible = true;
 
         [Tooltip("Above the world, under the IMGUI windows (which always draw last).")]
@@ -100,7 +103,7 @@ namespace Voxelforge.Gameplay
             Action<AbilityCue, AbilityDefinition> listener = (cue, _) =>
             {
                 if (cue.Kind == AbilityCueKind.TargetHit)
-                    _targets.Record(cue.Position, cue.TargetHealth, cue.TargetMaxHealth, cue.Toppled, Time.time);
+                    _targets.Record(cue.Target, cue.Position, cue.TargetHealth, cue.TargetMaxHealth, cue.Toppled, Time.time);
             };
             _heroes[cues] = listener;
             cues.Received += listener;
@@ -134,6 +137,7 @@ namespace Voxelforge.Gameplay
             float now = Time.time;
             SplitMode mode = cameras.Layout.Mode;
             _targets.Expire(now);
+            _targets.Follow(targets);
             _markers.Clear();
             _party?.CollectMarkers(_markers);
             MapTileCache mapTiles = world != null ? world.MapTiles : null;

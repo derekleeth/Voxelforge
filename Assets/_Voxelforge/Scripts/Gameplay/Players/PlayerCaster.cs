@@ -178,7 +178,8 @@ namespace Voxelforge.Gameplay
 
             _caster.Regen = _baseRegen * (1f + (now < _regenBonusUntil ? _regenBonus : 0f));
             AbilityDefinition wasCasting = _caster.Casting;
-            bool moving = wasCasting != null && Moved(input);
+            // Being knocked out (Roadmap 5.2) interrupts a cast like moving does.
+            bool moving = wasCasting != null && (Moved(input) || _player.IsKnockedOut);
             if (_caster.Tick(now, Time.fixedDeltaTime, moving, _finished, out CastCheck result) && result != CastCheck.Ok)
             {
                 _cues.ServerSend(AbilityCue.Cast(AbilityCueKind.CastStopped, wasCasting.Id, transform.position, result));
@@ -248,8 +249,8 @@ namespace Voxelforge.Gameplay
                     _staff.ServerLaunch(ability, _player.Aim.Eyes(transform.position), _player.Aim.Direction(input));
                     break;
                 case AbilityDelivery.GroundSlam:
-                    if (TryAimAtBlock(ability, input, out VoxelHit hit))
-                        _staff.ServerStrikeAt(ability, hit);
+                    if (TryAimAtBlock(ability, input, out VoxelHit hit, out CombatTarget struck))
+                        _staff.ServerStrikeAt(ability, hit, struck);
                     break;
                 case AbilityDelivery.Shield:
                     if (_support != null)
@@ -291,13 +292,18 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>Host: the block (or target's body, Roadmap 4.6) the hero aims at within <paramref name="ability"/>'s range.</summary>
-        bool TryAimAtBlock(AbilityDefinition ability, PlayerInputFrame input, out VoxelHit hit)
+        bool TryAimAtBlock(AbilityDefinition ability, PlayerInputFrame input, out VoxelHit hit) =>
+            TryAimAtBlock(ability, input, out hit, out _);
+
+        /// <summary>The same, with the target whose body it is, if it's a target (Roadmap 5.2).</summary>
+        bool TryAimAtBlock(AbilityDefinition ability, PlayerInputFrame input, out VoxelHit hit, out CombatTarget struck)
         {
             hit = default;
+            struck = default;
             VoxelWorldManager world = _player.WorldManager;
             CombatTargets targets = _player.Registry != null ? _player.Registry.Targets : null;
             return world != null && world.World != null && ManaBoltFlight.TryHit(world.World, targets,
-                _player.Aim.Eyes(transform.position), _player.Aim.Direction(input), ability.Range, out hit);
+                _player.Aim.Eyes(transform.position), _player.Aim.Direction(input), ability.Range, out hit, out struck);
         }
 
         /// <summary>Every PC: keeps the cast bar and cooldowns in step with what the host said.</summary>

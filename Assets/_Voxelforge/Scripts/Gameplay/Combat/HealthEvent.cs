@@ -19,6 +19,13 @@ namespace Voxelforge.Gameplay
         /// <see cref="HealthEvent.Amount"/> seconds. Looks only: the hit comes later as <see cref="Damaged"/>.
         /// </summary>
         Incoming,
+        /// <summary>
+        /// Their health ran out (Roadmap 5.2): they're knocked out and wake at home in <see cref="HealthEvent.Amount"/>
+        /// seconds, or a little later if home's terrain is still loading.
+        /// </summary>
+        KnockedOut,
+        /// <summary>They woke at home with <see cref="HealthEvent.Amount"/> health (Roadmap 5.2).</summary>
+        Woke,
     }
 
     /// <summary>

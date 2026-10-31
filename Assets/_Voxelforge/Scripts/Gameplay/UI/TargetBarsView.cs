@@ -6,7 +6,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Health bars over the targets near one player (Roadmap 4.6), in their own view: a small inked bar floating over each
-    /// Training Dummy being fought, projected through <b>that player's</b> camera like their combat text (CLAUDE.md
+    /// Training Dummy or creature (5.2) being fought, projected through <b>that player's</b> camera like their combat text (CLAUDE.md
     /// Law #5). It reads a shared <see cref="TargetHealthBook"/>; the bars are pooled, so nothing is made while playing.
     /// </summary>
     sealed class TargetBarsView
@@ -16,8 +16,6 @@ namespace Voxelforge.Gameplay
         const float Height = 16f;
         // Bars further than this from the player's hero aren't shown, in metres.
         const float MaxDistance = 40f;
-        // How far over the target's middle the bar floats, in metres (a dummy's body is CombatTarget.BodyHeight tall).
-        const float OverMiddle = CombatTarget.BodyHeight * 0.5f + 0.35f;
         const float ShakeSeconds = 0.25f;
         const float FadeSeconds = 1.5f;
 
@@ -71,7 +69,7 @@ namespace Voxelforge.Gameplay
                 {
                     if (used >= Capacity)
                         break;
-                    float3 top = entry.Middle + new float3(0f, OverMiddle, 0f);
+                    float3 top = entry.Top;
                     float distance = math.distance(top, hero);
                     if (distance > MaxDistance || !PlayerScreenArea.TryProject(view, top, out Vector2 gui))
                         continue;

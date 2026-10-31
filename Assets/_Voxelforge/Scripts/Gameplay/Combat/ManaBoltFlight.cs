@@ -27,9 +27,11 @@ namespace Voxelforge.Gameplay
         public ushort Id;
         /// <summary>The ability that launched it (<see cref="AbilityIds"/>).</summary>
         public ushort AbilityId;
-        /// <summary>True if it hit a block (<see cref="Hit"/>); false if it flew its whole range and fizzled.</summary>
+        /// <summary>True if it hit a block or a target (<see cref="Hit"/>); false if it flew its whole range and fizzled.</summary>
         public bool HitBlock;
         public VoxelHit Hit;
+        /// <summary>The target whose body it hit (Roadmap 4.6, 5.2), or none if it hit a block.</summary>
+        public CombatTarget Target;
         /// <summary>Where it ended: the hit point, or where it fizzled.</summary>
         public float3 Point;
         /// <summary>The face it hit, or minus its direction if it fizzled.</summary>
@@ -86,10 +88,13 @@ namespace Voxelforge.Gameplay
             {
                 ManaBolt bolt = _bolts[i];
                 float move = math.min(bolt.Speed * dt, bolt.Remaining);
-                if (TryHit(world, targets, bolt.Position, bolt.Direction, move, out VoxelHit hit))
+                if (TryHit(world, targets, bolt.Position, bolt.Direction, move, out VoxelHit hit, out CombatTarget struck))
                 {
                     ended.Add(new ManaBoltEnd
-                        { Id = bolt.Id, AbilityId = bolt.AbilityId, HitBlock = true, Hit = hit, Point = hit.Point, Normal = (float3)hit.Normal, Damage = bolt.Damage });
+                    {
+                        Id = bolt.Id, AbilityId = bolt.AbilityId, HitBlock = true, Hit = hit, Target = struck, Point = hit.Point,
+                        Normal = (float3)hit.Normal, Damage = bolt.Damage,
+                    });
                     _bolts.RemoveAt(i);
                     continue;
                 }
@@ -106,21 +111,27 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        /// <summary>The nearer of the first block and the first target body along a ray.</summary>
+        /// <summary>
+        /// The nearer of the first block and the first target body along a ray. A target's body sets
+        /// <paramref name="struck"/>; a block leaves it empty.
+        /// </summary>
         internal static bool TryHit(VoxelWorld world, CombatTargets targets, float3 origin, float3 direction, float distance,
-            out VoxelHit hit)
+            out VoxelHit hit, out CombatTarget struck)
         {
             hit = default;
+            struck = default;
             bool block = false;
             if (world != null && VoxelQueries.Raycast(world, origin, direction, distance, out VoxelHit blockHit))
             {
                 block = true;
                 hit = blockHit;
             }
-            if (targets != null && targets.Raycast(origin, direction, block ? hit.Distance : distance, out VoxelHit body) &&
+            if (targets != null && targets.Raycast(origin, direction, block ? hit.Distance : distance, out VoxelHit body,
+                    out CombatTarget bodyTarget) &&
                 (!block || body.Distance <= hit.Distance))
             {
                 hit = body;
+                struck = bodyTarget;
                 return true;
             }
             return block;

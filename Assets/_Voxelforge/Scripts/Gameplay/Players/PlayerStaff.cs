@@ -51,15 +51,18 @@ namespace Voxelforge.Gameplay
                 _cues.ServerSend(AbilityCue.Launch(bolt));
         }
 
-        /// <summary>Host only: <paramref name="ability"/> goes off on the block at <paramref name="hit"/> (a ground slam).</summary>
-        public void ServerStrikeAt(AbilityDefinition ability, in VoxelHit hit)
+        /// <summary>
+        /// Host only: <paramref name="ability"/> goes off on the block at <paramref name="hit"/> (a ground slam), or on the
+        /// target it <paramref name="struck"/> there.
+        /// </summary>
+        public void ServerStrikeAt(AbilityDefinition ability, in VoxelHit hit, in CombatTarget struck = default)
         {
             VoxelWorldManager world = _player.WorldManager;
             if (!IsServer || !IsSpawned || ability == null || world == null || world.World == null)
                 return;
             ushort blockId = world.World.GetVoxel(hit.Block).BlockId;
-            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage);
-            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken));
+            VoxelBatchResult result = Apply(world, ability, hit.Point, hit.Block, ability.BlockDamage, struck);
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, hit.Point, (float3)hit.Normal, blockId, result.Broken, struck.IsValid));
         }
 
         /// <summary>
@@ -83,7 +86,7 @@ namespace Voxelforge.Gameplay
                 return;
             // Measured from the hero's middle, so dummies a step up or down are still in reach.
             float3 middle = feet + new float3(0f, 0.9f, 0f);
-            HurtTargets(ability, middle, new int3(int.MinValue), area: true);
+            HurtTargets(ability, middle, default, area: true);
             if (ability.Duration <= 0f)
                 return;
             _found.Clear();
@@ -91,7 +94,7 @@ namespace Voxelforge.Gameplay
             foreach (CombatTarget target in _found)
             {
                 if (targets.ServerStun(target, ability.Duration, _player.PlayerId))
-                    _cues.ServerSend(AbilityCue.StunTarget(ability.Id, target.Position));
+                    _cues.ServerSend(AbilityCue.StunTarget(ability.Id, target));
             }
         }
 
@@ -116,17 +119,17 @@ namespace Voxelforge.Gameplay
                 AbilityBook book = _caster != null ? _caster.Book : null;
                 AbilityDefinition ability = null;
                 book?.TryGet(end.AbilityId, out ability);
-                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage).Broken;
+                broken = Apply(world, ability, end.Point, end.Hit.Block, end.Damage, end.Target).Broken;
             }
             _cues.ServerSend(AbilityCue.End(end, blockId, broken));
         }
 
-        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage)
+        VoxelBatchResult Apply(VoxelWorldManager world, AbilityDefinition ability, float3 point, int3 block, float damage,
+            in CombatTarget struck)
         {
             bool area = ability != null && ability.AoeRadius > 0f;
-            CombatTargets targets = Targets;
-            bool onTarget = targets != null && targets.IsTarget(block);
-            float dealt = HurtTargets(ability, point, block, area);
+            bool onTarget = struck.IsValid;
+            float dealt = HurtTargets(ability, point, struck, area);
 
             // A spell that hits a target spends itself on it: no crater, and the Training Dummy isn't broken
             // (Roadmap 4.6 play-test: blasts dug a pit round the dummy). Craters only happen on the ground.
@@ -148,21 +151,23 @@ namespace Voxelforge.Gameplay
         /// edge like the blocks.
         /// Every target hurt gets its own <see cref="AbilityCueKind.TargetHit"/> cue. Returns the total damage dealt.
         /// </summary>
-        float HurtTargets(AbilityDefinition ability, float3 point, int3 block, bool area)
+        float HurtTargets(AbilityDefinition ability, float3 point, in CombatTarget struck, bool area)
         {
             CombatTargets targets = Targets;
             if (targets == null || ability == null || ability.CreatureDamage <= 0f)
                 return 0f;
             if (!area)
-                return targets.IsTarget(block) ? Hurt(targets, ability, new CombatTarget(block), ability.CreatureDamage) : 0f;
+                return struck.IsValid ? Hurt(targets, ability, struck, ability.CreatureDamage) : 0f;
 
             float dealt = 0f;
             _found.Clear();
             targets.FindAll(point, ability.AoeRadius, _found);
+            TargetKey struckKey = struck.Key;
             foreach (CombatTarget target in _found)
             {
                 // The target the spell struck takes it all; others in the blast less, the further they are.
-                float t = target.Block.Equals(block) ? 0f : math.saturate(math.distance(target.Position, point) / ability.AoeRadius);
+                float t = struckKey.IsValid && target.Key == struckKey ? 0f
+                    : math.saturate(math.distance(target.Position, point) / ability.AoeRadius);
                 dealt += Hurt(targets, ability, target, ability.CreatureDamage * math.lerp(1f, ability.CraterFalloff, t));
             }
             return dealt;
@@ -172,7 +177,7 @@ namespace Voxelforge.Gameplay
         {
             TargetDamage result = targets.ServerDamage(target, amount, _player.PlayerId);
             if (result.Dealt > 0f)
-                _cues.ServerSend(AbilityCue.HitTarget(ability.Id, target.Position, result));
+                _cues.ServerSend(AbilityCue.HitTarget(ability.Id, target, result));
             return result.Dealt;
         }
     }

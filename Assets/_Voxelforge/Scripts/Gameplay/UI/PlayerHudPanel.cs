@@ -34,6 +34,8 @@ namespace Voxelforge.Gameplay
         readonly MinimapView _minimap;
         readonly RectTransform _worldMapArea;
         readonly WorldMapView _worldMapView;
+        readonly RectTransform _knockoutArea;
+        readonly KnockoutView _knockoutView;
         readonly CombatTextFeed _feed = new CombatTextFeed(TextCapacity);
 
         PlayerController _player;
@@ -47,6 +49,7 @@ namespace Voxelforge.Gameplay
         PlayerRaceMenu _raceMenu;
         PlayerExplorer _explorer;
         PlayerWorldMap _worldMap;
+        PlayerKnockout _knockout;
         string _scheme;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
@@ -70,6 +73,10 @@ namespace Voxelforge.Gameplay
             // The minimap (Roadmap 4.8), on its own canvas: it moves every frame, and nothing else should rebuild for it.
             _mapArea = NestedCanvas($"Player {slot + 1} Map", canvas);
             _minimap = new MinimapView(_mapArea, skin);
+
+            // Knocked out (Roadmap 5.2): dims the player's own view, over their bar and map but under the windows.
+            _knockoutArea = NestedCanvas($"Player {slot + 1} Knocked Out", canvas);
+            _knockoutView = new KnockoutView(_knockoutArea, skin);
 
             // The inventory window (Roadmap 4.5) on top, on its own canvas so its slots don't rebuild the bar.
             _inventoryArea = NestedCanvas($"Player {slot + 1} Inventory", canvas);
@@ -141,6 +148,7 @@ namespace Voxelforge.Gameplay
                 _raceMenu.Scheme = controlScheme;
             _explorer = player != null ? player.GetComponent<PlayerExplorer>() : null;
             _worldMap = player != null ? player.GetComponent<PlayerWorldMap>() : null;
+            _knockout = player != null ? player.GetComponent<PlayerKnockout>() : null;
             if (_worldMap != null)
                 _worldMap.Scheme = controlScheme;
             if (_cues != null)
@@ -154,6 +162,7 @@ namespace Voxelforge.Gameplay
             HudWidgets.SetActive(_barArea, visible);
             HudWidgets.SetActive(_textArea, visible);
             HudWidgets.SetActive(_mapArea, visible);
+            HudWidgets.SetActive(_knockoutArea, visible);
             if (!visible)
             {
                 HudWidgets.SetActive(_inventoryArea, false);
@@ -197,6 +206,8 @@ namespace Voxelforge.Gameplay
                 _targetBars.Tick(targets, view, textArea, scale, _player.transform.position, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
+            Fit(_knockoutArea, ownArea, scale);
+            _knockoutView.Tick(_player, _knockout, now);
 
             TickWorldMap(ownArea, scale, shrink, mapTiles, markers);
             TickClassWindow(ownArea, scale, shrink, now);
@@ -318,6 +329,8 @@ namespace Voxelforge.Gameplay
                 Object.Destroy(_worldMapArea.gameObject);
             if (_mapArea != null)
                 Object.Destroy(_mapArea.gameObject);
+            if (_knockoutArea != null)
+                Object.Destroy(_knockoutArea.gameObject);
         }
     }
 }

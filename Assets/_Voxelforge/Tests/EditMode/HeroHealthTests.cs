@@ -84,5 +84,48 @@ namespace Voxelforge.Tests
             Assert.AreEqual(150f, health.Max, 1e-4f);
             Assert.AreEqual(75f, health.Current, 1e-4f, "Half health stays half health.");
         }
+
+        [Test]
+        public void KnockOut_AtZero_ThenNothingHurtsOrHealsUntilTheyWake()
+        {
+            // Roadmap 5.2: a creature's hit has no floor.
+            var health = new HeroHealth(100f);
+            health.SetShield(20f, 99f);
+            DamageResult hit = health.Damage(150f, 10f);
+            Assert.IsTrue(hit.KnockedOut);
+            Assert.AreEqual(20f, hit.Absorbed, 1e-4f);
+            Assert.AreEqual(100f, hit.Taken, 1e-4f);
+            Assert.IsTrue(health.IsKnockedOut);
+            Assert.AreEqual(0f, health.Current);
+            Assert.AreEqual(0f, health.Shield);
+
+            Assert.AreEqual(0f, health.Damage(10f, 11f).Taken, "No kicking them while they're down.");
+            Assert.AreEqual(0f, health.Heal(50f), "No healing either: they wake at home.");
+            health.Tick(30f, 10f);
+            Assert.AreEqual(0f, health.Current, "And no regeneration.");
+
+            Assert.IsFalse(health.ReadyToWake(10f + HeroHealth.KnockOutSeconds - 0.01f));
+            Assert.IsTrue(health.ReadyToWake(10f + HeroHealth.KnockOutSeconds));
+            health.Wake();
+            Assert.IsFalse(health.IsKnockedOut);
+            Assert.AreEqual(100f * HeroHealth.WakeShare, health.Current, 1e-4f);
+            Assert.IsFalse(health.ReadyToWake(99f));
+        }
+
+        [Test]
+        public void KnockOut_NeverHappensWithAFloor_OrWhenTheShieldTakesItAll()
+        {
+            var health = new HeroHealth(100f);
+            Assert.IsFalse(health.Damage(500f, 1f, floor: 10f).KnockedOut, "Sparring can't knock anyone out.");
+            Assert.IsFalse(health.IsKnockedOut);
+
+            var shielded = new HeroHealth(100f);
+            shielded.SetShield(50f, 99f);
+            Assert.IsFalse(shielded.Damage(40f, 1f).KnockedOut);
+            Assert.AreEqual(100f, shielded.Current);
+
+            health.Wake();
+            Assert.AreEqual(10f, health.Current, 1e-4f, "Waking someone who isn't knocked out does nothing.");
+        }
     }
 }
