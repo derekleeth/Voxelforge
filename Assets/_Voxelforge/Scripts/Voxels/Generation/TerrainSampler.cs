@@ -236,7 +236,8 @@ namespace Voxelforge.Voxels
             return TreePlacement.TrunkHeight(_treeHash, x, z, _params.TreeMinHeight, _params.TreeMaxHeight);
         }
 
-        ushort SurfaceBlock(in TerrainColumn column)
+        /// <summary>The block on top of <paramref name="column"/>: snow, a mesa cliff's band, or its biome's surface. The map paints it (4.8).</summary>
+        public ushort SurfaceBlock(in TerrainColumn column)
         {
             if (column.Height >= _params.SnowLine)
                 return _params.SnowBlock;

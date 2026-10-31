@@ -72,6 +72,7 @@ namespace Voxelforge.Voxels
         VoxelDeltaLog _savedDeltas;
         bool _hasSavedWorld;
         float _meshingStartTime = -1f;
+        MapTileCache _mapTiles;
 
         /// <summary>The block data. Only this assembly can edit it.</summary>
         public VoxelWorld World => _world;
@@ -96,6 +97,14 @@ namespace Voxelforge.Voxels
         }
 
         public ChunkMeshScheduler Scheduler => _scheduler;
+
+        /// <summary>
+        /// The parchment map of this world (Roadmap 4.8), painted from the seed on worker threads and shared by every local
+        /// player's map. Made the first time it's asked for; null before the world starts.
+        /// </summary>
+        public MapTileCache MapTiles => _mapTiles ??= _generator != null && _world != null
+            ? new MapTileCache(Seed, _generator.Terrain, _generator.Biomes, _world.Blocks)
+            : null;
 
         /// <summary>Every block players have changed. Saves (3.4) and joining players (6.2) need it.</summary>
         public VoxelDeltaLog DeltaLog => _editor?.DeltaLog;
@@ -227,6 +236,7 @@ namespace Voxelforge.Voxels
                 _meshingStartTime = Time.realtimeSinceStartup;
 
             _scheduler.Update();
+            _mapTiles?.Update();
             _editor.Damage.HealIdle(Time.time, damageHealSeconds);
             _crackRenderer?.Draw(_editor.Damage, _world);
             if (_decorationRenderer != null)
@@ -250,6 +260,7 @@ namespace Voxelforge.Voxels
         {
             // Jobs read world memory, so stop them before freeing it.
             _scheduler?.Dispose();
+            _mapTiles?.Dispose(); // Borrows the generator's biomes and the world's blocks.
             _crackRenderer?.Dispose();
             _decorationRenderer?.Dispose();
             _decorations?.Dispose(); // Borrows the generator's biome list, so it goes first.
