@@ -103,7 +103,7 @@ namespace Voxelforge.Voxels
         /// player's map. Made the first time it's asked for; null before the world starts.
         /// </summary>
         public MapTileCache MapTiles => _mapTiles ??= _generator != null && _world != null
-            ? new MapTileCache(Seed, _generator.Terrain, _generator.Biomes, _world.Blocks)
+            ? new MapTileCache(Seed, _generator.Terrain, _generator.Biomes, _world.Blocks, capacity: 288, maxJobsInFlight: 6)
             : null;
 
         /// <summary>Every block players have changed. Saves (3.4) and joining players (6.2) need it.</summary>

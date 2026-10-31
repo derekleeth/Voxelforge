@@ -18,7 +18,8 @@ namespace Voxelforge.Gameplay
 
     /// <summary>
     /// Home Totems and hearthing home (Roadmap 3.8). Placing a Home Totem makes it this player's home (one each: a new one
-    /// breaks the old one, which drops). The Home button opens a prompt in this player's own view (Law #5); Place confirms
+    /// breaks the old one, which drops). The Home button (keyboards; gamepads hearth from the World Map, 4.8) opens a prompt
+    /// in this player's own view (Law #5); Place confirms
     /// and sends <see cref="RequestHearthRpc"/>. <b>The host</b> checks the totem still stands, runs a short cast that
     /// moving cancels, streams the terrain around the totem in, and moves the hero beside it (Laws #2 and #3).
     /// <para>Every PC hears the cast start and end, to draw it (<see cref="HearthView"/>).</para>
@@ -145,7 +146,7 @@ namespace Voxelforge.Gameplay
                 world.RequestModifyVoxel(_homeBlock, BlockIds.Air, _player.PlayerId);
             SetHomeBlock(cell);
             _hasHome.Value = true;
-            MessageRpc("Home Totem placed! Press Home to come back here.");
+            MessageRpc("Home Totem placed! Press Home, or Place in the World Map, to come back here.");
         }
 
         /// <summary>The chunk loader streams the home's terrain in while this player hearths there.</summary>
@@ -198,6 +199,23 @@ namespace Voxelforge.Gameplay
                     Say(Explain(HearthRefusal.NoHome));
                 }
             }
+        }
+
+        /// <summary>
+        /// Owner only: asks the host to hearth home now, without the prompt, e.g. from the World Map (Roadmap 4.8). The host
+        /// still checks everything and runs the cast (Law #2).
+        /// </summary>
+        public void OwnerRequestHearth()
+        {
+            if (!IsSpawned || !IsOwner || _castingLocal || !_player.HasLanded)
+                return;
+            if (!_hasHome.Value)
+            {
+                Say(Explain(HearthRefusal.NoHome));
+                return;
+            }
+            _promptOpen = false;
+            RequestHearthRpc();
         }
 
         void FixedUpdate()

@@ -55,6 +55,7 @@ namespace Voxelforge.Gameplay
         PlayerInventory _inventory;
         PlayerClassMenu _classMenu;
         PlayerRaceMenu _raceMenu;
+        PlayerWorldMap _worldMap;
         uint _nextSequence;
         // Buttons still held from inside the inventory window, ignored until let go so closing it doesn't also jump.
         PlayerButtons _swallowed;
@@ -124,10 +125,10 @@ namespace Voxelforge.Gameplay
 
         /// <summary>
         /// Owner only: one of this player's windows is open and has their controls: the inventory (Roadmap 4.5) or the
-        /// class window (4.6). The hero stands still, and the mouse player gets a free cursor.
+        /// class window (4.6) or the World Map (4.8). The hero stands still, and the mouse player gets a free cursor.
         /// </summary>
         public bool WindowOpen => (_inventory != null && _inventory.IsOpen) || (_classMenu != null && _classMenu.IsOpen) ||
-                                  ChoosingRace;
+                                  (_worldMap != null && _worldMap.IsOpen) || ChoosingRace;
 
         /// <summary>Owner only: the race window (Roadmap 4.7) is up, and every other window stays shut until they choose.</summary>
         public bool ChoosingRace => _raceMenu != null && _raceMenu.IsOpen;
@@ -231,6 +232,7 @@ namespace Voxelforge.Gameplay
             _inventory = GetComponent<PlayerInventory>();
             _classMenu = GetComponent<PlayerClassMenu>();
             _raceMenu = GetComponent<PlayerRaceMenu>();
+            _worldMap = GetComponent<PlayerWorldMap>();
         }
 
         public override void OnNetworkSpawn()
@@ -327,7 +329,7 @@ namespace Voxelforge.Gameplay
                 frame.Sequence = _nextSequence++;
                 frame.HeldItem = _hands != null ? _hands.OwnerSelected : BlockIds.Air;
                 OwnerRawInput = frame;
-                frame.Buttons &= ~(PlayerButtons.Inventory | PlayerButtons.ClassMenu);
+                frame.Buttons &= ~(PlayerButtons.Inventory | PlayerButtons.ClassMenu | PlayerButtons.Map);
                 if (WindowOpen)
                 {
                     // The hero stands still while a window has the controls (Roadmap 4.5); the camera still turns.

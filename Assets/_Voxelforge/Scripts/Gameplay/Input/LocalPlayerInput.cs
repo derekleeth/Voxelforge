@@ -36,6 +36,7 @@ namespace Voxelforge.Gameplay
         readonly InputAction _inventory;
         readonly InputAction _classMenu;
         readonly InputAction _sprint;
+        readonly InputAction _map;
         PadSlotChord _padChord;
         SprintLatch _sprintLatch;
         InputUser _user;
@@ -62,6 +63,7 @@ namespace Voxelforge.Gameplay
             _inventory = _actions.FindAction("Player/Inventory", throwIfNotFound: true);
             _classMenu = _actions.FindAction("Player/ClassMenu", throwIfNotFound: true);
             _sprint = _actions.FindAction("Player/Sprint", throwIfNotFound: true);
+            _map = _actions.FindAction("Player/Map", throwIfNotFound: true);
         }
 
         public byte LocalSlot { get; }
@@ -142,6 +144,8 @@ namespace Voxelforge.Gameplay
                 buttons |= PlayerButtons.Inventory;
             if (_classMenu.IsPressed())
                 buttons |= PlayerButtons.ClassMenu;
+            if (_map.IsPressed())
+                buttons |= PlayerButtons.Map;
             buttons |= ReadActionSlots();
 
             var move = (float2)_move.ReadValue<Vector2>();

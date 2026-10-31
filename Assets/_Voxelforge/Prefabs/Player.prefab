@@ -40,6 +40,7 @@ GameObject:
   - component: {fileID: 6284663128493950415}
   - component: {fileID: 4088277328797704884}
   - component: {fileID: 4935959392201245843}
+  - component: {fileID: 368659319514688893}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -598,6 +599,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerExplorer
   ShowTopMostFoldoutHeaderGroup: 1
   revealRadius: 3
+--- !u!114 &368659319514688893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aab12ad8fbcd14f4ba04f24dd6de6581, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerWorldMap
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

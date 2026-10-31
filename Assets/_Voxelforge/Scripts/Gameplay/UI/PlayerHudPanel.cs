@@ -9,7 +9,7 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Everything the 4.4 HUD draws for one local player: their action bar and mana, their cast bar, their floating
-    /// combat text, their inventory (4.5), class (4.6) and race (4.7) windows, and their minimap (4.8). <see cref="CombatHud"/> fits it to that player's own part of the screen every frame, so it never
+    /// combat text, their inventory (4.5), class (4.6) and race (4.7) windows, and their minimap and World Map (4.8). <see cref="CombatHud"/> fits it to that player's own part of the screen every frame, so it never
     /// lands on someone else's view (CLAUDE.md Law #5). Each part sits on its own nested canvas, so a cooldown ticking
     /// or a number floating up doesn't rebuild the frames around it.
     /// </summary>
@@ -32,6 +32,8 @@ namespace Voxelforge.Gameplay
         readonly TargetBarsView _targetBars;
         readonly RectTransform _mapArea;
         readonly MinimapView _minimap;
+        readonly RectTransform _worldMapArea;
+        readonly WorldMapView _worldMapView;
         readonly CombatTextFeed _feed = new CombatTextFeed(TextCapacity);
 
         PlayerController _player;
@@ -44,6 +46,8 @@ namespace Voxelforge.Gameplay
         PlayerClassMenu _classMenu;
         PlayerRaceMenu _raceMenu;
         PlayerExplorer _explorer;
+        PlayerWorldMap _worldMap;
+        string _scheme;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
             Func<ushort, Texture> itemIcon)
@@ -77,6 +81,11 @@ namespace Voxelforge.Gameplay
             _classView = new ClassPickerView(_classArea, skin);
             HudWidgets.SetActive(_classArea, false);
 
+            // The World Map (Roadmap 4.8), under the other windows: it never shares the screen with them.
+            _worldMapArea = NestedCanvas($"Player {slot + 1} World Map", canvas);
+            _worldMapView = new WorldMapView(_worldMapArea, skin);
+            HudWidgets.SetActive(_worldMapArea, false);
+
             // The race window (Roadmap 4.7), the same way.
             _raceArea = NestedCanvas($"Player {slot + 1} Race", canvas);
             _raceView = new RacePickerView(_raceArea, skin);
@@ -104,6 +113,9 @@ namespace Voxelforge.Gameplay
                 _classMenu.Scheme = controlScheme;
             if (_raceMenu != null)
                 _raceMenu.Scheme = controlScheme;
+            if (_worldMap != null)
+                _worldMap.Scheme = controlScheme;
+            _scheme = controlScheme;
             if (_player == player)
                 return;
             if (_cues != null)
@@ -128,6 +140,9 @@ namespace Voxelforge.Gameplay
             if (_raceMenu != null)
                 _raceMenu.Scheme = controlScheme;
             _explorer = player != null ? player.GetComponent<PlayerExplorer>() : null;
+            _worldMap = player != null ? player.GetComponent<PlayerWorldMap>() : null;
+            if (_worldMap != null)
+                _worldMap.Scheme = controlScheme;
             if (_cues != null)
                 _cues.Received += OnCue;
             if (_combatText != null)
@@ -144,6 +159,7 @@ namespace Voxelforge.Gameplay
                 HudWidgets.SetActive(_inventoryArea, false);
                 HudWidgets.SetActive(_classArea, false);
                 HudWidgets.SetActive(_raceArea, false);
+                HudWidgets.SetActive(_worldMapArea, false);
             }
         }
 
@@ -159,7 +175,9 @@ namespace Voxelforge.Gameplay
             Fit(_barArea, ownArea, scale);
             Fit(_textArea, textArea, scale);
             Fit(_mapArea, ownArea, scale);
-            if (_player != null)
+            bool worldMapOpen = _worldMap != null && _worldMap.IsOpen;
+            HudWidgets.SetActive(_mapArea, !worldMapOpen);
+            if (_player != null && !worldMapOpen)
             {
                 // A quarter of the screen gets a smaller map, so it doesn't crowd the view.
                 float fit = Mathf.Clamp(Mathf.Min(ownArea.width, ownArea.height) / scale / 900f, 0.6f, 1f);
@@ -180,6 +198,7 @@ namespace Voxelforge.Gameplay
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
 
+            TickWorldMap(ownArea, scale, shrink, mapTiles, markers);
             TickClassWindow(ownArea, scale, shrink, now);
             TickRaceWindow(ownArea, scale, shrink, now);
 
@@ -202,6 +221,19 @@ namespace Voxelforge.Gameplay
                     window.anchoredPosition = offset;
                 _inventoryView.Tick(_inventory, _player.TeamColor, now);
             }
+        }
+
+        /// <summary>The World Map (Roadmap 4.8): fills the player's view above their action bar.</summary>
+        void TickWorldMap(Rect ownArea, float scale, float shrink, MapTileCache mapTiles, List<MapMarker> markers)
+        {
+            bool open = _worldMap != null && _worldMap.IsOpen;
+            HudWidgets.SetActive(_worldMapArea, open);
+            if (!open)
+                return;
+            Fit(_worldMapArea, ownArea, scale);
+            float barRoom = (_actionBar.Height + 24f) * shrink;
+            _worldMapView.Tick(_worldMap, mapTiles, _explorer != null ? _explorer.Map : null, _player, markers,
+                new Vector2(ownArea.width / scale, ownArea.height / scale), barRoom, _scheme);
         }
 
         /// <summary>The class window (Roadmap 4.6): centred in the player's view above their action bar, shrunk to fit.</summary>
@@ -281,6 +313,9 @@ namespace Voxelforge.Gameplay
             if (_raceArea != null)
                 Object.Destroy(_raceArea.gameObject);
             _minimap.Dispose();
+            _worldMapView.Dispose();
+            if (_worldMapArea != null)
+                Object.Destroy(_worldMapArea.gameObject);
             if (_mapArea != null)
                 Object.Destroy(_mapArea.gameObject);
         }

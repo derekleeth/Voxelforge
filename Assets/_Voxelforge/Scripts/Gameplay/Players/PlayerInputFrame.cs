@@ -48,6 +48,11 @@ namespace Voxelforge.Gameplay
         /// so the host just reads it as "sprinting now".
         /// </summary>
         Sprint = 1 << 19,
+        /// <summary>
+        /// Open or close this player's World Map (Roadmap 4.8, <see cref="PlayerWorldMap"/>). Not sent to the host. Gamepads
+        /// use Select, which used to be Home: they hearth from inside the map instead.
+        /// </summary>
+        Map = 1 << 20,
     }
 
     public static class ActionSlotButtons
