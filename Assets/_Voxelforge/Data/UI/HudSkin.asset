@@ -62,6 +62,15 @@ MonoBehaviour:
   racePortraits:
   - {fileID: 21300000, guid: ad5296e82a88ec1418df118bef61a7f8, type: 3}
   - {fileID: 21300000, guid: caf908ddf22756b4da5cf4ead3471e4c, type: 3}
+  mapRim: {fileID: 21300000, guid: 3cc379a1195d7bd4683774a22b0b76b2, type: 3}
+  mapSheet: {fileID: 21300000, guid: 7a970c2c960c4c14e8d6e7b8c9732561, type: 3}
+  mapNeatline: {fileID: 21300000, guid: 5e20e8f64a320cf4e8d6bbbea1754ccb, type: 3}
+  mapCompass: {fileID: 21300000, guid: f87bcba15c20955439583ef37b2beda7, type: 3}
+  mapHero: {fileID: 21300000, guid: 3134f8475edc0d6408bdcdea62e5ae9b, type: 3}
+  mapEdgeArrow: {fileID: 21300000, guid: 34ac47235e642cb4ba3627eacd4ac91e, type: 3}
+  mapHome: {fileID: 21300000, guid: 86b8d77a1f1c56c46bab48bcd7c7c58d, type: 3}
+  mapInk: {r: 0.33, g: 0.22, b: 0.12, a: 1}
+  minimapSize: 230
   slotSize: 66
   slotGap: 6
   manaBarHeight: 22

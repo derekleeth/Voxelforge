@@ -11,7 +11,8 @@ namespace Voxelforge.Gameplay
     /// under the foot (<see cref="HeroFootIK.StepCount"/>), a jump whoosh, a landing thump that gets heavier with the
     /// fall, and its spells (4.2): a hum while casting, then the release, impact and fizzle sounds of the spell's
     /// <see cref="AbilityLook"/>, from the <see cref="AbilityCue"/>s the host sends (<see cref="PlayerAbilityCues"/>).
-    /// A sprinting hero (4.8) also has wind rushing past them, from how fast they're really moving.
+    /// A sprinting hero (4.8) also has wind rushing past them, from how fast they're really moving, and paper rustles
+    /// when a player opens or folds their World Map.
     /// Presentation only: it reads what each PC already knows and plays it through the <see cref="SoundRouter"/>.
     /// </summary>
     public sealed class PlayerFoley : MonoBehaviour
@@ -47,6 +48,8 @@ namespace Voxelforge.Gameplay
         [Tooltip("How quickly the wind fades in and out, per second.")]
         [SerializeField, Min(0.1f)] float windFade = 4f;
 
+        [SerializeField, Range(0f, 2f)] float mapVolume = 0.45f;
+
         sealed class Hero
         {
             public PlayerController Player;
@@ -68,6 +71,9 @@ namespace Voxelforge.Gameplay
             public bool JumpPlayed;
             public int WindLoop;
             public float Wind;
+            /// <summary>Only set for this PC's own players: nobody else's map is open here.</summary>
+            public PlayerWorldMap Map;
+            public bool MapOpen;
         }
 
         readonly List<Hero> _heroes = new List<Hero>();
@@ -95,6 +101,7 @@ namespace Voxelforge.Gameplay
                 Body = player.GetComponent<HeroBody>(),
                 Animator = player.GetComponentInChildren<HeroAnimator>(),
                 Cues = player.GetComponent<PlayerAbilityCues>(),
+                Map = player.GetComponent<PlayerWorldMap>(),
             };
             hero.StepCount = hero.Feet != null ? hero.Feet.StepCount : 0;
             if (hero.Cues != null)
@@ -200,6 +207,14 @@ namespace Voxelforge.Gameplay
             }
             hero.WasGrounded = grounded;
             UpdateWind(hero);
+
+            bool mapOpen = hero.Map != null && hero.Map.IsOpen;
+            if (mapOpen != hero.MapOpen)
+            {
+                hero.MapOpen = mapOpen;
+                Play(mapOpen ? sounds.MapOpen : sounds.MapClose, Chest(player), mapVolume,
+                    UnityEngine.Random.Range(0.95f, 1.05f), 10f);
+            }
         }
 
         /// <summary>Roadmap 4.8: wind fades in as a hero runs faster than walking, and away when they slow down.</summary>

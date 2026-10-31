@@ -20,6 +20,10 @@ namespace Voxelforge.Gameplay
         const float FrameInset = 12f;
         const float TitleHeight = 44f;
         const float HintHeight = 30f;
+        const float CompassSize = 116f;
+        const float CompassInset = 14f;
+        /// <summary>How far the neatline sits outside the land, so it frames the edge rather than covering it.</summary>
+        const float NeatlineOut = 4f;
 
         readonly RectTransform _root;
         readonly RectTransform _paper;
@@ -34,7 +38,10 @@ namespace Voxelforge.Gameplay
             _root = HudWidgets.Place(HudWidgets.Rect("World Map", parent), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(800f, 600f));
 
-            Image frame = HudWidgets.Image("Frame", _root, skin.panel, Color.white, Image.Type.Sliced);
+            // The painted sheet tiles its burnt edges rather than stretching them; the plain panel slices.
+            Image frame = skin.mapSheet != null
+                ? HudWidgets.Image("Frame", _root, skin.mapSheet, Color.white, Image.Type.Tiled)
+                : HudWidgets.Image("Frame", _root, skin.panel, Color.white, Image.Type.Sliced);
             HudWidgets.Stretch(frame.rectTransform);
 
             TextMeshProUGUI title = HudWidgets.Label("Title", _root, skin.titleFont, 34f, skin.ink, TextAlignmentOptions.Center);
@@ -50,11 +57,31 @@ namespace Voxelforge.Gameplay
             _paper.offsetMax = new Vector2(-FrameInset, -TitleHeight);
             paper.gameObject.AddComponent<RectMask2D>();
             _land = new MapLandView(_paper);
+
+            // A compass rose in the corner under the markers, with N over its north point.
+            var northAt = new Vector2(-10f, -6f);
+            if (skin.mapCompass != null)
+            {
+                Image compass = HudWidgets.Image("Compass", _paper, skin.mapCompass, new Color(1f, 1f, 1f, 0.85f));
+                HudWidgets.Place(compass.rectTransform, Vector2.one, Vector2.one, new Vector2(-CompassInset, -CompassInset - 26f),
+                    new Vector2(CompassSize, CompassSize));
+                northAt = new Vector2(-CompassInset - CompassSize * 0.5f + 20f, -2f);
+            }
             _markers = new MapMarkerLayer(_paper, skin) { HeroSize = 26f, SelfSize = 32f, HomeSize = 24f, EdgeSize = 26f };
 
             TextMeshProUGUI north = HudWidgets.SmallLabel("North", _paper, skin, 26f, skin.mapInk, TextAlignmentOptions.Center);
-            HudWidgets.Place(north.rectTransform, Vector2.one, Vector2.one, new Vector2(-10f, -6f), new Vector2(40f, 30f));
+            HudWidgets.Place(north.rectTransform, Vector2.one, Vector2.one, northAt, new Vector2(40f, 30f));
             north.text = "N";
+
+            if (skin.mapNeatline != null)
+            {
+                Image neatline = HudWidgets.Image("Neatline", _root, skin.mapNeatline, Color.white, Image.Type.Sliced);
+                RectTransform line = neatline.rectTransform;
+                line.anchorMin = Vector2.zero;
+                line.anchorMax = Vector2.one;
+                line.offsetMin = _paper.offsetMin - new Vector2(NeatlineOut, NeatlineOut);
+                line.offsetMax = _paper.offsetMax + new Vector2(NeatlineOut, NeatlineOut);
+            }
 
             _hints = HudWidgets.SmallLabel("Hints", _root, skin, 20f, skin.ink, TextAlignmentOptions.Center);
             HudWidgets.Place(_hints.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, FrameInset - 2f),

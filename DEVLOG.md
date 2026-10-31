@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-10-31 - Session 1 (part 33): Maps, Fog & Running Fast! 🗺️💨 Roadmap 4.8
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Sprint!** Heroes run at 8 m/s instead of 5. Details in DECISIONS.md **D-031**.
+  - Gamepad: click the left stick (L3) to switch sprint on or off.
+  - Keyboard: hold **Left Shift** (or **Numpad 0** on the right-hand keyboard).
+  - The host decides how fast you go, and sprint stops when you stop moving or open a window.
+  - The run animation speeds up, and you hear wind rushing past.
+- **A minimap for every player!** A round parchment map in the top-right of your own view, with a wooden rim and north always up. Your arrow turns as you do.
+- **Fog of war:** the map starts blank, and the land fills in as you explore. Your explored land is saved with your hero.
+- **The World Map:** press **M** (Numpad + on the right keyboard, **Select** on a gamepad) for a big burnt-edge sheet of parchment with a compass rose.
+  - Pan with move, zoom with the bag's next and previous buttons, and press Jump to come back to your hero.
+  - **Hearth home** from the map (LT on a gamepad, which is now the gamepad's way home).
+- **Find your partner:** every hero is a team-coloured arrow, every Home Totem is a little house, and anything off the edge gets an arrow pointing the way.
+- **The map is painted from the world seed** on worker threads. It shows biome colours, hillshade, contour lines and trees, and always matches the land the seed makes.
+- **New art and sounds:** the burnt sheet, the rim, the compass and the markers are painted in code. The wind loop and the paper rustle as you open and fold the map are synthesised.
+
+### Tests: 453 / 453 passing ✅
+- The sprint latch toggles and holds, and the host ignores sprint while you stand still.
+- Map tiles paint the same from the same seed and match the terrain sampler.
+- Fog cells work with negative coordinates and save and load. Version 5 saves load with nothing explored.
+- Map maths: projection, clamping to the rim, arrow angles, and the World Map's pan, zoom and recentre.
+
+### Things we learned
+- A sliced frame stretches its edges, so a ragged burnt edge turns into streaks. A *tiled* frame repeats them instead, as long as the pattern repeats exactly every tile.
+- The sprint wind sound was wired up in step A but never built, so sprinting was silent until step F. Always listen for a sound, don't just check it's plugged in!
+
+### Next up
+- [x] Play-test 4.8: sprint both ways, the minimap and World Map in split screen, partner and totem markers, hearthing from the map, fog after reload, the wind and the map rustle ✅
+- [ ] Roadmap **5.1 Dynamic Voxel NavMesh** (Phase 5: Monsters, Dungeons & Bosses)
+
+---
+
 ## 2026-10-31 - Session 1 (part 32): Choose Your People! The Thunderhoof Arrive 🐂🌾 Roadmap 4.7
 **Phase:** 4 - The Warcraft Injection
 

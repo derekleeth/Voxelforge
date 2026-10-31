@@ -38,11 +38,13 @@ namespace Voxelforge.Gameplay
             paper.gameObject.AddComponent<Mask>().showMaskGraphic = true;
             _land = new MapLandView(paper.rectTransform);
 
-            Image rim = HudWidgets.Image("Rim", _root, skin.MapRim, skin.mapInk);
+            Image rim = HudWidgets.Image("Rim", _root, skin.MapRim, skin.MapRimTint);
             HudWidgets.Stretch(rim.rectTransform);
 
             TextMeshProUGUI north = HudWidgets.SmallLabel("North", _root, skin, 22f, skin.mapInk, TextAlignmentOptions.Center);
-            HudWidgets.Place(north.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 2f),
+            // The painted rim has a little plate for the N, just inside its top edge.
+            float northY = skin.mapRim != null ? -_size * 0.5f * (1f - HudSkin.MapRimPlateRadius) : 2f;
+            HudWidgets.Place(north.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, northY),
                 new Vector2(30f, 26f));
             north.text = "N";
 

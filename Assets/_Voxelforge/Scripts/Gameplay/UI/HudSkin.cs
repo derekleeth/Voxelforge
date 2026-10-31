@@ -98,8 +98,14 @@ namespace Voxelforge.Gameplay
         public Sprite[] racePortraits;
 
         [Header("Map (Roadmap 4.8): empty slots use plain shapes drawn in code")]
-        [Tooltip("The minimap's round frame, drawn over its edge.")]
+        [Tooltip("The minimap's round frame, drawn over its edge. Painted in full colour; the plain shape is tinted ink.")]
         public Sprite mapRim;
+        [Tooltip("The World Map's sheet of parchment with burnt edges. Tiled, so its edges don't stretch.")]
+        public Sprite mapSheet;
+        [Tooltip("The inked double line around the World Map's land, 9-sliced with a clear middle.")]
+        public Sprite mapNeatline;
+        [Tooltip("The compass rose in the World Map's corner.")]
+        public Sprite mapCompass;
         [Tooltip("A hero on the map, pointing north. Tinted with their team colour.")]
         public Sprite mapHero;
         [Tooltip("A partner or totem off the edge of the map, pointing north. Tinted with their team colour.")]
@@ -155,6 +161,10 @@ namespace Voxelforge.Gameplay
         }
 
         public Sprite MapRim => mapRim != null ? mapRim : MapSprites.Ring;
+        public Color MapRimTint => mapRim != null ? Color.white : mapInk;
+
+        /// <summary>How far out the painted rim's N plate sits, as a fraction of the rim's radius.</summary>
+        public const float MapRimPlateRadius = 0.9f;
         public Sprite MapHero => mapHero != null ? mapHero : MapSprites.Hero;
         public Sprite MapEdgeArrow => mapEdgeArrow != null ? mapEdgeArrow : MapSprites.EdgeArrow;
         public Sprite MapHome => mapHome != null ? mapHome : MapSprites.Home;

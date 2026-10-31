@@ -13,7 +13,9 @@ namespace Voxelforge.Editor
     /// <see cref="HudSkin"/> that uses it. Re-running it repaints the same files in place.
     /// <list type="bullet">
     /// <item>Sprites in <c>Art/Textures/UI/</c>: a parchment panel and wooden, ink-outlined frames with brass rivets,
-    /// halftone-dot shading like an old comic print, a glow flash and a starburst for craters.</item>
+    /// halftone-dot shading like an old comic print, a glow flash and a starburst for craters. For the map (4.8): a
+    /// torn, charred sheet, a neatline, the minimap's wooden rim, a compass rose and the hero, edge-arrow and totem
+    /// markers.</item>
     /// <item>TextMeshPro font assets in <c>Art/Fonts/</c> with a thick ink outline and a hard drop shadow built in:
     /// Bangers (OFL) for numbers and pop-ups, MedievalSharp (OFL) for spell names.</item>
     /// </list>
@@ -59,6 +61,15 @@ namespace Voxelforge.Editor
             Sprite barBack = Save("HudBarBack", 64, 32, PaintBarBack);
             Sprite starburst = Save("HudStarburst", 256, 256, PaintStarburst);
             Sprite fallback = Save("HudFallbackIcon", 128, 128, PaintFallbackIcon);
+            // Roadmap 4.8: the map's frames, compass and markers.
+            Sprite mapSheet = Save("MapSheet", SheetSize, SheetSize, PaintMapSheet,
+                border: new Vector4(SheetBorder, SheetBorder, SheetBorder, SheetBorder));
+            Sprite mapNeatline = Save("MapNeatline", 64, 64, PaintMapNeatline, border: new Vector4(18, 18, 18, 18));
+            Sprite mapRim = Save("MapRim", 256, 256, PaintMapRim);
+            Sprite mapCompass = Save("MapCompass", 256, 256, PaintMapCompass);
+            Sprite mapHero = Save("MapHero", 128, 128, PaintMapHero);
+            Sprite mapEdgeArrow = Save("MapEdgeArrow", 128, 128, PaintMapEdgeArrow);
+            Sprite mapHome = Save("MapHome", 128, 128, PaintMapHome);
 
             TMP_FontAsset comic = MakeFont($"{FontDir}/Bangers/Bangers-Regular.ttf", $"{FontDir}/Bangers/Bangers SDF.asset",
                 outline: 0.28f, dilate: 0.2f, shadow: 1f);
@@ -85,6 +96,13 @@ namespace Voxelforge.Editor
             skin.barBack = barBack;
             skin.starburst = starburst;
             skin.fallbackIcon = fallback;
+            skin.mapSheet = mapSheet;
+            skin.mapNeatline = mapNeatline;
+            skin.mapRim = mapRim;
+            skin.mapCompass = mapCompass;
+            skin.mapHero = mapHero;
+            skin.mapEdgeArrow = mapEdgeArrow;
+            skin.mapHome = mapHome;
             skin.looks = AssetDatabase.LoadAssetAtPath<AbilityLookBook>(AbilityBuilder.LookBookPath);
             EditorUtility.SetDirty(skin);
             return skin;
@@ -229,7 +247,237 @@ namespace Voxelforge.Editor
             return c;
         }
 
+        // ---- Map (Roadmap 4.8) ----
+
+        const int SheetSize = 256;
+        const int SheetBorder = 64;
+        /// <summary>The sheet's middle tiles, so everything that varies along it repeats every this many pixels.</summary>
+        const int SheetPeriod = SheetSize - 2 * SheetBorder;
+
+        static readonly Color MapInk = new Color(0.2f, 0.12f, 0.06f);
+        static readonly Color Char = new Color(0.16f, 0.08f, 0.03f);
+        static readonly Color Scorch = new Color(0.5f, 0.28f, 0.1f);
+        static readonly Color NorthRed = new Color(0.62f, 0.12f, 0.08f);
+
+        /// <summary>
+        /// The World Map's sheet: parchment with a torn, charred edge. The image tiles its edges and middle, so the tear
+        /// and the stains repeat every <see cref="SheetPeriod"/> pixels and the tiles meet without a seam.
+        /// </summary>
+        static Color PaintMapSheet(int x, int y, int w, int h)
+        {
+            // How far in from the torn edge, the nearest of the four sides, each torn its own way.
+            float d = Mathf.Min(
+                Mathf.Min(y - Tear(x, 0.3f), h - 1 - y - Tear(x, 2.1f)),
+                Mathf.Min(x - Tear(y, 4.2f), w - 1 - x - Tear(y, 5.7f)));
+            if (d < -0.5f)
+                return Clear;
+            float wave = 2f * Mathf.PI / SheetPeriod;
+            float stain = 0.5f + 0.3f * Mathf.Sin(x * wave + 1.3f) * Mathf.Sin(y * wave * 2f + 0.4f)
+                               + 0.2f * Mathf.Sin(x * wave * 3f + 2.2f) * Mathf.Sin(y * wave + 0.9f);
+            Color paper = Color.Lerp(Parchment, Burnt, stain * 0.15f);
+            paper *= 0.95f + 0.05f * Hash(x * 7919 + y * 104729);
+            // Scorched brown fading in toward the middle, then black char at the very edge.
+            paper = Color.Lerp(paper, Scorch, Mathf.Pow(Mathf.Clamp01(1f - d / 13f), 1.6f));
+            paper = Color.Lerp(paper, Char, Mathf.Clamp01(1f - d / 3.5f));
+            paper.a = Mathf.Clamp01(d + 0.5f);
+            return paper;
+        }
+
+        /// <summary>How deep the tear bites at <paramref name="u"/> along one edge, in pixels. Repeats every <see cref="SheetPeriod"/>.</summary>
+        static float Tear(float u, float phase)
+        {
+            float wave = 2f * Mathf.PI / SheetPeriod;
+            float bite = 3.5f + 2.2f * Mathf.Sin(u * wave + phase) + 1.4f * Mathf.Sin(u * wave * 3f + phase * 2.3f)
+                         + 0.8f * Mathf.Sin(u * wave * 8f + phase * 4.1f) + 0.4f * Mathf.Sin(u * wave * 19f + phase * 7.7f);
+            return Mathf.Max(0.5f, bite);
+        }
+
+        /// <summary>A cartographer's border round the land: a heavy rule outside, a fine one inside, clear in the middle.</summary>
+        static Color PaintMapNeatline(int x, int y, int w, int h)
+        {
+            float d = RoundRect(x, y, w, h, 0.5f, 1f);
+            Color c = Over(Clear, InkLine(d, 2.6f));
+            c = Over(c, InkLine(d + 4f, 1.4f));
+            // A little inked diamond in each corner.
+            foreach (Vector2 corner in new[] { new Vector2(3, 3), new Vector2(w - 3, 3), new Vector2(3, h - 3), new Vector2(w - 3, h - 3) })
+            {
+                float diamond = Mathf.Abs(x + 0.5f - corner.x) + Mathf.Abs(y + 0.5f - corner.y) - 4.5f;
+                c = Over(c, new Color(MapInk.r, MapInk.g, MapInk.b, Mathf.Clamp01(0.5f - diamond)));
+            }
+            return Tinted(c, MapInk);
+        }
+
+        /// <summary>
+        /// The minimap's rim: a wooden ring between ink lines with a brass bead inside, brass studs east, south and west,
+        /// a parchment plate at the top for the N, and a scorched shadow falling onto the map.
+        /// </summary>
+        static Color PaintMapRim(int x, int y, int w, int h)
+        {
+            Vector2 p = Norm(x, y, w, h);
+            float r = p.magnitude;
+            float px = w * 0.5f; // Pixels per unit of r.
+            Color c = Clear;
+
+            // Scorched shadow just inside the ring.
+            if (r < 0.9f)
+            {
+                float shadow = Mathf.Clamp01((r - 0.76f) / 0.1f);
+                c = Over(c, new Color(Char.r, Char.g, Char.b, shadow * shadow * 0.55f));
+            }
+
+            if (r > 0.855f && r < 0.995f)
+            {
+                float angle = Mathf.Atan2(p.y, p.x);
+                float grain = 0.5f + 0.5f * Mathf.Sin(angle * 90f + Mathf.Sin(angle * 7f + r * 40f) * 2.5f);
+                Color wood = Color.Lerp(WoodDark, Wood, grain * 0.7f + 0.3f * Noise(x, y));
+                // Lit from the top left.
+                wood = Color.Lerp(wood, Brass, Mathf.Clamp01(Vector2.Dot(p / Mathf.Max(r, 0.001f), new Vector2(-0.7f, 0.7f))) * 0.18f);
+                c = Over(c, wood);
+            }
+            // The brass bead along the inside of the wood.
+            float bead = Mathf.Abs(r - 0.872f) * px;
+            if (bead < 3f)
+            {
+                Color brass = Brass * Mathf.Lerp(1f, 0.7f, bead / 3f);
+                brass.a = Mathf.Clamp01(3f - bead);
+                c = Over(c, brass);
+            }
+            c = Over(c, InkLine((r - 0.995f) * px, 3f));
+            c = Over(c, InkLine((0.855f - r) * px, 2.5f));
+
+            // Studs on the east, south and west.
+            foreach (Vector2 at in new[] { new Vector2(0.925f, 0f), new Vector2(0f, -0.925f), new Vector2(-0.925f, 0f) })
+            {
+                float s = Vector2.Distance(p, at) * px;
+                if (s < 7f)
+                    c = Over(Color.Lerp(Brass, new Color(0.6f, 0.4f, 0.12f), Mathf.Clamp01((s - 1.5f) / 5f)), InkLine(s - 7f, 2f));
+            }
+            // The plate for the N.
+            float plate = Vector2.Distance(p, new Vector2(0f, HudSkin.MapRimPlateRadius)) * px - 12f;
+            if (plate < 0.5f)
+            {
+                Color paper = Color.Lerp(Parchment, Burnt, Mathf.Clamp01(1f + plate / 8f) * 0.5f);
+                paper.a = Mathf.Clamp01(0.5f - plate);
+                c = Over(c, Over(paper, InkLine(plate, 2.5f)));
+            }
+            return c;
+        }
+
+        /// <summary>
+        /// An eight-point compass rose: long points north, east, south and west, short ones between, each split into a
+        /// lit and an inked half, with the north point's dark half in red, inside a ring with tick marks.
+        /// </summary>
+        static Color PaintMapCompass(int x, int y, int w, int h)
+        {
+            Vector2 p = Norm(x, y, w, h);
+            float px = w * 0.5f;
+            float r = p.magnitude;
+            Color c = Clear;
+
+            // A double ring, with a tick every sixteenth of a turn.
+            c = Over(c, InkLine((Mathf.Abs(r - 0.62f) - 0.012f) * px, 3f));
+            c = Over(c, InkLine((Mathf.Abs(r - 0.54f) - 0.006f) * px, 2f));
+            float turn = Mathf.Atan2(p.x, p.y) / (Mathf.PI * 2f) * 16f;
+            float tick = Mathf.Abs(turn - Mathf.Round(turn)) * r * Mathf.PI * 2f / 16f * px - 1.2f;
+            if (r > 0.54f && r < 0.62f)
+                c = Over(c, new Color(MapInk.r, MapInk.g, MapInk.b, Mathf.Clamp01(0.5f - tick)));
+
+            for (int i = 0; i < 8; i++)
+            {
+                int k = i < 4 ? i * 2 + 1 : (i - 4) * 2; // The four short points first, so the long ones go over them.
+                bool major = k % 2 == 0;
+                float a = k * Mathf.PI / 4f;
+                var along = new Vector2(Mathf.Sin(a), Mathf.Cos(a));
+                var across = new Vector2(along.y, -along.x);
+                float length = major ? 0.97f : 0.6f, width = major ? 0.17f : 0.13f;
+                Vector2 tip = along * length;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float d = Polygon(p, Vector2.zero, tip, across * (width * side)) * px;
+                    if (d > 0.5f)
+                        continue;
+                    Color fill = side < 0 ? Parchment : (k == 0 ? NorthRed : MapInk);
+                    fill.a = Mathf.Clamp01(0.5f - d);
+                    c = Over(c, Over(fill, InkLine(d, 2f)));
+                }
+            }
+
+            float hub = r * px - 9f;
+            if (hub < 0.5f)
+                c = Over(c, Over(new Color(Brass.r, Brass.g, Brass.b, Mathf.Clamp01(0.5f - hub)), InkLine(hub, 2.5f)));
+            return c;
+        }
+
+        /// <summary>A hero: a folded-paper arrowhead, white on its left and grey on its right so the team colour shows both.</summary>
+        static Color PaintMapHero(int x, int y, int w, int h) => PaintMarker(x, y, w, h, p => Polygon(p,
+            new Vector2(0f, 0.95f), new Vector2(0.72f, -0.78f), new Vector2(0f, -0.38f), new Vector2(-0.72f, -0.78f)));
+
+        static Color PaintMapEdgeArrow(int x, int y, int w, int h) => PaintMarker(x, y, w, h, p => Polygon(p,
+            new Vector2(0f, 0.92f), new Vector2(0.8f, -0.62f), new Vector2(-0.8f, -0.62f)));
+
+        /// <summary>A Home Totem: a little lodge with a shaded roof and a dark doorway.</summary>
+        static Color PaintMapHome(int x, int y, int w, int h)
+        {
+            Vector2 p = Norm(x, y, w, h);
+            Color c = PaintMarker(x, y, w, h, q => Polygon(q,
+                new Vector2(-0.62f, -0.82f), new Vector2(0.62f, -0.82f), new Vector2(0.62f, 0.12f), new Vector2(0.9f, 0.12f),
+                new Vector2(0f, 0.92f), new Vector2(-0.9f, 0.12f), new Vector2(-0.62f, 0.12f)));
+            if (c.a <= 0f)
+                return c;
+            float px = w * 0.5f;
+            float eave = Mathf.Abs(p.y - 0.12f) * px - 2.5f;
+            float door = Polygon(p, new Vector2(-0.2f, -0.82f), new Vector2(0.2f, -0.82f), new Vector2(0.2f, -0.25f),
+                new Vector2(-0.2f, -0.25f)) * px;
+            if (p.y > 0.12f && c.r > 0.5f)
+                c = Color.Lerp(c, new Color(0.62f, 0.62f, 0.62f, c.a), 0.8f);
+            float shape = c.a;
+            c = Over(c, new Color(0.16f, 0.16f, 0.16f, Mathf.Clamp01(0.5f - eave) * shape));
+            c = Over(c, new Color(0.16f, 0.16f, 0.16f, Mathf.Clamp01(0.5f - door) * shape));
+            return c;
+        }
+
+        /// <summary>
+        /// A map marker from a signed distance (in -1..1, negative inside): white, greyed on the right half, with a thick
+        /// dark edge. The team colour tints it all, so the edge stays dark.
+        /// </summary>
+        static Color PaintMarker(int x, int y, int w, int h, Func<Vector2, float> shape)
+        {
+            Vector2 p = Norm(x, y, w, h);
+            float d = shape(p) * w * 0.5f;
+            if (d > 0.5f)
+                return Clear;
+            float grey = p.x > 0f ? 0.74f : 1f;
+            var fill = new Color(grey, grey, grey, Mathf.Clamp01(0.5f - d));
+            Color edge = InkLine(d, 9f);
+            edge.r = edge.g = edge.b = 0.16f;
+            return Over(fill, edge);
+        }
+
         // ---- Painting helpers ----
+
+        /// <summary>A pixel's centre in -1..1 across the image, y up.</summary>
+        static Vector2 Norm(int x, int y, int w, int h) =>
+            new Vector2((x + 0.5f) / w * 2f - 1f, (y + 0.5f) / h * 2f - 1f);
+
+        /// <summary>Signed distance to a polygon (any winding), in its own units: negative inside.</summary>
+        static float Polygon(Vector2 p, params Vector2[] corners)
+        {
+            float best = float.MaxValue;
+            bool inside = false;
+            for (int i = 0, j = corners.Length - 1; i < corners.Length; j = i++)
+            {
+                Vector2 a = corners[j], b = corners[i];
+                Vector2 ab = b - a;
+                float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Vector2.Dot(ab, ab));
+                best = Mathf.Min(best, Vector2.Distance(p, a + ab * t));
+                if ((a.y > p.y) != (b.y > p.y) && p.x < a.x + (p.y - a.y) / (b.y - a.y) * ab.x)
+                    inside = !inside;
+            }
+            return inside ? -best : best;
+        }
+
+        /// <summary><paramref name="c"/> with its colour swapped for <paramref name="ink"/>, keeping its alpha.</summary>
+        static Color Tinted(Color c, Color ink) => new Color(ink.r, ink.g, ink.b, c.a);
 
         static readonly Color Clear = new Color(0f, 0f, 0f, 0f);
 

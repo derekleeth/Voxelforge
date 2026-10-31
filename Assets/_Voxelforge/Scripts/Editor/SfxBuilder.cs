@@ -139,13 +139,18 @@ namespace Voxelforge.Editor
             written.Add(Write("HayThwack", HayThwack(new Random(193))));
             written.Add(Write("Hoofquake", Hoofquake(new Random(197))));
             written.Add(Write("SecondWind", SecondWind(new Random(199))));
+            // Roadmap 4.8: sprinting and the World Map.
+            written.Add(Write("SprintWind", SprintWind(new Random(211), 6f)));
+            written.Add(Write("MapOpen", MapOpen(new Random(223))));
+            written.Add(Write("MapClose", MapClose(new Random(227))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
                 SetImportSettings(path, looping: path.EndsWith("TorchCrackle.wav", StringComparison.Ordinal) ||
                                                  path.EndsWith("CastHum.wav", StringComparison.Ordinal) ||
                                                  path.EndsWith("FireRoar.wav", StringComparison.Ordinal) ||
-                                                 path.EndsWith("HolyHum.wav", StringComparison.Ordinal));
+                                                 path.EndsWith("HolyHum.wav", StringComparison.Ordinal) ||
+                                                 path.EndsWith("SprintWind.wav", StringComparison.Ordinal));
 
             BuildAssets();
             AssetDatabase.SaveAssets();
@@ -646,6 +651,83 @@ namespace Voxelforge.Editor
         }
 
         /// <summary>
+        /// Air rushing past a sprinting hero (Roadmap 4.8): a soft mid-range rush with no rumble, swelling in gusts, and a
+        /// faint breathy whistle that rises with each gust. The gusts fit a whole number of times into the loop, so it
+        /// loops without a seam.
+        /// </summary>
+        static float[] SprintWind(Random rng, float seconds)
+        {
+            int length = (int)(seconds * Rate);
+            int overlap = Rate / 2;
+            var air = new float[length + overlap];
+            float low1 = 0f, low2 = 0f, rumble = 0f, y1 = 0f, y2 = 0f;
+            float gustA = Range(rng, 0f, 6.28f), gustB = Range(rng, 0f, 6.28f);
+            const float Whistle = 0.996f;
+            for (int i = 0; i < air.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float n = Noise(rng);
+                float gust = 0.65f + 0.2f * Mathf.Sin(2f * Mathf.PI * 2f * t / seconds + gustA)
+                                   + 0.15f * Mathf.Sin(2f * Mathf.PI * 5f * t / seconds + gustB);
+                low1 += OnePole(900f) * (n - low1);
+                low2 += OnePole(900f) * (low1 - low2);
+                rumble += OnePole(160f) * (low2 - rumble);
+                // The whistle: the noise ringing through a resonator that slides up as the gust builds.
+                float c = 2f * Whistle * Mathf.Cos(2f * Mathf.PI * (520f + 300f * gust) / Rate);
+                float y = n * (1f - Whistle) + c * y1 - Whistle * Whistle * y2;
+                y2 = y1;
+                y1 = y;
+                air[i] = (low2 - rumble) * gust * 3f + y * gust * gust * 0.9f;
+            }
+            // Fold the extra tail over the start, as with the torch.
+            var buffer = new float[length];
+            for (int i = 0; i < length; i++)
+            {
+                float fade = i < overlap ? i / (float)overlap : 1f;
+                buffer[i] = air[i] * fade + (i < overlap ? air[length + i] * (1f - fade) : 0f);
+            }
+            Normalize(buffer, 0.6f);
+            return buffer;
+        }
+
+        /// <summary>A sheet of paper swept open: a rising swish, a crackle of creases, and a soft flap as it lies flat.</summary>
+        static float[] MapOpen(Random rng)
+        {
+            float[] buffer = New(0.6f);
+            AddSwish(buffer, rng, 0.1f, 0.14f, 0.6f);
+            AddGrains(buffer, rng, 0.01f, 0.3f, 30, 0.003f, 0.35f, 2500f, 9000f);
+            AddNoise(buffer, rng, 0.32f, 0.03f, 0.45f, 150f, 1200f);
+            AddTone(buffer, 0.32f, 140f, 90f, 0.04f, 0.3f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>The map folded shut: quicker and lower than opening, with fewer creases and a duller flap.</summary>
+        static float[] MapClose(Random rng)
+        {
+            float[] buffer = New(0.4f);
+            AddSwish(buffer, rng, 0.04f, 0.08f, 0.5f);
+            AddGrains(buffer, rng, 0.01f, 0.14f, 14, 0.003f, 0.3f, 2000f, 7000f);
+            AddNoise(buffer, rng, 0.15f, 0.025f, 0.5f, 120f, 900f);
+            AddTone(buffer, 0.15f, 115f, 70f, 0.035f, 0.35f);
+            return Finish(buffer, 0.55f);
+        }
+
+        /// <summary>Paper moving through the air: noise from 700 Hz to 4.5 kHz, swelling over <paramref name="rise"/> s.</summary>
+        static void AddSwish(float[] buffer, Random rng, float rise, float decay, float amp)
+        {
+            float low = 0f, lowLow = 0f;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float envelope = Mathf.Clamp01(t / rise) * Mathf.Exp(-Mathf.Max(0f, t - rise) / decay);
+                float n = Noise(rng);
+                low += OnePole(4500f) * (n - low);
+                lowLow += OnePole(700f) * (low - lowLow);
+                buffer[i] += (low - lowLow) * envelope * amp;
+            }
+        }
+
+        /// <summary>
         /// A torch: mostly the soft breathing roar of the flame, with a faint hiss on top and a few quiet crackles,
         /// and now and then a woody snap. Loops without a seam.
         /// </summary>
@@ -906,6 +988,9 @@ namespace Voxelforge.Editor
             serialized.FindProperty("earthCrumble").objectReferenceValue = Clip("EarthCrumble");
             serialized.FindProperty("shieldBlock").objectReferenceValue = Clip("ShieldBlock");
             serialized.FindProperty("hayThwack").objectReferenceValue = Clip("HayThwack");
+            serialized.FindProperty("sprintWind").objectReferenceValue = Clip("SprintWind");
+            serialized.FindProperty("mapOpen").objectReferenceValue = Clip("MapOpen");
+            serialized.FindProperty("mapClose").objectReferenceValue = Clip("MapClose");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;

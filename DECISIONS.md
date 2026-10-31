@@ -5,6 +5,65 @@
 
 ---
 
+## D-031: Sprint, the Parchment Map, Fog of War & Party Markers
+- **Date:** 2026-10-31
+- **Status:** Accepted (play-tested 2026-10-31 in split screen: sprint in both styles, minimap and World Map, partner and totem markers, hearthing from the map, fog after reload, wind and map sounds)
+
+### Decisions
+- **Sprint is decided by the host.**
+  - The owner's PC turns the raw input into one `PlayerButtons.Sprint` bit (`SprintLatch`):
+    - gamepads toggle with L3;
+    - keyboards hold Left Shift, or Numpad 0 on the right-hand keyboard.
+  - The host sets `MotorInput.SpeedScale` to 1.6 (5 → 8 m/s) only when Sprint is set *and* there's move input. Air control is unchanged.
+  - Sprint ends when you stop moving or open a window.
+  - The animator's speed is already measured from motion, so nothing new is sent. An 8 m/s blend child plays the Run clip faster, and a Mixamo sprint clip can replace it later.
+  - `PlayerFoley` fades a wind loop in between 5.8 and 7.8 m/s.
+- **The map shows the land the seed makes, not player edits.**
+  - Tiles are 128 × 128 blocks at 1 px per block.
+  - Burst jobs sample them with the same strict `TerrainSampler` the chunks use (Law #4), then paint:
+    - each column's surface colour, with hillshade;
+    - contour lines;
+    - tree canopies on old paper.
+  - `MapTileCache` belongs to `VoxelWorldManager`, one per PC, and all local players share it. It paints tiles on demand, turns finished jobs into textures on the main thread, and keeps an LRU of 288 tiles (about 18 MB), so the widest World Map zoom doesn't repaint.
+  - Edits could be drawn over the tiles later.
+- **Fog of war is host-tracked and saved in the profile.**
+  - `ExploredMap` holds 16-block cells, one per chunk column.
+  - `PlayerExplorer` (host) reveals a radius of 3 cells whenever a hero enters a new cell, and sends new cells to the owner's PC in batches. The owner's PC gets the full set on spawn.
+  - **Save format 6** writes the cells in their own section after the Earthen Rock. **v5 and older load with nothing explored.**
+- **Markers use a source contract, so Phase 5 can plug in.**
+  - The contract is `MapMarker { Kind, WorldXZ, Heading, Tint, Owner }`, filled by `IMapMarkerSource`s. Heroes and Home Totems are the first two sources.
+  - `PartyMarkers` collects heroes from `PlayerController.AnySpawned`, with no global list (Law #1).
+  - `PlayerHearth` now syncs each totem's block (`_homeBlockSynced`), so every PC can draw partners' totems.
+  - 5.3 dungeons and 5.5 heat maps add new sources or overlay layers.
+- **Both maps sit in the player's own view (Law #5).**
+  - `MinimapView` is a round, north-up minimap in the top-right of each `PlayerHudPanel`, about 96 blocks from centre to rim. It shrinks in quarter-screen splits. Off-map partners and totems get arrows on the rim (`MapMath`).
+  - `WorldMapView`, driven by owner-side `PlayerWorldMap`, fills the player's area above their action bar:
+    - Move pans. The bag's next and previous buttons step through four zooms, about 2,000 to 250 blocks across. Jump recentres on the hero.
+    - The hero stands still and the minimap hides while it's open.
+    - Inventory closes it and opens the bag. It won't open over the bag or the class window.
+  - **Gamepad Select now opens the map instead of Home.** Hearthing moved inside the map (LT, Place). It's still the same host-checked `PlayerHearth` request (Law #2). Keyboards keep H and `[`.
+- **Art and sound come from the builders, with plain shapes as a fallback.**
+  - `HudArtBuilder` paints:
+    - the World Map sheet, with a torn, charred edge. It's drawn **tiled**: everything along its edges repeats every 128 px, so the tiles meet without a seam and the edge never stretches;
+    - a neatline;
+    - the minimap's wooden rim, with an N plate at `HudSkin.MapRimPlateRadius`;
+    - a compass rose;
+    - the hero, edge-arrow and totem markers. They're white and grey with a dark edge, so team colours tint them and the edge stays dark.
+  - Empty `HudSkin` slots fall back to `MapSprites`' plain shapes.
+  - `SfxBuilder` synthesises `SprintWind` (a seamless 6 s loop whose gusts fit the loop exactly) plus `MapOpen` and `MapClose` paper rustles. `PlayerFoley` plays the rustles when a hero's `PlayerWorldMap.IsOpen` flips.
+
+### Measured
+- Tests: 422 → 453.
+- Panning far out at the widest zoom streamed tiles in without a visible frame drop in play-testing.
+
+### Deferred on purpose
+- Player edits on the map (craters, builds, totem-raised rock): the tiles show the land the seed made.
+- Markers for dungeons (5.3) and heat-map layers (5.5); waypoints or pings between partners.
+- A dedicated Mixamo sprint clip.
+- `Assets/Screenshots/` is git-ignored, so MCP screenshots never need cleaning up.
+
+---
+
 ## D-030: Races, the Thunderhoof, Racials & the Thunderhoof Plains
 - **Date:** 2026-10-31
 - **Status:** Accepted (play-tested 2026-10-31: Thunderhoof locomotion, Hoofquake stun, Second Wind, Hearthbound and the Plains mesas)
