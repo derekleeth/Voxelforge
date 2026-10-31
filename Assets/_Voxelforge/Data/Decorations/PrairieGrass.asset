@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: PrairieGrass
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 0
+  mesh: {fileID: 7466403149304201797, guid: d130e54b55e7d1f46a11a046c3e169b8, type: 3}
+  lodMesh: {fileID: -3714878156370404320, guid: d130e54b55e7d1f46a11a046c3e169b8, type: 3}
+  material: {fileID: 2100000, guid: 8e06409d07d667746abc92904d12ca18, type: 2}
+  tint: 1
+  castShadows: 0
+  lodDistance: 35
+  maxDistance: 80
+  propBlock: {fileID: 0}
+  attach: 0
+  surfaces:
+  - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+  density: 0.15
+  biomes:
+  - biome: Thunderhoof Plains
+    weight: 1
+  minScale: 0.9
+  maxScale: 1.3
+  modelTrunkHeight: 5
+  light:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0

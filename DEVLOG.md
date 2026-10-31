@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-10-31 - Session 1 (part 32): Choose Your People! The Thunderhoof Arrive 🐂🌾 Roadmap 4.7
+**Phase:** 4 - The Warcraft Injection
+
+### What we did
+- **Two races to choose from!** The first time you join, a **"Choose Your People"** window opens in your own view. You choose once, and it's who your hero is. Details in DECISIONS.md **D-030**.
+  - **Wayfarer**: the hooded traveller we've had since 2.5. +10 mana. **Hearthbound** makes your Home Totem hearth twice as fast, and **Second Wind** heals a quarter of your health in one go.
+  - **Thunderhoof**: our own big, gentle bull-folk of the plains. +20 health. **Hoofquake** stamps the ground and **stuns** everything near you for 2 seconds ("STUNNED!"). **Herb-Sense** will give you extra herbs when Herbalism arrives.
+  - Your racial ability lives in **slot 9** whatever your class (B tap on a gamepad).
+  - Your old heroes get to choose once too, the next time you load your world.
+- **The Thunderhoof, made in Blender!** Curved horns, a nose ring, a shaggy mane, hooves, a tail, and a kilt and mantle in your team colour.
+  - It borrows the Wayfarer's skeleton (stretched to fit), so it runs and jumps with the same animations.
+  - It's taller than the Wayfarer but still fits through 2-block tunnels (the horns poke the ceiling a bit!).
+  - Its footsteps are deeper and heavier.
+- **The Thunderhoof Plains:** a new golden grassland full of wind-bent prairie grass, with flat-topped **mesas** striped in red rock and sandstone. The debug overlay now tells you which biome you're standing in.
+- **New art and sounds:** race portraits and crests for the window, Hoofquake and Second Wind icons, a stamping, rumbling Hoofquake and a deep-breath Second Wind.
+
+### Tests: 422 / 422 passing ✅
+- Races add to the class's health and mana and put the racial in slot 9.
+- Hearthbound halves the hearth; Herb-Sense gives half as many herbs again.
+- Stunned dummies stop throwing hay until the stun wears off.
+- Saves keep each hero's race, and old saves load with the choice still open.
+- Mesas have flat grassy tops and banded rock cliffs, and biomes without mesas didn't change by a single block.
+
+### Things we learned
+- A model doesn't need its own animations if it uses the same bone names: Unity's Humanoid system stretches the Wayfarer's moves onto the much bigger Thunderhoof.
+- When you swap a hero's body, anything they were holding is hanging off the *old* hand, so it has to be moved to the new one first!
+
+### Next up
+- [ ] Play-test 4.7 in split-screen: choose a race each, run, jump and mine as a Thunderhoof, Hoofquake a Training Dummy, Second Wind, find the Plains and a mesa
+- [ ] Roadmap **4.8 World Map, Co-Op Wayfinding & Sprint**
+
+---
+
 ## 2026-10-30 - Session 1 (part 31): Paladins, Geomancers & Shamans! ⚒️🪨⚡ Roadmap 4.6
 **Phase:** 4 - The Warcraft Injection
 

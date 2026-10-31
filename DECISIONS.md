@@ -5,6 +5,70 @@
 
 ---
 
+## D-030: Races, the Thunderhoof, Racials & the Thunderhoof Plains
+- **Date:** 2026-10-31
+- **Status:** Accepted (steps A-F built and checked in the editor; waiting on the split-screen play-test)
+
+### Decisions
+- **Races are data, like classes.** `RaceDefinition` holds the rules: bonus health, mana and regen, a racial passive and a racial ability. `RaceBook` lists them, with permanent `RaceId`s.
+  - Presentation lives in `RaceLook` / `RaceLookBook` (Roadmap 4.2): the body model and avatar, the team-cloth slot, how the worn bag and held item sit, and footstep pitch and volume. Crests and portraits live in `HudSkin`, like class crests.
+
+  | Race | Bonus | Passive | Racial (slot 9) |
+  |---|---|---|---|
+  | Wayfarer (the 2.5 hero) | +10 mana | *Hearthbound*: Home hearth in 1 s instead of 2 | *Second Wind*: heal 25% of max health, 2 min |
+  | Thunderhoof | +20 health | *Herb-Sense*: +50% herb yield (read by 5.5) | *Hoofquake*: 6 m stomp, 20 damage, 2 s stun, 45 s |
+
+- **Class and race add up.** `RaceRules` (plain C#, tested) combines them: pools are class plus race, and the bar is the class loadout with the racial in **slot 9** (pad: B tap).
+  - `PlayerClass.ServerReapply` runs when the race changes.
+  - `RaceRules.HerbYield` is written and tested now, so Roadmap 5.5 only has to call it.
+- **Race is chosen once, on first join.** There's no character-creation screen until Phase 6.
+  - `PlayerRace` (host-authoritative) syncs the race and a `HasChosen` flag. The host accepts one `ChooseRpc` while unchosen, then locks it.
+  - `PlayerRaceMenu` opens "Choose Your People" (`RacePickerView`) in the player's own view (Law #5) as soon as they land. It can't be closed until the host agrees, and it keeps the inventory and class windows shut meanwhile (`PlayerController.ChoosingRace`).
+  - *Voxelforge → Debug → Reset Race Choice* lets everyone choose again in Play. It calls `RaceDebug`, because the editor assembly can't see Netcode types.
+- **Save format 5:** each profile gets its race and chosen flag. **v1-v4 saves load unchosen**, so existing heroes pick once on their next join (Wayfarer until then).
+- **Two new deliveries.**
+  - `Quake` (`PlayerStaff.ServerQuake`): hits targets round the hero's middle with falloff and stuns them. No crater.
+  - `SelfHeal` (`PlayerSupport.ServerSelfHeal`): Heal Amount is read as a share of max health. That's a documented meaning of the existing field rather than the separate flag the plan had.
+- **Stuns** stop a `SparringDummy` sparring until they wear off (plus 0.5 s), through `CombatTargets.ServerStun`, where Phase 5 creatures will hook in.
+  - Heroes are never stunned: no friendly crowd control.
+  - A new `TargetStunned` cue shows "STUNNED!" combat text. A stomp's impact cue shows no block-damage number.
+- **Every race keeps the 1.8 m collision box.** The Thunderhoof only *looks* bigger (about 2.05 m, horns to about 2.17 m), so all races fit 2-block tunnels. Its horns poke into the ceiling there; the 3.7 camera fade covers close views.
+- **The Thunderhoof is rigged without Mixamo** (D-011 had planned to reuse the Mixamo pipeline).
+  - `build_thunderhoof.py` appends the Wayfarer's Mixamo skeleton from `Hero.blend` and moves its joints to the Thunderhoof's proportions: hips 0.90 m, shoulders ±0.46 m, a 2.5 m arm span. Bone names and hierarchy stay the same, which is all Humanoid retargeting needs.
+  - The body is modelled *around those joints*: horns, nose ring, hump and mane, a team-cloth kilt and mantle, hooves and tail.
+  - It's weighted by melting it into one shell (voxel remesh plus decimate), letting Blender's automatic weights skin that, and copying each vertex's nearest weights back (4 bones, normalized). Horns, eyes and nose are rigid on the Head; the tail on the Hips.
+  - It's baked with `build_hero`'s painted-shading nodes and exported to `Art/Models/Thunderhoof/`. 14.2k triangles: over the 12k planned, and the Wayfarer is 10.8k.
+  - *Rebuild Hero Animator* now loops over `RaceModels`, giving each body its own Humanoid avatar and materials. They all share `Hero.controller`.
+- **`HeroBody` swaps bodies on every PC.** The Animator and `HeroFootIK` stay put; only their children (skinned mesh and skeleton) are replaced.
+  - Before the swap, anything hung on a bone that isn't itself a bone (held item pivot, worn bag) is lifted off. The old body is unparented before `Destroy`, so `Rebind` can't find it.
+  - Afterwards everything is re-hung on the same Humanoid bone, the team cloth is re-tinted (`PlayerController.SetTeamColorRenderer`), and `BodyChanged` fires. `HeldItemView`, `BackpackView` and `CastingView` re-find their bones and apply the race's fit; `PlayerFoley` scales footsteps.
+- **The Thunderhoof Plains** are a fifth biome at climate (0.3, −0.05): base 70, ±4 rolling ground, a golden grass tint, rare scrub trees.
+  - **Mesas** are a new per-biome option: a second noise lifts flat tops by `mesaHeight` (14 here) with a smoothstep edge.
+  - `TerrainColumn.Mesa` (0-1) puts **level RedRock/Sandstone bands** (3 blocks each) in the cliffs and on cliff tops. Only a mesa's flat top (≥ 0.9) keeps grass; the play-test check found grass on every cliff step looked like stairs.
+  - With mesas off, terrain was byte-identical: the golden chunk hash held before the biome was added.
+  - **`GeneratorVersion` 3**, new golden hash. Unedited ground near the new climate point looks different in old worlds; edits replay as usual.
+  - Plains weights for tufts, tall grass, yellow flowers, bushes and scrub trees now live in `FoliageDecorationBuilder`. Step D had set them on the assets, where a rebuild would wipe them.
+  - A new **PrairieGrass**: the tall grass's seed-head cards, 1.3 blocks tall, the whole tuft bent one way. It needs no new atlas space, since the gold comes from the biome tint.
+  - The debug overlay shows the biome under each player (`VoxelWorldManager.BiomeNameAt`).
+- **Art and sound:**
+  - Hoofquake and Second Wind icons and the two race crests in `build_spell_icons.py`.
+  - Race portraits from `build_race_portraits.py`: the real bodies, arms lowered, comic ink hull, team cloth in a neutral red. The rigs' leftover Mixamo action has to be cleared, or the render puts the T-pose back.
+  - Hoofquake (two stamps, rolling boom) and Second Wind (deep breath, warm chime) synthesised in `SfxBuilder`.
+  - Thunderhoof footsteps at 0.78 pitch, 1.3 volume.
+
+### Measured
+- Choosing Thunderhoof as a Geomancer took max health 90 → 110 and put Hoofquake in slot 9; the window closed when the host agreed.
+- The Plains cover about 14% of the world; the nearest mesa top to World1's spawn is at (456, 83, 216).
+- Tests: 401 → 422.
+
+### Deferred on purpose
+- The race window's "WAYFARER" shows a blank box for its "W". The Bangers SDF font asset has the glyph, so it's likely its dynamic atlas, which had uncommitted changes from before this work. Not touched here.
+- `build_hero.py`'s `limb()` can squash a tube along the wrong axis when it points straight down (an arbitrary half-turn). The Thunderhoof builds its kilt bottom-up to avoid it. The Wayfarer's tunic skirt may be slightly affected; it hasn't been rebuilt.
+- Herb-Sense does nothing until Herbalism (5.5); a race-specific starting area or spawn; changing race after choosing (a barber or rebirth feature, later).
+- Hoofquake can't stun Phase 5 creatures yet (there are none); it can only stun dummies.
+
+---
+
 ## D-029: Classes, Health, Training Dummies, Zones, Totems & Earth Magic
 - **Date:** 2026-10-30
 - **Status:** Accepted (steps A-E play-tested 2026-10-30 by both players; step F's icons and sounds waiting on their play-test)

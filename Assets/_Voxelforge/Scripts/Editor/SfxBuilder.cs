@@ -137,6 +137,8 @@ namespace Voxelforge.Editor
             written.Add(Write("WaterPulse", WaterPulse(new Random(181))));
             written.Add(Write("ThunderZap", ThunderZap(new Random(191))));
             written.Add(Write("HayThwack", HayThwack(new Random(193))));
+            written.Add(Write("Hoofquake", Hoofquake(new Random(197))));
+            written.Add(Write("SecondWind", SecondWind(new Random(199))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -597,6 +599,40 @@ namespace Voxelforge.Editor
             AddNoise(buffer, rng, 0.04f, 0.35f, 0.7f, 30f, 500f);
             AddTone(buffer, 0.04f, 55f, 35f, 0.3f, 0.6f);
             return Finish(buffer, 0.9f);
+        }
+
+        // ---- Roadmap 4.7 ----
+
+        /// <summary>
+        /// Hoofquake: two heavy hooves stamping one after the other, a deep boom that rolls out through the ground, and
+        /// grit rattling down.
+        /// </summary>
+        static float[] Hoofquake(Random rng)
+        {
+            float[] buffer = New(1.8f);
+            foreach (float start in new[] { 0f, 0.11f })
+            {
+                AddTone(buffer, start, 75f, 38f, 0.1f, 0.9f);
+                float[] clop = New(0.3f);
+                AddNoise(clop, rng, 0f, 0.015f, 1f, 300f, 3000f);
+                Add(buffer, Resonate(clop, 260f, 0.98f), 0.35f);
+            }
+            AddTone(buffer, 0.11f, 42f, 24f, 0.7f, 1f);
+            AddNoise(buffer, rng, 0.11f, 0.5f, 0.8f, 20f, 400f);
+            AddGrains(buffer, rng, 0.2f, 1.2f, 50, 0.03f, 0.22f, 400f, 5000f);
+            return Finish(buffer, 1f);
+        }
+
+        /// <summary>Second Wind: a long, deep breath in, then a bright, warm chime as it fills you.</summary>
+        static float[] SecondWind(Random rng)
+        {
+            float[] buffer = New(1.4f);
+            for (int i = 0; i < 6; i++)
+                AddNoise(buffer, rng, i * 0.06f, 0.18f, 0.12f + i * 0.03f, 400f + i * 150f, 2500f + i * 300f);
+            foreach ((float start, float note) in new[] { (0.38f, 784f), (0.44f, 988f), (0.5f, 1175f), (0.56f, 1568f) })
+                AddBell(buffer, start, note, 0.5f, 0.3f);
+            AddTone(buffer, 0.38f, 392f, 392f, 0.6f, 0.2f);
+            return Finish(buffer, 0.7f);
         }
 
         /// <summary>A Training Dummy's hay sack landing on a hero: a soft, scratchy thump.</summary>

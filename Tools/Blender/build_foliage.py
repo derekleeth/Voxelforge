@@ -610,6 +610,23 @@ def build_grass_tall(lod, rng):
     return b
 
 
+def build_prairie_grass(lod, rng):
+    """Roadmap 4.7: the Thunderhoof Plains' tall, wind-bent seed grass. The tall grass's seed-head cards, taller, with
+    more rows so the whole tuft can bend over one way like grass leaning out of a steady wind. Its gold comes from the
+    Plains' grass tint, so it needs no atlas space of its own."""
+    b = MeshBuilder()
+    crossed_cards(b, "grass_b", 0.85, 1.3, 4 if lod == 0 else 2, 4 if lod == 0 else 2, tuft_colour(0.6), rng)
+    lean = rng.uniform(0.32, 0.42)
+    heading = rng.uniform(0, 2 * math.pi)
+    push = Vector((math.cos(heading), math.sin(heading), 0))
+    for i, p in enumerate(b.positions):
+        t = max(p[2], 0.0) / 1.3
+        bend = push * (lean * t * t)
+        # Lean over and sink a little, so the blades keep their length as they bow.
+        b.positions[i] = (p[0] + bend.x, p[1] + bend.y, p[2] - 0.12 * t * t)
+    return b
+
+
 def flower_builder(region):
     def build(lod, rng):
         b = MeshBuilder()
@@ -766,6 +783,7 @@ MODELS = {
     "OakTree": (build_oak, 8),
     "PineTree": (build_pine, 9),
     "ScrubTree": (build_scrub_tree, 10),
+    "PrairieGrass": (build_prairie_grass, 11),
 }
 
 

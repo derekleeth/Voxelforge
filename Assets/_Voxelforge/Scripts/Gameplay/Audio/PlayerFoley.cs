@@ -39,6 +39,8 @@ namespace Voxelforge.Gameplay
         {
             public PlayerController Player;
             public HeroFootIK Feet;
+            /// <summary>Their race's body (Roadmap 4.7): a Thunderhoof's steps are lower and louder.</summary>
+            public HeroBody Body;
             public HeroAnimator Animator;
             public PlayerAbilityCues Cues;
             public Action<AbilityCue, AbilityDefinition> OnCue;
@@ -76,6 +78,7 @@ namespace Voxelforge.Gameplay
             {
                 Player = player,
                 Feet = player.GetComponentInChildren<HeroFootIK>(),
+                Body = player.GetComponent<HeroBody>(),
                 Animator = player.GetComponentInChildren<HeroAnimator>(),
                 Cues = player.GetComponent<PlayerAbilityCues>(),
             };
@@ -131,6 +134,10 @@ namespace Voxelforge.Gameplay
             }
         }
 
+        static float StepPitch(Hero hero) => hero.Body != null && hero.Body.Look != null ? hero.Body.Look.FootstepPitch : 1f;
+
+        static float StepVolume(Hero hero) => hero.Body != null && hero.Body.Look != null ? hero.Body.Look.FootstepVolume : 1f;
+
         void Listen(Hero hero)
         {
             PlayerController player = hero.Player;
@@ -145,7 +152,8 @@ namespace Voxelforge.Gameplay
                 if (!tooSoon)
                     hero.LastStepTime = Time.time;
                 if (surface != null && !tooSoon)
-                    Play(SurfaceSound.Pick(surface.Steps), step, footstepVolume * surface.Volume, surface.JitteredPitch(), 20f);
+                    Play(SurfaceSound.Pick(surface.Steps), step, footstepVolume * surface.Volume * StepVolume(hero),
+                        surface.JitteredPitch() * StepPitch(hero), 20f);
             }
 
             bool grounded = player.Grounded;
@@ -168,8 +176,8 @@ namespace Voxelforge.Gameplay
                     SurfaceSound surface = SurfaceUnder(player.World, feet, feet);
                     float weight = math.saturate(hero.FallSpeed / heavyLandSpeed);
                     if (surface != null)
-                        Play(SurfaceSound.Pick(surface.Steps), feet, math.lerp(0.6f, 1.3f, weight) * surface.Volume,
-                            surface.JitteredPitch(math.lerp(0.85f, 0.65f, weight)), 24f);
+                        Play(SurfaceSound.Pick(surface.Steps), feet, math.lerp(0.6f, 1.3f, weight) * surface.Volume * StepVolume(hero),
+                            surface.JitteredPitch(math.lerp(0.85f, 0.65f, weight)) * StepPitch(hero), 24f);
                 }
                 hero.AirTime = 0f;
                 hero.FallSpeed = 0f;

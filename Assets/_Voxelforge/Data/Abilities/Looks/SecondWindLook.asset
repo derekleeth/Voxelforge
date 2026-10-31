@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SecondWindLook
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
   ability: {fileID: 11400000, guid: 572e0ac8082e9984990285680c798467, type: 2}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b0ee21b75798c3245b571fa7b32ea101, type: 3}
   glow: {r: 0.55, g: 1, b: 0.6, a: 1}
   coreShape: 0
   coreSize: 0.2
@@ -38,7 +38,7 @@ MonoBehaviour:
   castLight: 0
   castLoop: {fileID: 0}
   castLoopVolume: 0.5
-  release: {fileID: 0}
+  release: {fileID: 8300000, guid: 91b114742fdd63b448d88a9f9e779907, type: 3}
   releaseVolume: 0.9
   impact: {fileID: 0}
   impactVolume: 0.8

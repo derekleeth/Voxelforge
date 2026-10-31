@@ -28,6 +28,7 @@ namespace Voxelforge.Editor
         const string Desert = "Desert (Tanaris style)";
         const string Crags = "Red Crags (Redridge style)";
         const string Snowy = "Snowy Peaks (Dun Morogh style)";
+        const string Plains = "Thunderhoof Plains";
 
         /// <summary>Look settings for one foliage material.</summary>
         struct MaterialLook
@@ -68,17 +69,20 @@ namespace Voxelforge.Editor
             var decorations = new List<DecorationDefinition>
             {
                 MakeDecoration("GrassTuft", "GrassShort", DecorationKind.Ground, grassMat, onGrass, 0.4f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1.1f, 1.6f, 30f, 70f, false, BiomeTint.Grass),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f), Weight(Plains, 1.2f) }, 1.1f, 1.6f, 30f, 70f, false, BiomeTint.Grass),
                 MakeDecoration("GrassTall", "GrassTall", DecorationKind.Ground, grassMat, onGrass, 0.07f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.8f) }, 1.0f, 1.4f, 30f, 70f, false, BiomeTint.Grass),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.8f), Weight(Plains, 1f) }, 1.0f, 1.4f, 30f, 70f, false, BiomeTint.Grass),
+                // Roadmap 4.7: the Thunderhoof Plains' tall, wind-bent seed grass, golden from the Plains' grass tint.
+                MakeDecoration("PrairieGrass", "PrairieGrass", DecorationKind.Ground, grassMat, onGrass, 0.15f,
+                    new[] { Weight(Plains, 1f) }, 0.9f, 1.3f, 35f, 80f, false, BiomeTint.Grass),
                 MakeDecoration("FlowerYellow", "FlowerYellow", DecorationKind.Ground, flowerMat, onGrass, 0.02f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.4f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 0.4f), Weight(Plains, 0.6f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
                 MakeDecoration("FlowerBlue", "FlowerBlue", DecorationKind.Ground, flowerMat, onGrass, 0.015f,
                     new[] { Weight(Meadows, 1f), Weight(Crags, 0.3f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
                 MakeDecoration("FlowerRed", "FlowerRed", DecorationKind.Ground, flowerMat, onGrass, 0.01f,
                     new[] { Weight(Meadows, 1f), Weight(Crags, 0.6f) }, 1.1f, 1.5f, 30f, 60f, false, BiomeTint.Grass),
                 MakeDecoration("Bush", "Bush", DecorationKind.Ground, bushMat, onGrass, 0.02f,
-                    new[] { Weight(Meadows, 1f), Weight(Crags, 1f) }, 0.8f, 1.4f, 60f, 120f, true, BiomeTint.Foliage),
+                    new[] { Weight(Meadows, 1f), Weight(Crags, 1f), Weight(Plains, 0.2f) }, 0.8f, 1.4f, 60f, 120f, true, BiomeTint.Foliage),
                 MakeDecoration("DryShrub", "DryShrub", DecorationKind.Ground, shrubMat, onSand, 0.012f,
                     new[] { Weight(Desert, 1f) }, 0.7f, 1.2f, 60f, 120f, true, BiomeTint.Foliage),
                 MakeDecoration("OakTree", "OakTree", DecorationKind.Tree, treeMat, none, 0f,
@@ -86,7 +90,7 @@ namespace Voxelforge.Editor
                 MakeDecoration("PineTree", "PineTree", DecorationKind.Tree, treeMat, none, 0f,
                     new[] { Weight(Snowy, 1f), Weight(Crags, 0.5f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
                 MakeDecoration("ScrubTree", "ScrubTree", DecorationKind.Tree, treeMat, none, 0f,
-                    new[] { Weight(Desert, 1f), Weight(Crags, 0.6f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
+                    new[] { Weight(Desert, 1f), Weight(Crags, 0.6f), Weight(Plains, 1f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
             };
             if (decorations.Contains(null))
                 return;

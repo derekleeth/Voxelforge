@@ -54,6 +54,7 @@ namespace Voxelforge.Editor
         public const string BookPath = AbilityDir + "/AbilityBook.asset";
         public const string LoadoutPath = AbilityDir + "/DefaultLoadout.asset";
         const string IconDir = "Assets/_Voxelforge/Art/Textures/UI/Icons";
+        const string PortraitDir = "Assets/_Voxelforge/Art/Textures/UI/Portraits";
         const string LookDir = AbilityDir + "/Looks";
         public const string LookBookPath = LookDir + "/AbilityLookBook.asset";
         const string SfxDir = "Assets/_Voxelforge/Art/Audio/Sfx";
@@ -315,6 +316,21 @@ namespace Voxelforge.Editor
             foreach (string error in book.Validate())
                 Debug.LogError($"[Voxelforge] Race book: {error}", book);
 
+            // Each race's crest and portrait for the race window (looks, so they live in the HUD skin), in RaceId order:
+            // crests from build_spell_icons.py, portraits from build_race_portraits.py.
+            var skin = AssetDatabase.LoadAssetAtPath<HudSkin>(HudSkinPath);
+            if (skin != null)
+            {
+                skin.raceCrests = new Sprite[order.Length];
+                skin.racePortraits = new Sprite[order.Length];
+                foreach (RaceDefinition definition in order)
+                {
+                    skin.raceCrests[(int)definition.Id] = IconSprite($"Race{definition.name}");
+                    skin.racePortraits[(int)definition.Id] = IconSprite($"Race{definition.name}", PortraitDir);
+                }
+                EditorUtility.SetDirty(skin);
+            }
+
             // How each race looks (presentation, Roadmap 4.2): its body from Blender, and how gear sits on it.
             if (!AssetDatabase.IsValidFolder($"{RaceDir}/Looks"))
                 AssetDatabase.CreateFolder(RaceDir, "Looks");
@@ -565,12 +581,13 @@ namespace Voxelforge.Editor
         }
 
         /// <summary>
-        /// The picture <c>Art/Textures/UI/Icons/&lt;name&gt;.png</c> from <c>build_spell_icons.py</c> as a sprite, setting it to
-        /// import as one first if it's new. Null if there's no such picture yet.
+        /// The picture <c>&lt;folder&gt;/&lt;name&gt;.png</c> (by default <c>Art/Textures/UI/Icons</c>, from
+        /// <c>build_spell_icons.py</c>) as a sprite, setting it to import as one first if it's new. Null if there's no
+        /// such picture yet.
         /// </summary>
-        static Sprite IconSprite(string name)
+        static Sprite IconSprite(string name, string folder = IconDir)
         {
-            string path = $"{IconDir}/{name}.png";
+            string path = $"{folder}/{name}.png";
             if (AssetImporter.GetAtPath(path) is TextureImporter importer && importer.textureType != TextureImporterType.Sprite)
             {
                 importer.textureType = TextureImporterType.Sprite;

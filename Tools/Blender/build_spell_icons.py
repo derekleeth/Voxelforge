@@ -1,4 +1,4 @@
-"""Renders Voxelforge's action bar spell icons (Roadmap 4.4) and the class crests (4.6).
+"""Renders Voxelforge's action bar spell icons (Roadmap 4.4), the class crests (4.6) and the race crests (4.7).
 
 Run inside Tools/Blender/SpellIcons.blend (Text Editor, or exec over MCP). build_all() rebuilds every icon:
   - models each spell as a bold, flat-shaded toy (three-tone toon shading) with an inverted-hull ink outline
@@ -406,6 +406,102 @@ def crest_shaman():
     return (0.2, 0.7, 0.85)
 
 
+# ---- Roadmap 4.7: racial abilities and race crests ----
+
+def hoofquake():
+    hoof = toon("Quake_Hoof", (0.06, 0.05, 0.05), (0.2, 0.17, 0.15), (0.42, 0.37, 0.33))
+    fur = toon("Quake_Fur", (0.22, 0.11, 0.04), (0.42, 0.24, 0.11), (0.65, 0.45, 0.26))
+    rock = toon("Quake_Rock", (0.28, 0.17, 0.09), (0.55, 0.38, 0.22), (0.82, 0.68, 0.45))
+    shock = toon("Quake_Shock", (0.85, 0.6, 0.2), (1.0, 0.85, 0.4), (1.0, 1.0, 0.8))
+    # A cloven hoof stamping down out of a shaggy leg, onto a ring of shock with blocks jumping up round it.
+    dress(cylinder("Leg", 0.28, 0.9, (0, 0, 0.75), (0, 0, 0), 10), fur)
+    dress(cylinder("Fetlock", 0.36, 0.25, (0, 0, 0.3), (0, 0, 0), 10), fur, 0.04)
+    for sx in (-1, 1):
+        dress(cube(f"Toe{sx}", 1, (sx * 0.19, -0.05, -0.02), (0, 0, sx * -6), (0.34, 0.6, 0.42)), hoof)
+    torus = primitive(bpy.ops.mesh.primitive_torus_add, "Shock", major_radius=0.95, minor_radius=0.07, major_segments=40,
+                      minor_segments=6)
+    dress(place(torus, (0, 0.2, -0.32), (72, 0, 0)), shock, 0.03, smooth=True)
+    torus = primitive(bpy.ops.mesh.primitive_torus_add, "Shock2", major_radius=1.22, minor_radius=0.04, major_segments=48,
+                      minor_segments=6)
+    dress(place(torus, (0, 0.3, -0.36), (72, 0, 0)), shock, 0.025, smooth=True)
+    rng = random.Random(13)
+    for i, (x, z, s) in enumerate(((-0.95, -0.05, 0.22), (0.98, 0.0, 0.24), (-0.7, 0.35, 0.15), (0.75, 0.4, 0.17),
+                                   (-1.1, -0.55, 0.16), (1.1, -0.6, 0.18))):
+        dress(cube(f"Block{i}", s, (x, -0.2, z), (rng.uniform(-40, 40), rng.uniform(-40, 40), rng.uniform(-40, 40))),
+              rock, 0.03)
+    return (0.85, 0.6, 0.3)
+
+
+def second_wind():
+    gust = toon("Wind_Gust", (0.2, 0.6, 0.35), (0.5, 0.9, 0.6), (0.9, 1.0, 0.9))
+    leaf = toon("Wind_Leaf", (0.15, 0.35, 0.08), (0.35, 0.65, 0.18), (0.65, 0.9, 0.4))
+    heal = toon("Wind_Heal", (0.15, 0.6, 0.25), (0.35, 0.9, 0.45), (0.8, 1.0, 0.8))
+    # Three swirling gusts of breath curling round each other, with a leaf caught in them and a heal cross.
+    for i, (radius, z, x) in enumerate(((0.7, 0.25, -0.1), (0.5, -0.35, 0.25), (0.35, 0.65, 0.45))):
+        torus = primitive(bpy.ops.mesh.primitive_torus_add, f"Gust{i}", major_radius=radius, minor_radius=0.07,
+                          major_segments=40, minor_segments=6)
+        # Cut away a quarter so each one reads as a curl, not a ring.
+        bm = bmesh.new()
+        bm.from_mesh(torus.data)
+        cut = [v for v in bm.verts if v.co.x > 0 and v.co.y < 0]
+        bmesh.ops.delete(bm, geom=cut, context="VERTS")
+        bm.to_mesh(torus.data)
+        bm.free()
+        dress(place(torus, (x, 0, z), (90, 0, 30 * i)), gust, 0.03, smooth=True)
+    blade = prism("Leaf", [(0, -0.35), (0.16, -0.12), (0.2, 0.1), (0, 0.38), (-0.2, 0.1), (-0.16, -0.12)])
+    dress(place(blade, (-0.7, -0.3, -0.55), (0, 35, 0)), leaf, 0.03)
+    for i, (w, h) in enumerate(((0.36, 0.11), (0.11, 0.36))):
+        dress(cube(f"Plus{i}", 1, (0.75, -0.3, -0.6), (0, 0, 0), (w, 0.1, h)), heal, 0.025)
+    return (0.4, 0.85, 0.5)
+
+
+def crest_wayfarer():
+    wood = toon("Way_Wood", (0.25, 0.12, 0.05), (0.45, 0.25, 0.12), (0.65, 0.42, 0.22))
+    brass = toon("Way_Brass", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
+    flame = toon("Way_Flame", (0.85, 0.45, 0.05), (1.0, 0.75, 0.2), (1.0, 1.0, 0.7))
+    # A road signpost with a lantern hanging from it: the way home.
+    dress(cube("Post", 1, (-0.35, 0, -0.2), (0, 0, 0), (0.18, 0.18, 2.0)), wood)
+    dress(prism("SignA", [(-0.25, 0.55), (0.75, 0.55), (0.95, 0.68), (0.75, 0.81), (-0.25, 0.81)]), wood)
+    dress(place(prism("SignB", [(-0.45, 0.2), (0.55, 0.2), (0.55, 0.46), (-0.45, 0.46), (-0.65, 0.33)]), (-0.55, 0, 0)), wood)
+    dress(cube("Arm", 1, (0.15, 0, -0.08), (0, 0, 0), (0.8, 0.1, 0.08)), wood, 0.03)
+    dress(cylinder("Lantern", 0.17, 0.42, (0.45, 0, -0.45), (0, 0, 0), 6), brass)
+    dress(cone("LanternTop", 0.22, 0.2, (0.45, 0, -0.16)), brass, 0.03)
+    flame_obj = primitive(bpy.ops.mesh.primitive_uv_sphere_add, "Flame", radius=0.1, segments=12, ring_count=6)
+    dress(place(flame_obj, (0.45, -0.18, -0.45), (0, 0, 0), (1, 1, 1.5)), flame, 0.02, smooth=True)
+    return (0.32, 0.6, 0.4)
+
+
+def crest_thunderhoof():
+    horn = toon("Hoof_Horn", (0.55, 0.48, 0.32), (0.85, 0.79, 0.62), (1.0, 0.97, 0.88))
+    fur = toon("Hoof_Fur", (0.22, 0.11, 0.04), (0.42, 0.24, 0.11), (0.65, 0.45, 0.26))
+    bead = toon("Hoof_Bead", (0.03, 0.35, 0.38), (0.1, 0.62, 0.62), (0.6, 0.95, 0.95))
+    feather = toon("Hoof_Feather", (0.45, 0.08, 0.03), (0.75, 0.2, 0.08), (1.0, 0.55, 0.35))
+    # A round shaman's medallion with great curving horns above it and feathers hanging below.
+    dress(cylinder("Disc", 0.62, 0.16, (0, 0, -0.1), (90, 0, 0), 20), fur)
+    torus = primitive(bpy.ops.mesh.primitive_torus_add, "Rim", major_radius=0.62, minor_radius=0.06, major_segments=32,
+                      minor_segments=6)
+    dress(place(torus, (0, -0.05, -0.1), (90, 0, 0)), bead, 0.03, smooth=True)
+    for sx in (-1, 1):
+        points = [(sx * 0.35, 0.3), (sx * 0.8, 0.45), (sx * 1.05, 0.85), (sx * 0.92, 1.18)]
+        for i in range(len(points) - 1):
+            (x0, z0), (x1, z1) = points[i], points[i + 1]
+            length = math.hypot(x1 - x0, z1 - z0)
+            angle = math.degrees(math.atan2(x1 - x0, z1 - z0))
+            radius = 0.16 - 0.045 * i
+            middle = ((x0 + x1) / 2, 0, (z0 + z1) / 2)
+            if i == len(points) - 2:  # The tip comes to a point.
+                segment = cone(f"Horn{sx}{i}", radius, length * 1.15, middle, (0, angle, 0), 10)
+            else:
+                segment = cylinder(f"Horn{sx}{i}", radius, length * 1.1, middle, (0, angle, 0), 10)
+            dress(segment, horn, 0.03, smooth=True)
+        plume = cone(f"Feather{sx}", 0.11, 0.65, (sx * 0.25, -0.05, -0.95), (0, sx * 12, 180))
+        dress(plume, feather, 0.025, smooth=True)
+    # A turquoise hoofprint in the middle of the medallion.
+    for sx in (-1, 1):
+        dress(cube(f"Print{sx}", 1, (sx * 0.12, -0.12, -0.12), (0, sx * -8, 0), (0.16, 0.05, 0.36)), bead, 0.02)
+    return (0.72, 0.38, 0.18)
+
+
 SPELLS = {
     "ManaBolt": mana_bolt,
     "ArcaneOrb": arcane_orb,
@@ -424,6 +520,11 @@ SPELLS = {
     "ClassRuneforgedPaladin": crest_paladin,
     "ClassGeomancerMage": crest_geomancer,
     "ClassShaman": crest_shaman,
+    # Racials and race crests (Roadmap 4.7), the crests named Race<RaceId>.
+    "Hoofquake": hoofquake,
+    "SecondWind": second_wind,
+    "RaceWayfarer": crest_wayfarer,
+    "RaceThunderhoof": crest_thunderhoof,
 }
 
 
