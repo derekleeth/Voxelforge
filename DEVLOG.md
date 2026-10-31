@@ -33,7 +33,7 @@
 - When you swap a hero's body, anything they were holding is hanging off the *old* hand, so it has to be moved to the new one first!
 
 ### Next up
-- [ ] Play-test 4.7 in split-screen: choose a race each, run, jump and mine as a Thunderhoof, Hoofquake a Training Dummy, Second Wind, find the Plains and a mesa
+- [x] Play-test 4.7: Thunderhoof running and jumping, Hoofquake stunning a dummy, Second Wind, the faster Wayfarer hearth and the Plains mesas ("cool building platforms!") ✅
 - [ ] Roadmap **4.8 World Map, Co-Op Wayfinding & Sprint**
 
 ---
@@ -69,7 +69,7 @@
 
 ### Next up
 - [x] Play-test 4.6 step F: the new icons, class crests and sounds ✅
-- [ ] Roadmap **4.7 Playable Races & the Thunderhoof**
+- [x] Roadmap **4.7 Playable Races & the Thunderhoof** ✅
 
 ---
 

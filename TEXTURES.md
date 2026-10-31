@@ -1,5 +1,9 @@
 # Voxelforge — Texture Architecture Catalog & Nano Banana Experiment Guide
 
+> [!IMPORTANT]
+> **Development Snapshot Note (Captured During Phase 4.6):**
+> This catalog and architecture guide was created while working on **Phase 4.6 (Class & Spell Design)**. When we begin executing this texture upgrade pass in a later phase before release, **run a fresh audit first** to include all textures added after Phase 4.6—such as class totems and spell icons (4.6), playable races & the *Thunderhoof Plains* biome (4.7), monsters, dungeon bosses, ore tiers, herbs, crafting stations, potions, and armor/weapons (Phase 5), and Title/Loading screen art (Phase 6).
+
 > **Purpose of this document:**
 > 1. **Visual Catalog:** View every texture currently used in Voxelforge directly inside your Markdown preview (`Ctrl+Shift+V` in VS Code / Cursor / Antigravity) and see how it stacks up against our [ROADMAP.md](ROADMAP.md) Style & World Guide.
 > 2. **Blender & Unity Architecture Reference:** Document how each texture is generated, packed, imported, and shaded so replacements never break greedy meshing, parallax mapping, biome tinting, or UV layouts.

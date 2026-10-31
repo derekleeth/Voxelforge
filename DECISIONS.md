@@ -7,7 +7,7 @@
 
 ## D-030: Races, the Thunderhoof, Racials & the Thunderhoof Plains
 - **Date:** 2026-10-31
-- **Status:** Accepted (steps A-F built and checked in the editor; waiting on the split-screen play-test)
+- **Status:** Accepted (play-tested 2026-10-31: Thunderhoof locomotion, Hoofquake stun, Second Wind, Hearthbound and the Plains mesas)
 
 ### Decisions
 - **Races are data, like classes.** `RaceDefinition` holds the rules: bonus health, mana and regen, a racial passive and a racial ability. `RaceBook` lists them, with permanent `RaceId`s.
