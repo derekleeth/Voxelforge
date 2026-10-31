@@ -6,8 +6,8 @@ using Object = UnityEngine.Object;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// Everything the 4.4 HUD draws for one local player: their action bar and mana, their cast bar, and their floating
-    /// combat text. <see cref="CombatHud"/> fits it to that player's own part of the screen every frame, so it never
+    /// Everything the 4.4 HUD draws for one local player: their action bar and mana, their cast bar, their floating
+    /// combat text, and their inventory (4.5), class (4.6) and race (4.7) windows. <see cref="CombatHud"/> fits it to that player's own part of the screen every frame, so it never
     /// lands on someone else's view (CLAUDE.md Law #5). Each part sits on its own nested canvas, so a cooldown ticking
     /// or a number floating up doesn't rebuild the frames around it.
     /// </summary>
@@ -22,6 +22,8 @@ namespace Voxelforge.Gameplay
         readonly InventoryView _inventoryView;
         readonly RectTransform _classArea;
         readonly ClassPickerView _classView;
+        readonly RectTransform _raceArea;
+        readonly RacePickerView _raceView;
         readonly ActionBarView _actionBar;
         readonly CastBarView _castBar;
         readonly CombatTextView _textView;
@@ -36,6 +38,7 @@ namespace Voxelforge.Gameplay
         PlayerCombatText _combatText;
         PlayerInventory _inventory;
         PlayerClassMenu _classMenu;
+        PlayerRaceMenu _raceMenu;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
             Func<ushort, Texture> itemIcon)
@@ -64,6 +67,11 @@ namespace Voxelforge.Gameplay
             _classArea = NestedCanvas($"Player {slot + 1} Class", canvas);
             _classView = new ClassPickerView(_classArea, skin);
             HudWidgets.SetActive(_classArea, false);
+
+            // The race window (Roadmap 4.7), the same way.
+            _raceArea = NestedCanvas($"Player {slot + 1} Race", canvas);
+            _raceView = new RacePickerView(_raceArea, skin);
+            HudWidgets.SetActive(_raceArea, false);
         }
 
         static RectTransform NestedCanvas(string name, RectTransform parent)
@@ -80,10 +88,13 @@ namespace Voxelforge.Gameplay
             _actionBar.SetScheme(controlScheme);
             _inventoryView.SetScheme(controlScheme);
             _classView.SetScheme(controlScheme);
+            _raceView.SetScheme(controlScheme);
             if (_inventory != null)
                 _inventory.Scheme = controlScheme;
             if (_classMenu != null)
                 _classMenu.Scheme = controlScheme;
+            if (_raceMenu != null)
+                _raceMenu.Scheme = controlScheme;
             if (_player == player)
                 return;
             if (_cues != null)
@@ -104,6 +115,9 @@ namespace Voxelforge.Gameplay
             _classMenu = player != null ? player.GetComponent<PlayerClassMenu>() : null;
             if (_classMenu != null)
                 _classMenu.Scheme = controlScheme;
+            _raceMenu = player != null ? player.GetComponent<PlayerRaceMenu>() : null;
+            if (_raceMenu != null)
+                _raceMenu.Scheme = controlScheme;
             if (_cues != null)
                 _cues.Received += OnCue;
             if (_combatText != null)
@@ -118,6 +132,7 @@ namespace Voxelforge.Gameplay
             {
                 HudWidgets.SetActive(_inventoryArea, false);
                 HudWidgets.SetActive(_classArea, false);
+                HudWidgets.SetActive(_raceArea, false);
             }
         }
 
@@ -145,6 +160,7 @@ namespace Voxelforge.Gameplay
             _textView.Tick(_feed, view, textArea, scale, now);
 
             TickClassWindow(ownArea, scale, shrink, now);
+            TickRaceWindow(ownArea, scale, shrink, now);
 
             bool open = _inventory != null && _inventory.IsOpen;
             HudWidgets.SetActive(_inventoryArea, open);
@@ -187,6 +203,26 @@ namespace Voxelforge.Gameplay
             _classView.Tick(_classMenu, _player.TeamColor, now);
         }
 
+        /// <summary>The race window (Roadmap 4.7): centred in the player's view above their action bar, shrunk to fit.</summary>
+        void TickRaceWindow(Rect ownArea, float scale, float shrink, float now)
+        {
+            bool open = _raceMenu != null && _raceMenu.IsOpen;
+            HudWidgets.SetActive(_raceArea, open);
+            if (!open)
+                return;
+            Fit(_raceArea, ownArea, scale);
+            float barRoom = (_actionBar.Height + 24f) * shrink;
+            float fit = Mathf.Min(1f, (ownArea.width / scale - 24f) / _raceView.Width,
+                (ownArea.height / scale - barRoom - 24f) / _raceView.Height);
+            RectTransform window = _raceView.Root;
+            if (!Mathf.Approximately(window.localScale.x, fit))
+                window.localScale = new Vector3(fit, fit, 1f);
+            var offset = new Vector2(0f, barRoom * 0.5f);
+            if (window.anchoredPosition != offset)
+                window.anchoredPosition = offset;
+            _raceView.Tick(_raceMenu, _player.TeamColor, now);
+        }
+
         /// <summary>Lays <paramref name="rect"/> over <paramref name="gui"/> (GUI pixels, y down) on the overlay canvas (y up).</summary>
         static void Fit(RectTransform rect, Rect gui, float scale)
         {
@@ -221,6 +257,8 @@ namespace Voxelforge.Gameplay
                 Object.Destroy(_inventoryArea.gameObject);
             if (_classArea != null)
                 Object.Destroy(_classArea.gameObject);
+            if (_raceArea != null)
+                Object.Destroy(_raceArea.gameObject);
         }
     }
 }

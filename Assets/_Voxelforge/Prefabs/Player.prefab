@@ -37,6 +37,7 @@ GameObject:
   - component: {fileID: 8276849153448150790}
   - component: {fileID: 7719699045505043243}
   - component: {fileID: 2139443151922194105}
+  - component: {fileID: 6284663128493950415}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -552,6 +553,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerRace
   ShowTopMostFoldoutHeaderGroup: 1
   races: {fileID: 11400000, guid: b911f03d19543b7429288679f870dea1, type: 2}
+--- !u!114 &6284663128493950415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 971798592ca3f4a4c9d34c52884cd720, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerRaceMenu
+  retryAfter: 1.5
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

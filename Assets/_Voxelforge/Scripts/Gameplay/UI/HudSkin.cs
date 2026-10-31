@@ -88,6 +88,15 @@ namespace Voxelforge.Gameplay
         [Tooltip("Each class's crest in the class window (Roadmap 4.6), in HeroClassId order. Build Abilities fills it.")]
         public Sprite[] classCrests;
 
+        [Tooltip("Each race's colour in the race window (Roadmap 4.7), in RaceId order: Wayfarer, Thunderhoof.")]
+        public Color[] races = { new Color(0.32f, 0.55f, 0.36f), new Color(0.72f, 0.38f, 0.18f) };
+
+        [Tooltip("Each race's crest in the race window (Roadmap 4.7), in RaceId order. Build Abilities fills it.")]
+        public Sprite[] raceCrests;
+
+        [Tooltip("Each race's portrait in the race window (Roadmap 4.7), in RaceId order. Build Abilities fills it.")]
+        public Sprite[] racePortraits;
+
         [Header("Sizes (pixels at 1080p)")]
         [Range(32f, 120f)] public float slotSize = 66f;
         [Range(0f, 20f)] public float slotGap = 6f;
@@ -112,6 +121,24 @@ namespace Voxelforge.Gameplay
         {
             int i = (int)id;
             return classCrests != null && i < classCrests.Length ? classCrests[i] : null;
+        }
+
+        public Color RaceColor(RaceId id)
+        {
+            int i = (int)id;
+            return races != null && i < races.Length ? races[i] : Color.white;
+        }
+
+        public Sprite CrestFor(RaceId id)
+        {
+            int i = (int)id;
+            return raceCrests != null && i < raceCrests.Length ? raceCrests[i] : null;
+        }
+
+        public Sprite PortraitFor(RaceId id)
+        {
+            int i = (int)id;
+            return racePortraits != null && i < racePortraits.Length ? racePortraits[i] : null;
         }
 
         public Sprite IconFor(AbilityDefinition ability)

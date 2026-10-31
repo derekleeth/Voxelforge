@@ -107,4 +107,25 @@ namespace Voxelforge.Gameplay
                 _chosen.Value = false;
         }
     }
+
+    /// <summary>
+    /// For testing (Voxelforge &gt; Debug, in Play on the host): lets every hero choose their race again. Kept off
+    /// <see cref="PlayerRace"/> so the editor menu doesn't need to know about networking.
+    /// </summary>
+    public static class RaceDebug
+    {
+        /// <summary>Returns how many heroes may choose again.</summary>
+        public static int ServerResetAllChoices()
+        {
+            int reset = 0;
+            foreach (PlayerRace race in UnityEngine.Object.FindObjectsByType<PlayerRace>())
+            {
+                if (!race.IsServer)
+                    continue;
+                race.ServerResetChoice();
+                reset++;
+            }
+            return reset;
+        }
+    }
 }

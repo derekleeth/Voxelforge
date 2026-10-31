@@ -50,6 +50,11 @@ namespace Voxelforge.Gameplay
             PlayerButtons pressed = input.Buttons & ~_previousButtons;
             _previousButtons = input.Buttons;
             bool pad = Scheme == "Gamepad";
+            if (_player.ChoosingRace)
+            {
+                IsOpen = false;
+                return;
+            }
 
             if (!IsOpen)
             {

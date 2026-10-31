@@ -79,6 +79,12 @@ namespace Voxelforge.Gameplay
             PlayerInputFrame input = _player.OwnerRawInput;
             PlayerButtons pressed = input.Buttons & ~_previousButtons;
             _previousButtons = input.Buttons;
+            if (_player.ChoosingRace)
+            {
+                if (IsOpen)
+                    SetOpen(false);
+                return;
+            }
 
             if ((pressed & PlayerButtons.Inventory) != 0 && _player.HasLanded)
             {

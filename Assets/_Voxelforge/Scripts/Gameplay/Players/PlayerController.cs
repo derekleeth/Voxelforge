@@ -51,6 +51,7 @@ namespace Voxelforge.Gameplay
         PlayerHands _hands;
         PlayerInventory _inventory;
         PlayerClassMenu _classMenu;
+        PlayerRaceMenu _raceMenu;
         uint _nextSequence;
         // Buttons still held from inside the inventory window, ignored until let go so closing it doesn't also jump.
         PlayerButtons _swallowed;
@@ -122,7 +123,11 @@ namespace Voxelforge.Gameplay
         /// Owner only: one of this player's windows is open and has their controls: the inventory (Roadmap 4.5) or the
         /// class window (4.6). The hero stands still, and the mouse player gets a free cursor.
         /// </summary>
-        public bool WindowOpen => (_inventory != null && _inventory.IsOpen) || (_classMenu != null && _classMenu.IsOpen);
+        public bool WindowOpen => (_inventory != null && _inventory.IsOpen) || (_classMenu != null && _classMenu.IsOpen) ||
+                                  ChoosingRace;
+
+        /// <summary>Owner only: the race window (Roadmap 4.7) is up, and every other window stays shut until they choose.</summary>
+        public bool ChoosingRace => _raceMenu != null && _raceMenu.IsOpen;
 
         /// <summary>Owner only: this frame's controls as pressed, even while a window has them (<see cref="PlayerInventory"/>).</summary>
         public PlayerInputFrame OwnerRawInput { get; private set; }
@@ -222,6 +227,7 @@ namespace Voxelforge.Gameplay
             _hands = GetComponent<PlayerHands>();
             _inventory = GetComponent<PlayerInventory>();
             _classMenu = GetComponent<PlayerClassMenu>();
+            _raceMenu = GetComponent<PlayerRaceMenu>();
         }
 
         public override void OnNetworkSpawn()
