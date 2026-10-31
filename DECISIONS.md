@@ -62,7 +62,7 @@
 - Tests: 401 → 422.
 
 ### Deferred on purpose
-- The race window's "WAYFARER" shows a blank box for its "W". The Bangers SDF font asset has the glyph, so it's likely its dynamic atlas, which had uncommitted changes from before this work. Not touched here.
+- Dynamic TextMeshPro font assets (Bangers, MedievalSharp, LiberationSans fallback) rewrite their atlas in the editor whenever play draws a new glyph. Those changes are runtime churn: discard them rather than commit them. A glyph can show as a blank box for its first frame while it's being added (seen once in a screenshot of "WAYFARER", never in play).
 - `build_hero.py`'s `limb()` can squash a tube along the wrong axis when it points straight down (an arbitrary half-turn). The Thunderhoof builds its kilt bottom-up to avoid it. The Wayfarer's tunic skirt may be slightly affected; it hasn't been rebuilt.
 - Herb-Sense does nothing until Herbalism (5.5); a race-specific starting area or spawn; changing race after choosing (a barber or rebirth feature, later).
 - Hoofquake can't stun Phase 5 creatures yet (there are none); it can only stun dummies.
