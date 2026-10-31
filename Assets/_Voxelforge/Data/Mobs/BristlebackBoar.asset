@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f841001f5efd8eb499e8600c76019def, type: 3}
+  m_Name: BristlebackBoar
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobDefinition
+  id: 1
+  displayName: Bristleback Boar
+  prefab: {fileID: 6781440883332120610, guid: 7a1009fd4e81e1948b8810d75a7ca9ba, type: 3}
+  maxHealth: 60
+  motor:
+    WalkSpeed: 3.2
+    JumpHeight: 1.25
+    Gravity: 25
+    MaxFallSpeed: 50
+    StepHeight: 1
+    HalfExtents:
+      x: 0.42
+      y: 0.5
+      z: 0.42
+  runSpeed: 1.7
+  turnSpeed: 420
+  temperament: 0
+  aggroRadius: 12
+  leashRadius: 30
+  wanderRadius: 8
+  attacks:
+  - Kind: 0
+    Damage: 8
+    MinRange: 0
+    Range: 1.6
+    Windup: 0.35
+    Cooldown: 1.4
+    Knockback: 3
+    Lift: 2
+    ChargeSpeed: 1
+    ChargeDistance: 1
+    DazedSeconds: 0
+  - Kind: 1
+    Damage: 14
+    MinRange: 6
+    Range: 14
+    Windup: 0.8
+    Cooldown: 8
+    Knockback: 10
+    Lift: 5
+    ChargeSpeed: 3
+    ChargeDistance: 18
+    DazedSeconds: 1.5
