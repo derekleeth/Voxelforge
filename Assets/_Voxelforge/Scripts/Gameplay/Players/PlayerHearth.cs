@@ -43,6 +43,8 @@ namespace Voxelforge.Gameplay
         const float DriftAllowed = 0.35f;
 
         readonly NetworkVariable<bool> _hasHome = new NetworkVariable<bool>();
+        // Where the totem stands, for every PC's map (Roadmap 4.8). The host keeps its own _homeBlock for the rules.
+        readonly NetworkVariable<Vector3Int> _homeSpot = new NetworkVariable<Vector3Int>();
 
         PlayerController _player;
         PlayerCrafter _crafter;
@@ -72,6 +74,16 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Host only: where this player's Home Totem stands (with <see cref="HasHome"/>).</summary>
         public int3 ServerHomeBlock => _homeBlock;
+
+        /// <summary>Every PC: where this player's Home Totem stands (with <see cref="HasHome"/>), for the map (Roadmap 4.8).</summary>
+        public int3 HomeBlock
+        {
+            get
+            {
+                Vector3Int spot = _homeSpot.Value;
+                return new int3(spot.x, spot.y, spot.z);
+            }
+        }
 
         /// <summary>Owner only: the "Teleport home?" prompt is showing.</summary>
         public bool IsPromptOpen => _promptOpen;
@@ -109,8 +121,14 @@ namespace Voxelforge.Gameplay
         /// <summary>Host, just after spawning: the home this player had last time (Roadmap 3.4 profile).</summary>
         public void ServerRestore(bool hasHome, int3 homeBlock)
         {
-            _homeBlock = homeBlock;
+            SetHomeBlock(homeBlock);
             _hasHome.Value = hasHome;
+        }
+
+        void SetHomeBlock(int3 cell)
+        {
+            _homeBlock = cell;
+            _homeSpot.Value = new Vector3Int(cell.x, cell.y, cell.z);
         }
 
         /// <summary>
@@ -125,7 +143,7 @@ namespace Voxelforge.Gameplay
             if (_hasHome.Value && !_homeBlock.Equals(cell) && world != null &&
                 HomeTotems.IsStanding(world.World, world.DeltaLog, _homeBlock))
                 world.RequestModifyVoxel(_homeBlock, BlockIds.Air, _player.PlayerId);
-            _homeBlock = cell;
+            SetHomeBlock(cell);
             _hasHome.Value = true;
             MessageRpc("Home Totem placed! Press Home to come back here.");
         }

@@ -10,7 +10,8 @@ namespace Voxelforge.Gameplay
     /// combat text each. One overlay canvas holds a <see cref="PlayerHudPanel"/> per local player, and every frame each
     /// panel is fitted to <b>that player's own</b> part of the screen (<see cref="PlayerScreenArea"/>, CLAUDE.md Law #5),
     /// so it follows them through Dynamic and Classic splits and merges. Each panel also holds that player's inventory
-    /// window (4.5), and bars over the Training Dummies being fought (4.6), from every hero's cues. The reticle, held
+    /// window (4.5), bars over the Training Dummies being fought (4.6), from every hero's cues, and a minimap with every
+    /// hero and Home Totem on it (4.8). The reticle, held
     /// item and crafting window stay in <see cref="PlayerHud"/>.
     /// </summary>
     public sealed class CombatHud : MonoBehaviour
@@ -41,6 +42,8 @@ namespace Voxelforge.Gameplay
 
         readonly PlayerHudPanel[] _panels = new PlayerHudPanel[MaxSlots];
         readonly TargetHealthBook _targets = new TargetHealthBook();
+        PartyMarkers _party;
+        readonly List<MapMarker> _markers = new List<MapMarker>();
         readonly Dictionary<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>> _heroes =
             new Dictionary<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>>();
         RectTransform _canvas;
@@ -71,12 +74,15 @@ namespace Voxelforge.Gameplay
         {
             PlayerController.AnySpawned += OnHeroSpawned;
             PlayerController.AnyDespawned += OnHeroDespawned;
+            _party ??= new PartyMarkers();
         }
 
         void OnDisable()
         {
             PlayerController.AnySpawned -= OnHeroSpawned;
             PlayerController.AnyDespawned -= OnHeroDespawned;
+            _party?.Dispose();
+            _party = null;
             foreach (KeyValuePair<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>> hero in _heroes)
             {
                 if (hero.Key != null)
@@ -128,6 +134,9 @@ namespace Voxelforge.Gameplay
             float now = Time.time;
             SplitMode mode = cameras.Layout.Mode;
             _targets.Expire(now);
+            _markers.Clear();
+            _party?.CollectMarkers(_markers);
+            MapTileCache mapTiles = world != null ? world.MapTiles : null;
 
             for (int slot = 0; slot < MaxSlots; slot++)
             {
@@ -149,7 +158,7 @@ namespace Voxelforge.Gameplay
                 Rect text = mode == SplitMode.Merged
                     ? new Rect(r.x * Screen.width, (1f - r.y - r.height) * Screen.height, r.width * Screen.width, r.height * Screen.height)
                     : own;
-                panel.Tick(view, own, text, scale, _targets, now);
+                panel.Tick(view, own, text, scale, _targets, mapTiles, _markers, now);
             }
 
             VoxelWorld voxels = world != null ? world.World : null;

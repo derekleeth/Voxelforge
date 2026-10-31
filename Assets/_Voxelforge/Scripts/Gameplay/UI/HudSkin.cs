@@ -97,6 +97,19 @@ namespace Voxelforge.Gameplay
         [Tooltip("Each race's portrait in the race window (Roadmap 4.7), in RaceId order. Build Abilities fills it.")]
         public Sprite[] racePortraits;
 
+        [Header("Map (Roadmap 4.8): empty slots use plain shapes drawn in code")]
+        [Tooltip("The minimap's round frame, drawn over its edge.")]
+        public Sprite mapRim;
+        [Tooltip("A hero on the map, pointing north. Tinted with their team colour.")]
+        public Sprite mapHero;
+        [Tooltip("A partner or totem off the edge of the map, pointing north. Tinted with their team colour.")]
+        public Sprite mapEdgeArrow;
+        [Tooltip("A Home Totem on the map. Tinted with its owner's team colour.")]
+        public Sprite mapHome;
+        [Tooltip("The ink the map's frame and compass are drawn in.")]
+        public Color mapInk = new Color(0.33f, 0.22f, 0.12f);
+        [Range(120f, 360f)] public float minimapSize = 230f;
+
         [Header("Sizes (pixels at 1080p)")]
         [Range(32f, 120f)] public float slotSize = 66f;
         [Range(0f, 20f)] public float slotGap = 6f;
@@ -140,6 +153,11 @@ namespace Voxelforge.Gameplay
             int i = (int)id;
             return racePortraits != null && i < racePortraits.Length ? racePortraits[i] : null;
         }
+
+        public Sprite MapRim => mapRim != null ? mapRim : MapSprites.Ring;
+        public Sprite MapHero => mapHero != null ? mapHero : MapSprites.Hero;
+        public Sprite MapEdgeArrow => mapEdgeArrow != null ? mapEdgeArrow : MapSprites.EdgeArrow;
+        public Sprite MapHome => mapHome != null ? mapHome : MapSprites.Home;
 
         public Sprite IconFor(AbilityDefinition ability)
         {

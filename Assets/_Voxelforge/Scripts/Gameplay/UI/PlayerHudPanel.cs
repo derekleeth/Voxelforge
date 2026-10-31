@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Voxelforge.Voxels;
 using Object = UnityEngine.Object;
 
 namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Everything the 4.4 HUD draws for one local player: their action bar and mana, their cast bar, their floating
-    /// combat text, and their inventory (4.5), class (4.6) and race (4.7) windows. <see cref="CombatHud"/> fits it to that player's own part of the screen every frame, so it never
+    /// combat text, their inventory (4.5), class (4.6) and race (4.7) windows, and their minimap (4.8). <see cref="CombatHud"/> fits it to that player's own part of the screen every frame, so it never
     /// lands on someone else's view (CLAUDE.md Law #5). Each part sits on its own nested canvas, so a cooldown ticking
     /// or a number floating up doesn't rebuild the frames around it.
     /// </summary>
@@ -28,6 +30,8 @@ namespace Voxelforge.Gameplay
         readonly CastBarView _castBar;
         readonly CombatTextView _textView;
         readonly TargetBarsView _targetBars;
+        readonly RectTransform _mapArea;
+        readonly MinimapView _minimap;
         readonly CombatTextFeed _feed = new CombatTextFeed(TextCapacity);
 
         PlayerController _player;
@@ -39,6 +43,7 @@ namespace Voxelforge.Gameplay
         PlayerInventory _inventory;
         PlayerClassMenu _classMenu;
         PlayerRaceMenu _raceMenu;
+        PlayerExplorer _explorer;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
             Func<ushort, Texture> itemIcon)
@@ -57,6 +62,10 @@ namespace Voxelforge.Gameplay
             // Target health bars (Roadmap 4.6) first, so combat text draws over them.
             _targetBars = new TargetBarsView(_textArea, skin);
             _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName);
+
+            // The minimap (Roadmap 4.8), on its own canvas: it moves every frame, and nothing else should rebuild for it.
+            _mapArea = NestedCanvas($"Player {slot + 1} Map", canvas);
+            _minimap = new MinimapView(_mapArea, skin);
 
             // The inventory window (Roadmap 4.5) on top, on its own canvas so its slots don't rebuild the bar.
             _inventoryArea = NestedCanvas($"Player {slot + 1} Inventory", canvas);
@@ -118,6 +127,7 @@ namespace Voxelforge.Gameplay
             _raceMenu = player != null ? player.GetComponent<PlayerRaceMenu>() : null;
             if (_raceMenu != null)
                 _raceMenu.Scheme = controlScheme;
+            _explorer = player != null ? player.GetComponent<PlayerExplorer>() : null;
             if (_cues != null)
                 _cues.Received += OnCue;
             if (_combatText != null)
@@ -128,6 +138,7 @@ namespace Voxelforge.Gameplay
         {
             HudWidgets.SetActive(_barArea, visible);
             HudWidgets.SetActive(_textArea, visible);
+            HudWidgets.SetActive(_mapArea, visible);
             if (!visible)
             {
                 HudWidgets.SetActive(_inventoryArea, false);
@@ -140,10 +151,20 @@ namespace Voxelforge.Gameplay
         /// <param name="textArea">Where their combat text may go (GUI pixels).</param>
         /// <param name="scale">GUI pixels per 1080p pixel.</param>
         /// <param name="targets">Health of the targets being fought (Roadmap 4.6), shared by every panel.</param>
-        public void Tick(PlayerView view, Rect ownArea, Rect textArea, float scale, TargetHealthBook targets, float now)
+        /// <param name="mapTiles">The painted map (Roadmap 4.8), shared by every panel. Null before the world starts.</param>
+        /// <param name="markers">This frame's map markers: every hero and Home Totem (Roadmap 4.8).</param>
+        public void Tick(PlayerView view, Rect ownArea, Rect textArea, float scale, TargetHealthBook targets,
+            MapTileCache mapTiles, List<MapMarker> markers, float now)
         {
             Fit(_barArea, ownArea, scale);
             Fit(_textArea, textArea, scale);
+            Fit(_mapArea, ownArea, scale);
+            if (_player != null)
+            {
+                // A quarter of the screen gets a smaller map, so it doesn't crowd the view.
+                float fit = Mathf.Clamp(Mathf.Min(ownArea.width, ownArea.height) / scale / 900f, 0.6f, 1f);
+                _minimap.Tick(mapTiles, _explorer != null ? _explorer.Map : null, _player, markers, fit);
+            }
 
             // Shrink the bar to fit a narrow view (a quarter of the screen, or a Voronoi half).
             float room = ownArea.width / scale - 24f;
@@ -259,6 +280,9 @@ namespace Voxelforge.Gameplay
                 Object.Destroy(_classArea.gameObject);
             if (_raceArea != null)
                 Object.Destroy(_raceArea.gameObject);
+            _minimap.Dispose();
+            if (_mapArea != null)
+                Object.Destroy(_mapArea.gameObject);
         }
     }
 }
