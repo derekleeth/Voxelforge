@@ -4,6 +4,10 @@
 > 1. Always check this file to identify the active phase and current task before writing code.
 > 2. Follow all architectural guardrails in `CLAUDE.md` (Host-Authority, No Singletons, Message-Driven Voxels).
 > 3. When a milestone task is implemented and verified by the user, update `[ ]` to `[x]` in this file.
+>
+> **Editor Play-Test Output Locations:**
+> - **Screenshots (`F12`):** `D:\Repos\Voxelforge\Builds\Editor\Screenshots`
+> - **FPS Snapshot (`F4`):** `D:\Repos\Voxelforge\Builds\Editor\frame-stats.txt`
 
 ---
 
