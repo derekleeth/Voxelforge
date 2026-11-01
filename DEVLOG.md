@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-11-01 - Session 1 (part 35): The Wilds Wake Up! 🐗🐺🦏💎 Roadmap 5.2
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- **Four real monsters roam the world!** Each one lives in its own biome and fights in its own way. Details in DECISIONS.md **D-033**.
+  - **Bristleback Boar** (Meadows): gores you, and from further away it **paws the ground and charges**. Watch for the red strip on the ground and jump aside! If it hits a wall it's dazed.
+  - **Frostfang Wolf** (Snowy Peaks): hunts in packs. One **howls** and the rest come running. Only two bite at a time while the others circle you, and a wolf left on its own runs away when it's hurt.
+  - **Thunder Rhino** (Thunderhoof Plains): peaceful and grazing... until you hit one. Then the whole herd comes to help it and **tosses** you with its horn. They calm down after 12 seconds.
+  - **Crystal Slime** (caves, everywhere): a glowing crystal jelly that **hops**. Defeat a big one and it splits into 2 medium ones, and each of those splits into 2 small ones!
+- **Monsters appear by themselves** in a ring around each hero, never right next to you or your Home Totem, and wander off when everyone is far away. There are at most 20 in the world.
+- **Knocked out, not dead:** if your health hits 0 you fall over, the screen says **KNOCKED OUT**, and 5 seconds later you wake up at your Home Totem with half your health. You don't lose anything!
+- **Tab targeting:** press **Tab** (T, Numpad Enter, or click the right stick) to pick the nearest monster, and press again to pick the next one. Your spells aim at it. The bag moved to **B**.
+- **All four were built in Blender by a script**, with their own skeletons and animations: walking, running, attacking, getting hit, falling over, plus pawing, howling, grazing, tossing and the slime's squishy hops.
+- **Sounds and effects:** grunts, a squeal, howls, bites, bellows, stomps, squelches and pops, all made from code. Monsters flash red when hit, go "poof" when defeated, and have their **name** over their health bar.
+- **Debug keys:** **F10** spawns the next monster by every hero, **Shift+F10** clears them, **Ctrl+F10** turns natural spawning on and off. F3 shows the monster count.
+
+### Speed check (0.5.2 build) 🏎️
+- Split screen at 2560×1440 with **27 monsters** around: **138 and 131 FPS**. Our goal was 120+! ✅
+- The 1% low (the slowest frames) was 40-45 FPS, the same as before monsters existed, so that's an old puzzle (from 3.10), not the monsters.
+- In the editor, 20 monsters cost only about 7 FPS (100 → 93).
+
+### Tests: 519 / 519 passing ✅
+- The mob brain changes state correctly: wander, chase, windup, attack, leash home and heal.
+- The boar's charge winds up, cools down and gets dazed by walls; wolves take turns biting; rhinos defend their herd and calm down; slimes split and keep their anger.
+- Spawning picks the right mob for each biome and cave, respects the caps and keeps away from heroes and totems.
+- Knock-outs wake you at your totem (or the world spawn) with half health.
+
+### Things we learned
+- When Unity isn't the focused window it slows itself down, so Claude can't measure FPS on its own. A human pressing F4 with Unity in front gives the real number!
+- A rhino can *look* huge and still fit through a 2-block tunnel, because its collision box stays hero-sized.
+
+### Next up
+- [x] Play-test 5.2: each step A-G play-tested in split screen, and F4 with 27 mobs in the 0.5.2 build (131-138 FPS) ✅
+- [ ] Find the slow frames behind the 40-45 FPS 1% low (open since 3.10)
+- [ ] Roadmap **5.3 RPG Threat & Aggro System**
+
+---
+
 ## 2026-10-31 - Session 1 (part 34): Monsters Can Find You Now! 🧭👾 Roadmap 5.1
 **Phase:** 5 - Monsters, Dungeons & Bosses
 

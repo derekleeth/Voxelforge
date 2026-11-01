@@ -5,6 +5,47 @@
 
 ---
 
+## D-033: Overland Mobs, the Mob Brain, Biome Spawning & Hero Knock-Outs
+- **Date:** 2026-11-01
+- **Status:** Accepted (steps A-G play-tested one by one in split screen, 2026-10-31 to 2026-11-01; step H measured in the 0.5.2 build)
+
+### Decisions
+- **Four overland mobs, each testing a different AI idea:**
+
+  | Mob | Home | Health | What it tests |
+  |---|---|---|---|
+  | Bristleback Boar | Meadows, pairs | 60 | Plain melee (gore 8) plus a **telegraphed charge**: from 6-14 m it paws for 0.8 s, then runs straight for 14 damage + a big shove, dazed if it hits a wall |
+  | Frostfang Wolf | Snowy Peaks or above the snow line, packs of 3-4 | 45 | **Packs**: a howl pulls packmates within 25 m; only 2 bite at once while the rest circle and swap in; a lone wolf flees below 20% |
+  | Thunder Rhino | Thunderhoof Plains, herds of 2-3 | 200 | **Neutral**: grazes until hit, then the herd within 15 m defends with a horn toss (15 + big shove) and calms down after 12 s without hits |
+  | Crystal Slime | Cave floors (8+ blocks under the surface), any biome | 80 / 30 / 10 | **Hopping** movement and **splitting**: Large → 2 Medium → 2 Small each, with the anger carried over |
+
+- **Data, brain and body are separate**, like abilities (D-024/D-025):
+  - `MobDefinition` assets (in a `MobBook`) hold a permanent `MobId` (never reused), health, motor settings, temperament, aggro/leash/flee numbers, a list of `MobAttack`s (Melee / Charge), the spawn rule, what it splits into, and its sounds.
+  - `MobRules` (health, stun, who hit it) and `MobBrain` (Idle → Wander → Alert → Chase → Windup → Attack → Recover, plus Leash, Flee, Stunned and Dead) are **plain C#** and unit-tested. Pack, herd, charge, hop and split behaviours sit on top.
+  - The host-run `Mob` NetworkBehaviour feeds the brain its senses, then walks the 5.1 nav grid with the same `VoxelBodyMotor` heroes use. Every target is a `PlayerId` (Law #1); damage and shoves only happen on the host (Law #2).
+- **Creatures are combat targets.** `CombatTarget` covers Training Dummies *and* creatures (`ICombatCreature`), keyed by a `TargetKey` that's the same on every PC, so health bars follow a moving mob. Bolts, slams, zones, totems and Hoofquake hurt and stun mobs, and a spell that hits a mob doesn't crater the ground under it.
+- **Knock-outs, not death.** A hero at 0 health topples, sees "KNOCKED OUT" with a countdown in their own view, and after 5 s wakes at their Home Totem (or the world spawn) with half health, using the hearth's preload and landing code. Nothing is lost. Mobs ignore knocked-out heroes.
+- **Tab targeting** (added after step B): Tab / T / Numpad Enter / R3 picks the nearest creature within 40 m and cycles further out on each press. A team-coloured arrow marks it in that player's view, the hero faces it when standing, and bolts aim at it. The bag moved to **B**.
+- **Biome spawning on the host** (`MobSpawner`, rules in `MobSpawnRules`): every 2 s, taking turns per hero, it tries a few columns in a 24-56 m ring (behind the hero where it can), reads the biome and whether it's a cave floor (35% of tries), picks a mob that lives there by weight and drops its group. Caps: 6 near each hero, 20 in the world. Nothing spawns within 20 m of a hero or Home Totem; a mob 80 m from every hero and out of a fight leaves. **Mobs aren't saved**, so the save format didn't change. Ctrl+F10 turns spawning off for play-tests; F10 / Shift+F10 spawn and clear by hand.
+- **Art built by script, not by hand:** `Tools/Blender/build_mobs.py` → `Mobs.blend` makes all four chunky, hand-painted mobs with their own quadruped rigs and clips (Idle, Walk, Run, Attack, Hit, Death, plus Paw/Charge, Howl, Graze, Toss and the slime's squash-and-stretch hop/slam/split), exported as Generic FBX. `Voxelforge > Rebuild Mob Models` builds the animators, materials and prefabs. The rhino keeps a hero-sized collision box (it only *looks* big) so it fits the nav grid; the slime is one translucent glowing mesh scaled for its 3 sizes.
+- **Feedback is presentation only** (step G), driven by the host's mob cues and synced state, so nothing extra is sent:
+  - `MobFoley`: synthesised calls, windups, strikes, hurts and deaths for each kind (from `SfxBuilder`), played through the `SoundRouter` (D-022). A wolf's howl carries 48 m, everything else 28 m.
+  - `MobEffects`: a red hurt flash, the charge telegraph (a pulsing red strip on the ground along the charge line, plus dust from the pawing hoof), a blocky dust puff when a mob leaves, and droplets when a slime splits.
+  - Each creature's health bar has its **name** over it, in each player's own view (Law #5).
+
+### Measured
+- Tests: 477 → 519.
+- **0.5.2 release build** (124.9 MB), Classic split screen, 2 players, 2560×1440, **27 mobs** alive: **138 and 131 FPS** average (F4), 40-45 FPS 1% low. The 1% low matches 3.10's 41-51 before there were any mobs, so it's the slow-frame follow-up from D-023, not the mobs.
+- Editor A/B, Classic split, 1899×861, focused: no mobs 100 FPS, 20 mobs 93 FPS. So 20 mobs cost about 7 FPS: about 0.5 ms of CPU (`Mob.FixedUpdate` ~0.2 ms, animators ~0.3 ms) and about 1 ms of GPU to draw. The editor can't reach 120 in split screen even with no mobs, so FPS targets are judged in a build (as in 2.7 and 3.10).
+- An unfocused editor throttles itself, and MCP code calls stall the main thread while they compile, so FPS can't be measured from Claude's side. A person pressing F4 is the real number.
+
+### Deferred on purpose
+- A real threat table (5.3): mobs follow whoever hit them last, from a short attacker list.
+- Loot and skinning (5.5 / 5.6): mobs drop nothing yet.
+- Jumping across gaps and up 2-block ledges is still out (D-032), apart from the slime's hops.
+
+---
+
 ## D-032: Our Own Voxel Nav Grid Instead of Unity's NavMesh
 - **Date:** 2026-10-31
 - **Status:** Accepted (play-tested 2026-10-31: critters chased heroes round big spell craters, trenches and walls, up steps and down ledges, in split screen)
