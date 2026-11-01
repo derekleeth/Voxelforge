@@ -38,6 +38,9 @@ namespace Voxelforge.Gameplay
         /// </summary>
         bool ServerTaunt(float seconds, PlayerId taunter);
 
+        /// <summary>Every PC: who it's fighting and how close each hero is to pulling it (Roadmap 5.3).</summary>
+        MobThreatView ThreatView { get; }
+
         /// <summary>Host only: who it's angry at (Roadmap 5.3), or null for a creature that doesn't keep a table.</summary>
         ThreatTable ServerThreat { get; }
     }

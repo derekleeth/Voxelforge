@@ -25,6 +25,7 @@ namespace Voxelforge.Tests
             public float StunnedFor;
             public float ThreatScale;
             public ThreatTable ServerThreat { get; } = new ThreatTable();
+            public MobThreatView ThreatView => default;
 
             public TargetDamage ServerDamage(float amount, PlayerId instigator, float threatScale = 1f)
             {

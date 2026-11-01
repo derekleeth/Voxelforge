@@ -37,6 +37,8 @@ namespace Voxelforge.Gameplay
         Defeated,
         /// <summary>A taunt landed: the target fights only the taunter for a moment (Roadmap 5.3, Oathbrand).</summary>
         Taunted,
+        /// <summary>The hero is about to pull a mob off whoever is tanking it (Roadmap 5.3, <see cref="AggroWarnings"/>).</summary>
+        PullingAggro,
     }
 
     /// <summary>

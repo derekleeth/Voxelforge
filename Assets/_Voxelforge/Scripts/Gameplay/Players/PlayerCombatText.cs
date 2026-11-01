@@ -1,6 +1,7 @@
 using System;
 using Unity.Mathematics;
 using UnityEngine;
+using Voxelforge.Core;
 using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
@@ -9,6 +10,8 @@ namespace Voxelforge.Gameplay
     /// Turns what the host said about this hero into <see cref="CombatTextEvent"/>s for the floating combat text in their
     /// own view (Roadmap 4.4): spell hits and craters from <see cref="AbilityCue"/>s, mana spent when a spell goes off,
     /// refused casts and items picked up, and damage, heals and shields from <see cref="PlayerHealth"/> (4.6). It only listens, so it can't change the game (Roadmap 4.2).
+    /// On the owner's PC it also watches the mobs' shared threat (Roadmap 5.3) and warns when the hero is about to pull one
+    /// off whoever is tanking it.
     /// </summary>
     [RequireComponent(typeof(PlayerController), typeof(PlayerAbilityCues), typeof(PlayerCaster))]
     public sealed class PlayerCombatText : MonoBehaviour
@@ -19,6 +22,12 @@ namespace Voxelforge.Gameplay
         [Tooltip("Spells cheaper than this don't say what they cost, so the M.G.R.S. firing nonstop doesn't flood the view.")]
         [SerializeField, Min(0f)] float minManaShown = 10f;
 
+        // How often the owner's PC looks over the mobs for a "PULLING AGGRO!" warning (Roadmap 5.3), in seconds.
+        const float AggroCheckEvery = 0.25f;
+
+        readonly AggroWarnings _aggroWarnings = new AggroWarnings();
+        float _nextAggroCheck;
+        PlayerController _player;
         PlayerAbilityCues _cues;
         PlayerCaster _caster;
         PlayerBlockBag _bag;
@@ -29,6 +38,7 @@ namespace Voxelforge.Gameplay
 
         void Awake()
         {
+            _player = GetComponent<PlayerController>();
             _cues = GetComponent<PlayerAbilityCues>();
             _caster = GetComponent<PlayerCaster>();
             _bag = GetComponent<PlayerBlockBag>();
@@ -136,6 +146,27 @@ namespace Voxelforge.Gameplay
             int amount = Mathf.RoundToInt(e.Amount);
             if (amount > 0)
                 Raise(new CombatTextEvent { Kind = kind, Amount = amount, AbilityId = e.AbilityId, Position = Head });
+        }
+
+        void Update()
+        {
+            float now = Time.time;
+            if (now < _nextAggroCheck || !_player.IsSpawned || !_player.IsOwner)
+                return;
+            _nextAggroCheck = now + AggroCheckEvery;
+            CombatTargets targets = _player.Registry != null ? _player.Registry.Targets : null;
+            if (targets == null)
+                return;
+            PlayerId me = _player.PlayerId;
+            foreach (ICombatCreature creature in targets.Creatures)
+            {
+                if (!creature.IsTargetable || !_aggroWarnings.ShouldWarn(creature.CreatureId, creature.ThreatView, me, now))
+                    continue;
+                Raise(new CombatTextEvent { Kind = CombatTextKind.PullingAggro, Position = Head });
+                // One warning at a time is plenty, even with a whole pack about to turn.
+                break;
+            }
+            _aggroWarnings.Prune(now);
         }
 
         void OnRefused(CastCheck reason) =>

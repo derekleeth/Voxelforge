@@ -62,6 +62,12 @@ namespace Voxelforge.Gameplay
         readonly NetworkVariable<byte> _state = new NetworkVariable<byte>();
         // The attack it's winding up or making, +1 (0 for none), so a boar paws before a charge but rears before a gore.
         readonly NetworkVariable<byte> _attack = new NetworkVariable<byte>();
+        // Who it's fighting and how close others are to pulling it (Roadmap 5.3), for each player's own view.
+        readonly NetworkVariable<MobThreatView> _threat = new NetworkVariable<MobThreatView>();
+
+        /// <summary>Seconds between threat view updates, at most; and a share must move this much (of 255) to be sent.</summary>
+        const float ThreatViewEvery = 0.2f;
+        const int ThreatViewStep = 5;
 
         // Host-only state.
         VoxelWorldManager _world;
@@ -76,6 +82,7 @@ namespace Voxelforge.Gameplay
         float _moved;
         float _despawnAt = float.PositiveInfinity;
         float _nextHop;
+        float _nextThreatView;
         readonly List<HeroSense> _heroes = new List<HeroSense>();
         readonly List<AllySense> _allies = new List<AllySense>();
         readonly List<Mob> _packmates = new List<Mob>();
@@ -94,6 +101,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Every PC: which of its <see cref="MobDefinition.Attacks"/> it's winding up or making, or -1.</summary>
         public int CurrentAttack => _attack.Value - 1;
+
+        /// <summary>Every PC: who it's fighting and how close each hero is to pulling it, as the host last said (5.3).</summary>
+        public MobThreatView ThreatView => _threat.Value;
 
         /// <summary>Host only: its brain, for tests and the debug readout.</summary>
         public MobBrain Brain => _brain;
@@ -212,6 +222,8 @@ namespace Voxelforge.Gameplay
                         break;
                 }
             }
+            if (now >= _nextThreatView)
+                SendThreatView(feet, now);
             if (_state.Value != (byte)_brain.State)
                 _state.Value = (byte)_brain.State;
             byte attack = (byte)(_brain.CurrentAttack + 1);
@@ -278,6 +290,19 @@ namespace Voxelforge.Gameplay
                 return;
             }
             input.Jump = true;
+        }
+
+        /// <summary>Host: shares who it's fighting and the heroes' shares, if they've changed enough to be worth it.</summary>
+        void SendThreatView(float3 feet, float now)
+        {
+            _nextThreatView = now + ThreatViewEvery;
+            PlayerId fighting = _brain.IsFighting ? _brain.Target : PlayerId.None;
+            MobThreatView view = MobThreatView.From(_rules.Threat, fighting, new ThreatPick
+            {
+                Now = now, Heroes = _heroes, Feet = feet, MeleeReach = definition.MeleeReach,
+            });
+            if (view.Differs(_threat.Value, ThreatViewStep))
+                _threat.Value = view;
         }
 
         /// <summary>Host: mobs of its own kind within its pack radius, for its brain to line up with.</summary>

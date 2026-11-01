@@ -173,6 +173,12 @@ namespace Voxelforge.Gameplay
                     size *= 1.1f;
                     burst = true;
                     break;
+                case CombatTextKind.PullingAggro:
+                    words = "PULLING AGGRO!";
+                    colour = _skin.refusal;
+                    size *= 1.05f;
+                    burst = true;
+                    break;
                 case CombatTextKind.Taunted:
                     words = "TAUNTED!";
                     colour = _skin.ElementColor(e.Element);

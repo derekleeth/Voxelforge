@@ -30,6 +30,7 @@ namespace Voxelforge.Gameplay
         readonly CastBarView _castBar;
         readonly CombatTextView _textView;
         readonly TargetBarsView _targetBars;
+        readonly ThreatMarksView _threatMarks;
         readonly TargetMarkerView _targetMarker;
         readonly RectTransform _mapArea;
         readonly MinimapView _minimap;
@@ -70,6 +71,7 @@ namespace Voxelforge.Gameplay
             _textArea.gameObject.AddComponent<RectMask2D>();
             // Target health bars (Roadmap 4.6) first, so combat text draws over them.
             _targetBars = new TargetBarsView(_textArea, skin);
+            _threatMarks = new ThreatMarksView(_textArea, skin);
             _targetMarker = new TargetMarkerView(_textArea, skin);
             _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName);
 
@@ -209,6 +211,7 @@ namespace Voxelforge.Gameplay
             _castBar.Tick(_caster, now);
             if (_player != null)
                 _targetBars.Tick(targets, creatures, view, textArea, scale, _player.transform.position, now);
+            _threatMarks.Tick(_player, _targeting, creatures, view, textArea, scale, now);
             _targetMarker.Tick(_targeting, creatures, view, textArea, scale, _player != null ? _player.TeamColor : Color.white, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);
