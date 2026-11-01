@@ -19,6 +19,10 @@ namespace Voxelforge.Gameplay
     /// Every PC sees it through a server-authority <c>NetworkTransform</c> and its <see cref="State"/>, which is all its
     /// animation needs (<see cref="MobStandInView"/>). Its targets are heroes by <see cref="PlayerId"/> (CLAUDE.md Law #1).
     /// </para>
+    /// <para>
+    /// Step C: it tells its brain about mobs of its own kind nearby and calls them into its fights, hops if it's a slime,
+    /// and bursts into smaller mobs that carry on its fight if its kind splits.
+    /// </para>
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
     public sealed class Mob : NetworkBehaviour, ICombatCreature
@@ -28,6 +32,9 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Seconds it lies there after being defeated, before it leaves the world.")]
         [SerializeField, Min(0f)] float defeatedSeconds = 2f;
+
+        [Tooltip("How hard the mobs it splits into burst out sideways and up, in metres per second.")]
+        [SerializeField] Vector2 splitPop = new Vector2(3f, 5f);
 
         readonly NetworkVariable<byte> _state = new NetworkVariable<byte>();
 
@@ -43,7 +50,10 @@ namespace Voxelforge.Gameplay
         float _yaw, _previousYaw;
         float _moved;
         float _despawnAt = float.PositiveInfinity;
+        float _nextHop;
         readonly List<HeroSense> _heroes = new List<HeroSense>();
+        readonly List<AllySense> _allies = new List<AllySense>();
+        readonly List<Mob> _packmates = new List<Mob>();
 
         public MobDefinition Definition => definition;
 
@@ -83,6 +93,9 @@ namespace Voxelforge.Gameplay
             transform.SetPositionAndRotation(feet, Quaternion.Euler(0f, _yaw, 0f));
         }
 
+        /// <summary>Host only, after <see cref="ServerInitialize"/>: throws it (a slime bursting out of a bigger one).</summary>
+        internal void ServerPop(float3 impulse) => VoxelBodyMotor.Shove(ref _body, impulse);
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -104,6 +117,7 @@ namespace Voxelforge.Gameplay
             {
                 _despawnAt = Time.time + defeatedSeconds;
                 _state.Value = (byte)MobState.Defeated;
+                ServerSplit();
             }
             return result;
         }
@@ -128,14 +142,18 @@ namespace Voxelforge.Gameplay
             float3 feet = _previousFeet;
 
             GatherHeroes();
+            GatherPackmates(feet);
             MobIntent intent = _brain.Tick(new MobSenses
             {
                 Now = now, Dt = Time.fixedDeltaTime, Feet = feet, Moved = _moved, Heroes = _heroes,
+                Self = NetworkObjectId, Allies = _allies,
             });
             foreach (MobEvent e in _brain.Events)
             {
                 if (e.Kind == MobEventKind.Strike)
                     Strike(e, feet);
+                else if (e.Kind == MobEventKind.Aggro)
+                    CallPack(e.Target, feet, now);
             }
             if (_state.Value != (byte)_brain.State)
                 _state.Value = (byte)_brain.State;
@@ -156,6 +174,8 @@ namespace Voxelforge.Gameplay
                     break;
             }
             input.SpeedScale = intent.SpeedScale;
+            if (definition.Hops)
+                Hop(ref input, now);
             VoxelBodyMotor.Step(ref _body, input, motor, _world.World, Time.fixedDeltaTime);
             float3 after = _body.FeetPosition(motor);
             _moved = math.distance(after.xz, feet.xz);
@@ -173,6 +193,90 @@ namespace Voxelforge.Gameplay
             float alpha = math.saturate((Time.time - Time.fixedTime) / Time.fixedDeltaTime);
             transform.SetPositionAndRotation(math.lerp(_previousFeet, _body.FeetPosition(definition.Motor), alpha),
                 Quaternion.Euler(0f, Mathf.LerpAngle(_previousYaw, _yaw, alpha), 0f));
+        }
+
+        /// <summary>
+        /// A slime gets about in hops: on the ground it sits for <see cref="MobDefinition.HopPause"/>, then jumps the way
+        /// it wants to go, and only moves while it's in the air.
+        /// </summary>
+        void Hop(ref MotorInput input, float now)
+        {
+            if (!_body.Grounded)
+            {
+                _nextHop = now + definition.HopPause;
+                return;
+            }
+            if (math.lengthsq(input.Move) < 0.0001f)
+                return;
+            if (now < _nextHop)
+            {
+                input.Move = float2.zero;
+                input.Jump = false;
+                return;
+            }
+            input.Jump = true;
+        }
+
+        /// <summary>Host: mobs of its own kind within its pack radius, for its brain to line up with.</summary>
+        void GatherPackmates(float3 feet)
+        {
+            _allies.Clear();
+            _packmates.Clear();
+            CombatTargets targets = _players != null ? _players.Targets : null;
+            if (targets == null)
+                return;
+            float radius = definition.PackRadius;
+            foreach (ICombatCreature creature in targets.Creatures)
+            {
+                if (!(creature is Mob other) || other == this || other.definition != definition || other._brain == null ||
+                    !other.IsTargetable || math.distance(other.Feet, feet) > radius)
+                    continue;
+                MobBrain brain = other._brain;
+                _packmates.Add(other);
+                _allies.Add(new AllySense
+                {
+                    Id = other.NetworkObjectId, Feet = other.Feet, Target = brain.Target, Fighting = brain.IsFighting,
+                    Biting = brain.IsBiting, Resting = brain.IsResting,
+                });
+            }
+        }
+
+        /// <summary>Host: it picked a fight, so its kind within its call radius join in (a wolf pack, a rhino herd).</summary>
+        void CallPack(PlayerId hero, float3 feet, float now)
+        {
+            if (definition.CallRadius <= 0f)
+                return;
+            foreach (Mob packmate in _packmates)
+            {
+                if (packmate != null && math.distance(packmate.Feet, feet) <= definition.CallRadius)
+                    packmate._brain.Join(hero, now);
+            }
+        }
+
+        /// <summary>
+        /// Host: defeated, it bursts into <see cref="MobDefinition.SplitCount"/> smaller mobs (a slime), thrown out round
+        /// it, which go straight after whoever it was fighting.
+        /// </summary>
+        void ServerSplit()
+        {
+            MobDefinition into = definition.SplitInto;
+            int count = definition.SplitCount;
+            if (into == null || into.Prefab == null || count <= 0 || _world == null || !_placed)
+                return;
+            float3 feet = _body.FeetPosition(definition.Motor);
+            PlayerId fighting = _brain.Target.IsValid ? _brain.Target : _rules.LastAttacker;
+            float now = Time.time;
+            var random = new Unity.Mathematics.Random((uint)(NetworkObjectId * 2654435761UL) | 1u);
+            float start = random.NextFloat(0f, 2f * math.PI);
+            for (int i = 0; i < count; i++)
+            {
+                float angle = start + i * 2f * math.PI / count;
+                Mob child = Instantiate(into.Prefab, (Vector3)feet, Quaternion.identity);
+                child.ServerInitialize(_world, _players, feet, random.NextUInt(1u, uint.MaxValue));
+                child.ServerPop(new float3(math.sin(angle) * splitPop.x, splitPop.y, math.cos(angle) * splitPop.x));
+                child.NetworkObject.Spawn(destroyWithScene: true);
+                child._brain.Join(fighting, now);
+            }
         }
 
         void GatherHeroes()

@@ -9,8 +9,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Play-test keys for mobs (Roadmap 5.2), host only. <b>F10</b> drops a mob some way from every hero, cycling through
-    /// the kinds in the <see cref="MobBook"/> on each press; <b>Shift+F10</b> sends every mob it dropped away. The biome
-    /// spawner (step D) puts mobs in the world for real.
+    /// the kinds in the <see cref="MobBook"/> on each press (skipping the smaller slimes, which only come from splitting);
+    /// <b>Shift+F10</b> sends every mob in the world away. The biome spawner (step D) puts mobs in the world for real.
     /// </summary>
     public sealed class MobDebugSpawner : MonoBehaviour
     {
@@ -57,9 +57,9 @@ namespace Voxelforge.Gameplay
             if (mobs.Mobs.Count == 0)
                 return;
             MobDefinition kind = null;
-            for (int tries = 0; tries < mobs.Mobs.Count && (kind == null || kind.Prefab == null); tries++)
+            for (int tries = 0; tries < mobs.Mobs.Count && (kind == null || kind.Prefab == null || mobs.IsSplitChild(kind)); tries++)
                 kind = mobs.Mobs[_next++ % mobs.Mobs.Count];
-            if (kind == null || kind.Prefab == null)
+            if (kind == null || kind.Prefab == null || mobs.IsSplitChild(kind))
                 return;
 
             foreach (PlayerController hero in players.Players)
@@ -85,10 +85,20 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        /// <summary>Host only: sends every mob it dropped away.</summary>
+        /// <summary>Host only: sends every mob in the world away, including slimes that split off the ones it dropped.</summary>
         public void DespawnAll()
         {
-            foreach (Mob mob in _spawned)
+            var everyMob = new List<Mob>();
+            if (players.Targets != null)
+            {
+                foreach (ICombatCreature creature in players.Targets.Creatures)
+                {
+                    if (creature is Mob mob)
+                        everyMob.Add(mob);
+                }
+            }
+            everyMob.AddRange(_spawned);
+            foreach (Mob mob in everyMob)
             {
                 if (mob != null && mob.IsSpawned)
                     mob.NetworkObject.Despawn();

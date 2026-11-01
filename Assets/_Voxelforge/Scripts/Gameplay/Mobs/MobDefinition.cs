@@ -106,6 +106,37 @@ namespace Voxelforge.Gameplay
         [Tooltip("Tried in order: the first one that's ready, with the target in its range, is used.")]
         [SerializeField] MobAttack[] attacks = Array.Empty<MobAttack>();
 
+        [Header("Packs and herds")]
+        [Tooltip("When it picks a fight, idle mobs of its kind this close join in, in metres. 0: it fights alone.")]
+        [SerializeField, Min(0f)] float callRadius;
+
+        [Tooltip("Seconds it stands and calls (a wolf's howl) before its first chase. 0: it goes straight in.")]
+        [SerializeField, Min(0f)] float callSeconds;
+
+        [Tooltip("At most this many of its kind attack one hero at once; the rest circle until it's their turn. 0: no limit.")]
+        [SerializeField, Min(0)] int maxBiters;
+
+        [Tooltip("How far from the hero the ones waiting their turn circle, in metres.")]
+        [SerializeField, Min(1f)] float circleRadius = 4f;
+
+        [Tooltip("With no packmate fighting nearby, it runs away below this share of its health. 0: it never runs.")]
+        [SerializeField, Range(0f, 1f)] float fleeBelowShare;
+
+        [Tooltip("It calms down and goes home this many seconds after it was last hit. 0: it never calms down.")]
+        [SerializeField, Min(0f)] float calmSeconds;
+
+        [Header("Body")]
+        [Tooltip("It gets about by hopping (a slime): it only moves while in the air.")]
+        [SerializeField] bool hops;
+
+        [Tooltip("Seconds it sits between hops.")]
+        [SerializeField, Min(0f)] float hopPause = 0.4f;
+
+        [Tooltip("When defeated, it bursts into this many of that kind, which carry on its fight.")]
+        [SerializeField] MobDefinition splitInto;
+
+        [SerializeField, Min(0)] int splitCount = 2;
+
         public MobId Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public Mob Prefab => prefab;
@@ -118,6 +149,19 @@ namespace Voxelforge.Gameplay
         public float LeashRadius => leashRadius;
         public float WanderRadius => wanderRadius;
         public MobAttack[] Attacks => attacks;
+        public float CallRadius => callRadius;
+        public float CallSeconds => callSeconds;
+        public int MaxBiters => maxBiters;
+        public float CircleRadius => circleRadius;
+        public float FleeBelowShare => fleeBelowShare;
+        public float CalmSeconds => calmSeconds;
+        public bool Hops => hops;
+        public float HopPause => hopPause;
+        public MobDefinition SplitInto => splitInto;
+        public int SplitCount => splitInto != null ? splitCount : 0;
+
+        /// <summary>How far round it looks for packmates, in metres.</summary>
+        public float PackRadius => callRadius > 0f ? callRadius : 25f;
 
         /// <summary>The longest any of its attacks reaches: it chases until its target is this close or closer.</summary>
         public float MeleeReach
@@ -148,6 +192,33 @@ namespace Voxelforge.Gameplay
             definition.leashRadius = leashRadius;
             definition.attacks = attacks;
             return definition;
+        }
+
+        /// <summary>For tests and tools: makes it a pack hunter (a wolf).</summary>
+        internal MobDefinition WithPack(float callRadius, float callSeconds, int maxBiters, float circleRadius, float fleeBelowShare)
+        {
+            this.callRadius = callRadius;
+            this.callSeconds = callSeconds;
+            this.maxBiters = maxBiters;
+            this.circleRadius = circleRadius;
+            this.fleeBelowShare = fleeBelowShare;
+            return this;
+        }
+
+        /// <summary>For tests and tools: makes it a herd beast that calms down (a rhino).</summary>
+        internal MobDefinition WithHerd(float callRadius, float calmSeconds)
+        {
+            this.callRadius = callRadius;
+            this.calmSeconds = calmSeconds;
+            return this;
+        }
+
+        /// <summary>For tests and tools: it bursts into <paramref name="count"/> of <paramref name="into"/> (a slime).</summary>
+        internal MobDefinition WithSplit(MobDefinition into, int count)
+        {
+            splitInto = into;
+            splitCount = count;
+            return this;
         }
     }
 }

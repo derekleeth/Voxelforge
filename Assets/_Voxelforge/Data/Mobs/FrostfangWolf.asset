@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f841001f5efd8eb499e8600c76019def, type: 3}
+  m_Name: FrostfangWolf
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobDefinition
+  id: 2
+  displayName: Frostfang Wolf
+  prefab: {fileID: 6781440883332120610, guid: fcdc04f718c1b5d408f1ffc7da2442aa, type: 3}
+  maxHealth: 45
+  motor:
+    WalkSpeed: 3.6
+    JumpHeight: 1.25
+    Gravity: 25
+    MaxFallSpeed: 50
+    StepHeight: 1
+    HalfExtents:
+      x: 0.3
+      y: 0.9
+      z: 0.3
+  runSpeed: 1.9
+  turnSpeed: 600
+  temperament: 0
+  aggroRadius: 14
+  leashRadius: 35
+  wanderRadius: 10
+  attacks:
+  - Kind: 0
+    Damage: 6
+    MinRange: 0
+    Range: 1.6
+    Windup: 0.3
+    Cooldown: 1.2
+    Knockback: 2
+    Lift: 1
+    ChargeSpeed: 1
+    ChargeDistance: 1
+    DazedSeconds: 0
+  callRadius: 25
+  callSeconds: 0.9
+  maxBiters: 2
+  circleRadius: 4
+  fleeBelowShare: 0.2
+  calmSeconds: 0
+  hops: 0
+  hopPause: 0.4
+  splitInto: {fileID: 0}
+  splitCount: 2

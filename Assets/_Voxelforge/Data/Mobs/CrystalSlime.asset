@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f841001f5efd8eb499e8600c76019def, type: 3}
+  m_Name: CrystalSlime
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobDefinition
+  id: 3
+  displayName: Large Crystal Slime
+  prefab: {fileID: 6781440883332120610, guid: 6da924557fecf7442970a11a8881d075, type: 3}
+  maxHealth: 80
+  motor:
+    WalkSpeed: 2.2
+    JumpHeight: 1.25
+    Gravity: 25
+    MaxFallSpeed: 50
+    StepHeight: 1
+    HalfExtents:
+      x: 0.3
+      y: 0.9
+      z: 0.3
+  runSpeed: 1.3
+  turnSpeed: 360
+  temperament: 0
+  aggroRadius: 10
+  leashRadius: 25
+  wanderRadius: 5
+  attacks:
+  - Kind: 0
+    Damage: 10
+    MinRange: 0
+    Range: 1.6
+    Windup: 0.5
+    Cooldown: 1.6
+    Knockback: 4
+    Lift: 3
+    ChargeSpeed: 1
+    ChargeDistance: 1
+    DazedSeconds: 0
+  callRadius: 0
+  callSeconds: 0
+  maxBiters: 0
+  circleRadius: 4
+  fleeBelowShare: 0
+  calmSeconds: 0
+  hops: 1
+  hopPause: 0.45
+  splitInto: {fileID: 11400000, guid: 81f35c96273b0004d8b4cafe646d8cc0, type: 2}
+  splitCount: 2

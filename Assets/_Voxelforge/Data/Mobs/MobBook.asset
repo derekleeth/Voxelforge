@@ -14,3 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobBook
   mobs:
   - {fileID: 11400000, guid: 9145b5dbf127df64999120d263e4d9a3, type: 2}
+  - {fileID: 11400000, guid: 8b77b5c16ac840642a6a06a8aa74535c, type: 2}
+  - {fileID: 11400000, guid: 92cc497483e2de74eb4fa7ed868ffd3d, type: 2}
+  - {fileID: 11400000, guid: 87c06b73000de3642896da8ab42165b0, type: 2}
+  - {fileID: 11400000, guid: 81f35c96273b0004d8b4cafe646d8cc0, type: 2}
+  - {fileID: 11400000, guid: 837d81209674fe0418345bd6a4349fd9, type: 2}

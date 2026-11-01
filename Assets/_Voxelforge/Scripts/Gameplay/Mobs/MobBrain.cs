@@ -27,6 +27,27 @@ namespace Voxelforge.Gameplay
         Stunned,
         /// <summary>Its health ran out.</summary>
         Defeated,
+        /// <summary>Standing and calling its pack before the fight (a wolf's howl, step C).</summary>
+        Howl,
+        /// <summary>Waiting its turn to attack, circling the hero (a wolf, step C).</summary>
+        Circle,
+        /// <summary>Hurt and alone: running away (a wolf, step C).</summary>
+        Flee,
+    }
+
+    /// <summary>Another mob of its own kind nearby, as a mob sees it (Roadmap 5.2 step C).</summary>
+    public struct AllySense
+    {
+        public ulong Id;
+        public float3 Feet;
+        /// <summary>The hero it's after, or none.</summary>
+        public PlayerId Target;
+        /// <summary>It's in a fight (<see cref="MobBrain.IsFighting"/>).</summary>
+        public bool Fighting;
+        /// <summary>It's taken one of the attacking places (<see cref="MobBrain.IsBiting"/>).</summary>
+        public bool Biting;
+        /// <summary>It's had its turn and is letting the others in (<see cref="MobBrain.IsResting"/>).</summary>
+        public bool Resting;
     }
 
     /// <summary>One hero, as a mob sees them.</summary>
@@ -47,6 +68,10 @@ namespace Voxelforge.Gameplay
         /// <summary>How far it really moved sideways in the last tick, in metres: a charge into a wall moves nowhere.</summary>
         public float Moved;
         public IReadOnlyList<HeroSense> Heroes;
+        /// <summary>Its own id, so packmates agree on who goes first.</summary>
+        public ulong Self;
+        /// <summary>Mobs of its own kind within its <see cref="MobDefinition.PackRadius"/>, or null.</summary>
+        public IReadOnlyList<AllySense> Allies;
     }
 
     /// <summary>How a mob wants to move this tick.</summary>
@@ -75,7 +100,10 @@ namespace Voxelforge.Gameplay
     /// <summary>Something a mob did this tick that the world should hear about.</summary>
     public enum MobEventKind : byte
     {
-        /// <summary>It picked a fight with <see cref="MobEvent.Target"/>.</summary>
+        /// <summary>
+        /// It picked a fight with <see cref="MobEvent.Target"/>. Idle mobs of its kind within its
+        /// <see cref="MobDefinition.CallRadius"/> join in (<see cref="MobBrain.Join"/>).
+        /// </summary>
         Aggro,
         /// <summary>It started winding up attack <see cref="MobEvent.Attack"/> at <see cref="MobEvent.Target"/>.</summary>
         Windup,
@@ -85,6 +113,8 @@ namespace Voxelforge.Gameplay
         Dazed,
         /// <summary>It got home from a leash and healed up.</summary>
         Returned,
+        /// <summary>Hurt and alone, it ran away from <see cref="MobEvent.Target"/>.</summary>
+        Fled,
     }
 
     public struct MobEvent
@@ -103,6 +133,11 @@ namespace Voxelforge.Gameplay
     /// one per mob on the host: it hands in what the mob senses (<see cref="MobSenses"/>), moves the body the way the
     /// <see cref="MobIntent"/> says, and carries out its <see cref="Events"/> (a <see cref="MobEventKind.Strike"/>
     /// hurts a hero). Targets are always heroes by <see cref="PlayerId"/> (CLAUDE.md Law #1).
+    /// <para>
+    /// Step C adds packs and herds: a mob calls its kind into its fights (<see cref="Join"/>), a wolf howls first, only
+    /// <see cref="MobDefinition.MaxBiters"/> attack one hero at once while the rest circle and take turns, a wolf alone
+    /// and hurt runs away, and a rhino calms down when nobody has hit it for a while.
+    /// </para>
     /// </summary>
     public sealed class MobBrain
     {
@@ -128,6 +163,19 @@ namespace Voxelforge.Gameplay
         /// <summary>A leash that can't get home in this long gives up and makes where it stands home.</summary>
         public const float ReturnGiveUpSeconds = 15f;
 
+        /// <summary>A pack biter steps out to let a circling packmate in after this many strikes.</summary>
+        public const int BitesPerTurn = 2;
+
+        /// <summary>Seconds a biter that stepped out waits before it may bite again.</summary>
+        public const float TurnRestSeconds = 2.5f;
+
+        /// <summary>How fast the ones waiting their turn circle the hero, in degrees per second.</summary>
+        public const float CircleDegreesPerSecond = 35f;
+
+        /// <summary>How far a fleeing mob runs, in metres, and for at most how long.</summary>
+        public const float FleeDistance = 18f;
+        public const float FleeSeconds = 6f;
+
         readonly MobDefinition _mob;
         readonly MobRules _rules;
         readonly float[] _readyAt;
@@ -143,6 +191,12 @@ namespace Voxelforge.Gameplay
         float _charged;
         float _stuck;
         int _seenHits;
+        float _provokedAt;
+        int _bites;
+        float _restUntil = float.NegativeInfinity;
+        float _circleAngle;
+        float3 _fleeTo;
+        float _lastTick;
 
         public MobBrain(MobDefinition mob, MobRules rules, float3 home, uint seed, float now = 0f)
         {
@@ -168,10 +222,37 @@ namespace Voxelforge.Gameplay
         /// <summary>What it did during the last <see cref="Tick"/>.</summary>
         public IReadOnlyList<MobEvent> Events => _events;
 
+        /// <summary>It's in a fight: calling, chasing, circling or attacking.</summary>
+        public bool IsFighting => State == MobState.Chase || State == MobState.Windup || State == MobState.Charge ||
+                                  State == MobState.Recover || State == MobState.Dazed || State == MobState.Howl ||
+                                  State == MobState.Circle;
+
+        /// <summary>It's taken one of its pack's attacking places on its target (not calling or circling).</summary>
+        public bool IsBiting => State == MobState.Chase || State == MobState.Windup || State == MobState.Charge ||
+                                State == MobState.Recover || State == MobState.Dazed;
+
+        /// <summary>It's had its turn at attacking (as of the last <see cref="Tick"/>) and is letting a packmate in.</summary>
+        public bool IsResting => _lastTick < _restUntil;
+
+        /// <summary>
+        /// A packmate called (Roadmap 5.2 step C): if it's idling or wandering, it goes after <paramref name="hero"/> too,
+        /// without calling again. Returns whether it joined.
+        /// </summary>
+        public bool Join(PlayerId hero, float now)
+        {
+            if (!hero.IsValid || _rules.IsDefeated || (State != MobState.Idle && State != MobState.Wander))
+                return false;
+            Target = hero;
+            _provokedAt = now;
+            Enter(MobState.Chase, now, now);
+            return true;
+        }
+
         public MobIntent Tick(in MobSenses senses)
         {
             _events.Clear();
             float now = senses.Now;
+            _lastTick = now;
 
             if (_rules.IsDefeated)
             {
@@ -192,20 +273,30 @@ namespace Voxelforge.Gameplay
             if (_rules.HitCount != _seenHits)
             {
                 _seenHits = _rules.HitCount;
-                if (State != MobState.Return && !TryGetTarget(senses, out _) &&
+                _provokedAt = now;
+                if (State != MobState.Return && State != MobState.Flee && !TryGetTarget(senses, out _) &&
                     TryFind(senses, _rules.LastAttacker, out HeroSense attacker) && !attacker.KnockedOut)
                     StartFight(attacker.Id, now);
             }
 
-            // Pulled too far from home: give up and run back (a leash).
-            if (IsFighting && math.distance(senses.Feet.xz, _home.xz) > _mob.LeashRadius)
-                GoHome(now);
+            if (IsFighting)
+            {
+                // Hurt with no packmate fighting nearby: run for it.
+                if (_mob.FleeBelowShare > 0f && _rules.Share < _mob.FleeBelowShare && !HasFightingPackmate(senses))
+                    StartFleeing(senses, now);
+                // Nobody has hit it for a while: it calms down (a rhino).
+                else if (_mob.CalmSeconds > 0f && now - _provokedAt > _mob.CalmSeconds)
+                    GoHome(now);
+                // Pulled too far from home: give up and run back (a leash).
+                else if (math.distance(senses.Feet.xz, _home.xz) > _mob.LeashRadius)
+                    GoHome(now);
+            }
 
             switch (State)
             {
                 case MobState.Idle:
                     if (TryAggro(senses, now))
-                        return Chase(senses, now);
+                        return Fight(senses, now);
                     if (now >= _stateUntil)
                     {
                         float angle = _random.NextFloat(0f, 2f * math.PI);
@@ -217,7 +308,7 @@ namespace Voxelforge.Gameplay
 
                 case MobState.Wander:
                     if (TryAggro(senses, now))
-                        return Chase(senses, now);
+                        return Fight(senses, now);
                     if (now >= _stateUntil || math.distance(senses.Feet.xz, _wanderTo.xz) < 1f)
                     {
                         Enter(MobState.Idle, now, now + _random.NextFloat(3f, 7f));
@@ -226,7 +317,17 @@ namespace Voxelforge.Gameplay
                     return new MobIntent { Move = MobMove.PathTo, Destination = _wanderTo, SpeedScale = 1f };
 
                 case MobState.Chase:
-                    return Chase(senses, now);
+                case MobState.Circle:
+                case MobState.Howl:
+                    return Fight(senses, now);
+
+                case MobState.Flee:
+                    if (now >= _stateUntil || math.distance(senses.Feet.xz, _fleeTo.xz) < HomeDistance)
+                    {
+                        GoHome(now);
+                        return new MobIntent { Move = MobMove.PathTo, Destination = _home, SpeedScale = _mob.RunSpeed };
+                    }
+                    return new MobIntent { Move = MobMove.PathTo, Destination = _fleeTo, SpeedScale = _mob.RunSpeed };
 
                 case MobState.Windup:
                     return Windup(senses, now);
@@ -258,8 +359,13 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        bool IsFighting => State == MobState.Chase || State == MobState.Windup || State == MobState.Charge ||
-                           State == MobState.Recover || State == MobState.Dazed;
+        /// <summary>A call to arms (step C): howling until it's done, then the chase.</summary>
+        MobIntent Fight(in MobSenses senses, float now)
+        {
+            if (State == MobState.Howl && now < _stateUntil)
+                return TryGetTarget(senses, out HeroSense heard) ? FaceOnly(heard.Feet) : Stand();
+            return Chase(senses, now);
+        }
 
         MobIntent Chase(in MobSenses senses, float now)
         {
@@ -268,10 +374,12 @@ namespace Voxelforge.Gameplay
                 GoHome(now);
                 return new MobIntent { Move = MobMove.PathTo, Destination = _home, SpeedScale = _mob.RunSpeed };
             }
+            float distance = math.distance(senses.Feet, target.Feet);
+            if (!MayAttack(senses, target))
+                return Circle(senses, target, now);
             if (State != MobState.Chase)
                 Enter(MobState.Chase, now, now);
 
-            float distance = math.distance(senses.Feet, target.Feet);
             MobAttack[] attacks = _mob.Attacks;
             for (int i = 0; i < attacks.Length; i++)
             {
@@ -312,7 +420,15 @@ namespace Voxelforge.Gameplay
             }
 
             if (hasTarget && math.distance(senses.Feet, target.Feet) <= attack.Range + MeleeGrace)
+            {
                 Add(MobEventKind.Strike, target.Id, _attack, math.normalizesafe(target.Feet.xz - senses.Feet.xz));
+                // A pack takes turns: after a couple of bites it steps out and lets a circling packmate in.
+                if (_mob.MaxBiters > 0 && ++_bites >= BitesPerTurn)
+                {
+                    _bites = 0;
+                    _restUntil = now + RecoverSeconds + TurnRestSeconds;
+                }
+            }
             Enter(MobState.Recover, now, now + RecoverSeconds);
             return hasTarget ? FaceOnly(target.Feet) : Stand();
         }
@@ -397,11 +513,96 @@ namespace Voxelforge.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// Step C: whether it may attack <paramref name="target"/> now, or must circle and wait its turn. Packmates on the
+        /// same hero line up the same way on every tick, so at most <see cref="MobDefinition.MaxBiters"/> attack:
+        /// those already attacking first, then the nearest, then the lowest id.
+        /// </summary>
+        bool MayAttack(in MobSenses senses, in HeroSense target)
+        {
+            if (_mob.MaxBiters <= 0 || senses.Allies == null)
+                return true;
+            bool biting = IsBiting && senses.Now >= _restUntil;
+            float distance = math.distance(senses.Feet, target.Feet);
+            int ahead = 0;
+            bool someoneWaiting = false;
+            foreach (AllySense ally in senses.Allies)
+            {
+                // One that's had its turn isn't in the queue at all.
+                if (ally.Target != target.Id || !ally.Fighting || (ally.Resting && !ally.Biting))
+                    continue;
+                if (!ally.Biting)
+                    someoneWaiting = true;
+                if (ally.Biting != biting)
+                {
+                    if (ally.Biting)
+                        ahead++;
+                    continue;
+                }
+                float theirs = math.distance(ally.Feet, target.Feet);
+                if (theirs < distance || (theirs == distance && ally.Id < senses.Self))
+                    ahead++;
+            }
+            // Its turn is over, but only if a packmate is waiting to take it.
+            if (senses.Now < _restUntil && someoneWaiting)
+                return false;
+            return ahead < _mob.MaxBiters;
+        }
+
+        /// <summary>Waiting its turn: circling the hero at <see cref="MobDefinition.CircleRadius"/>, facing them.</summary>
+        MobIntent Circle(in MobSenses senses, in HeroSense target, float now)
+        {
+            if (State != MobState.Circle)
+            {
+                Enter(MobState.Circle, now, now);
+                float2 from = senses.Feet.xz - target.Feet.xz;
+                _circleAngle = math.lengthsq(from) > 0.0001f ? math.atan2(from.x, from.y) : _random.NextFloat(0f, 2f * math.PI);
+            }
+            // Half the pack goes one way round and half the other.
+            float way = (senses.Self & 1) == 0 ? 1f : -1f;
+            _circleAngle += math.radians(CircleDegreesPerSecond) * senses.Dt * way;
+            float radius = _mob.CircleRadius;
+            float3 spot = target.Feet + new float3(math.sin(_circleAngle) * radius, 0f, math.cos(_circleAngle) * radius);
+            return new MobIntent
+            {
+                Move = MobMove.PathTo, Destination = spot, SpeedScale = 1f, Face = true, FaceToward = target.Feet,
+            };
+        }
+
+        bool HasFightingPackmate(in MobSenses senses)
+        {
+            if (senses.Allies == null)
+                return false;
+            foreach (AllySense ally in senses.Allies)
+            {
+                if (ally.Fighting && math.distance(ally.Feet.xz, senses.Feet.xz) <= _mob.PackRadius)
+                    return true;
+            }
+            return false;
+        }
+
+        void StartFleeing(in MobSenses senses, float now)
+        {
+            float2 away = TryGetTarget(senses, out HeroSense from)
+                ? math.normalizesafe(senses.Feet.xz - from.Feet.xz, new float2(0f, 1f))
+                : math.normalizesafe(senses.Feet.xz - _home.xz, new float2(0f, 1f));
+            _fleeTo = senses.Feet + new float3(away.x * FleeDistance, 0f, away.y * FleeDistance);
+            Add(MobEventKind.Fled, Target);
+            Target = PlayerId.None;
+            _attack = -1;
+            Enter(MobState.Flee, now, now + FleeSeconds);
+        }
+
         void StartFight(PlayerId hero, float now)
         {
             Target = hero;
+            _provokedAt = now;
             Add(MobEventKind.Aggro, hero);
-            Enter(MobState.Chase, now, now);
+            // A pack hunter howls first, which gives its packmates (and the hero) a moment.
+            if (_mob.CallSeconds > 0f)
+                Enter(MobState.Howl, now, now + _mob.CallSeconds);
+            else
+                Enter(MobState.Chase, now, now);
         }
 
         void GoHome(float now)

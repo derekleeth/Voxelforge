@@ -52,6 +52,15 @@ namespace Voxelforge.Gameplay
                 if (mob.Motor.HalfExtents.y * 2f > MaxBodyHeight + 0.01f || mob.Motor.HalfExtents.x > 0.5f ||
                     mob.Motor.HalfExtents.z > 0.5f)
                     errors.Add($"'{mob.DisplayName}''s body is bigger than 1 x {MaxBodyHeight} x 1 blocks; the nav grid can't plan for it.");
+                if (mob.SplitInto != null)
+                {
+                    if (mob.SplitCount <= 0)
+                        errors.Add($"'{mob.DisplayName}' splits into nothing (Split Count is 0).");
+                    if (SplitsInto(mob.SplitInto, mob))
+                        errors.Add($"'{mob.DisplayName}' splits into itself, so it would never end.");
+                    else if (!mobs.Contains(mob.SplitInto))
+                        errors.Add($"'{mob.DisplayName}' splits into '{mob.SplitInto.DisplayName}', which isn't in the book.");
+                }
                 if (mob.Attacks.Length == 0)
                     errors.Add($"'{mob.DisplayName}' has no attacks.");
                 foreach (MobAttack attack in mob.Attacks)
@@ -63,6 +72,28 @@ namespace Voxelforge.Gameplay
                 }
             }
             return errors;
+        }
+
+        /// <summary>Whether a mob is only ever made by another one splitting (a Medium or Small slime).</summary>
+        public bool IsSplitChild(MobDefinition definition)
+        {
+            foreach (MobDefinition mob in mobs)
+            {
+                if (mob != null && mob.SplitInto == definition)
+                    return true;
+            }
+            return false;
+        }
+
+        // Whether splitting from `from` ever comes back round to `mob`.
+        static bool SplitsInto(MobDefinition from, MobDefinition mob)
+        {
+            for (int depth = 0; from != null && depth < 16; depth++, from = from.SplitInto)
+            {
+                if (from == mob)
+                    return true;
+            }
+            return from != null;
         }
 
         /// <summary>Builds a book in code, for tests and tools.</summary>

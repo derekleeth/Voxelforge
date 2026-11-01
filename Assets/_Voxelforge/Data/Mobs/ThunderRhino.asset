@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f841001f5efd8eb499e8600c76019def, type: 3}
+  m_Name: ThunderRhino
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobDefinition
+  id: 4
+  displayName: Thunder Rhino
+  prefab: {fileID: 6781440883332120610, guid: 1e792db89adce9a41bf04d95000a331f, type: 3}
+  maxHealth: 200
+  motor:
+    WalkSpeed: 2.6
+    JumpHeight: 1.25
+    Gravity: 25
+    MaxFallSpeed: 50
+    StepHeight: 1
+    HalfExtents:
+      x: 0.3
+      y: 0.9
+      z: 0.3
+  runSpeed: 2
+  turnSpeed: 240
+  temperament: 1
+  aggroRadius: 0
+  leashRadius: 30
+  wanderRadius: 12
+  attacks:
+  - Kind: 0
+    Damage: 15
+    MinRange: 0
+    Range: 2.4
+    Windup: 0.6
+    Cooldown: 2.2
+    Knockback: 12
+    Lift: 7
+    ChargeSpeed: 1
+    ChargeDistance: 1
+    DazedSeconds: 0
+  callRadius: 15
+  callSeconds: 0
+  maxBiters: 0
+  circleRadius: 4
+  fleeBelowShare: 0
+  calmSeconds: 12
+  hops: 0
+  hopPause: 0.4
+  splitInto: {fileID: 0}
+  splitCount: 2

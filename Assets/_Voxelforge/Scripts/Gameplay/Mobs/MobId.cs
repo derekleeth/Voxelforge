@@ -11,9 +11,13 @@ namespace Voxelforge.Gameplay
         BristlebackBoar = 1,
         /// <summary>Snowy Peaks: a pack hunter (5.2 step C).</summary>
         FrostfangWolf = 2,
-        /// <summary>Caves: a glowing slime that splits (5.2 step C).</summary>
+        /// <summary>Caves: a large glowing slime that splits into two <see cref="CrystalSlimeMedium"/> (5.2 step C).</summary>
         CrystalSlime = 3,
         /// <summary>Thunderhoof Plains: a neutral grazing herd beast (5.2 step C).</summary>
         ThunderRhino = 4,
+        /// <summary>Half a <see cref="CrystalSlime"/>: splits into two <see cref="CrystalSlimeSmall"/>.</summary>
+        CrystalSlimeMedium = 5,
+        /// <summary>The smallest Crystal Slime: it doesn't split.</summary>
+        CrystalSlimeSmall = 6,
     }
 }
