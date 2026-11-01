@@ -27,6 +27,16 @@ namespace Voxelforge.Gameplay
         [Tooltip("Mana back per second.")]
         [SerializeField, Min(0f)] float manaRegen = 10f;
 
+        [Header("Threat (5.3)")]
+        [Tooltip("Times the threat everything this class does makes (ThreatRules). A tank's is high so mobs stay on them.")]
+        [SerializeField, Range(0.25f, 5f)] float threatMultiplier = 1f;
+
+        [Tooltip("The class's passive, named in the class window, e.g. \"Runeforged Oath\". Empty = none.")]
+        [SerializeField] string passiveName;
+
+        [Tooltip("What the passive does, a short sentence for the class window.")]
+        [SerializeField, TextArea] string passiveDescription;
+
         [Header("Spells")]
         [Tooltip("The action bar a hero of this class gets. Slots 1-3 are the class's signature spells, shown in the class window.")]
         [SerializeField] ActionBarLoadout loadout;
@@ -38,10 +48,13 @@ namespace Voxelforge.Gameplay
         public float MaxMana => maxMana;
         public float ManaRegen => manaRegen;
         public ActionBarLoadout Loadout => loadout;
+        public float ThreatMultiplier => threatMultiplier;
+        public string PassiveName => passiveName;
+        public string PassiveDescription => passiveDescription;
 
         /// <summary>Builds a class in code, for tests and tools.</summary>
         internal static ClassDefinition Create(HeroClassId id, string displayName, float maxHealth = 100f, float maxMana = 100f,
-            float manaRegen = 10f, ActionBarLoadout loadout = null)
+            float manaRegen = 10f, ActionBarLoadout loadout = null, float threatMultiplier = 1f)
         {
             var definition = CreateInstance<ClassDefinition>();
             definition.name = displayName;
@@ -51,6 +64,7 @@ namespace Voxelforge.Gameplay
             definition.maxMana = maxMana;
             definition.manaRegen = manaRegen;
             definition.loadout = loadout;
+            definition.threatMultiplier = threatMultiplier;
             return definition;
         }
     }

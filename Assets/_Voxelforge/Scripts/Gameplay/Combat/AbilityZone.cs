@@ -125,12 +125,18 @@ namespace Voxelforge.Gameplay
             float3 centre = transform.position;
             if ((_ability.HealAmount > 0f || _ability.ManaRegenBonus > 0f) && _players != null)
             {
+                CombatTargets targets = _players.Targets;
                 foreach (PlayerController player in _players.Players)
                 {
                     if (player == null || !SupportRules.InZone(centre, _ability.AoeRadius, player.transform.position))
                         continue;
                     if (_ability.HealAmount > 0f && player.TryGetComponent(out PlayerHealth health))
-                        health.ServerHeal(_ability.HealAmount, _casterId, _ability.Id);
+                    {
+                        float healed = health.ServerHeal(_ability.HealAmount, _casterId, _ability.Id);
+                        // Healing a hero angers whatever is fighting them (Roadmap 5.3).
+                        if (targets != null)
+                            targets.ServerSupportThreat(_casterId, player.PlayerId, healed, _ability.ThreatScale);
+                    }
                     // Renewed every pulse, so it lasts a little longer than one to never flicker off between them.
                     if (_ability.ManaRegenBonus > 0f && player.TryGetComponent(out PlayerCaster caster))
                         caster.ServerBoostRegen(_ability.ManaRegenBonus, _ability.PulseInterval + 0.25f);
@@ -151,7 +157,7 @@ namespace Voxelforge.Gameplay
             CombatTargets targets = _players != null ? _players.Targets : null;
             if (targets == null || !targets.TryFindNearest(from, _ability.AoeRadius, out CombatTarget target))
                 return false;
-            TargetDamage result = targets.ServerDamage(target, _ability.CreatureDamage, _casterId);
+            TargetDamage result = targets.ServerDamage(target, _ability.CreatureDamage, _casterId, _ability.ThreatScale);
             point = (Vector3)target.Position;
             // The hit goes out on the caster's own channel, so their combat text and the dummy's bar show it like any spell.
             if (result.Dealt > 0f && _casterHero != null && _casterHero.IsSpawned &&

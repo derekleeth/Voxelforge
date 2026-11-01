@@ -186,6 +186,7 @@ namespace Voxelforge.Gameplay
         readonly List<Bale> _bales = new List<Bale>();
         readonly List<ICombatCreature> _creatures = new List<ICombatCreature>();
         readonly Dictionary<ulong, ICombatCreature> _creaturesById = new Dictionary<ulong, ICombatCreature>();
+        readonly List<ThreatTable> _angered = new List<ThreatTable>();
 
         bool IsServer => networkManager == null || networkManager.IsServer || !networkManager.IsListening;
 
@@ -373,18 +374,55 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        /// <summary>Host only: hurts <paramref name="target"/> in <paramref name="instigator"/>'s name.</summary>
-        public TargetDamage ServerDamage(in CombatTarget target, float amount, PlayerId instigator)
+        /// <summary>
+        /// Host only: hurts <paramref name="target"/> in <paramref name="instigator"/>'s name. Its threat (Roadmap 5.3) is
+        /// times <paramref name="threatScale"/> (the ability's) and the instigator's class <see cref="ThreatOf"/>.
+        /// </summary>
+        public TargetDamage ServerDamage(in CombatTarget target, float amount, PlayerId instigator, float threatScale = 1f)
         {
             if (!IsServer || amount <= 0f || !IsTarget(target))
                 return default;
+            threatScale *= ThreatOf(instigator);
             if (target.Kind == CombatTargetKind.Creature)
-                return _creaturesById[target.CreatureId].ServerDamage(amount, instigator);
+                return _creaturesById[target.CreatureId].ServerDamage(amount, instigator, threatScale);
             float now = Time.time;
             if (!_dummies.TryGetValue(target.Block, out SparringDummy dummy))
                 _dummies[target.Block] = dummy = new SparringDummy(now);
-            float dealt = dummy.Hit(amount, instigator, now, out bool toppled);
+            float dealt = dummy.Hit(amount, instigator, now, out bool toppled, threatScale);
             return new TargetDamage(dealt, dummy.Health, SparringDummy.MaxHealth, toppled);
+        }
+
+        /// <summary>
+        /// Host only (Roadmap 5.3): <paramref name="helper"/> healed or shielded <paramref name="helped"/> by
+        /// <paramref name="amount"/>, which angers every creature and dummy fighting them (<see cref="ThreatRules.ShareSupport"/>).
+        /// </summary>
+        public void ServerSupportThreat(PlayerId helper, PlayerId helped, float amount, float threatScale = 1f)
+        {
+            float threat = ThreatRules.Support(amount, threatScale * ThreatOf(helper));
+            if (!IsServer || threat <= 0f)
+                return;
+            _angered.Clear();
+            foreach (ICombatCreature creature in _creatures)
+            {
+                if (creature.IsTargetable && creature.ServerThreat is ThreatTable table)
+                    _angered.Add(table);
+            }
+            foreach (SparringDummy dummy in _dummies.Values)
+                _angered.Add(dummy.Threat);
+            ThreatRules.ShareSupport(_angered, helper, helped, threat);
+            _angered.Clear();
+        }
+
+        /// <summary>
+        /// How much threat <paramref name="hero"/>'s class makes (<see cref="ClassDefinition.ThreatMultiplier"/>, Roadmap
+        /// 5.3): 2 for a Runeforged Paladin. Looked up by <see cref="PlayerId"/> (CLAUDE.md Law #1); 1 for nobody.
+        /// </summary>
+        public float ThreatOf(PlayerId hero)
+        {
+            if (players == null || !hero.IsValid || !players.TryGet(hero, out PlayerRecord record) || record.Controller == null ||
+                !record.Controller.TryGetComponent(out PlayerClass playerClass) || playerClass.Definition == null)
+                return 1f;
+            return playerClass.Definition.ThreatMultiplier;
         }
 
         /// <summary>
@@ -392,16 +430,17 @@ namespace Voxelforge.Gameplay
         /// (Roadmap 4.7, Hoofquake). A Training Dummy stops sparring; a creature stops moving and fighting.
         /// Heroes are never stunned: there's no friendly crowd control.
         /// </summary>
-        public bool ServerStun(in CombatTarget target, float seconds, PlayerId instigator)
+        public bool ServerStun(in CombatTarget target, float seconds, PlayerId instigator, float threatScale = 1f)
         {
             if (!IsServer || seconds <= 0f || !IsTarget(target))
                 return false;
+            threatScale *= ThreatOf(instigator);
             if (target.Kind == CombatTargetKind.Creature)
-                return _creaturesById[target.CreatureId].ServerStun(seconds, instigator);
+                return _creaturesById[target.CreatureId].ServerStun(seconds, instigator, threatScale);
             float now = Time.time;
             if (!_dummies.TryGetValue(target.Block, out SparringDummy dummy))
                 _dummies[target.Block] = dummy = new SparringDummy(now);
-            dummy.Stun(now, seconds, instigator);
+            dummy.Stun(now, seconds, instigator, threatScale);
             return true;
         }
 

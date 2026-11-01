@@ -93,7 +93,7 @@ namespace Voxelforge.Gameplay
             targets.FindAll(middle, ability.AoeRadius, _found);
             foreach (CombatTarget target in _found)
             {
-                if (targets.ServerStun(target, ability.Duration, _player.PlayerId))
+                if (targets.ServerStun(target, ability.Duration, _player.PlayerId, ability.ThreatScale))
                     _cues.ServerSend(AbilityCue.StunTarget(ability.Id, target));
             }
         }
@@ -175,7 +175,7 @@ namespace Voxelforge.Gameplay
 
         float Hurt(CombatTargets targets, AbilityDefinition ability, in CombatTarget target, float amount)
         {
-            TargetDamage result = targets.ServerDamage(target, amount, _player.PlayerId);
+            TargetDamage result = targets.ServerDamage(target, amount, _player.PlayerId, ability.ThreatScale);
             if (result.Dealt > 0f)
                 _cues.ServerSend(AbilityCue.HitTarget(ability.Id, target, result));
             return result.Dealt;

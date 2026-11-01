@@ -23,11 +23,17 @@ namespace Voxelforge.Gameplay
         /// <summary>Half its body's size on each axis, like <c>MotorSettings.HalfExtents</c>.</summary>
         float3 HalfExtents { get; }
 
-        /// <summary>Host only: takes up to <paramref name="amount"/> damage in <paramref name="instigator"/>'s name.</summary>
-        TargetDamage ServerDamage(float amount, PlayerId instigator);
+        /// <summary>
+        /// Host only: takes up to <paramref name="amount"/> damage in <paramref name="instigator"/>'s name, who gains its
+        /// threat times <paramref name="threatScale"/> (Roadmap 5.3).
+        /// </summary>
+        TargetDamage ServerDamage(float amount, PlayerId instigator, float threatScale = 1f);
 
         /// <summary>Host only: stunned for <paramref name="seconds"/> in <paramref name="instigator"/>'s name.</summary>
-        bool ServerStun(float seconds, PlayerId instigator);
+        bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f);
+
+        /// <summary>Host only: who it's angry at (Roadmap 5.3), or null for a creature that doesn't keep a table.</summary>
+        ThreatTable ServerThreat { get; }
     }
 
     /// <summary>

@@ -104,7 +104,7 @@ namespace Voxelforge.Gameplay
             transform.position = feet;
         }
 
-        public TargetDamage ServerDamage(float amount, PlayerId instigator)
+        public TargetDamage ServerDamage(float amount, PlayerId instigator, float threatScale = 1f)
         {
             if (!IsServer || _defeated || amount <= 0f)
                 return default;
@@ -118,7 +118,10 @@ namespace Voxelforge.Gameplay
             return new TargetDamage(dealt, _health, maxHealth, _defeated);
         }
 
-        public bool ServerStun(float seconds, PlayerId instigator)
+        /// <summary>A test critter only follows whoever it was told to: it keeps no threat.</summary>
+        public ThreatTable ServerThreat => null;
+
+        public bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f)
         {
             if (!IsServer || _defeated || seconds <= 0f)
                 return false;

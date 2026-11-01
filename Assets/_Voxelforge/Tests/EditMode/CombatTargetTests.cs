@@ -23,17 +23,21 @@ namespace Voxelforge.Tests
             public float3 HalfExtents { get; set; } = new float3(0.4f, 0.5f, 0.4f);
             public float Health = 30f;
             public float StunnedFor;
+            public float ThreatScale;
+            public ThreatTable ServerThreat { get; } = new ThreatTable();
 
-            public TargetDamage ServerDamage(float amount, PlayerId instigator)
+            public TargetDamage ServerDamage(float amount, PlayerId instigator, float threatScale = 1f)
             {
                 float dealt = math.min(amount, Health);
                 Health -= dealt;
+                ThreatScale = threatScale;
                 return new TargetDamage(dealt, Health, 30f, Health <= 0f);
             }
 
-            public bool ServerStun(float seconds, PlayerId instigator)
+            public bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f)
             {
                 StunnedFor = seconds;
+                ThreatScale = threatScale;
                 return true;
             }
         }
@@ -138,6 +142,43 @@ namespace Voxelforge.Tests
             Assert.IsTrue(hit.Toppled, "Emptied: defeated.");
             Assert.IsTrue(_targets.ServerStun(CombatTarget.Of(far), 2f, new PlayerId(1)));
             Assert.AreEqual(2f, far.StunnedFor);
+        }
+
+        [Test]
+        public void Damage_PassesTheAbilitysThreatScale_ToTheCreature()
+        {
+            var boar = new StandingCreature { CreatureId = 1, Feet = new float3(2f, 0f, 0f) };
+            _targets.Add(boar);
+            _targets.ServerDamage(CombatTarget.Of(boar), 5f, new PlayerId(1), threatScale: 1.5f);
+            Assert.AreEqual(1.5f, boar.ThreatScale, 1e-4f, "No class to look up here, so just the ability's.");
+            _targets.ServerStun(CombatTarget.Of(boar), 1f, new PlayerId(1), threatScale: 2f);
+            Assert.AreEqual(2f, boar.ThreatScale, 1e-4f);
+        }
+
+        [Test]
+        public void Healing_AngersEveryCreatureFightingTheHealedHero_Shared()
+        {
+            var tank = new PlayerId(1);
+            var healer = new PlayerId(2);
+            var wolfA = new StandingCreature { CreatureId = 1 };
+            var wolfB = new StandingCreature { CreatureId = 2 };
+            var rhino = new StandingCreature { CreatureId = 3 };
+            var dead = new StandingCreature { CreatureId = 4, IsTargetable = false };
+            wolfA.ServerThreat.Add(tank, 50f);
+            wolfB.ServerThreat.Add(tank, 50f);
+            dead.ServerThreat.Add(tank, 50f);
+            foreach (StandingCreature creature in new[] { wolfA, wolfB, rhino, dead })
+                _targets.Add(creature);
+
+            _targets.ServerSupportThreat(healer, tank, 40f);
+            float each = 40f * ThreatRules.SupportShare / 2f;
+            Assert.AreEqual(each, wolfA.ServerThreat.Of(healer), 1e-4f, "Half the heal, shared by the two wolves.");
+            Assert.AreEqual(each, wolfB.ServerThreat.Of(healer), 1e-4f);
+            Assert.IsFalse(rhino.ServerThreat.Contains(healer), "The rhino isn't fighting the tank.");
+            Assert.IsFalse(dead.ServerThreat.Contains(healer), "A defeated creature isn't angered.");
+
+            _targets.ServerSupportThreat(healer, new PlayerId(3), 40f);
+            Assert.AreEqual(each, wolfA.ServerThreat.Of(healer), 1e-4f, "Healing a hero nobody is fighting makes no threat.");
         }
 
         [Test]

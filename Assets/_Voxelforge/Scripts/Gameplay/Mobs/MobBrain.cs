@@ -134,6 +134,10 @@ namespace Voxelforge.Gameplay
     /// <see cref="MobIntent"/> says, and carries out its <see cref="Events"/> (a <see cref="MobEventKind.Strike"/>
     /// hurts a hero). Targets are always heroes by <see cref="PlayerId"/> (CLAUDE.md Law #1).
     /// <para>
+    /// Roadmap 5.3: once it's fighting, it goes after the top of its <see cref="MobRules.Threat"/> table, changing its
+    /// mind only between attacks (never mid-windup or mid-charge), so a tank can hold it while the others cast.
+    /// </para>
+    /// <para>
     /// Step C adds packs and herds: a mob calls its kind into its fights (<see cref="Join"/>), a wolf howls first, only
     /// <see cref="MobDefinition.MaxBiters"/> attack one hero at once while the rest circle and take turns, a wolf alone
     /// and hurt runs away, and a rhino calms down when nobody has hit it for a while.
@@ -244,6 +248,7 @@ namespace Voxelforge.Gameplay
                 return false;
             Target = hero;
             _provokedAt = now;
+            _rules.Threat.Add(hero, ThreatRules.NoticeThreat);
             Enter(MobState.Chase, now, now);
             return true;
         }
@@ -253,6 +258,7 @@ namespace Voxelforge.Gameplay
             _events.Clear();
             float now = senses.Now;
             _lastTick = now;
+            ForgetAbsent(senses);
 
             if (_rules.IsDefeated)
             {
@@ -369,6 +375,7 @@ namespace Voxelforge.Gameplay
 
         MobIntent Chase(in MobSenses senses, float now)
         {
+            Retarget(senses, now);
             if (!TryGetTarget(senses, out HeroSense target) && !TryRetarget(senses, now, out target))
             {
                 GoHome(now);
@@ -495,7 +502,36 @@ namespace Voxelforge.Gameplay
             return true;
         }
 
-        /// <summary>Its target is gone or knocked out: the last hero to hit it, or (if aggressive) the nearest one.</summary>
+        /// <summary>
+        /// Roadmap 5.3: between attacks, it turns on whoever has passed its target's threat by the margin
+        /// (<see cref="ThreatTable.PickTarget"/>), or on a taunter.
+        /// </summary>
+        void Retarget(in MobSenses senses, float now)
+        {
+            PlayerId pick = _rules.Threat.PickTarget(Target, new ThreatPick
+            {
+                Now = now, Heroes = senses.Heroes, Feet = senses.Feet, MeleeReach = _mob.MeleeReach, Home = _home,
+                Leash = _mob.LeashRadius,
+            });
+            if (pick.IsValid)
+                Target = pick;
+        }
+
+        /// <summary>Heroes who are knocked out or gone lose all their threat: waking up, they start again.</summary>
+        void ForgetAbsent(in MobSenses senses)
+        {
+            if (senses.Heroes == null)
+                return;
+            IReadOnlyList<ThreatEntry> entries = _rules.Threat.Entries;
+            for (int i = entries.Count - 1; i >= 0; i--)
+            {
+                PlayerId hero = entries[i].Hero;
+                if (!TryFind(senses, hero, out HeroSense sense) || sense.KnockedOut)
+                    _rules.Threat.Remove(hero);
+            }
+        }
+
+        /// <summary>Its target is gone or knocked out, with nobody else on its table: the last hero to hit it, or (if aggressive) the nearest one.</summary>
         bool TryRetarget(in MobSenses senses, float now, out HeroSense hero)
         {
             if (TryFind(senses, _rules.LastAttacker, out hero) && !hero.KnockedOut &&
@@ -507,6 +543,7 @@ namespace Voxelforge.Gameplay
             if (_mob.Temperament == MobTemperament.Aggressive && TryNearest(senses, _mob.AggroRadius, out hero))
             {
                 Target = hero.Id;
+                _rules.Threat.Add(hero.Id, ThreatRules.NoticeThreat);
                 return true;
             }
             hero = default;
@@ -597,6 +634,7 @@ namespace Voxelforge.Gameplay
         {
             Target = hero;
             _provokedAt = now;
+            _rules.Threat.Add(hero, ThreatRules.NoticeThreat);
             Add(MobEventKind.Aggro, hero);
             // A pack hunter howls first, which gives its packmates (and the hero) a moment.
             if (_mob.CallSeconds > 0f)

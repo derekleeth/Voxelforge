@@ -18,4 +18,7 @@ MonoBehaviour:
   maxHealth: 150
   maxMana: 80
   manaRegen: 8
+  threatMultiplier: 2
+  passiveName: Runeforged Oath
+  passiveDescription: Sworn to stand in front. Everything you do angers foes twice as much, so they come for you, not your friends.
   loadout: {fileID: 11400000, guid: f5f13b4af2617aa4080ce70d9b2dea6e, type: 2}

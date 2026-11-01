@@ -20,7 +20,7 @@ namespace Voxelforge.Tests
             Assert.AreEqual(Kian, dummy.LastAttacker);
 
             dummy.Hit(10f, Derek, 2f, out _);
-            Assert.AreEqual(Derek, dummy.LastAttacker, "The next hay sack is for whoever hit it last.");
+            Assert.AreEqual(Derek, dummy.LastAttacker, "It remembers who hit it last (its bales follow its threat, 5.3).");
         }
 
         [Test]

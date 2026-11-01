@@ -145,11 +145,11 @@ namespace Voxelforge.Gameplay
             base.OnNetworkDespawn();
         }
 
-        public TargetDamage ServerDamage(float amount, PlayerId instigator)
+        public TargetDamage ServerDamage(float amount, PlayerId instigator, float threatScale = 1f)
         {
             if (!IsServer || _rules == null)
                 return default;
-            TargetDamage result = _rules.Hit(amount, instigator);
+            TargetDamage result = _rules.Hit(amount, instigator, threatScale);
             if (result.Toppled)
             {
                 _despawnAt = Time.time + defeatedSeconds;
@@ -161,8 +161,10 @@ namespace Voxelforge.Gameplay
             return result;
         }
 
-        public bool ServerStun(float seconds, PlayerId instigator) =>
-            IsServer && _rules != null && _rules.Stun(Time.time, seconds, instigator);
+        public bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f) =>
+            IsServer && _rules != null && _rules.Stun(Time.time, seconds, instigator, threatScale);
+
+        public ThreatTable ServerThreat => IsServer && _rules != null && !_rules.IsDefeated ? _rules.Threat : null;
 
         void FixedUpdate()
         {

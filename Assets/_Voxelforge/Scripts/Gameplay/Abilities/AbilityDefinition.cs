@@ -89,6 +89,11 @@ namespace Voxelforge.Gameplay
         [Tooltip("Seconds between each block (a Pillar) or row (a Wall) rising.")]
         [SerializeField, Range(0.02f, 1f)] float earthStep = 0.08f;
 
+        [Header("Threat (5.3)")]
+        [Tooltip("Times the threat its damage, heals, shields and stuns make (ThreatRules). 1 = normal; a tank's spells " +
+                 "make more, a sneaky spell less.")]
+        [SerializeField, Range(0f, 5f)] float threatScale = 1f;
+
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public string Description => description;
@@ -119,6 +124,7 @@ namespace Voxelforge.Gameplay
         public int EarthHeight => earthHeight;
         public int EarthWidth => earthWidth;
         public float EarthStep => earthStep;
+        public float ThreatScale => threatScale;
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static AbilityDefinition Create(ushort id, string displayName, float manaCost = 0f, float cooldown = 0f,
@@ -126,7 +132,7 @@ namespace Voxelforge.Gameplay
             bool castWhileMoving = false, AbilityElement element = AbilityElement.Arcane,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float craterFalloff = 0.25f, float craterFlatten = 1f,
             float healAmount = 0f, float shieldAmount = 0f, float duration = 0f, float pulseInterval = 1f, float aimCone = 12f,
-            int earthHeight = 0, int earthWidth = 0, float earthStep = 0.08f, float manaRegenBonus = 0f)
+            int earthHeight = 0, int earthWidth = 0, float earthStep = 0.08f, float manaRegenBonus = 0f, float threatScale = 1f)
         {
             var definition = CreateInstance<AbilityDefinition>();
             definition.name = displayName;
@@ -153,6 +159,7 @@ namespace Voxelforge.Gameplay
             definition.earthWidth = earthWidth;
             definition.earthStep = earthStep;
             definition.manaRegenBonus = manaRegenBonus;
+            definition.threatScale = threatScale;
             return definition;
         }
     }

@@ -57,6 +57,9 @@ namespace Voxelforge.Gameplay
                 ability.Range, ability.AimCone);
             PlayerHealth target = pick >= 0 ? _partners[pick] : _health;
             target.ServerShield(ability.ShieldAmount, ability.Duration, _player.PlayerId, ability.Id);
+            // Shielding a hero angers whatever is fighting them (Roadmap 5.3).
+            if (registry != null && registry.Targets != null && target.TryGetComponent(out PlayerController shielded))
+                registry.Targets.ServerSupportThreat(_player.PlayerId, shielded.PlayerId, ability.ShieldAmount, ability.ThreatScale);
         }
 
         /// <summary>
@@ -67,7 +70,10 @@ namespace Voxelforge.Gameplay
         {
             if (!IsServer || !IsSpawned || ability == null || ability.HealAmount <= 0f)
                 return;
-            _health.ServerHeal(_health.MaxHealth * ability.HealAmount, _player.PlayerId, ability.Id);
+            float healed = _health.ServerHeal(_health.MaxHealth * ability.HealAmount, _player.PlayerId, ability.Id);
+            PlayerRegistry registry = _player.Registry;
+            if (registry != null && registry.Targets != null)
+                registry.Targets.ServerSupportThreat(_player.PlayerId, _player.PlayerId, healed, ability.ThreatScale);
         }
 
         /// <summary>Host only: <paramref name="ability"/>'s circle on the ground, centred on the hero's feet.</summary>

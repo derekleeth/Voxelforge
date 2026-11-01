@@ -219,7 +219,10 @@ namespace Voxelforge.Gameplay
                 c.Name.text = definition.DisplayName;
                 c.Stats.text = $"<color=#A3221B>Health {definition.MaxHealth:0}</color>   " +
                                $"<color=#1F4FB0>Mana {definition.MaxMana:0}</color>";
-                c.About.text = definition.Description;
+                // A passive (Roadmap 5.3, the Paladin's Runeforged Oath) goes under the description, in the class's ink.
+                c.About.text = string.IsNullOrEmpty(definition.PassiveName)
+                    ? definition.Description
+                    : $"{definition.Description}\n<b><color=#7A4A12>{definition.PassiveName}:</color></b> {definition.PassiveDescription}";
                 for (int s = 0; s < SignatureSpells; s++)
                 {
                     AbilityDefinition spell = SpellIn(definition, s);
