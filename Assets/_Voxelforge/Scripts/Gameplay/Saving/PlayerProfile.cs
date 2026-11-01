@@ -7,7 +7,8 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// What a world remembers about one player between sessions (Roadmap 3.4, D-017): where they stood, which way they
     /// faced, their block bag, their Home Totem (3.8), their class (4.6), their race (4.7), the map cells they've
-    /// explored (4.8), and their worn gear and the ruin chests they've had loot from (5.5). Kept under their
+    /// explored (4.8), their worn gear and the ruin chests they've had loot from (5.5), their level (5.6) and their
+    /// gathering skills (5.7). Kept under their
     /// <see cref="PlayerUuid"/>, so it survives players joining in a different order.
     /// </summary>
     public sealed class PlayerProfile
@@ -61,6 +62,9 @@ namespace Voxelforge.Gameplay
         /// <summary>Their level and XP (Roadmap 5.6). Saves from before 5.6 load as a new level 1 hero.</summary>
         public LevelState Level = LevelState.Start;
 
+        /// <summary>Their gathering skills (Roadmap 5.7). Saves from before 5.7 load at 1 in everything.</summary>
+        public ProfessionSkills Professions = ProfessionSkills.Start;
+
         public PlayerProfile Clone() => new PlayerProfile
         {
             Uuid = Uuid,
@@ -78,6 +82,7 @@ namespace Voxelforge.Gameplay
             Gear = Gear,
             LootedCaches = new HashSet<int3>(LootedCaches),
             Level = Level,
+            Professions = Professions,
         };
     }
 }

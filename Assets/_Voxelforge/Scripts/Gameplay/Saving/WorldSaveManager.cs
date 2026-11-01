@@ -363,6 +363,8 @@ namespace Voxelforge.Gameplay
                     profile.Class = heroClass.Class;
                 if (player.TryGetComponent(out PlayerLevel level))
                     profile.Level = level.State;
+                if (player.TryGetComponent(out PlayerProfessions professions))
+                    profile.Professions = professions.Skills;
                 if (player.TryGetComponent(out PlayerRace race))
                 {
                     profile.Race = race.Race;

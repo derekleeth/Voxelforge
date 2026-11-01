@@ -154,6 +154,7 @@ namespace Voxelforge.Tests
             p1.Gear = new EquippedGear { Head = ItemIds.FrostfangHood, MainHand = ItemIds.Skyrender };
             p1.LootedCaches = new HashSet<int3> { new int3(230, 71, 51), new int3(-127, 64, 524) };
             p1.Level = new LevelState(7, 55);
+            p1.Professions = ProfessionSkills.Start.With(ProfessionId.Mining, 42).With(ProfessionId.Skinning, 100);
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
@@ -205,6 +206,7 @@ namespace Voxelforge.Tests
                 CollectionAssert.AreEquivalent(want.LootedCaches, got.LootedCaches, "Looted ruin caches (v7).");
                 Assert.AreEqual(want.Level.EffectiveLevel, got.Level.EffectiveLevel, "Level (v8).");
                 Assert.AreEqual(want.Level.Xp, got.Level.Xp, "XP (v8).");
+                Assert.AreEqual(want.Professions, got.Professions, "Gathering skills (v9).");
             }
             CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock and its time left (v4).");
 
@@ -336,6 +338,20 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Version8Save_StillLoads_WithEveryProfessionAtOne()
+        {
+            WorldSave save = SampleSave();
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 8), out WorldSave loaded));
+            foreach (PlayerProfile want in save.Profiles.Values)
+            {
+                PlayerProfile got = loaded.Profiles[want.Uuid];
+                Assert.AreEqual(want.Level.EffectiveLevel, got.Level.EffectiveLevel, "The level survives.");
+                Assert.AreEqual(want.Level.Xp, got.Level.Xp);
+                Assert.AreEqual(ProfessionSkills.Start, got.Professions, "Before 5.7 nobody had gathered.");
+            }
+        }
+
+        [Test]
         public void Version7Save_StillLoads_AsLevelOneHeroes()
         {
             WorldSave save = OldSample(keepV4: true, keepV5: true, keepV6: true, keepV7: true);
@@ -392,6 +408,7 @@ namespace Voxelforge.Tests
             foreach (PlayerProfile profile in save.Profiles.Values)
             {
                 profile.Level = LevelState.Start;
+                profile.Professions = ProfessionSkills.Start;
                 if (keepV7)
                     continue;
                 profile.Gear = default;
@@ -427,6 +444,10 @@ namespace Voxelforge.Tests
         static byte[] OlderFile(WorldSave save, int version)
         {
             var body = new List<byte>(WorldSaveFile.EncodeBody(save));
+            int skillBlock = 4 + save.Profiles.Count * (16 + ProfessionSkills.Count);
+            body.RemoveRange(body.Count - 4 - skillBlock, skillBlock); // Gathering skills (v9).
+            if (version >= 8)
+                return SaveFileBytes(body, version);
             int levelBlock = 4 + save.Profiles.Count * (16 + 1 + 4);
             body.RemoveRange(body.Count - 4 - levelBlock, levelBlock); // Levels and XP (v8).
             if (version >= 7)
@@ -475,9 +496,9 @@ namespace Voxelforge.Tests
         {
             byte[] full = WorldSaveFile.EncodeBody(save);
             var empty = new WorldSave { Seed = save.Seed, GeneratorVersion = save.GeneratorVersion, SavedUtc = save.SavedUtc, Deltas = save.Deltas };
-            // The same body with no profiles, chests, earth, explored cells, gear or levels is: header + deltas + 6 zero
-            // counts + end marker.
-            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4;
+            // The same body with no profiles, chests, earth, explored cells, gear, levels or skills is: header + deltas +
+            // 7 zero counts + end marker.
+            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4;
             int profiles = 0;
             foreach (PlayerProfile profile in save.Profiles.Values)
                 profiles += FullProfileBytes(profile);

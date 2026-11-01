@@ -61,9 +61,10 @@ namespace Voxelforge.Gameplay
         /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). 5: each
         /// profile's race and whether they've chosen it (4.7). 6: each player's explored map cells, after the earth
         /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). 8:
-        /// each player's level and XP, after that (5.6). Older saves still load.
+        /// each player's level and XP, after that (5.6). 9: each player's gathering skills, after that (5.7). Older saves
+        /// still load.
         /// </summary>
-        public const int FormatVersion = 8;
+        public const int FormatVersion = 9;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -173,6 +174,16 @@ namespace Voxelforge.Gameplay
                     writer.Write(profile.Uuid.Low);
                     writer.Write((byte)profile.Level.EffectiveLevel);
                     writer.Write(profile.Level.Xp);
+                }
+
+                // Gathering skills (v9).
+                writer.Write(save.Profiles.Count);
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    writer.Write(profile.Uuid.High);
+                    writer.Write(profile.Uuid.Low);
+                    for (int i = 0; i < ProfessionSkills.Count; i++)
+                        writer.Write((byte)profile.Professions.Get((ProfessionId)i));
                 }
                 writer.Write(EndMarker);
             }
@@ -359,6 +370,22 @@ namespace Voxelforge.Gameplay
                         var level = new LevelState(reader.ReadByte(), reader.ReadInt32());
                         if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
                             profile.Level = level;
+                    }
+                }
+
+                if (format >= 9)
+                {
+                    int skilled = reader.ReadInt32();
+                    if (skilled < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int p = 0; p < skilled; p++)
+                    {
+                        var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
+                        ProfessionSkills skills = ProfessionSkills.Start;
+                        for (int i = 0; i < ProfessionSkills.Count; i++)
+                            skills = skills.With((ProfessionId)i, reader.ReadByte());
+                        if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
+                            profile.Professions = skills;
                     }
                 }
 
