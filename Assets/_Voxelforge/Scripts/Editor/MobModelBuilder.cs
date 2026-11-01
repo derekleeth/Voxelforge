@@ -22,6 +22,8 @@ namespace Voxelforge.Editor
     /// <see cref="MobAnimator"/> cross-fades to by name.</item>
     /// <item><b>Prefab:</b> swaps the blocky stand-in body for the model at its scale (one Slime model serves all three
     /// sizes), and <see cref="MobStandInView"/> for <see cref="MobAnimator"/>.</item>
+    /// <item><b>Effects (step G):</b> gives each prefab a <see cref="MobEffects"/> with its dust and splash colours, and
+    /// makes their materials in <c>Art/Materials/MobFx</c>.</item>
     /// </list>
     /// </summary>
     public static class MobModelBuilder
@@ -53,12 +55,24 @@ namespace Voxelforge.Editor
                 ["Slime_Eye"] = (new Color(0.03f, 0.03f, 0.06f), false, 0f, 0.9f),
             };
 
+        const string FxFolder = "Assets/_Voxelforge/Art/Materials/MobFx";
+
+        /// <summary>The colour of each model's dust, and of its splash when it splits or dies (clear for none).</summary>
+        static readonly Dictionary<string, (Color Dust, Color Splash)> FxColours = new Dictionary<string, (Color, Color)>
+        {
+            ["Boar"] = (new Color(0.55f, 0.42f, 0.28f, 0.9f), Color.clear),
+            ["Wolf"] = (new Color(0.86f, 0.9f, 0.96f, 0.9f), Color.clear),
+            ["Rhino"] = (new Color(0.66f, 0.58f, 0.44f, 0.9f), Color.clear),
+            ["Slime"] = (new Color(0.5f, 0.85f, 1f, 0.8f), new Color(0.4f, 0.85f, 1f, 0.85f)),
+        };
+
         static readonly HashSet<string> Looping = new HashSet<string> { "Idle", "Walk", "Run", "Paw", "Charge" };
 
         [MenuItem("Voxelforge/Rebuild Mob Models")]
         public static void Rebuild()
         {
             var built = new Dictionary<string, AnimatorController>();
+            (Material dust, Material mark) = BuildFxMaterials();
             foreach ((string name, string definitionPath, string prefabPath, float scale) in Models)
             {
                 string folder = $"{ModelRoot}/{name}";
@@ -77,6 +91,7 @@ namespace Voxelforge.Editor
                     controller = built[name] = BuildController(folder, name, modelPath, definition);
                 }
                 UpdatePrefab(prefabPath, modelPath, controller, scale, definition.Hops);
+                AddEffects(prefabPath, name, dust, mark);
                 Debug.Log($"[Voxelforge] Rebuilt the {definition.DisplayName}'s model and animator.");
             }
             AssetDatabase.SaveAssets();
@@ -234,6 +249,76 @@ namespace Voxelforge.Editor
             clips.TryGetValue(name, out AnimationClip clip)
                 ? clip
                 : throw new InvalidOperationException($"The model has no {name} clip; check build_mobs.py.");
+
+        /// <summary>The dust particles (alpha-blended, from the spells' particle shader) and the charge strip's colour.</summary>
+        static (Material Dust, Material Mark) BuildFxMaterials()
+        {
+            Directory.CreateDirectory(FxFolder);
+            var glow = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Voxelforge/Art/Materials/Props/ManaBolt.mat");
+            string dustPath = $"{FxFolder}/MobDust.mat";
+            var dust = AssetDatabase.LoadAssetAtPath<Material>(dustPath);
+            if (dust == null)
+            {
+                dust = glow != null ? new Material(glow) : new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+                dust.name = "MobDust";
+                AssetDatabase.CreateAsset(dust, dustPath);
+            }
+            dust.SetFloat("_Surface", 1f);
+            dust.SetFloat("_Blend", 0f);
+            dust.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            dust.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            dust.SetFloat("_ZWrite", 0f);
+            dust.SetColor("_BaseColor", Color.white);
+            dust.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            dust.DisableKeyword("_ALPHAMODULATE_ON");
+            dust.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            dust.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            EditorUtility.SetDirty(dust);
+
+            string markPath = $"{FxFolder}/ChargeMark.mat";
+            var mark = AssetDatabase.LoadAssetAtPath<Material>(markPath);
+            if (mark == null)
+            {
+                mark = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "ChargeMark" };
+                AssetDatabase.CreateAsset(mark, markPath);
+            }
+            mark.SetFloat("_Surface", 1f);
+            mark.SetFloat("_Blend", 0f);
+            mark.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mark.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mark.SetFloat("_ZWrite", 0f);
+            mark.SetFloat("_Cull", 0f);
+            mark.SetOverrideTag("RenderType", "Transparent");
+            mark.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mark.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            mark.SetColor("_BaseColor", new Color(1f, 0.12f, 0.08f, 0.5f));
+            EditorUtility.SetDirty(mark);
+            return (dust, mark);
+        }
+
+        static void AddEffects(string prefabPath, string name, Material dust, Material mark)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                MobEffects effects = root.GetComponent<MobEffects>() ?? root.AddComponent<MobEffects>();
+                var serialized = new SerializedObject(effects);
+                serialized.FindProperty("mob").objectReferenceValue = root.GetComponent<Mob>();
+                serialized.FindProperty("effectMaterial").objectReferenceValue = dust;
+                serialized.FindProperty("markMaterial").objectReferenceValue = mark;
+                if (FxColours.TryGetValue(name, out (Color Dust, Color Splash) colours))
+                {
+                    serialized.FindProperty("dust").colorValue = colours.Dust;
+                    serialized.FindProperty("splash").colorValue = colours.Splash;
+                }
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
 
         static void UpdatePrefab(string prefabPath, string modelPath, AnimatorController controller, float scale, bool hops)
         {

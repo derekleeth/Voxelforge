@@ -29,7 +29,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5636776490761702115}
+  - {fileID: 5892773019771472032}
   m_Father: {fileID: 7063123576452172650}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7485586057937765207
@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 4110646162216696759}
   - component: {fileID: 6781440883332120610}
   - component: {fileID: 6117679523427438742}
+  - component: {fileID: 4639189305905068719}
   m_Layer: 0
   m_Name: BristlebackBoar
   m_TagString: Untagged
@@ -170,10 +171,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobAnimator
   mob: {fileID: 6781440883332120610}
-  animator: {fileID: 1790733420886888601}
+  animator: {fileID: 515513738766439130}
   fade: 0.12
   squash: {fileID: 0}
---- !u!1001 &5310697404832591112
+--- !u!114 &4639189305905068719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7485586057937765207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44a87d032006f724990af4d699c5f221, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobEffects
+  mob: {fileID: 6781440883332120610}
+  effectMaterial: {fileID: 2100000, guid: 206ef7664a079284689268d8380ef751, type: 2}
+  markMaterial: {fileID: 2100000, guid: fc9e5267a72601e42931c9fe34e64319, type: 2}
+  hurtFlash: {r: 1, g: 0.25, b: 0.2, a: 1}
+  flashSeconds: 0.14
+  dust: {r: 0.55, g: 0.42, b: 0.28, a: 0.9}
+  splash: {r: 0, g: 0, b: 0, a: 0}
+  chargeMark: {r: 1, g: 0.12, b: 0.08, a: 0.5}
+  chargeMarkLength: 9
+--- !u!1001 &6218886877097848651
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -234,13 +256,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 53949e09a4ef7f245bf6a7eb0ac17364, type: 3}
---- !u!95 &1790733420886888601 stripped
+--- !u!95 &515513738766439130 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 53949e09a4ef7f245bf6a7eb0ac17364, type: 3}
-  m_PrefabInstance: {fileID: 5310697404832591112}
+  m_PrefabInstance: {fileID: 6218886877097848651}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &5636776490761702115 stripped
+--- !u!4 &5892773019771472032 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 53949e09a4ef7f245bf6a7eb0ac17364, type: 3}
-  m_PrefabInstance: {fileID: 5310697404832591112}
+  m_PrefabInstance: {fileID: 6218886877097848651}
   m_PrefabAsset: {fileID: 0}

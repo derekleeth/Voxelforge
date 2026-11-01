@@ -29,7 +29,7 @@ Transform:
   m_LocalScale: {x: 0.9, y: 0.9, z: 0.9}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5948309032916622926}
+  - {fileID: 5412327599811085685}
   m_Father: {fileID: 7063123576452172650}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7485586057937765207
@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 4110646162216696759}
   - component: {fileID: 6781440883332120610}
   - component: {fileID: 7405204510638146654}
+  - component: {fileID: 7668446875970484203}
   m_Layer: 0
   m_Name: CrystalSlime
   m_TagString: Untagged
@@ -170,10 +171,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobAnimator
   mob: {fileID: 6781440883332120610}
-  animator: {fileID: 318787283035866164}
+  animator: {fileID: 2160707002969726735}
   fade: 0.12
   squash: {fileID: 1857328284544312060}
---- !u!1001 &6126613968552425893
+--- !u!114 &7668446875970484203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7485586057937765207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44a87d032006f724990af4d699c5f221, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobEffects
+  mob: {fileID: 6781440883332120610}
+  effectMaterial: {fileID: 2100000, guid: 206ef7664a079284689268d8380ef751, type: 2}
+  markMaterial: {fileID: 2100000, guid: fc9e5267a72601e42931c9fe34e64319, type: 2}
+  hurtFlash: {r: 1, g: 0.25, b: 0.2, a: 1}
+  flashSeconds: 0.14
+  dust: {r: 0.5, g: 0.85, b: 1, a: 0.8}
+  splash: {r: 0.4, g: 0.85, b: 1, a: 0.85}
+  chargeMark: {r: 1, g: 0.12, b: 0.08, a: 0.5}
+  chargeMarkLength: 9
+--- !u!1001 &5518820751437013662
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -234,13 +256,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 857a3c38d728e5140aa740bbdd4989a8, type: 3}
---- !u!95 &318787283035866164 stripped
+--- !u!95 &2160707002969726735 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 857a3c38d728e5140aa740bbdd4989a8, type: 3}
-  m_PrefabInstance: {fileID: 6126613968552425893}
+  m_PrefabInstance: {fileID: 5518820751437013662}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &5948309032916622926 stripped
+--- !u!4 &5412327599811085685 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 857a3c38d728e5140aa740bbdd4989a8, type: 3}
-  m_PrefabInstance: {fileID: 6126613968552425893}
+  m_PrefabInstance: {fileID: 5518820751437013662}
   m_PrefabAsset: {fileID: 0}

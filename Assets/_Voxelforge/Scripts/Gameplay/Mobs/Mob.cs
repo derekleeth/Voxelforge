@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using Unity.Netcode;
@@ -7,6 +8,23 @@ using Voxelforge.Voxels;
 
 namespace Voxelforge.Gameplay
 {
+    /// <summary>A moment in a mob's life every PC hears about, for its sounds and effects (Roadmap 5.2 step G).</summary>
+    public enum MobCueKind : byte
+    {
+        /// <summary>It picked a fight: a grunt, a howl, a bellow.</summary>
+        Call,
+        /// <summary>It started winding up attack <c>attack</c>.</summary>
+        Windup,
+        /// <summary>Attack <c>attack</c> landed on a hero.</summary>
+        Strike,
+        /// <summary>A hero hurt it.</summary>
+        Hurt,
+        /// <summary>Its health ran out.</summary>
+        Defeated,
+        /// <summary>It charged into a wall.</summary>
+        Dazed,
+    }
+
     /// <summary>
     /// One creature in the world (Roadmap 5.2), of the kind its <see cref="MobDefinition"/> says.
     /// <para>
@@ -17,11 +35,16 @@ namespace Voxelforge.Gameplay
     /// </para>
     /// <para>
     /// Every PC sees it through a server-authority <c>NetworkTransform</c> and its <see cref="State"/>, which is all its
-    /// animation needs (<see cref="MobStandInView"/>). Its targets are heroes by <see cref="PlayerId"/> (CLAUDE.md Law #1).
+    /// animation needs (<see cref="MobAnimator"/>). Its targets are heroes by <see cref="PlayerId"/> (CLAUDE.md Law #1).
     /// </para>
     /// <para>
     /// Step C: it tells its brain about mobs of its own kind nearby and calls them into its fights, hops if it's a slime,
     /// and bursts into smaller mobs that carry on its fight if its kind splits.
+    /// </para>
+    /// <para>
+    /// Step G: the host tells every PC when it calls, winds up, strikes, is hurt, is defeated or is dazed
+    /// (<see cref="Cued"/>), and every PC sees it vanish after its defeat (<see cref="Vanishing"/>), for
+    /// <see cref="MobFoley"/>'s sounds and <see cref="MobEffects"/>.
     /// </para>
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
@@ -58,6 +81,13 @@ namespace Voxelforge.Gameplay
         readonly List<Mob> _packmates = new List<Mob>();
 
         public MobDefinition Definition => definition;
+
+        /// <summary>Every PC: the host said it called, wound up, struck, was hurt, was defeated or was dazed. The int is
+        /// the attack, for <see cref="MobCueKind.Windup"/> and <see cref="MobCueKind.Strike"/>.</summary>
+        public event Action<Mob, MobCueKind, int> Cued;
+
+        /// <summary>Every PC: a defeated mob is leaving the world (its body disappears in a poof).</summary>
+        public event Action<Mob> Vanishing;
 
         /// <summary>Every PC: what it's doing, as the host last said.</summary>
         public MobState State => (MobState)_state.Value;
@@ -109,6 +139,8 @@ namespace Voxelforge.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            if (State == MobState.Defeated)
+                Vanishing?.Invoke(this);
             CombatCreatures.RaiseDespawned(this);
             base.OnNetworkDespawn();
         }
@@ -124,6 +156,8 @@ namespace Voxelforge.Gameplay
                 _state.Value = (byte)MobState.Defeated;
                 ServerSplit();
             }
+            if (result.Dealt > 0f)
+                CueRpc(result.Toppled ? MobCueKind.Defeated : MobCueKind.Hurt, 0);
             return result;
         }
 
@@ -155,10 +189,23 @@ namespace Voxelforge.Gameplay
             });
             foreach (MobEvent e in _brain.Events)
             {
-                if (e.Kind == MobEventKind.Strike)
-                    Strike(e, feet);
-                else if (e.Kind == MobEventKind.Aggro)
-                    CallPack(e.Target, feet, now);
+                switch (e.Kind)
+                {
+                    case MobEventKind.Strike:
+                        Strike(e, feet);
+                        CueRpc(MobCueKind.Strike, (byte)math.max(0, e.Attack));
+                        break;
+                    case MobEventKind.Aggro:
+                        CallPack(e.Target, feet, now);
+                        CueRpc(MobCueKind.Call, 0);
+                        break;
+                    case MobEventKind.Windup:
+                        CueRpc(MobCueKind.Windup, (byte)math.max(0, e.Attack));
+                        break;
+                    case MobEventKind.Dazed:
+                        CueRpc(MobCueKind.Dazed, (byte)math.max(0, e.Attack));
+                        break;
+                }
             }
             if (_state.Value != (byte)_brain.State)
                 _state.Value = (byte)_brain.State;
@@ -202,6 +249,9 @@ namespace Voxelforge.Gameplay
             transform.SetPositionAndRotation(math.lerp(_previousFeet, _body.FeetPosition(definition.Motor), alpha),
                 Quaternion.Euler(0f, Mathf.LerpAngle(_previousYaw, _yaw, alpha), 0f));
         }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        void CueRpc(MobCueKind kind, byte attack) => Cued?.Invoke(this, kind, attack);
 
         /// <summary>
         /// A slime gets about in hops: on the ground it sits for <see cref="MobDefinition.HopPause"/>, then jumps the way

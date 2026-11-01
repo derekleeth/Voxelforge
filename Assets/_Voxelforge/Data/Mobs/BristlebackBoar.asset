@@ -73,3 +73,11 @@ MonoBehaviour:
     GroupMin: 1
     GroupMax: 2
     Weight: 1
+  sounds:
+    Call: {fileID: 8300000, guid: 141d377050dd3d440a14da7ede26e0a2, type: 3}
+    Attack: {fileID: 8300000, guid: 141d377050dd3d440a14da7ede26e0a2, type: 3}
+    Charge: {fileID: 8300000, guid: 8f0d00bb760e44341a53f149b2af6ad0, type: 3}
+    Strike: {fileID: 8300000, guid: b26edcbbe3009434495100622ab841d4, type: 3}
+    Hurt: {fileID: 8300000, guid: 094eba15ecd36b946bb2ef1d7d0b50b4, type: 3}
+    Death: {fileID: 8300000, guid: db092dd1380075242bc27475285572d3, type: 3}
+    Pitch: 1

@@ -77,3 +77,6 @@ desktop.ini
 
 # Claude Code per-user settings
 .claude/settings.local.json
+
+# Python bytecode from Blender build scripts
+__pycache__/

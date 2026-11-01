@@ -1,3 +1,4 @@
+using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,7 @@ namespace Voxelforge.Gameplay
     /// Health bars over the targets near one player (Roadmap 4.6), in their own view: a small inked bar floating over each
     /// Training Dummy or creature (5.2) being fought, projected through <b>that player's</b> camera like their combat text (CLAUDE.md
     /// Law #5). It reads a shared <see cref="TargetHealthBook"/>; the bars are pooled, so nothing is made while playing.
+    /// A creature's bar has its name over it (5.2 step G).
     /// </summary>
     sealed class TargetBarsView
     {
@@ -25,6 +27,8 @@ namespace Voxelforge.Gameplay
             public Image Fill;
             public Image Lag;
             public CanvasGroup Group;
+            public TextMeshProUGUI Name;
+            public TargetKey Key;
             public float Shown = 1f;
         }
 
@@ -43,6 +47,12 @@ namespace Voxelforge.Gameplay
                 bar.Lag = Fill("Lag", bar.Root, skin, new Color(1f, 0.92f, 0.7f));
                 bar.Fill = Fill("Fill", bar.Root, skin, skin.health);
                 HudWidgets.Stretch(HudWidgets.Image("Frame", bar.Root, skin.barFrame, Color.white, Image.Type.Sliced).rectTransform, -3f);
+                bar.Name = HudWidgets.SmallLabel("Name", bar.Root, skin, 18f, Color.white, TextAlignmentOptions.Bottom);
+                bar.Name.outlineWidth = 0.22f;
+                bar.Name.outlineColor = skin.ink;
+                HudWidgets.Place(bar.Name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0f), new Vector2(0f, 3f),
+                    new Vector2(260f, 24f));
+                bar.Name.text = "";
                 bar.Root.gameObject.SetActive(false);
                 _bars[i] = bar;
             }
@@ -60,7 +70,9 @@ namespace Voxelforge.Gameplay
         /// <param name="area">The rect this view's parent covers, in GUI pixels.</param>
         /// <param name="scale">GUI pixels per 1080p pixel.</param>
         /// <param name="hero">Where this player's hero stands; only nearby targets get a bar.</param>
-        public void Tick(TargetHealthBook book, PlayerView view, Rect area, float scale, float3 hero, float now)
+        /// <param name="creatures">Every creature, for the names over their bars; may be null.</param>
+        public void Tick(TargetHealthBook book, CombatTargets creatures, PlayerView view, Rect area, float scale, float3 hero,
+            float now)
         {
             int used = 0;
             if (book != null)
@@ -73,11 +85,26 @@ namespace Voxelforge.Gameplay
                     float distance = math.distance(top, hero);
                     if (distance > MaxDistance || !PlayerScreenArea.TryProject(view, top, out Vector2 gui))
                         continue;
-                    Place(_bars[used++], entry, gui, area, scale, distance, now);
+                    Bar bar = _bars[used++];
+                    Name(bar, entry.Key, creatures);
+                    Place(bar, entry, gui, area, scale, distance, now);
                 }
             }
             for (int i = 0; i < Capacity; i++)
                 HudWidgets.SetActive(_bars[i].Root, i < used);
+        }
+
+        /// <summary>A creature's name over its bar; none for a Training Dummy. Only looked up when the bar changes target.</summary>
+        static void Name(Bar bar, TargetKey key, CombatTargets creatures)
+        {
+            if (bar.Key == key)
+                return;
+            bar.Key = key;
+            string name = "";
+            if (key.IsCreature && creatures != null && creatures.TryGetCreature(key.CreatureId, out ICombatCreature creature) &&
+                creature is Mob mob && mob.Definition != null)
+                name = mob.Definition.DisplayName;
+            bar.Name.text = name;
         }
 
         static void Place(Bar bar, in TargetHealthBook.Entry entry, Vector2 gui, Rect area, float scale, float distance, float now)

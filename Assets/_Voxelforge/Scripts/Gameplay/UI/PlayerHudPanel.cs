@@ -208,7 +208,7 @@ namespace Voxelforge.Gameplay
             _actionBar.Tick(_bar, _caster, _health, buttons, now);
             _castBar.Tick(_caster, now);
             if (_player != null)
-                _targetBars.Tick(targets, view, textArea, scale, _player.transform.position, now);
+                _targetBars.Tick(targets, creatures, view, textArea, scale, _player.transform.position, now);
             _targetMarker.Tick(_targeting, creatures, view, textArea, scale, _player != null ? _player.TeamColor : Color.white, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);

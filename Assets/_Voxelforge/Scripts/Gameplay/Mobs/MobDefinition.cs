@@ -63,6 +63,30 @@ namespace Voxelforge.Gameplay
         [Min(0f)] public float DazedSeconds;
     }
 
+    /// <summary>What a mob sounds like (Roadmap 5.2 step G). <see cref="MobFoley"/> plays them; any can be left empty.</summary>
+    [Serializable]
+    public struct MobSounds
+    {
+        [Tooltip("Picking a fight: a grunt, a howl, a bellow.")]
+        public AudioClip Call;
+
+        [Tooltip("Winding up a melee attack.")]
+        public AudioClip Attack;
+
+        [Tooltip("Winding up a charge: the boar's squeal.")]
+        public AudioClip Charge;
+
+        [Tooltip("An attack landing on a hero.")]
+        public AudioClip Strike;
+
+        public AudioClip Hurt;
+
+        public AudioClip Death;
+
+        [Tooltip("Plays every clip this much higher (a small slime squeaks).")]
+        [Range(0.5f, 2f)] public float Pitch;
+    }
+
     /// <summary>Where the biome spawner (Roadmap 5.2 step D) puts a mob.</summary>
     public enum MobSpawnPlace : byte
     {
@@ -172,6 +196,10 @@ namespace Voxelforge.Gameplay
         [Tooltip("Where the biome spawner puts it, and how many at a time.")]
         [SerializeField] MobSpawnRule spawn = new MobSpawnRule { GroupMin = 1, GroupMax = 1, Weight = 1f };
 
+        [Header("Feedback")]
+        [Tooltip("Built by Voxelforge > Build Sound Effects.")]
+        [SerializeField] MobSounds sounds = new MobSounds { Pitch = 1f };
+
         public MobId Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public Mob Prefab => prefab;
@@ -195,6 +223,7 @@ namespace Voxelforge.Gameplay
         public MobDefinition SplitInto => splitInto;
         public int SplitCount => splitInto != null ? splitCount : 0;
         public MobSpawnRule Spawn => spawn;
+        public MobSounds Sounds => sounds;
 
         /// <summary>How far round it looks for packmates, in metres.</summary>
         public float PackRadius => callRadius > 0f ? callRadius : 25f;

@@ -24,6 +24,7 @@ namespace Voxelforge.Editor
         const string SurfaceDir = "Assets/_Voxelforge/Data/Audio/Surfaces";
         const string BlockDir = "Assets/_Voxelforge/Data/Blocks";
         const string DecorationDir = "Assets/_Voxelforge/Data/Decorations";
+        const string MobDir = "Assets/_Voxelforge/Data/Mobs";
 
         /// <summary>What one kind of ground sounds like. Every step, hit, break and place is built from these.</summary>
         sealed class Surface
@@ -143,6 +144,22 @@ namespace Voxelforge.Editor
             written.Add(Write("SprintWind", SprintWind(new Random(211), 6f)));
             written.Add(Write("MapOpen", MapOpen(new Random(223))));
             written.Add(Write("MapClose", MapClose(new Random(227))));
+            // Roadmap 5.2 step G: the overland mobs.
+            written.Add(Write("BoarGrunt", BoarGrunt(new Random(229))));
+            written.Add(Write("BoarSqueal", BoarSqueal(new Random(233))));
+            written.Add(Write("BoarHurt", Squeal(new Random(239), 0.26f, 950f, 620f)));
+            written.Add(Write("BoarDeath", MobDeath(new Random(241), Squeal(new Random(251), 0.4f, 1050f, 480f), 0.5f)));
+            written.Add(Write("WolfHowl", WolfHowl(new Random(257))));
+            written.Add(Write("WolfBite", WolfBite(new Random(263))));
+            written.Add(Write("WolfYelp", Squeal(new Random(269), 0.3f, 1250f, 700f)));
+            written.Add(Write("WolfDeath", MobDeath(new Random(271), Squeal(new Random(277), 0.5f, 900f, 380f), 0.4f)));
+            written.Add(Write("RhinoBellow", RhinoBellow(new Random(281), 1.3f)));
+            written.Add(Write("RhinoStomp", RhinoStomp(new Random(283))));
+            written.Add(Write("RhinoGrunt", RhinoBellow(new Random(293), 0.45f)));
+            written.Add(Write("RhinoDeath", MobDeath(new Random(307), RhinoBellow(new Random(311), 0.8f), 1f)));
+            written.Add(Write("SlimeSquelch", SlimeSquelch(new Random(313))));
+            written.Add(Write("SlimePop", SlimePop(new Random(317))));
+            written.Add(Write("MobImpact", MobImpact(new Random(331))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -153,6 +170,7 @@ namespace Voxelforge.Editor
                                                  path.EndsWith("SprintWind.wav", StringComparison.Ordinal));
 
             BuildAssets();
+            BuildMobSounds();
             AssetDatabase.SaveAssets();
             Debug.Log($"[Voxelforge] Built {written.Count} sound effects in {SfxDir} and the Sound Book in {AudioDataDir}.");
         }
@@ -906,6 +924,180 @@ namespace Voxelforge.Editor
             return buffer;
         }
 
+        // ---------------------------------------------------------------- Mobs (Roadmap 5.2 step G)
+
+        /// <summary>
+        /// A voice: a buzzy tone (<paramref name="harmonics"/> harmonics, each softer by <paramref name="rolloff"/>)
+        /// whose pitch follows <paramref name="pitch"/> over its length (0 to 1), with a wobble of
+        /// <paramref name="vibrato"/> Hz and a rough, growly edge of <paramref name="rough"/>. Animal calls are built from it.
+        /// </summary>
+        static void AddVoice(float[] buffer, Random rng, float start, float length, Func<float, float> pitch, int harmonics,
+            float rolloff, float amp, float attack, float release, float vibrato = 0f, float vibratoDepth = 0f, float rough = 0f)
+        {
+            int from = (int)(start * Rate);
+            int count = Math.Min(buffer.Length - from, (int)(length * Rate));
+            double phase = 0;
+            float grit = 0f, a = OnePole(60f);
+            for (int i = 0; i < count; i++)
+            {
+                float t = i / (float)Rate;
+                float u = t / length;
+                float f = pitch(u) * (1f + vibratoDepth * Mathf.Sin(2f * Mathf.PI * vibrato * t));
+                grit += a * (Noise(rng) - grit);
+                phase += 2.0 * Math.PI * f * (1f + rough * grit * 4f) / Rate;
+                float sample = 0f;
+                for (int h = 1; h <= harmonics; h++)
+                    sample += (float)Math.Sin(phase * h) / Mathf.Pow(h, rolloff);
+                float envelope = Mathf.Clamp01(t / attack) * Mathf.Clamp01((length - t) / release);
+                buffer[from + i] += sample * envelope * amp;
+            }
+        }
+
+        /// <summary>The Bristleback Boar picking a fight: two short, snorting grunts.</summary>
+        static float[] BoarGrunt(Random rng)
+        {
+            float[] buffer = New(0.6f);
+            float[] voice = New(0.6f);
+            AddVoice(voice, rng, 0f, 0.2f, u => Mathf.Lerp(105f, 80f, u), 14, 1f, 0.5f, 0.01f, 0.06f, rough: 0.6f);
+            AddVoice(voice, rng, 0.26f, 0.28f, u => Mathf.Lerp(95f, 70f, u), 14, 1f, 0.6f, 0.01f, 0.1f, rough: 0.6f);
+            Add(buffer, voice, 0.5f);
+            Add(buffer, Resonate(voice, 520f, 0.97f), 1.2f);
+            AddNoise(buffer, rng, 0f, 0.05f, 0.25f, 300f, 1600f);   // snorts
+            AddNoise(buffer, rng, 0.26f, 0.06f, 0.25f, 300f, 1600f);
+            return Finish(buffer, 0.8f);
+        }
+
+        /// <summary>The boar winding up a charge: a shrill, rising squeal.</summary>
+        static float[] BoarSqueal(Random rng)
+        {
+            float[] buffer = New(0.8f);
+            AddVoice(buffer, rng, 0f, 0.75f, u => u < 0.35f ? Mathf.Lerp(700f, 1250f, u / 0.35f) : Mathf.Lerp(1250f, 900f, (u - 0.35f) / 0.65f),
+                7, 1.3f, 0.5f, 0.03f, 0.2f, vibrato: 16f, vibratoDepth: 0.04f, rough: 0.15f);
+            AddNoise(buffer, rng, 0f, 0.25f, 0.12f, 2000f, 6000f);
+            return Finish(buffer, 0.75f);
+        }
+
+        /// <summary>A high cry falling from <paramref name="high"/> to <paramref name="low"/> Hz: a yelp, a hurt squeal.</summary>
+        static float[] Squeal(Random rng, float length, float high, float low)
+        {
+            float[] buffer = New(length + 0.05f);
+            AddVoice(buffer, rng, 0f, length, u => Mathf.Lerp(high, low, u * u), 6, 1.4f, 0.5f, 0.01f, length * 0.4f,
+                vibrato: 11f, vibratoDepth: 0.03f, rough: 0.1f);
+            AddNoise(buffer, rng, 0f, 0.05f, 0.15f, 1500f, 5000f);
+            return Finish(buffer, 0.7f);
+        }
+
+        /// <summary>A defeat: its last cry, then the thump of a body hitting the ground.</summary>
+        static float[] MobDeath(Random rng, float[] cry, float weight)
+        {
+            float landing = Math.Min(0.4f, cry.Length / (float)Rate * 0.7f);
+            float[] buffer = New(landing + 0.6f);
+            Add(buffer, cry, 0.7f);
+            int at = (int)(landing * Rate);
+            float[] thump = New(0.6f);
+            AddTone(thump, 0f, 80f - 25f * weight, 38f, 0.12f + 0.08f * weight, 1f);
+            AddNoise(thump, rng, 0f, 0.07f, 0.7f, 50f, 700f);
+            AddGrains(thump, rng, 0.02f, 0.2f, 8, 0.02f, 0.2f, 300f, 2500f);
+            for (int i = 0; i < thump.Length && at + i < buffer.Length; i++)
+                buffer[at + i] += thump[i] * (0.6f + 0.4f * weight);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>The Frostfang Wolf calling its pack: a long howl that rises, holds with a waver, and falls away.</summary>
+        static float[] WolfHowl(Random rng)
+        {
+            float[] buffer = New(1.7f);
+            float[] voice = New(1.7f);
+            AddVoice(voice, rng, 0f, 1.6f, u => u < 0.25f ? Mathf.Lerp(380f, 590f, Mathf.SmoothStep(0f, 1f, u / 0.25f))
+                    : u < 0.75f ? 590f : Mathf.Lerp(590f, 420f, (u - 0.75f) / 0.25f),
+                5, 1.7f, 0.6f, 0.18f, 0.45f, vibrato: 5.5f, vibratoDepth: 0.018f);
+            Add(buffer, voice, 0.6f);
+            Add(buffer, Resonate(voice, 950f, 0.96f), 0.9f);
+            AddNoise(buffer, rng, 0f, 0.6f, 0.06f, 600f, 3000f);   // breath
+            return Finish(buffer, 0.7f);
+        }
+
+        /// <summary>A wolf's bite landing: a snarl, then the snap of its jaws.</summary>
+        static float[] WolfBite(Random rng)
+        {
+            float[] buffer = New(0.35f);
+            AddVoice(buffer, rng, 0f, 0.14f, u => Mathf.Lerp(190f, 150f, u), 10, 1.1f, 0.35f, 0.01f, 0.04f, rough: 0.8f);
+            AddNoise(buffer, rng, 0.1f, 0.012f, 1f, 2000f, 8000f);
+            AddTone(buffer, 0.1f, 1100f, 600f, 0.02f, 0.5f);
+            AddTone(buffer, 0.1f, 160f, 90f, 0.04f, 0.5f);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>The Thunder Rhino's bellow: deep, rough and long (or short, for a grunt when it's hurt).</summary>
+        static float[] RhinoBellow(Random rng, float length)
+        {
+            float[] buffer = New(length + 0.1f);
+            float[] voice = New(length + 0.1f);
+            AddVoice(voice, rng, 0f, length, u => Mathf.Lerp(74f, 56f, u), 18, 0.9f, 0.4f, 0.06f, length * 0.4f, rough: 0.7f);
+            Add(buffer, voice, 0.4f);
+            Add(buffer, Resonate(voice, 330f, 0.975f), 1.3f);
+            Add(buffer, Resonate(voice, 820f, 0.95f), 0.5f);
+            AddNoise(buffer, rng, 0f, length * 0.5f, 0.2f, 60f, 500f);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>The rhino scraping and stamping before its toss: a heavy hoof, twice.</summary>
+        static float[] RhinoStomp(Random rng)
+        {
+            float[] buffer = New(0.7f);
+            foreach (float start in new[] { 0f, 0.28f })
+            {
+                AddTone(buffer, start, 62f, 34f, 0.1f, 1f);
+                AddNoise(buffer, rng, start, 0.05f, 0.7f, 80f, 900f);
+                AddGrains(buffer, rng, start + 0.01f, 0.12f, 10, 0.015f, 0.2f, 400f, 3000f);
+            }
+            return Finish(buffer, 0.9f);
+        }
+
+        /// <summary>A Crystal Slime: a wet squelch of popping bubbles.</summary>
+        static float[] SlimeSquelch(Random rng)
+        {
+            float[] buffer = New(0.4f);
+            float[] wet = New(0.4f);
+            AddNoise(wet, rng, 0f, 0.06f, 1f, 200f, 1800f);
+            Add(buffer, Resonate(wet, 420f, 0.985f), 0.8f);
+            for (int i = 0; i < 6; i++)
+            {
+                float start = Range(rng, 0f, 0.2f);
+                float f = Range(rng, 260f, 520f);
+                AddTone(buffer, start, f, f * 1.9f, 0.025f, Range(rng, 0.25f, 0.5f), sweepTime: 0.03f);
+            }
+            return Finish(buffer, 0.7f);
+        }
+
+        /// <summary>A slime splitting (or the last one going): a wet pop and a splash of droplets.</summary>
+        static float[] SlimePop(Random rng)
+        {
+            float[] buffer = New(0.6f);
+            AddTone(buffer, 0f, 900f, 230f, 0.05f, 0.8f, sweepTime: 0.06f);
+            AddNoise(buffer, rng, 0f, 0.02f, 0.6f, 2000f, 8000f);
+            float[] wet = New(0.6f);
+            AddNoise(wet, rng, 0.02f, 0.1f, 1f, 200f, 2000f);
+            Add(buffer, Resonate(wet, 380f, 0.985f), 0.6f);
+            for (int i = 0; i < 10; i++)
+            {
+                float start = Range(rng, 0.04f, 0.4f);
+                float f = Range(rng, 500f, 1400f);
+                AddTone(buffer, start, f, f * 1.6f, 0.015f, Range(rng, 0.1f, 0.3f), sweepTime: 0.02f);
+            }
+            return Finish(buffer, 0.8f);
+        }
+
+        /// <summary>A mob's attack landing on a hero: a solid, meaty thud.</summary>
+        static float[] MobImpact(Random rng)
+        {
+            float[] buffer = New(0.3f);
+            AddTone(buffer, 0f, 130f, 70f, 0.05f, 1f);
+            AddNoise(buffer, rng, 0f, 0.02f, 0.8f, 300f, 3500f);
+            AddNoise(buffer, rng, 0f, 0.06f, 0.4f, 60f, 600f);
+            return Finish(buffer, 0.9f);
+        }
+
         // ---------------------------------------------------------------- Files and assets
 
         static string Write(string name, float[] samples)
@@ -1008,6 +1200,40 @@ namespace Voxelforge.Editor
             }
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(book);
+        }
+
+        /// <summary>Each mob's sounds (Roadmap 5.2 step G), into its <see cref="MobDefinition"/>.</summary>
+        static void BuildMobSounds()
+        {
+            var mobs = new (string Asset, string Call, string Attack, string Charge, string Strike, string Hurt, string Death, float Pitch)[]
+            {
+                ("BristlebackBoar", "BoarGrunt", "BoarGrunt", "BoarSqueal", "MobImpact", "BoarHurt", "BoarDeath", 1f),
+                ("FrostfangWolf", "WolfHowl", null, null, "WolfBite", "WolfYelp", "WolfDeath", 1f),
+                ("ThunderRhino", "RhinoBellow", "RhinoStomp", null, "MobImpact", "RhinoGrunt", "RhinoDeath", 1f),
+                ("CrystalSlime", "SlimeSquelch", "SlimeSquelch", null, "SlimeSquelch", "SlimeSquelch", "SlimePop", 0.8f),
+                ("CrystalSlimeMedium", "SlimeSquelch", "SlimeSquelch", null, "SlimeSquelch", "SlimeSquelch", "SlimePop", 1f),
+                ("CrystalSlimeSmall", "SlimeSquelch", "SlimeSquelch", null, "SlimeSquelch", "SlimeSquelch", "SlimePop", 1.35f),
+            };
+            foreach (var mob in mobs)
+            {
+                var definition = AssetDatabase.LoadAssetAtPath<MobDefinition>($"{MobDir}/{mob.Asset}.asset");
+                if (definition == null)
+                {
+                    Debug.LogWarning($"[Voxelforge] No mob asset {mob.Asset}; it stays silent.");
+                    continue;
+                }
+                var serialized = new SerializedObject(definition);
+                SerializedProperty sounds = serialized.FindProperty("sounds");
+                sounds.FindPropertyRelative("Call").objectReferenceValue = mob.Call != null ? Clip(mob.Call) : null;
+                sounds.FindPropertyRelative("Attack").objectReferenceValue = mob.Attack != null ? Clip(mob.Attack) : null;
+                sounds.FindPropertyRelative("Charge").objectReferenceValue = mob.Charge != null ? Clip(mob.Charge) : null;
+                sounds.FindPropertyRelative("Strike").objectReferenceValue = mob.Strike != null ? Clip(mob.Strike) : null;
+                sounds.FindPropertyRelative("Hurt").objectReferenceValue = mob.Hurt != null ? Clip(mob.Hurt) : null;
+                sounds.FindPropertyRelative("Death").objectReferenceValue = mob.Death != null ? Clip(mob.Death) : null;
+                sounds.FindPropertyRelative("Pitch").floatValue = mob.Pitch;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(definition);
+            }
         }
 
         static SurfaceSound WriteSurface(string assetName, Surface pitches, string clips, AudioClip[] hitExtras, AudioClip[] breakExtras)
