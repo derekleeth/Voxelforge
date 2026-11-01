@@ -109,6 +109,83 @@ namespace Voxelforge.Tests
             Assert.IsFalse(EquippedGear.TryUnequip(bag, ref gear, 4, _changed), "Nothing left to take off.");
         }
 
+        // ---- The bag window's worn-gear row (step D) ----
+
+        static List<ItemStack> Slots(int count)
+        {
+            var slots = new List<ItemStack>();
+            for (int i = 0; i < count; i++)
+                slots.Add(new ItemStack(1, 1));
+            return slots;
+        }
+
+        [Test]
+        public void Cursor_GoesDownFromTheBagSocketsIntoTheGearRow_AndBackUp()
+        {
+            var model = new InventoryModel();
+            model.Rebuild(Slots(8), ItemRules.Default);
+            model.Move(3, 0);
+            model.Move(0, 1); // Down out of the one row: the bag sockets.
+            Assert.AreEqual(1, model.CursorSocket);
+            model.Move(0, 1);
+            Assert.AreEqual(-1, model.CursorSocket);
+            Assert.AreEqual(1, model.CursorGear, "Straight down from bag socket 1.");
+            Assert.AreEqual(-1, model.CursorSlot, "Nothing in the bag is chosen while on the gear.");
+
+            model.Move(9, 0);
+            Assert.AreEqual(EquippedGear.SocketCount - 1, model.CursorGear, "The Off Hand, no wrap.");
+            model.Move(0, 1);
+            Assert.AreEqual(EquippedGear.SocketCount - 1, model.CursorGear, "Nothing below the gear row.");
+            model.Move(0, -1);
+            Assert.AreEqual(-1, model.CursorGear);
+            Assert.AreEqual(EquippedBags.SocketCount - 1, model.CursorSocket, "Up to the nearest bag socket.");
+        }
+
+        [Test]
+        public void Cursor_PointingAtGear_LeavesEverythingElse_AndATabChangeLeavesTheGear()
+        {
+            var model = new InventoryModel();
+            model.Rebuild(Slots(8), ItemRules.Default);
+            model.PointAtGear(2);
+            model.Rebuild(Slots(8), ItemRules.Default);
+            Assert.AreEqual(2, model.CursorGear, "Rebuilding every frame keeps it there.");
+            Assert.AreEqual(-1, model.CursorCell);
+            model.PointAtCell(3);
+            Assert.AreEqual(-1, model.CursorGear);
+            model.PointAtGear(4);
+            model.SetTab(InventoryTab.Materials);
+            Assert.AreEqual(-1, model.CursorGear);
+            model.PointAtGear(99);
+            Assert.AreEqual(-1, model.CursorGear, "No such socket.");
+        }
+
+        [Test]
+        public void Compare_ShowsGainsAndLosses_AgainstWhatsWornInThatSlot()
+        {
+            string Name(ushort id) => id == Cap ? "Cap" : id == Crown ? "Crown" : "?";
+            var gear = new EquippedGear { Head = Cap };
+            string text = GearText.Compare(_rules, Crown, gear, Name);
+            StringAssert.StartsWith("vs Cap: ", text);
+            StringAssert.Contains("+5 Armor", text);
+            StringAssert.Contains("+5 Stamina", text);
+            StringAssert.Contains("+8 Power", text);
+
+            string worse = GearText.Compare(_rules, Cap, new EquippedGear { Head = Crown }, Name);
+            StringAssert.Contains("-5 Armor", worse);
+            StringAssert.Contains("#B3261E", worse, "Losses in red.");
+
+            StringAssert.StartsWith("nothing worn there: ", GearText.Compare(_rules, Sword, gear, Name));
+            Assert.AreEqual("same as worn", GearText.Compare(_rules, Cap, gear, Name));
+            Assert.AreEqual("", GearText.Compare(_rules, Hide, gear, Name), "Not gear: nothing to compare.");
+        }
+
+        [Test]
+        public void Summary_ShowsTheTotalsAndTheDamageCut()
+        {
+            Assert.AreEqual("Armor 100 (-50% dmg)\nStamina 3  Power 4", GearText.Summary(new GearStats(100, 3, 4)));
+            Assert.AreEqual("Armor 0 (-0% dmg)\nStamina 0  Power 0", GearText.Summary(default));
+        }
+
         // ---- What stats do ----
 
         [Test]

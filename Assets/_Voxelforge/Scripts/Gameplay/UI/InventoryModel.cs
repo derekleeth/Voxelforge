@@ -16,7 +16,8 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// What one player's inventory window shows and where its cursor is (Roadmap 4.5, D-028), owner-side only. The All
     /// tab is every bag slot in order, empty ones too, so things can be put anywhere; the other tabs list only that
-    /// tab's items, in slot order. Below the grid is a row of the four bag sockets. While a Storage Chest is open, its
+    /// tab's items, in slot order. Below the grid is a row of the four bag sockets, and below that the six worn-gear
+    /// sockets (Roadmap 5.5: Head, Chest, Legs, Feet, Main Hand, Off Hand). While a Storage Chest is open, its
     /// slots sit above the grid, 9 to a row, every slot shown whatever the tab. Plain C# so tests can drive it.
     /// </summary>
     public sealed class InventoryModel
@@ -48,6 +49,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>The bag socket the cursor is on, or -1 when it's in the grid.</summary>
         public int CursorSocket { get; private set; } = -1;
+
+        /// <summary>The worn-gear socket the cursor is on (Roadmap 5.5, <see cref="EquippedGear"/>), or -1.</summary>
+        public int CursorGear { get; private set; } = -1;
 
         /// <summary>The first grid row on screen.</summary>
         public int ScrollRow { get; private set; }
@@ -88,6 +92,7 @@ namespace Voxelforge.Gameplay
                 CursorChest = 0;
                 CursorCell = -1;
                 CursorSocket = -1;
+                CursorGear = -1;
             }
             else if (CursorChest >= ChestSlots)
             {
@@ -96,9 +101,9 @@ namespace Voxelforge.Gameplay
                 if (CursorChest < 0)
                     CursorCell = 0;
             }
-            if (CursorSocket < 0 && CursorChest < 0)
+            if (CursorSocket < 0 && CursorChest < 0 && CursorGear < 0)
                 CursorCell = _shown.Count == 0 ? -1 : math.clamp(CursorCell, 0, _shown.Count - 1);
-            if (CursorSocket < 0 && CursorChest < 0 && CursorCell < 0)
+            if (CursorSocket < 0 && CursorChest < 0 && CursorGear < 0 && CursorCell < 0)
                 CursorSocket = 0; // Nothing in this tab: the sockets are all there is.
             FollowCursor();
         }
@@ -113,6 +118,7 @@ namespace Voxelforge.Gameplay
                 return; // The chest shows everything whatever the tab.
             CursorCell = 0;
             CursorSocket = -1;
+            CursorGear = -1;
         }
 
         public void StepTab(int direction) => SetTab((InventoryTab)(((int)Tab + direction % TabCount + TabCount) % TabCount));
@@ -125,10 +131,26 @@ namespace Voxelforge.Gameplay
                 MoveInChest(dx, dy);
                 return;
             }
+            if (CursorGear >= 0)
+            {
+                // The worn-gear row (Roadmap 5.5), at the very bottom: up goes back to the bag sockets.
+                CursorGear = math.clamp(CursorGear + dx, 0, EquippedGear.SocketCount - 1);
+                if (dy < 0)
+                {
+                    CursorSocket = math.min(CursorGear, EquippedBags.SocketCount - 1);
+                    CursorGear = -1;
+                }
+                return;
+            }
             if (CursorSocket >= 0)
             {
                 CursorSocket = math.clamp(CursorSocket + dx, 0, EquippedBags.SocketCount - 1);
-                if (dy < 0 && _shown.Count > 0)
+                if (dy > 0)
+                {
+                    CursorGear = CursorSocket;
+                    CursorSocket = -1;
+                }
+                else if (dy < 0 && _shown.Count > 0)
                 {
                     int column = math.min(CursorSocket * 2, Columns - 1);
                     CursorCell = math.min((Rows - 1) * Columns + column, _shown.Count - 1);
@@ -204,6 +226,7 @@ namespace Voxelforge.Gameplay
             CursorChest = math.min((ChestRows - 1) * ChestColumns + math.min(column, ChestColumns - 1), ChestSlots - 1);
             CursorCell = -1;
             CursorSocket = -1;
+            CursorGear = -1;
         }
 
         /// <summary>Puts the cursor on cell <paramref name="cell"/> (the mouse is over it).</summary>
@@ -214,6 +237,7 @@ namespace Voxelforge.Gameplay
             CursorCell = cell;
             CursorSocket = -1;
             CursorChest = -1;
+            CursorGear = -1;
         }
 
         public void PointAtSocket(int socket)
@@ -221,6 +245,18 @@ namespace Voxelforge.Gameplay
             if (socket < 0 || socket >= EquippedBags.SocketCount)
                 return;
             CursorSocket = socket;
+            CursorCell = -1;
+            CursorChest = -1;
+            CursorGear = -1;
+        }
+
+        /// <summary>Puts the cursor on worn-gear socket <paramref name="socket"/> (the mouse is over it, Roadmap 5.5).</summary>
+        public void PointAtGear(int socket)
+        {
+            if (socket < 0 || socket >= EquippedGear.SocketCount)
+                return;
+            CursorGear = socket;
+            CursorSocket = -1;
             CursorCell = -1;
             CursorChest = -1;
         }
@@ -233,6 +269,7 @@ namespace Voxelforge.Gameplay
             CursorChest = slot;
             CursorCell = -1;
             CursorSocket = -1;
+            CursorGear = -1;
         }
 
         /// <summary>Scrolls by whole rows (the mouse wheel over the grid).</summary>

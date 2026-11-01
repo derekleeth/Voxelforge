@@ -8,7 +8,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// One player's inventory window (Roadmap 4.5, D-028): a parchment comic-book frame with a title and capacity, five
-    /// tabs, an 8-wide grid of slots that scrolls, the four bag sockets, the name of the item under the cursor and the
+    /// tabs, an 8-wide grid of slots that scrolls, the four bag sockets, the six worn-gear sockets with the gear's stat
+    /// totals (Roadmap 5.5), the name of the item under the cursor (with how gear compares with what's worn) and the
     /// buttons for this player's controls; above it, while a Storage Chest is open, the chest's 27 slots on their own
     /// parchment. <see cref="PlayerHudPanel"/> keeps it inside that player's own view (CLAUDE.md
     /// Law #5). It only shows what <see cref="PlayerInventory"/> and the synced bag say; the mouse player can also point
@@ -38,6 +39,7 @@ namespace Voxelforge.Gameplay
         sealed class Cell
         {
             public RectTransform Root;
+            public Image Back;
             public RawImage Icon;
             public TextMeshProUGUI Count;
             public Image Glow;
@@ -50,6 +52,11 @@ namespace Voxelforge.Gameplay
         readonly Func<ushort, string> _itemName;
         readonly Cell[] _cells = new Cell[InventoryModel.Columns * InventoryModel.VisibleRows];
         readonly Cell[] _sockets = new Cell[EquippedBags.SocketCount];
+        readonly Cell[] _gearSockets = new Cell[EquippedGear.SocketCount];
+        readonly TextMeshProUGUI _gearTotals;
+        GearStats _totalsShown = new GearStats(-1, -1, -1);
+        EquippedGear _infoGear;
+        IItemRules _rules = ItemRules.Default;
         readonly Image[] _tabBacks = new Image[InventoryModel.TabCount];
         readonly TextMeshProUGUI[] _tabLabels = new TextMeshProUGUI[InventoryModel.TabCount];
         readonly TextMeshProUGUI _capacity;
@@ -83,7 +90,7 @@ namespace Voxelforge.Gameplay
             float gridHeight = InventoryModel.VisibleRows * Slot + (InventoryModel.VisibleRows - 1) * Gap;
             Width = gridWidth + Pad * 2f;
             Height = Pad + TitleHeight + SectionGap * 0.5f + TabHeight + SectionGap + gridHeight + SectionGap + SocketSize +
-                     SectionGap + InfoHeight + SectionGap * 0.5f + HintHeight + Pad;
+                     SectionGap + SocketSize + SectionGap + InfoHeight + SectionGap * 0.5f + HintHeight + Pad;
 
             Root = HudWidgets.Place(HudWidgets.Rect("Inventory", parent), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(Width, Height));
@@ -133,6 +140,25 @@ namespace Voxelforge.Gameplay
             bagsLabel.text = "Worn bags";
             for (int i = 0; i < _sockets.Length; i++)
                 _sockets[i] = MakeCell($"Socket {i + 1}", Root, Pad + 160f + i * (SocketSize + Gap), y, SocketSize);
+            // What the worn gear adds up to (Roadmap 5.5), in the room right of the bag sockets.
+            float totalsX = Pad + 160f + _sockets.Length * (SocketSize + Gap);
+            _gearTotals = HudWidgets.Label("Gear Totals", Root, skin.titleFont, 18f, InkBrown, TextAlignmentOptions.Right);
+            FitInside(_gearTotals, 11f, 18f);
+            _gearTotals.textWrappingMode = TextWrappingModes.NoWrap;
+            Row(_gearTotals.rectTransform, totalsX, y, Pad + gridWidth - totalsX, SocketSize);
+            y -= SocketSize + SectionGap;
+
+            // The worn gear (Roadmap 5.5): one socket per slot, each saying which slot it is while empty.
+            TextMeshProUGUI gearLabel = HudWidgets.Label("Gear", Root, skin.titleFont, 26f, InkBrown, TextAlignmentOptions.Left);
+            Row(gearLabel.rectTransform, Pad, y, 150f, SocketSize);
+            gearLabel.text = "Worn gear";
+            for (int i = 0; i < _gearSockets.Length; i++)
+            {
+                Cell c = MakeCell($"Gear {i + 1}", Root, Pad + 160f + i * (SocketSize + Gap), y, SocketSize);
+                c.Count.alignment = TextAlignmentOptions.Center;
+                FitInside(c.Count, 9f, 15f);
+                _gearSockets[i] = c;
+            }
             y -= SocketSize + SectionGap;
 
             _info = HudWidgets.Label("Info", Root, skin.titleFont, 26f, InkBrown, TextAlignmentOptions.Left);
@@ -196,7 +222,8 @@ namespace Voxelforge.Gameplay
         Cell MakeCell(string name, RectTransform parent, float x, float y, float size)
         {
             var c = new Cell { Root = Row(HudWidgets.Rect(name, parent), x, y, size, size) };
-            HudWidgets.Stretch(HudWidgets.Image("Back", c.Root, _skin.slotBack, Color.white).rectTransform, 3f);
+            c.Back = HudWidgets.Image("Back", c.Root, _skin.slotBack, Color.white);
+            HudWidgets.Stretch(c.Back.rectTransform, 3f);
             c.Icon = HudWidgets.Rect("Icon", c.Root).gameObject.AddComponent<RawImage>();
             c.Icon.raycastTarget = false;
             c.Icon.color = Clear;
@@ -263,6 +290,7 @@ namespace Voxelforge.Gameplay
             PlayerBlockBag bag = inventory.Bag;
             var slots = inventory.Slots;
             IItemRules rules = bag.Rules;
+            _rules = rules;
 
             if (inventory.Scheme == "KeyboardMouse")
                 HandleMouse(inventory);
@@ -314,6 +342,23 @@ namespace Voxelforge.Gameplay
                 Show(_sockets[i], bags[i] != 0 ? new ItemStack(bags[i], 1) : ItemStack.Empty);
                 HudWidgets.SetColor(_sockets[i].Glow,
                     model.CursorSocket == i ? new Color(teamColor.r, teamColor.g, teamColor.b, pulse) : Clear);
+            }
+
+            EquippedGear gear = bag.Gear;
+            for (int i = 0; i < _gearSockets.Length; i++)
+            {
+                Cell c = _gearSockets[i];
+                Show(c, gear[i] != 0 ? new ItemStack(gear[i], 1) : ItemStack.Empty);
+                string empty = gear[i] == 0 ? GearText.ShortSlotName(EquippedGear.SlotOf(i)) : null;
+                if (empty != null && c.Count.text != empty)
+                    c.Count.SetText(empty);
+                HudWidgets.SetColor(c.Glow, model.CursorGear == i ? new Color(teamColor.r, teamColor.g, teamColor.b, pulse) : Clear);
+            }
+            GearStats totals = bag.GearStats;
+            if (!totals.Equals(_totalsShown))
+            {
+                _totalsShown = totals;
+                _gearTotals.text = GearText.Summary(totals);
             }
 
             TickChest(inventory, teamColor, pulse);
@@ -369,7 +414,13 @@ namespace Voxelforge.Gameplay
                 bool sameItem = c.Shown.ItemId == stack.ItemId;
                 c.Shown = stack;
                 if (!sameItem)
+                {
                     c.HasIcon = false;
+                    // Rare and better gear sits on a slot tinted its rarity's colour (Roadmap 5.5).
+                    ItemRarity rarity = stack.IsEmpty ? ItemRarity.Common : _rules.RarityOf(stack.ItemId);
+                    HudWidgets.SetColor(c.Back, rarity == ItemRarity.Common ? Color.white
+                        : Color.Lerp(Color.white, RarityColors.Of(rarity), 0.6f));
+                }
                 if (stack.Count > 1)
                     c.Count.SetText("{0}", (float)stack.Count);
                 else
@@ -396,19 +447,26 @@ namespace Voxelforge.Gameplay
             InventoryModel model = inventory.Model;
             string message = inventory.Message;
             bool inChest = model.CursorChest >= 0 && model.CursorChest < inventory.ChestSlots.Count;
-            int key = model.CursorSocket >= 0 ? -10 - model.CursorSocket : inChest ? -100 - model.CursorChest : model.CursorSlot;
-            ItemStack stack = model.CursorSocket >= 0
+            EquippedGear gear = inventory.Bag.Gear;
+            int key = model.CursorGear >= 0 ? -20 - model.CursorGear
+                : model.CursorSocket >= 0 ? -10 - model.CursorSocket : inChest ? -100 - model.CursorChest : model.CursorSlot;
+            ItemStack stack = model.CursorGear >= 0
+                ? (gear[model.CursorGear] != 0 ? new ItemStack(gear[model.CursorGear], 1) : ItemStack.Empty)
+                : model.CursorSocket >= 0
                 ? (bags[model.CursorSocket] != 0 ? new ItemStack(bags[model.CursorSocket], 1) : ItemStack.Empty)
                 : inChest ? inventory.ChestSlots[model.CursorChest]
                 : key >= 0 ? inventory.Slots[key] : ItemStack.Empty;
-            if (key == _infoSlot && stack.Equals(_infoStack) && message == _infoMessage)
+            if (key == _infoSlot && stack.Equals(_infoStack) && message == _infoMessage && gear.Equals(_infoGear))
                 return;
             _infoSlot = key;
             _infoStack = stack;
             _infoMessage = message;
+            _infoGear = gear;
 
             string text;
-            if (stack.IsEmpty)
+            if (stack.IsEmpty && model.CursorGear >= 0)
+                text = $"{GearText.SlotName(EquippedGear.SlotOf(model.CursorGear))}: nothing worn. Use gear from your bag to put it on.";
+            else if (stack.IsEmpty)
                 text = model.CursorSocket >= 0 ? "An empty bag socket: wear a bag here for more slots." : "";
             else
             {
@@ -416,7 +474,14 @@ namespace Voxelforge.Gameplay
                 string name = RarityColors.Wrap(_itemName?.Invoke(stack.ItemId) ?? $"Item {stack.ItemId}", rarity);
                 int bagSlots = rules.BagSlotsOf(stack.ItemId);
                 string kind = bagSlots > 0 ? $"Bag, +{bagSlots} slots" : GearText.Kind(rules, stack.ItemId);
-                text = model.CursorSocket >= 0 ? $"{name}  ({kind}) - Use to take off" : $"{name}  ({kind})";
+                text = model.CursorSocket >= 0 || model.CursorGear >= 0 ? $"{name}  ({kind}) - Use to take off" : $"{name}  ({kind})";
+                // Gear in the bag or a chest: how it compares with what's worn in that slot (Roadmap 5.5).
+                if (model.CursorGear < 0 && model.CursorSocket < 0)
+                {
+                    string compare = GearText.Compare(rules, stack.ItemId, gear, _itemName);
+                    if (compare.Length > 0)
+                        text = $"{text}  <size=85%>{compare}</size>";
+                }
             }
             if (!string.IsNullOrEmpty(message))
                 text = string.IsNullOrEmpty(text) ? message : $"{text}   {message}";
@@ -454,6 +519,14 @@ namespace Voxelforge.Gameplay
                 if (RectTransformUtility.RectangleContainsScreenPoint(_sockets[i].Root, point, null))
                 {
                     model.PointAtSocket(i);
+                    over = true;
+                }
+            }
+            for (int i = 0; i < _gearSockets.Length && !over; i++)
+            {
+                if (RectTransformUtility.RectangleContainsScreenPoint(_gearSockets[i].Root, point, null))
+                {
+                    model.PointAtGear(i);
                     over = true;
                 }
             }

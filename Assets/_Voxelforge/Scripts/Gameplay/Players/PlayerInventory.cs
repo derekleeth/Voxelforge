@@ -238,6 +238,15 @@ namespace Voxelforge.Gameplay
                 Release();
                 return;
             }
+            if (_model.CursorGear >= 0)
+            {
+                // Dropping gear on its own socket wears it (Roadmap 5.5); on another slot's socket, nothing happens.
+                if (HeldSlot >= 0 &&
+                    EquippedGear.SocketOf(_bag.Rules.EquipSlotOf(_slots[HeldSlot].ItemId)) == _model.CursorGear)
+                    _bag.RequestEquipGear(HeldSlot);
+                Release();
+                return;
+            }
             int slot = _model.CursorSlot;
             if (slot < 0)
                 return;
@@ -269,6 +278,12 @@ namespace Voxelforge.Gameplay
             {
                 if (_bag.Bags[_model.CursorSocket] != 0)
                     _bag.RequestUnequip(_model.CursorSocket);
+                return;
+            }
+            if (_model.CursorGear >= 0)
+            {
+                if (_bag.Gear[_model.CursorGear] != 0)
+                    _bag.RequestUnequipGear(_model.CursorGear);
                 return;
             }
             if (ChestShown && _model.CursorChest >= 0)

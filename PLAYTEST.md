@@ -119,7 +119,7 @@ Best set-up: both players fight the same mobs. **F10** spawns a mob kind by each
 
 ## Roadmap 5.5: Loot & Equipment (Step C: wearing gear)
 
-Press **F2** for a kit, open the bag (**B**), point at a piece of gear and press **Use**. (The panel that shows what you're wearing comes in Step D; until then the bag slot just empties.)
+Press **F2** for a kit, open the bag (**B**), point at a piece of gear and press **Use**. It appears in the **Worn gear** row at the bottom of the bag (Step D, below).
 
 ### Putting it on
 - [ ] **Use** on gear says **Equipped!** and it leaves the bag. Use another piece for the same slot (e.g. Crown after the Cap): they **swap**, and the old one lands in the same bag slot.
@@ -134,6 +134,27 @@ Press **F2** for a kit, open the bag (**B**), point at a piece of gear and press
 
 ### Saving
 - [ ] Wear some gear, save and quit (or F5), come back: you're still wearing it (and your health maximum still includes it).
+
+## Roadmap 5.5: Loot & Equipment (Step D: the equipment panel)
+
+### The Worn gear row (bag window, **B**)
+- [ ] Under **Worn bags** there's a **Worn gear** row of 6 sockets saying **Head, Chest, Legs, Feet, Main, Off** while empty.
+- [ ] Right of the bag sockets, your totals: **Armor N (-X% dmg)** and **Stamina N  Power N**. They change as you put things on.
+- [ ] Move the cursor down from the bag sockets into the gear row and back up (keyboard, right-hand keys, gamepad). Mouse: point at a socket.
+- [ ] **Use** on a worn piece takes it off into the bag. With a full bag: "No room...", and it stays on.
+- [ ] Pick up a piece of gear (**Pick up / Put**) and put it on its own socket: it's worn. On the wrong socket: nothing happens.
+- [ ] Point at an empty socket: "Head: nothing worn. Use gear from your bag to put it on."
+
+### Comparing (tooltip line)
+- [ ] Point at gear in the bag while wearing something in that slot: **vs Bristlehide Cap: +5 Armor, +5 Stamina, +8 Power**, gains green, losses red.
+- [ ] Nothing worn there: **nothing worn there: +3 Armor, ...**. The piece you're wearing's twin: **same as worn**.
+- [ ] Also works for gear sitting in an open Storage Chest.
+
+### Rarity at a glance
+- [ ] Slots holding **Rare** gear or essences are tinted blue, **Epic** purple, **Legendary** orange (bag, chest and worn sockets). Common stays plain.
+
+### Fit
+- [ ] The bag window is a row taller now. It still fits inside each player's half of the screen in split-screen, with a chest open too.
 
 ### Notes
 -
