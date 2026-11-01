@@ -173,6 +173,12 @@ namespace Voxelforge.Gameplay
                     size *= 1.1f;
                     burst = true;
                     break;
+                case CombatTextKind.Taunted:
+                    words = "TAUNTED!";
+                    colour = _skin.ElementColor(e.Element);
+                    size *= 1.1f;
+                    burst = true;
+                    break;
                 case CombatTextKind.Absorbed:
                     words = $"BLOCKED {e.Amount}";
                     colour = _skin.shield;

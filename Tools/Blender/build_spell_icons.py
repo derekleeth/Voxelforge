@@ -376,6 +376,35 @@ def crest_adventurer():
     return (0.62, 0.5, 0.36)
 
 
+def oathbrand():
+    iron = toon("Brand_Iron", (0.12, 0.11, 0.13), (0.3, 0.29, 0.33), (0.55, 0.53, 0.58))
+    wood = toon("Brand_Wood", (0.25, 0.12, 0.05), (0.45, 0.25, 0.12), (0.65, 0.42, 0.22))
+    hot = toon("Brand_Hot", (0.85, 0.3, 0.05), (1.0, 0.6, 0.12), (1.0, 0.9, 0.45))
+    # A branding iron, raised up and right: the brand on its end is the oath rune itself (a stem with arms raised),
+    # forged thick and glowing red-hot, the way a real brand is the shape it burns.
+    # The rod runs up at 45 degrees into the foot of the rune's stem, where an iron collar joins them.
+    dress(cylinder("Rod", 0.07, 1.4, (-0.345, 0, -0.745), (0, 45, 0), 8), iron, 0.04)
+    dress(cylinder("Grip", 0.13, 0.5, (-0.66, 0, -1.06), (0, 45, 0), 10), wood)
+    dress(place(sphere("Collar", 0.13), (0.15, 0, -0.25)), iron, 0.03)
+    head = (0.15, 0, 0.3)
+    # The rune stands upright on the rod's end, like a stamp.
+    dress(place(prism("RuneStem", [(-0.1, -0.55), (0.1, -0.55), (0.1, 0.5), (-0.1, 0.5)], depth=0.2),
+                (head[0], -0.05, head[2])), hot, 0.05)
+    for sx in (-1, 1):
+        arm = prism(f"RuneArm{sx}", [(-0.3, -0.09), (0.3, -0.09), (0.3, 0.09), (-0.3, 0.09)], depth=0.2)
+        dress(place(arm, (head[0] + sx * 0.2, -0.05, head[2] + 0.3), (0, sx * -45, 0)), hot, 0.05)
+    # Sparks flying off the hot brand.
+    rune = toon("Brand_Spark", (1.0, 0.75, 0.25), (1.0, 0.93, 0.6), (1, 1, 1))
+    rng = random.Random(15)
+    for i in range(7):
+        a = rng.uniform(-0.4, 2.0)
+        r = rng.uniform(0.8, 1.0)
+        spark = bipyramid(f"Spark{i}", 0.05, 0.11, 0.0, 4)
+        dress(place(spark, (head[0] + math.cos(a) * r, -0.1, head[2] + 0.1 + math.sin(a) * r), (0, math.degrees(-a), 0)),
+              rune, 0.02)
+    return (1.0, 0.45, 0.15)
+
+
 def crest_paladin():
     rune_hammer()
     return (1.0, 0.78, 0.25)
@@ -510,6 +539,7 @@ SPELLS = {
     "RuneHammer": rune_hammer,
     "BulwarkRune": bulwark_rune,
     "HallowedForge": hallowed_forge,
+    "Oathbrand": oathbrand,
     "StoneSpear": stone_spear,
     "RisingPillar": rising_pillar,
     "EarthenWall": earthen_wall,

@@ -160,6 +160,8 @@ namespace Voxelforge.Editor
             written.Add(Write("SlimeSquelch", SlimeSquelch(new Random(313))));
             written.Add(Write("SlimePop", SlimePop(new Random(317))));
             written.Add(Write("MobImpact", MobImpact(new Random(331))));
+            // Roadmap 5.3: the Paladin's taunt.
+            written.Add(Write("Oathbrand", Oathbrand(new Random(337))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -644,6 +646,25 @@ namespace Voxelforge.Editor
             AddNoise(buffer, rng, 0.11f, 0.5f, 0.8f, 20f, 400f);
             AddGrains(buffer, rng, 0.2f, 1.2f, 50, 0.03f, 0.22f, 400f, 5000f);
             return Finish(buffer, 1f);
+        }
+
+        // ---- Roadmap 5.3 ----
+
+        /// <summary>
+        /// Oathbrand: a hammer striking an anvil (a hard, bright ring with a few clashing overtones), the hiss of a hot
+        /// brand, and a deep gong underneath that says "over here!".
+        /// </summary>
+        static float[] Oathbrand(Random rng)
+        {
+            float[] buffer = New(1.6f);
+            AddNoise(buffer, rng, 0f, 0.012f, 0.9f, 1500f, 9000f);
+            // An anvil's ring is inharmonic: overtones at odd ratios, the high ones dying first.
+            AddPartials(buffer, 0f, new[] { 1f, 2.76f, 5.4f, 8.93f }, 880f, 0.9f, 0.45f);
+            AddBell(buffer, 0.004f, 1760f, 0.35f, 0.25f);
+            AddNoise(buffer, rng, 0.05f, 0.35f, 0.18f, 3000f, 10000f);
+            AddTone(buffer, 0f, 110f, 98f, 1.1f, 0.55f);
+            AddTone(buffer, 0f, 165f, 147f, 0.8f, 0.2f);
+            return Finish(buffer, 0.9f);
         }
 
         /// <summary>Second Wind: a long, deep breath in, then a bright, warm chime as it fills you.</summary>

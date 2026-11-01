@@ -37,3 +37,4 @@ MonoBehaviour:
   earthHeight: 3
   earthWidth: 5
   earthStep: 0.1
+  threatScale: 1

@@ -7,7 +7,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// One player's class window (Roadmap 4.6): a parchment comic-book frame with a card per class, each with the class's
-    /// name on a band in its colour, its health and mana, a few words about it and its three signature spells. The cursor
+    /// name on a band in its colour, its health and mana, a few words about it (and its passive, 5.3) and its spells, up
+    /// to <see cref="ClassSpells"/> (the Paladin's four since Oathbrand, Roadmap 5.3). The cursor
     /// card glows in the player's team colour; the hero's own class is stamped CHOSEN. <see cref="PlayerHudPanel"/> keeps
     /// it inside that player's own view (CLAUDE.md Law #5). It only shows what <see cref="PlayerClassMenu"/> and the
     /// synced <see cref="PlayerClass"/> say; the mouse player can also point and click.
@@ -19,18 +20,19 @@ namespace Voxelforge.Gameplay
         const float TitleHeight = 44f;
         const float SectionGap = 12f;
         const float CardWidth = 236f;
-        const float CardHeight = 410f;
+        const float CardHeight = 460f;
         const float CardGap = 14f;
         const float BandHeight = 52f;
         const float SpellIcon = 44f;
         const float HintHeight = 30f;
         const int MaxCards = 4;
-        const int SignatureSpells = 3;
+        // Rows for the class's spells, from action bar slot 1 on; rows a class doesn't fill are hidden.
+        const int ClassSpells = 4;
 
         static readonly Color InkBrown = new Color(0.25f, 0.13f, 0.06f);
         static readonly Color StampRed = new Color(0.62f, 0.12f, 0.06f);
         static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
-        static readonly Color Faded = new Color(1f, 1f, 1f, 0.3f);
+
 
         sealed class Card
         {
@@ -42,8 +44,9 @@ namespace Voxelforge.Gameplay
             public TextMeshProUGUI Stamp;
             public TextMeshProUGUI Stats;
             public TextMeshProUGUI About;
-            public readonly Image[] Icons = new Image[SignatureSpells];
-            public readonly TextMeshProUGUI[] Spells = new TextMeshProUGUI[SignatureSpells];
+            public readonly RectTransform[] Rows = new RectTransform[ClassSpells];
+            public readonly Image[] Icons = new Image[ClassSpells];
+            public readonly TextMeshProUGUI[] Spells = new TextMeshProUGUI[ClassSpells];
         }
 
         readonly HudSkin _skin;
@@ -114,9 +117,10 @@ namespace Voxelforge.Gameplay
             Row(c.About.rectTransform, 12f, cy, inner - 4f, 130f);
             cy -= 138f;
 
-            for (int s = 0; s < SignatureSpells; s++)
+            for (int s = 0; s < ClassSpells; s++)
             {
                 RectTransform spell = Row(HudWidgets.Rect($"Spell {s + 1}", c.Root), 10f, cy - s * (SpellIcon + 6f), inner, SpellIcon);
+                c.Rows[s] = spell;
                 RectTransform slot = HudWidgets.Place(HudWidgets.Rect("Slot", spell), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                     Vector2.zero, new Vector2(SpellIcon, SpellIcon));
                 HudWidgets.Stretch(HudWidgets.Image("Back", slot, _skin.slotBack, Color.white).rectTransform, 3f);
@@ -223,12 +227,15 @@ namespace Voxelforge.Gameplay
                 c.About.text = string.IsNullOrEmpty(definition.PassiveName)
                     ? definition.Description
                     : $"{definition.Description}\n<b><color=#7A4A12>{definition.PassiveName}:</color></b> {definition.PassiveDescription}";
-                for (int s = 0; s < SignatureSpells; s++)
+                for (int s = 0; s < ClassSpells; s++)
                 {
                     AbilityDefinition spell = SpellIn(definition, s);
-                    c.Icons[s].sprite = spell != null ? _skin.IconFor(spell) : _skin.fallbackIcon;
-                    c.Icons[s].color = spell != null ? Color.white : Faded;
-                    c.Spells[s].text = spell != null ? spell.DisplayName : "<i>Coming soon</i>";
+                    HudWidgets.SetActive(c.Rows[s], spell != null);
+                    if (spell == null)
+                        continue;
+                    c.Icons[s].sprite = _skin.IconFor(spell);
+                    c.Icons[s].color = Color.white;
+                    c.Spells[s].text = spell.DisplayName;
                 }
             }
         }

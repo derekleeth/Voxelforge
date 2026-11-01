@@ -79,9 +79,11 @@ namespace Voxelforge.Gameplay
                     });
                     break;
                 case AbilityCueKind.TargetStunned:
+                case AbilityCueKind.TargetTaunted:
                     Raise(new CombatTextEvent
                     {
-                        Kind = CombatTextKind.Stunned, AbilityId = ability.Id, Element = ability.Element,
+                        Kind = cue.Kind == AbilityCueKind.TargetTaunted ? CombatTextKind.Taunted : CombatTextKind.Stunned,
+                        AbilityId = ability.Id, Element = ability.Element,
                         Position = (float3)cue.Position + new float3(0f, 1.1f, 0f),
                     });
                     break;

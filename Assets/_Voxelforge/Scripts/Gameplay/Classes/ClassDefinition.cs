@@ -38,7 +38,8 @@ namespace Voxelforge.Gameplay
         [SerializeField, TextArea] string passiveDescription;
 
         [Header("Spells")]
-        [Tooltip("The action bar a hero of this class gets. Slots 1-3 are the class's signature spells, shown in the class window.")]
+        [Tooltip("The action bar a hero of this class gets. Its spells from slot 1 on (up to 4) are shown in the class window; " +
+                 "slot 9 is the race's racial.")]
         [SerializeField] ActionBarLoadout loadout;
 
         public HeroClassId Id => id;

@@ -35,6 +35,8 @@ namespace Voxelforge.Gameplay
         Stunned,
         /// <summary>A spell's hit (<see cref="CombatTextEvent.Amount"/>) defeated a creature (Roadmap 5.2).</summary>
         Defeated,
+        /// <summary>A taunt landed: the target fights only the taunter for a moment (Roadmap 5.3, Oathbrand).</summary>
+        Taunted,
     }
 
     /// <summary>

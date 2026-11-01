@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf694f2345a21f34d9bbe56fbeae61a7, type: 3}
+  m_Name: OathbrandLook
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityLook
+  ability: {fileID: 11400000, guid: e21714c7c9a42e441a7be1e55cfe7a7d, type: 2}
+  icon: {fileID: 21300000, guid: bb97ea4ec123ca743947b39d30412c0e, type: 3}
+  glow: {r: 1, g: 0.72, b: 0.2, a: 1}
+  coreShape: 0
+  coreSize: 0.2
+  coreMesh: {fileID: 0}
+  coreSpin: 0
+  zoneModel: {fileID: 0}
+  zoneRing: 1
+  pulse: {fileID: 0}
+  pulseVolume: 0.6
+  trailTime: 0.2
+  lightIntensity: 3
+  lightRange: 6
+  muzzleSparks: 0
+  impactSparks: 70
+  impactSpeed: 4.5
+  debrisChunks: 40
+  debrisSpeed: 7
+  debrisTint: {r: 0, g: 0, b: 0, a: 0}
+  shakeStrength: 0.4
+  blastLight: 8
+  castMotesPerSecond: 0
+  castLight: 0
+  castLoop: {fileID: 0}
+  castLoopVolume: 0.5
+  release: {fileID: 0}
+  releaseVolume: 0.8
+  impact: {fileID: 8300000, guid: 92535b1244bb10e4baaea2719fb5e9e5, type: 3}
+  impactVolume: 1.1
+  fizzle: {fileID: 0}
+  maxDistance: 50

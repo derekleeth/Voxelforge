@@ -71,6 +71,21 @@ namespace Voxelforge.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// A taunt (Roadmap 5.3, Oathbrand): <paramref name="taunter"/> jumps to the top of its threat and it fights only
+        /// them until <paramref name="now"/> + <paramref name="seconds"/>. It counts as a hit, so a mob minding its own
+        /// business turns on the taunter.
+        /// </summary>
+        public bool Taunt(float now, float seconds, PlayerId taunter)
+        {
+            if (!taunter.IsValid || IsDefeated)
+                return false;
+            Threat.Taunt(taunter, now, seconds);
+            LastAttacker = taunter;
+            HitCount++;
+            return true;
+        }
+
         /// <summary>Back to full health, having got home (a leash), forgetting who hit it and all its threat.</summary>
         public void Reset()
         {

@@ -60,6 +60,12 @@ namespace Voxelforge.Gameplay
         /// Second Wind; <see cref="PlayerSupport.ServerSelfHeal"/>).
         /// </summary>
         SelfHeal,
+        /// <summary>
+        /// A taunt on the caster's target (their Tab target, or the creature their aim hits, within range): it fights only
+        /// them for the ability's Duration, and they jump to the top of its threat (Roadmap 5.3, Oathbrand;
+        /// <see cref="PlayerStaff.ServerTaunt"/>). With no target in range it costs nothing and says "No target".
+        /// </summary>
+        Taunt,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>
@@ -73,7 +79,7 @@ namespace Voxelforge.Gameplay
         NotEnoughMana,
         /// <summary>The hero moved or jumped during a cast that needs them to stand still.</summary>
         Interrupted,
-        /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> with no block in range to slam.</summary>
+        /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> with no block in range to slam, or a taunt with no foe.</summary>
         NoTarget,
     }
 }

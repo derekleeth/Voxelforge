@@ -26,6 +26,8 @@ namespace Voxelforge.Gameplay
         TargetHit,
         /// <summary>The ability stunned a target whose middle is at <see cref="AbilityCue.Position"/> (Roadmap 4.7, Hoofquake).</summary>
         TargetStunned,
+        /// <summary>The ability taunted a target whose middle is at <see cref="AbilityCue.Position"/> (Roadmap 5.3, Oathbrand).</summary>
+        TargetTaunted,
     }
 
     /// <summary>
@@ -54,7 +56,8 @@ namespace Voxelforge.Gameplay
         /// </summary>
         public bool OnTarget;
         /// <summary>
-        /// For <see cref="AbilityCueKind.TargetHit"/> and <see cref="AbilityCueKind.TargetStunned"/>: which target
+        /// For <see cref="AbilityCueKind.TargetHit"/>, <see cref="AbilityCueKind.TargetStunned"/> and
+        /// <see cref="AbilityCueKind.TargetTaunted"/>: which target
         /// (Roadmap 5.2), so its health bar can follow it as it walks.
         /// </summary>
         public TargetKey Target;
@@ -110,6 +113,10 @@ namespace Voxelforge.Gameplay
         public static AbilityCue StunTarget(ushort abilityId, in CombatTarget target) =>
             new AbilityCue { Kind = AbilityCueKind.TargetStunned, AbilityId = abilityId, Position = target.Position, Target = target.Key };
 
+        /// <summary>The ability taunted <paramref name="target"/> (Roadmap 5.3).</summary>
+        public static AbilityCue TauntTarget(ushort abilityId, in CombatTarget target) =>
+            new AbilityCue { Kind = AbilityCueKind.TargetTaunted, AbilityId = abilityId, Position = target.Position, Target = target.Key };
+
         static ushort ClampCount(int count) => (ushort)Mathf.Clamp(count, 0, ushort.MaxValue);
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -135,6 +142,7 @@ namespace Voxelforge.Gameplay
                     serializer.SerializeValue(ref OnTarget);
                     break;
                 case AbilityCueKind.TargetStunned:
+                case AbilityCueKind.TargetTaunted:
                     SerializeTarget(serializer);
                     break;
                 case AbilityCueKind.TargetHit:

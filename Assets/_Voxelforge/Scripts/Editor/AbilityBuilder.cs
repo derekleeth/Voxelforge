@@ -22,7 +22,8 @@ namespace Voxelforge.Editor
     /// sounds from <i>Voxelforge → Build Sound Effects</i>, so build those first.
     /// <para>The Runeforged Paladin's spells (Roadmap 4.6): <b>Rune Hammer</b> (a glowing hammer thrown end over end),
     /// <b>Bulwark Rune</b> (a shield on the partner you aim at, or you) and <b>Hallowed Forge</b> (a golden circle at your
-    /// feet that heals heroes in it).</para>
+    /// feet that heals heroes in it), and since Roadmap 5.3 <b>Oathbrand</b> (a taunt in slot 4) and the
+    /// <i>Runeforged Oath</i> passive (twice the threat).</para>
     /// <para>The Geomancer Mage's (Roadmap 4.6): <b>Stone Spear</b> (a heavy lance of rock with a short cast) and
     /// <b>Rising Pillar</b> (Earthen Rock rises under you, five blocks, and crumbles after 30 s), with EarthShatter.</para>
     /// <para>The Shaman's (Roadmap 4.6): <b>Earthen Wall</b> (a 5 x 3 wall of Earthen Rock where you aim, crumbling after
@@ -43,6 +44,7 @@ namespace Voxelforge.Editor
         public const string RuneHammerPath = AbilityDir + "/RuneHammer.asset";
         public const string BulwarkRunePath = AbilityDir + "/BulwarkRune.asset";
         public const string HallowedForgePath = AbilityDir + "/HallowedForge.asset";
+        public const string OathbrandPath = AbilityDir + "/Oathbrand.asset";
         public const string StoneSpearPath = AbilityDir + "/StoneSpear.asset";
         public const string RisingPillarPath = AbilityDir + "/RisingPillar.asset";
         const string SpearModelPath = "Assets/_Voxelforge/Art/Models/Props/StoneSpear.fbx";
@@ -103,7 +105,7 @@ namespace Voxelforge.Editor
             AbilityDefinition runeHammer = MakeAbility(RuneHammerPath, AbilityIds.RuneHammer, "Rune Hammer",
                 "Hurl a hammer of rune-light end over end. It hits hard, and its runes burst where it lands.",
                 AbilityElement.Holy, manaCost: 15f, cooldown: 4f, castTime: 0f, range: 30f, aoeRadius: 0f,
-                speed: 30f, blockDamage: 60f, creatureDamage: 45f);
+                speed: 30f, blockDamage: 60f, creatureDamage: 45f, threatScale: 1.5f);
             AbilityDefinition bulwarkRune = MakeAbility(BulwarkRunePath, AbilityIds.BulwarkRune, "Bulwark Rune",
                 "Carve a rune of warding round the partner you aim at, or round yourself. It soaks up the next 40 damage.",
                 AbilityElement.Holy, manaCost: 20f, cooldown: 12f, castTime: 0f, range: 20f, aoeRadius: 0f,
@@ -114,6 +116,12 @@ namespace Voxelforge.Editor
                 AbilityElement.Holy, manaCost: 35f, cooldown: 20f, castTime: 1.5f, range: 0f, aoeRadius: 6f,
                 speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Zone,
                 healAmount: 5f, duration: 6f, pulseInterval: 1f);
+            // Roadmap 5.3: the tank's taunt.
+            AbilityDefinition oathbrand = MakeAbility(OathbrandPath, AbilityIds.Oathbrand, "Oathbrand",
+                "Brand your target with a glowing rune of your oath. For 3 seconds it fights only you, and you become the foe " +
+                "it's angriest at.",
+                AbilityElement.Holy, manaCost: 10f, cooldown: 8f, castTime: 0f, range: 30f, aoeRadius: 0f,
+                speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Taunt, duration: 3f);
 
             // ---- Geomancer Mage (Roadmap 4.6) ----
             AbilityDefinition stoneSpear = MakeAbility(StoneSpearPath, AbilityIds.StoneSpear, "Stone Spear",
@@ -160,7 +168,7 @@ namespace Voxelforge.Editor
             AbilityDefinition[] all =
             {
                 manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar,
-                earthenWall, wellspring, thunderhead, hoofquake, secondWind,
+                earthenWall, wellspring, thunderhead, hoofquake, secondWind, oathbrand,
             };
             list.arraySize = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -221,6 +229,11 @@ namespace Voxelforge.Editor
                 impactSparks: 40, impactSpeed: 3f, castMotes: 70f, castLight: 3f,
                 castLoop: "HolyHum", release: null, impact: "ForgeBless", releaseVolume: 0.9f, impactVolume: 0.9f,
                 pulse: "HealPulse", pulseVolume: 0.35f);
+            // Oathbrand: nothing flies; the brand lands on the foe in a big burst of gold with an anvil's ring.
+            AbilityLook oathbrandLook = MakeLook($"{LookDir}/OathbrandLook.asset", oathbrand, new Color(1f, 0.72f, 0.2f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 3f, lightRange: 6f, muzzleSparks: 0,
+                impactSparks: 70, impactSpeed: 4.5f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: null, impact: "Oathbrand", releaseVolume: 0.8f, impactVolume: 1.1f, maxDistance: 50f);
             // Geomancer: warm earth-amber, like the glowing cracks in Earthen Rock.
             var geomancerAmber = new Color(0.95f, 0.6f, 0.25f);
             AbilityLook stoneSpearLook = MakeLook($"{LookDir}/StoneSpearLook.asset", stoneSpear, geomancerAmber,
@@ -271,7 +284,7 @@ namespace Voxelforge.Editor
             {
                 manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
                 stoneSpearLook, risingPillarLook, earthenWallLook, wellspringLook, thunderheadLook, hoofquakeLook,
-                secondWindLook,
+                secondWindLook, oathbrandLook,
             };
             list.arraySize = allLooks.Length;
             for (int i = 0; i < allLooks.Length; i++)
@@ -279,8 +292,8 @@ namespace Voxelforge.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(lookBook);
 
-            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar, earthenWall,
-                wellspring, thunderhead);
+            BuildClasses(loadout, earthShatter, runeHammer, bulwarkRune, hallowedForge, oathbrand, stoneSpear, risingPillar,
+                earthenWall, wellspring, thunderhead);
             BuildRaces(hoofquake, secondWind);
             return manaBolt;
         }
@@ -403,11 +416,11 @@ namespace Voxelforge.Editor
         }
 
         /// <summary>
-        /// The classes (Roadmap 4.6). Slots 1-3 are each class's signature spells; the ones not built yet (steps C-E) are
-        /// left empty, and the class window says "Coming soon".
+        /// The classes (Roadmap 4.6). Slots 1-3 are each class's signature spells, all shown in the class window; the
+        /// Paladin's slot 4 is Oathbrand (Roadmap 5.3).
         /// </summary>
         static void BuildClasses(ActionBarLoadout adventurerBar, AbilityDefinition earthShatter, AbilityDefinition runeHammer,
-            AbilityDefinition bulwarkRune, AbilityDefinition hallowedForge, AbilityDefinition stoneSpear,
+            AbilityDefinition bulwarkRune, AbilityDefinition hallowedForge, AbilityDefinition oathbrand, AbilityDefinition stoneSpear,
             AbilityDefinition risingPillar, AbilityDefinition earthenWall, AbilityDefinition wellspring, AbilityDefinition thunderhead)
         {
             if (!AssetDatabase.IsValidFolder(ClassDir))
@@ -420,7 +433,10 @@ namespace Voxelforge.Editor
                 "A holy knight in rune-carved plate, tough as an anvil. Hurls a glowing hammer, shields a partner and blesses " +
                 "the ground so friends standing on it heal.",
                 maxHealth: 150f, maxMana: 80f, manaRegen: 8f,
-                MakeLoadout("RuneforgedPaladinBar", runeHammer, bulwarkRune, hallowedForge));
+                MakeLoadout("RuneforgedPaladinBar", runeHammer, bulwarkRune, hallowedForge, oathbrand),
+                threatMultiplier: 2f, passiveName: "Runeforged Oath",
+                passiveDescription: "Sworn to stand in front. Everything you do angers foes twice as much, so they come for " +
+                                    "you, not your friends.");
             ClassDefinition geomancer = MakeClass("GeomancerMage", HeroClassId.GeomancerMage, "Geomancer Mage",
                 "A scholar of stone who bends the land itself. Flings stone spears, shatters the ground into craters and " +
                 "rides a pillar of rock up out of trouble.",
@@ -469,7 +485,8 @@ namespace Voxelforge.Editor
         }
 
         static ClassDefinition MakeClass(string name, HeroClassId id, string displayName, string description, float maxHealth,
-            float maxMana, float manaRegen, ActionBarLoadout loadout)
+            float maxMana, float manaRegen, ActionBarLoadout loadout, float threatMultiplier = 1f, string passiveName = "",
+            string passiveDescription = "")
         {
             var definition = LoadOrCreate<ClassDefinition>($"{ClassDir}/{name}.asset");
             var serialized = new SerializedObject(definition);
@@ -480,6 +497,9 @@ namespace Voxelforge.Editor
             serialized.FindProperty("maxMana").floatValue = maxMana;
             serialized.FindProperty("manaRegen").floatValue = manaRegen;
             serialized.FindProperty("loadout").objectReferenceValue = loadout;
+            serialized.FindProperty("threatMultiplier").floatValue = threatMultiplier;
+            serialized.FindProperty("passiveName").stringValue = passiveName;
+            serialized.FindProperty("passiveDescription").stringValue = passiveDescription;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(definition);
             return definition;
@@ -546,7 +566,7 @@ namespace Voxelforge.Editor
             float blockDamage, float creatureDamage, float craterFalloff = 0.25f, float craterFlatten = 1f,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float healAmount = 0f, float shieldAmount = 0f,
             float duration = 0f, float pulseInterval = 1f, float aimCone = 12f, int earthHeight = 0, int earthWidth = 0,
-            float earthStep = 0.08f, float manaRegenBonus = 0f)
+            float earthStep = 0.08f, float manaRegenBonus = 0f, float threatScale = 1f)
         {
             var ability = LoadOrCreate<AbilityDefinition>(path);
             var serialized = new SerializedObject(ability);
@@ -575,6 +595,7 @@ namespace Voxelforge.Editor
             serialized.FindProperty("earthWidth").intValue = earthWidth;
             serialized.FindProperty("earthStep").floatValue = earthStep;
             serialized.FindProperty("manaRegenBonus").floatValue = manaRegenBonus;
+            serialized.FindProperty("threatScale").floatValue = threatScale;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
             return ability;

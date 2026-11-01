@@ -66,6 +66,22 @@ namespace Voxelforge.Gameplay
             Threat.Add(attacker, ThreatRules.StunThreat * threatScale);
         }
 
+        /// <summary>
+        /// A taunt (Roadmap 5.3, Oathbrand): its bales go to <paramref name="taunter"/> for <paramref name="seconds"/>, and
+        /// they jump to the top of its threat. It counts as being hit, so it keeps it sparring.
+        /// </summary>
+        public void Taunt(float now, float seconds, PlayerId taunter)
+        {
+            if (!taunter.IsValid)
+                return;
+            if (IsIdle(now))
+                NextSparAt = now + SparEvery;
+            ForgetIfIdle(now);
+            LastHitAt = now;
+            LastAttacker = taunter;
+            Threat.Taunt(taunter, now, seconds);
+        }
+
         /// <summary>No one has hit it for <see cref="ResetAfter"/> seconds; it can be forgotten.</summary>
         public bool IsIdle(float now) => now - LastHitAt >= ResetAfter;
 

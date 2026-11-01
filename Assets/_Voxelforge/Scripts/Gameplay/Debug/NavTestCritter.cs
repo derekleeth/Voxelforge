@@ -121,6 +121,8 @@ namespace Voxelforge.Gameplay
         /// <summary>A test critter only follows whoever it was told to: it keeps no threat.</summary>
         public ThreatTable ServerThreat => null;
 
+        public bool ServerTaunt(float seconds, PlayerId taunter) => false;
+
         public bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f)
         {
             if (!IsServer || _defeated || seconds <= 0f)

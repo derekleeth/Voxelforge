@@ -79,6 +79,17 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void TauntCue_SaysWhichTarget_SoTheTauntersViewCanSayTaunted()
+        {
+            var target = new CombatTarget(new int3(4, 5, 6));
+            AbilityCue taunted = RoundTrip(AbilityCue.TauntTarget(AbilityIds.Oathbrand, target));
+            Assert.AreEqual(AbilityCueKind.TargetTaunted, taunted.Kind);
+            Assert.AreEqual(AbilityIds.Oathbrand, taunted.AbilityId);
+            Assert.AreEqual(target.Key, taunted.Target);
+            Assert.AreEqual((Vector3)target.Position, taunted.Position);
+        }
+
+        [Test]
         public void Impact_DamagesOnlyTheBlockHit_AndAFizzleDamagesNothing()
         {
             var damage = new List<VoxelDamageRequest>();

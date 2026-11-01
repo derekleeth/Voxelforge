@@ -236,6 +236,9 @@ namespace Voxelforge.Gameplay
             // A ground slam, wall or totem needs ground in range, checked before any mana is spent.
             if (ability.NeedsAimedBlock && !TryAimAtBlock(ability, input, out _))
                 return CastCheck.NoTarget;
+            // So does a taunt, with a foe in range (Roadmap 5.3).
+            if (ability.Delivery == AbilityDelivery.Taunt && !TryPickFoe(ability, input, out _))
+                return CastCheck.NoTarget;
             CastCheck check = _caster.TryBegin(ability, now, _finished);
             if (check == CastCheck.Ok && _caster.IsCasting)
             {
@@ -298,7 +301,27 @@ namespace Voxelforge.Gameplay
                     if (_support != null)
                         _support.ServerSelfHeal(ability);
                     break;
+                case AbilityDelivery.Taunt:
+                    if (TryPickFoe(ability, input, out CombatTarget foe))
+                        _staff.ServerTaunt(ability, foe);
+                    break;
             }
+        }
+
+        /// <summary>
+        /// Host: who a taunt goes on (Roadmap 5.3): the hero's Tab target if it's within <paramref name="ability"/>'s range,
+        /// else the creature or Training Dummy their aim hits.
+        /// </summary>
+        bool TryPickFoe(AbilityDefinition ability, PlayerInputFrame input, out CombatTarget foe)
+        {
+            CombatTargets targets = _player.Registry != null ? _player.Registry.Targets : null;
+            if (_targeting != null && targets != null && _targeting.TryGetTarget(targets, out ICombatCreature creature))
+            {
+                foe = CombatTarget.Of(creature);
+                if (math.distance(foe.Position, _player.Aim.Eyes(transform.position)) <= ability.Range)
+                    return true;
+            }
+            return TryAimAtBlock(ability, input, out _, out foe) && foe.IsValid;
         }
 
         /// <summary>Host: the block (or target's body, Roadmap 4.6) the hero aims at within <paramref name="ability"/>'s range.</summary>

@@ -414,6 +414,23 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Host only (Roadmap 5.3, Oathbrand): <paramref name="taunter"/> taunts <paramref name="target"/>, which fights only
+        /// them for <paramref name="seconds"/> (a Training Dummy throws only at them). False if it can't be taunted.
+        /// </summary>
+        public bool ServerTaunt(in CombatTarget target, PlayerId taunter, float seconds)
+        {
+            if (!IsServer || !taunter.IsValid || !IsTarget(target))
+                return false;
+            if (target.Kind == CombatTargetKind.Creature)
+                return _creaturesById[target.CreatureId].ServerTaunt(seconds, taunter);
+            float now = Time.time;
+            if (!_dummies.TryGetValue(target.Block, out SparringDummy dummy))
+                _dummies[target.Block] = dummy = new SparringDummy(now);
+            dummy.Taunt(now, seconds, taunter);
+            return true;
+        }
+
+        /// <summary>
         /// How much threat <paramref name="hero"/>'s class makes (<see cref="ClassDefinition.ThreatMultiplier"/>, Roadmap
         /// 5.3): 2 for a Runeforged Paladin. Looked up by <see cref="PlayerId"/> (CLAUDE.md Law #1); 1 for nobody.
         /// </summary>

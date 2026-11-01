@@ -164,6 +164,9 @@ namespace Voxelforge.Gameplay
         public bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f) =>
             IsServer && _rules != null && _rules.Stun(Time.time, seconds, instigator, threatScale);
 
+        public bool ServerTaunt(float seconds, PlayerId taunter) =>
+            IsServer && _rules != null && _rules.Taunt(Time.time, seconds, taunter);
+
         public ThreatTable ServerThreat => IsServer && _rules != null && !_rules.IsDefeated ? _rules.Threat : null;
 
         void FixedUpdate()

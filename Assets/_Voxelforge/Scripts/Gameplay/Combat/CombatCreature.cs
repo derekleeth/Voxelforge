@@ -32,6 +32,12 @@ namespace Voxelforge.Gameplay
         /// <summary>Host only: stunned for <paramref name="seconds"/> in <paramref name="instigator"/>'s name.</summary>
         bool ServerStun(float seconds, PlayerId instigator, float threatScale = 1f);
 
+        /// <summary>
+        /// Host only: taunted by <paramref name="taunter"/> for <paramref name="seconds"/> (Roadmap 5.3). False if it can't
+        /// be (defeated, or a creature that keeps no threat).
+        /// </summary>
+        bool ServerTaunt(float seconds, PlayerId taunter);
+
         /// <summary>Host only: who it's angry at (Roadmap 5.3), or null for a creature that doesn't keep a table.</summary>
         ThreatTable ServerThreat { get; }
     }

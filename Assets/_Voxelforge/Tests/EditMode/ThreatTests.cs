@@ -329,6 +329,27 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Mob_TauntedWhileMindingItsOwnBusiness_ComesForTheTaunter()
+        {
+            Hero(Tank, new float3(20f, 0f, 0f));
+            Tick();
+            Assert.AreNotEqual(MobState.Chase, _brain.State, "A neutral mob leaves a hero walking by alone.");
+
+            Assert.IsTrue(_rules.Taunt(_now, 3f, Tank));
+            Tick();
+            Assert.AreEqual(MobState.Chase, _brain.State);
+            Assert.AreEqual(Tank, _brain.Target);
+        }
+
+        [Test]
+        public void Mob_Defeated_CantBeTaunted()
+        {
+            _rules.Hit(_mob.MaxHealth, Mage);
+            Assert.IsFalse(_rules.Taunt(0f, 3f, Tank));
+            Assert.IsFalse(_rules.Threat.Contains(Tank));
+        }
+
+        [Test]
         public void Mob_JoiningItsPack_PutsTheHeroOnItsTable()
         {
             Hero(Tank, new float3(5f, 0f, 0f));
@@ -354,6 +375,16 @@ namespace Voxelforge.Tests
             dummy.Hit(10f, Mage, 7f, out _);
             Assert.IsTrue(dummy.TrySpar(9.3f, out target));
             Assert.AreEqual(Mage, target);
+        }
+
+        [Test]
+        public void Dummy_Taunted_ThrowsOnlyAtTheTaunter()
+        {
+            var dummy = new SparringDummy(0f);
+            dummy.Hit(200f, Mage, 1f, out _);
+            dummy.Taunt(2f, 3f, Tank);
+            Assert.IsTrue(dummy.TrySpar(3.1f, out PlayerId target));
+            Assert.AreEqual(Tank, target, "Mid-taunt, the tank gets the bale though the mage hit it far harder.");
         }
 
         [Test]

@@ -557,7 +557,8 @@ namespace Voxelforge.Gameplay
         /// </summary>
         bool MayAttack(in MobSenses senses, in HeroSense target)
         {
-            if (_mob.MaxBiters <= 0 || senses.Allies == null)
+            // Branded by a taunt (Roadmap 5.3): it goes straight for the taunter, whoever else is biting.
+            if (_mob.MaxBiters <= 0 || senses.Allies == null || _rules.Threat.TauntedBy(senses.Now) == target.Id)
                 return true;
             bool biting = IsBiting && senses.Now >= _restUntil;
             float distance = math.distance(senses.Feet, target.Feet);

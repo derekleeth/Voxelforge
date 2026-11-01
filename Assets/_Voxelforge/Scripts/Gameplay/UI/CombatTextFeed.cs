@@ -49,6 +49,7 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.Toppled:
                 case CombatTextKind.Defeated:
                 case CombatTextKind.Stunned:
+                case CombatTextKind.Taunted:
                     return 1.6f;
                 case CombatTextKind.Refused:
                 case CombatTextKind.BagRefused:

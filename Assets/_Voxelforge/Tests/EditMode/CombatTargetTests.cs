@@ -40,6 +40,12 @@ namespace Voxelforge.Tests
                 ThreatScale = threatScale;
                 return true;
             }
+
+            public bool ServerTaunt(float seconds, PlayerId taunter)
+            {
+                ServerThreat.Taunt(taunter, 0f, seconds);
+                return true;
+            }
         }
 
         GameObject _host;
@@ -153,6 +159,23 @@ namespace Voxelforge.Tests
             Assert.AreEqual(1.5f, boar.ThreatScale, 1e-4f, "No class to look up here, so just the ability's.");
             _targets.ServerStun(CombatTarget.Of(boar), 1f, new PlayerId(1), threatScale: 2f);
             Assert.AreEqual(2f, boar.ThreatScale, 1e-4f);
+        }
+
+        [Test]
+        public void Taunt_LandsOnCreaturesAndDummies_ButNotOnNothing()
+        {
+            var paladin = new PlayerId(1);
+            var boar = new StandingCreature { CreatureId = 1, Feet = new float3(2f, 0f, 0f) };
+            _targets.Add(boar);
+            boar.ServerThreat.Add(new PlayerId(2), 300f);
+            Assert.IsTrue(_targets.ServerTaunt(CombatTarget.Of(boar), paladin, 3f));
+            Assert.AreEqual(paladin, boar.ServerThreat.TauntedBy(1f));
+            Assert.AreEqual(300f, boar.ServerThreat.Of(paladin), 1e-4f, "Up to the top of its table.");
+
+            Assert.IsFalse(_targets.ServerTaunt(default, paladin, 3f), "No target: nothing happens.");
+            Assert.IsFalse(_targets.ServerTaunt(CombatTarget.Of(boar), PlayerId.None, 3f), "Nobody taunted it.");
+            boar.IsTargetable = false;
+            Assert.IsFalse(_targets.ServerTaunt(CombatTarget.Of(boar), paladin, 3f), "Defeated: it can't be taunted.");
         }
 
         [Test]

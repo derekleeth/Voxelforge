@@ -50,5 +50,8 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Wayfarer racial (Roadmap 4.7): catch your breath and heal a quarter of your health at once.</summary>
         public const ushort SecondWind = 14;
+
+        /// <summary>Runeforged Paladin (Roadmap 5.3): brand a foe with your oath, so it fights only you for a moment.</summary>
+        public const ushort Oathbrand = 15;
     }
 }

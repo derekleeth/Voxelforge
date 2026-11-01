@@ -66,6 +66,22 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Host only: <paramref name="ability"/> taunts <paramref name="foe"/> (a <see cref="AbilityDelivery.Taunt"/>,
+        /// Roadmap 5.3 Oathbrand): it fights only this hero for the ability's Duration. Every PC sees the brand land as a
+        /// burst of the spell's sparks and hears its ring on the foe, and the hero's own view says "TAUNTED!".
+        /// </summary>
+        public void ServerTaunt(AbilityDefinition ability, in CombatTarget foe)
+        {
+            CombatTargets targets = Targets;
+            if (!IsServer || !IsSpawned || ability == null || targets == null ||
+                !targets.ServerTaunt(foe, _player.PlayerId, ability.Duration))
+                return;
+            // An impact on no block at all, so the sparks are all the spell's own gold.
+            _cues.ServerSend(AbilityCue.Blast(ability.Id, foe.Position, new float3(0f, 1f, 0f), ushort.MaxValue, onTarget: true));
+            _cues.ServerSend(AbilityCue.TauntTarget(ability.Id, foe));
+        }
+
+        /// <summary>
         /// Host only: <paramref name="ability"/> stomps the ground at the hero's feet (a <see cref="AbilityDelivery.Quake"/>,
         /// Roadmap 4.7 Hoofquake). Every target within its radius is hurt, more near the middle, and stunned for its
         /// duration. The ground shakes but isn't damaged.
