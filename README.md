@@ -57,6 +57,8 @@ The **split keyboard** columns only matter when `LocalPlayerManager → Allow Sp
 | Scroll | Mouse wheel | — | — | — |
 | Close | B | B | B | Backspace |
 
+Below the bag sockets is the **Worn gear** row (head, chest, legs, feet, main hand, off hand): move the cursor down from the bag sockets to reach it. **Use** on gear in the bag puts it on (swapping out what was there); **Use** on a worn piece takes it off; picking up a piece and putting it on its own socket also wears it.
+
 **World map**
 
 | Action | Keyboard + mouse | Gamepad | Split keyboard, left | Split keyboard, right |
@@ -85,10 +87,14 @@ These are read straight from the keyboard, so on a shared PC any player can pres
 
 | Key | What it does | Where |
 |---|---|---|
+| F1 | Every hero goes up a level (host) | Editor and build |
+| Shift + F1 | Every hero back to level 1 (host) | Editor and build |
+| F2 | Give every hero a loot kit: one of every piece of gear and 5 of each material (host) | Editor and build |
 | F3 | Show / hide the debug overlay (FPS, mob counts) | Editor and build |
 | F4 | Write an FPS snapshot to `Builds/Editor/frame-stats.txt` (in the editor) | Editor and build |
 | F5 | Save the world now | Editor and build |
-| F6 | Switch split-screen style: Dynamic / Classic | Editor and build |
+| F6 | Switch split-screen style: Dynamic / Classic, **and** take the party to the nearest ruin nobody has found (host; see Known gaps) | Editor and build |
+| Shift + F6 | Take the party to the nearest boss arena (host; also switches split-screen style) | Editor and build |
 | F7 | Spawn nav test critters by every hero (host) | Editor and build |
 | F8 | Show / hide the test critters' paths (host) | Editor and build |
 | F9 | Remove all test critters (host) | Editor and build |
@@ -103,5 +109,6 @@ The world also saves by itself every 2 minutes and when you quit.
 
 ### Known gaps
 
+- **F6 does two things at once.** It's the split-screen style key and, since Roadmap 5.4, the host's "travel to a ruin" debug key, so every trip also flips Dynamic ↔ Classic (and pressing F6 again to flip it back travels again). One of them needs its own key.
 - **Gamepads can't switch split-screen style.** It used to be the right-stick click, but that's now Target. Use F6 for now; the 6.3 settings screen will take this over.
 - **The bag's on-screen hints say "View: Sort" for gamepads, but View opens the map instead,** and Sort has no gamepad button.
