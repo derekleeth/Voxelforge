@@ -241,5 +241,14 @@ Wear a weapon in the **Main Hand** (bag, Use on it). Then the **Mine** button (l
 - [ ] A short **level-up fanfare** plays.
 - [ ] **F1** for a quick check of all of the above; both heroes level at once, so you should see two pillars.
 
+---
+
+## Fix to check: seeing under the world through dug holes
+
+GPU occlusion culling is off in the 15:30+ build (it can wrongly hide a whole chunk under the surface, especially with two split-screen cameras). The faster GPU drawing stays on.
+- [ ] In split-screen, dig a deep hole (10+ blocks, through the layer change around y = 64) and look down it from both players' views: the walls are there all the way down, no grey void.
+- [ ] Blow craters and dig tunnels around a base: no see-through gaps.
+- [ ] **F4** with 20+ mobs: still around 120+ FPS? (Turning occlusion off draws more hidden ground; tell me if it dropped.)
+
 ### Notes
 -
