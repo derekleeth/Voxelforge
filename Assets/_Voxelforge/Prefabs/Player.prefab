@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 8078124071735052176}
   - component: {fileID: 756589546276304344}
   - component: {fileID: 6465819664457673775}
+  - component: {fileID: 1805784792305547359}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -711,6 +712,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerLevel
   ShowTopMostFoldoutHeaderGroup: 1
   book: {fileID: 11400000, guid: 046bb491e3493fc4a94c1db54bb11419, type: 2}
+--- !u!114 &1805784792305547359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d43bf85de44f31745804a49c1338ac95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.LevelUpGlow
+  beamMaterial: {fileID: 2100000, guid: f499cc152c3c49942b089f728229746c, type: 2}
+  colour: {r: 1, g: 0.8, b: 0.3, a: 1}
+  seconds: 1.6
+  height: 6
+  width: 1.4
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

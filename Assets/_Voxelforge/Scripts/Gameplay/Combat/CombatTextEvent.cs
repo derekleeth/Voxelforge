@@ -41,6 +41,10 @@ namespace Voxelforge.Gameplay
         PullingAggro,
         /// <summary>The hero found a ruin or arena called <see cref="CombatTextEvent.Label"/> (Roadmap 5.4).</summary>
         Discovered,
+        /// <summary>The hero earned <see cref="CombatTextEvent.Amount"/> XP (Roadmap 5.6).</summary>
+        XpGained,
+        /// <summary>The hero reached level <see cref="CombatTextEvent.Amount"/> (Roadmap 5.6).</summary>
+        LevelUp,
     }
 
     /// <summary>

@@ -196,5 +196,19 @@ Stand-in models (5.9 brings the real armour sets). Try it on **both races** (a W
 ### Saving
 - [ ] Get to level 3 or so, save and quit (or F5), come back: same level and XP, and the bigger health and mana. Save format is now 8; older saves start at level 1.
 
+## Roadmap 5.6: Experience & Levels (Step B: HUD & celebration)
+
+### In each player's own view
+- [ ] A **gold starburst badge** with your level number sits at the left end of your action bar.
+- [ ] A thin **gold XP bar** runs under the action bar with **"40 / 135 XP"**; it fills as you kill things and empties on a level-up. At level 20 it's full and says **Max level**.
+- [ ] Kills show **+20 XP** in gold over your hero; several quick kills add up (**+35 XP**).
+- [ ] A level-up shows a big **LEVEL UP! Level 5** burst, and the badge bounces.
+- [ ] Each player's badge, bar and text only show their own level, in their own half of the screen.
+
+### Everyone sees and hears it
+- [ ] A **golden pillar of light** shoots up round the hero who levelled and fades in under 2 s, with a warm glow (the partner sees it too).
+- [ ] A short **level-up fanfare** plays.
+- [ ] **F1** for a quick check of all of the above; both heroes level at once, so you should see two pillars.
+
 ### Notes
 -

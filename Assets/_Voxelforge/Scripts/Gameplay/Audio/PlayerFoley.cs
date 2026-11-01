@@ -77,6 +77,9 @@ namespace Voxelforge.Gameplay
             /// <summary>Roadmap 5.5: a clank when they put gear on or take it off.</summary>
             public PlayerBlockBag Bag;
             public Action<EquippedGear> OnGear;
+            /// <summary>Roadmap 5.6: a fanfare when they reach a new level.</summary>
+            public PlayerLevel Level;
+            public Action<int> OnLevel;
             public float SpawnedAt;
         }
 
@@ -129,6 +132,12 @@ namespace Voxelforge.Gameplay
                 hero.OnGear = _ => OnGear(hero);
                 hero.Bag.GearChanged += hero.OnGear;
             }
+            hero.Level = player.GetComponent<PlayerLevel>();
+            if (hero.Level != null)
+            {
+                hero.OnLevel = _ => OnLevelUp(hero);
+                hero.Level.LeveledUp += hero.OnLevel;
+            }
             _heroes.Add(hero);
         }
 
@@ -148,6 +157,8 @@ namespace Voxelforge.Gameplay
                 hero.Health.Changed -= hero.OnHealth;
             if (hero.Bag != null)
                 hero.Bag.GearChanged -= hero.OnGear;
+            if (hero.Level != null)
+                hero.Level.LeveledUp -= hero.OnLevel;
             StopCastLoop(hero);
             StopWind(hero);
             _heroes.RemoveAt(index);
@@ -160,6 +171,13 @@ namespace Voxelforge.Gameplay
                 return;
             router.Play(sounds.GearEquip, (float3)hero.Player.transform.position + new float3(0f, 1f, 0f), 0.6f,
                 UnityEngine.Random.Range(0.94f, 1.06f), 16f);
+        }
+
+        void OnLevelUp(Hero hero)
+        {
+            if (router == null || sounds == null || sounds.LevelUp == null || hero.Player == null)
+                return;
+            router.Play(sounds.LevelUp, (float3)hero.Player.transform.position + new float3(0f, 1f, 0f), 0.9f, 1f, 40f);
         }
 
         void LateUpdate()

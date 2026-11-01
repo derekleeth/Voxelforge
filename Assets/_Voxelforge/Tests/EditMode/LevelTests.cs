@@ -96,6 +96,21 @@ namespace Voxelforge.Tests
             CollectionAssert.AreEqual(new[] { new PlayerId(1), new PlayerId(2) }, sharers);
         }
 
+        // ---- The HUD (step B) ----
+
+        [Test]
+        public void XpText_AddsUpOnOneLine_AndLevelUpGetsItsOwn()
+        {
+            var feed = new CombatTextFeed(8);
+            feed.Push(new CombatTextEvent { Kind = CombatTextKind.XpGained, Amount = 20 }, 0f);
+            feed.Push(new CombatTextEvent { Kind = CombatTextKind.XpGained, Amount = 15 }, 0.2f);
+            feed.Push(new CombatTextEvent { Kind = CombatTextKind.LevelUp, Amount = 2 }, 0.2f);
+            Assert.AreEqual(2, feed.Entries.Count);
+            Assert.AreEqual(35, feed.Entries[0].Event.Amount, "Two kills close together: +35 XP.");
+            Assert.AreEqual(CombatTextKind.LevelUp, feed.Entries[1].Event.Kind);
+            Assert.Greater(CombatTextFeed.Lifetime(CombatTextKind.LevelUp), CombatTextFeed.Lifetime(CombatTextKind.XpGained));
+        }
+
         // ---- The book ----
 
         [Test]

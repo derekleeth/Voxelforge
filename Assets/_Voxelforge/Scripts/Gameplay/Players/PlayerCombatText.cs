@@ -33,6 +33,7 @@ namespace Voxelforge.Gameplay
         PlayerBlockBag _bag;
         PlayerHealth _health;
         PlayerExplorer _explorer;
+        PlayerLevel _level;
 
         /// <summary>Every PC for hits and mana; the owner's PC for refusals and pickups.</summary>
         public event Action<CombatTextEvent> Raised;
@@ -45,6 +46,7 @@ namespace Voxelforge.Gameplay
             _bag = GetComponent<PlayerBlockBag>();
             _health = GetComponent<PlayerHealth>();
             _explorer = GetComponent<PlayerExplorer>();
+            _level = GetComponent<PlayerLevel>();
         }
 
         void OnEnable()
@@ -61,6 +63,11 @@ namespace Voxelforge.Gameplay
                 _health.Changed += OnHealth;
             if (_explorer != null)
                 _explorer.Discovered += OnDiscovered;
+            if (_level != null)
+            {
+                _level.XpGained += OnXpGained;
+                _level.LeveledUp += OnLeveledUp;
+            }
         }
 
         void OnDisable()
@@ -77,6 +84,11 @@ namespace Voxelforge.Gameplay
                 _health.Changed -= OnHealth;
             if (_explorer != null)
                 _explorer.Discovered -= OnDiscovered;
+            if (_level != null)
+            {
+                _level.XpGained -= OnXpGained;
+                _level.LeveledUp -= OnLeveledUp;
+            }
         }
 
         float3 Head => (float3)transform.position + new float3(0f, overHead, 0f);
@@ -182,6 +194,12 @@ namespace Voxelforge.Gameplay
             string name = library != null && library.TryGet(stamp, out StampDefinition definition) ? definition.DisplayName : "Ruins";
             Raise(new CombatTextEvent { Kind = CombatTextKind.Discovered, Label = name, Position = Head });
         }
+
+        /// <summary>Roadmap 5.6: XP earned, and a new level (only shown in this hero's own view).</summary>
+        void OnXpGained(int xp) => Raise(new CombatTextEvent { Kind = CombatTextKind.XpGained, Amount = xp, Position = Head });
+
+        void OnLeveledUp(int level) =>
+            Raise(new CombatTextEvent { Kind = CombatTextKind.LevelUp, Amount = level, Position = Head });
 
         void OnRefused(CastCheck reason) =>
             Raise(new CombatTextEvent { Kind = CombatTextKind.Refused, Reason = reason, Position = Head });

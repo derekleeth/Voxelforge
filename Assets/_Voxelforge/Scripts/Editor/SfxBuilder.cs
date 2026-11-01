@@ -167,6 +167,8 @@ namespace Voxelforge.Editor
             written.Add(Write("LootEpic", LootChime(new Random(349), new[] { 784f, 988f, 1175f, 1568f, 1976f }, 0.055f, 0.8f)));
             written.Add(Write("LootLegendary", LootFanfare(new Random(353))));
             written.Add(Write("GearEquip", GearEquip(new Random(359))));
+            // Roadmap 5.6: reaching a new level.
+            written.Add(Write("LevelUp", LevelUp(new Random(367))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -370,6 +372,29 @@ namespace Voxelforge.Editor
             foreach ((float at, float note) in new[] { (0.4f, 2093f), (0.5f, 2637f), (0.6f, 3136f), (0.75f, 4186f) })
                 AddBell(buffer, at, note, 0.9f, 0.18f);
             AddNoise(buffer, rng, 0.35f, 1.2f, 0.08f, 7000f, 15000f);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>
+        /// A new level (Roadmap 5.6): a whoosh rising into a quick major arpeggio of bells, landing on a warm held chord with
+        /// a choir-like hum and sparkles, triumphant but short enough to hear in a fight.
+        /// </summary>
+        static float[] LevelUp(Random rng)
+        {
+            float[] buffer = New(2.4f);
+            AddTone(buffer, 0f, 180f, 720f, 0.35f, 0.25f, sweepTime: 0.3f);
+            AddNoise(buffer, rng, 0f, 0.3f, 0.15f, 1500f, 9000f);
+            float[] run = { 523f, 659f, 784f, 1047f, 1319f, 1568f };
+            for (int i = 0; i < run.Length; i++)
+                AddBell(buffer, 0.18f + i * 0.06f, run[i], 0.5f, 0.3f);
+            foreach (float note in new[] { 523f, 659f, 784f, 1047f })
+            {
+                for (int h = 1; h <= 3; h++) // A held, slightly brassy major chord.
+                    AddTone(buffer, 0.56f, note * h, note * h, 1.3f, 0.16f / h);
+            }
+            foreach ((float at, float note) in new[] { (0.6f, 2093f), (0.75f, 2637f), (0.9f, 3136f), (1.05f, 4186f) })
+                AddBell(buffer, at, note, 0.8f, 0.14f);
+            AddNoise(buffer, rng, 0.56f, 1.3f, 0.06f, 7000f, 15000f);
             return Finish(buffer, 0.85f);
         }
 
@@ -1264,6 +1289,7 @@ namespace Voxelforge.Editor
             serialized.FindProperty("lootEpic").objectReferenceValue = Clip("LootEpic");
             serialized.FindProperty("lootLegendary").objectReferenceValue = Clip("LootLegendary");
             serialized.FindProperty("gearEquip").objectReferenceValue = Clip("GearEquip");
+            serialized.FindProperty("levelUp").objectReferenceValue = Clip("LevelUp");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;

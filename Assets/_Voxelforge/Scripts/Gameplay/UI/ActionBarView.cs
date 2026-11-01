@@ -47,6 +47,14 @@ namespace Voxelforge.Gameplay
         int _manaShown = -1;
         int _maxManaShown = -1;
         string _scheme;
+        // The level badge and XP bar (Roadmap 5.6).
+        readonly RectTransform _badge;
+        readonly TextMeshProUGUI _levelText;
+        readonly Image _xpFill;
+        readonly TextMeshProUGUI _xpText;
+        LevelState _levelShown = new LevelState(255, -1);
+        float _badgeBounceUntil;
+        static readonly Color XpGold = new Color(1f, 0.78f, 0.2f);
 
         public ActionBarView(RectTransform parent, HudSkin skin)
         {
@@ -106,7 +114,25 @@ namespace Voxelforge.Gameplay
             _healthText = HudWidgets.SmallLabel("Amount", health, skin, skin.manaBarHeight * 1.05f, Color.white,
                 TextAlignmentOptions.Center);
             HudWidgets.Stretch(_healthText.rectTransform);
+
+            // Level (Roadmap 5.6): a gold starburst with the number, just left of the strip, and a thin gold XP bar under it.
+            float badge = slot * 1.05f;
+            _badge = HudWidgets.Place(HudWidgets.Rect("Level", Root), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-4f, 0f), new Vector2(badge, badge));
+            HudWidgets.Stretch(HudWidgets.Image("Burst", _badge, skin.starburst, XpGold).rectTransform, -badge * 0.12f);
+            _levelText = HudWidgets.Label("Number", _badge, skin.comicFont, badge * 0.5f, Color.white, TextAlignmentOptions.Center);
+            HudWidgets.Stretch(_levelText.rectTransform);
+            RectTransform xp = HudWidgets.Place(HudWidgets.Rect("XP", Root), new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -1f), new Vector2(width - Padding * 2f, XpBarHeight));
+            HudWidgets.Stretch(HudWidgets.Image("Back", xp, skin.barBack, Color.white).rectTransform, 1f);
+            _xpFill = Fill("Fill", xp, XpGold);
+            HudWidgets.Stretch(_xpFill.rectTransform, 1f);
+            HudWidgets.Stretch(HudWidgets.Image("Frame", xp, skin.barFrame, Color.white, Image.Type.Sliced).rectTransform, -2f);
+            _xpText = HudWidgets.SmallLabel("Amount", xp, skin, XpBarHeight * 1.1f, Color.white, TextAlignmentOptions.Center);
+            HudWidgets.Stretch(_xpText.rectTransform);
         }
+
+        const float XpBarHeight = 12f;
 
         Image Fill(string name, RectTransform bar, Color colour)
         {
@@ -119,6 +145,34 @@ namespace Voxelforge.Gameplay
         }
 
         public RectTransform Root { get; }
+
+        // The badge's number and the XP bar (Roadmap 5.6); the badge bounces when the level goes up.
+        void TickLevel(PlayerLevel level, float now)
+        {
+            bool shown = level != null;
+            HudWidgets.SetActive(_badge, shown);
+            HudWidgets.SetActive((RectTransform)_xpFill.transform.parent, shown);
+            if (!shown)
+                return;
+            LevelState state = level.State;
+            if (!state.Equals(_levelShown))
+            {
+                if (_levelShown.Level != 255 && state.EffectiveLevel > _levelShown.EffectiveLevel)
+                    _badgeBounceUntil = now + 0.6f;
+                _levelShown = state;
+                _levelText.SetText("{0}", (float)state.EffectiveLevel);
+                _xpFill.fillAmount = LevelRules.Progress(state, level.Book);
+                int need = level.Book != null ? level.Book.XpToNext(state.EffectiveLevel) : 0;
+                if (need > 0)
+                    _xpText.SetText("{0} / {1} XP", (float)state.Xp, (float)need);
+                else
+                    _xpText.SetText("Max level");
+            }
+            float bounce = Mathf.Clamp01((_badgeBounceUntil - now) / 0.6f);
+            float size = 1f + 0.35f * Mathf.Sin(bounce * Mathf.PI);
+            if (!Mathf.Approximately(_badge.localScale.x, size))
+                _badge.localScale = new Vector3(size, size, 1f);
+        }
 
         /// <summary>Width of the strip in 1080p pixels.</summary>
         public float Width => Padding * 2f + _skin.slotSize * PlayerActionBar.SlotCount + _skin.slotGap * (PlayerActionBar.SlotCount - 1);
@@ -162,8 +216,10 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        public void Tick(PlayerActionBar bar, PlayerCaster caster, PlayerHealth health, PlayerButtons buttons, float now)
+        public void Tick(PlayerActionBar bar, PlayerCaster caster, PlayerHealth health, PlayerLevel level, PlayerButtons buttons,
+            float now)
         {
+            TickLevel(level, now);
             PlayerButtons pressed = buttons & ~_previousButtons;
             _previousButtons = buttons;
             float mana = caster != null ? caster.Mana : 0f;

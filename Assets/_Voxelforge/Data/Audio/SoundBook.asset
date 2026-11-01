@@ -66,6 +66,7 @@ MonoBehaviour:
   lootEpic: {fileID: 8300000, guid: 3950ddd23686e354c847b345a3b6c62b, type: 3}
   lootLegendary: {fileID: 8300000, guid: 1182d546e288fc44f8556b439403bdcc, type: 3}
   gearEquip: {fileID: 8300000, guid: f10d42de3e72b0645a577e51156927a1, type: 3}
+  levelUp: {fileID: 8300000, guid: 89ee097a5f960c34ab88f10bcccd023e, type: 3}
   loops:
   - decoration: {fileID: 11400000, guid: a6e88c1d67d36444481add0b0458f1e6, type: 2}
     clip: {fileID: 8300000, guid: 1c22145e70ef6d04ea3bc34d0a9a1fb3, type: 3}

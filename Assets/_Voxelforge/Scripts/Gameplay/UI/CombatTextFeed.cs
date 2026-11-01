@@ -53,6 +53,7 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.PullingAggro:
                     return 1.6f;
                 case CombatTextKind.Discovered:
+                case CombatTextKind.LevelUp:
                     return 3f;
                 case CombatTextKind.Refused:
                 case CombatTextKind.BagRefused:
@@ -60,6 +61,7 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.Pickup:
                 case CombatTextKind.Sent:
                 case CombatTextKind.Shielded:
+                case CombatTextKind.XpGained:
                     return 1.4f;
                 default:
                     return 1f;
@@ -70,12 +72,13 @@ namespace Voxelforge.Gameplay
         {
             if (Capacity <= 0)
                 return;
-            if (e.Kind == CombatTextKind.Pickup)
+            // Pickups of the same item, and XP (Roadmap 5.6), add up on one line.
+            if (e.Kind == CombatTextKind.Pickup || e.Kind == CombatTextKind.XpGained)
             {
                 for (int i = _entries.Count - 1; i >= 0; i--)
                 {
                     Entry entry = _entries[i];
-                    if (entry.Event.Kind != CombatTextKind.Pickup || entry.Event.ItemId != e.ItemId || now - entry.Born > MergeSeconds)
+                    if (entry.Event.Kind != e.Kind || entry.Event.ItemId != e.ItemId || now - entry.Born > MergeSeconds)
                         continue;
                     entry.Event.Amount += e.Amount;
                     entry.Born = now;

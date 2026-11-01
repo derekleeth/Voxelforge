@@ -190,6 +190,17 @@ namespace Voxelforge.Gameplay
                     size *= 1.1f;
                     burst = true;
                     break;
+                case CombatTextKind.XpGained:
+                    words = $"+{e.Amount} XP";
+                    colour = new Color(1f, 0.78f, 0.2f);
+                    size *= 0.75f;
+                    break;
+                case CombatTextKind.LevelUp:
+                    words = $"LEVEL UP!\n<size=70%>Level {e.Amount}</size>";
+                    colour = new Color(1f, 0.82f, 0.25f);
+                    size *= 1.45f;
+                    burst = true;
+                    break;
                 case CombatTextKind.Discovered:
                     words = $"DISCOVERED!\n{e.Label}";
                     colour = _skin.pickup;
