@@ -5,7 +5,8 @@
         "Voxelforge.Core",
         "Voxelforge.Voxels",
         "Voxelforge.Gameplay",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [
         "Editor"

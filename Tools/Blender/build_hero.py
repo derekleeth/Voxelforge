@@ -290,7 +290,8 @@ def bake_hero(size=1024):
     print(f"Baked {ALBEDO_PATH}")
 
 
-def _build_bake_nodes(mat, image):
+def _build_bake_nodes(mat, image, height=1.9):
+    """Lighter toward the top of a body height tall (build_mobs.py passes its creatures' own heights)."""
     nt = mat.node_tree
     nt.nodes.clear()
     out = nt.nodes.new("ShaderNodeOutputMaterial")
@@ -318,7 +319,7 @@ def _build_bake_nodes(mat, image):
 
     split = nt.nodes.new("ShaderNodeSeparateXYZ")
     nt.links.new(geometry.outputs["Position"], split.inputs["Vector"])
-    shade_top = factor(split.outputs["Z"], 0.0, 1.9, 0.8, 1.12)
+    shade_top = factor(split.outputs["Z"], 0.0, height, 0.8, 1.12)
 
     noise = nt.nodes.new("ShaderNodeTexNoise")
     noise.inputs["Scale"].default_value = 28.0

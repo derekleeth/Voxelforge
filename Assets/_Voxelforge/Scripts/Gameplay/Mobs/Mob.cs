@@ -37,6 +37,8 @@ namespace Voxelforge.Gameplay
         [SerializeField] Vector2 splitPop = new Vector2(3f, 5f);
 
         readonly NetworkVariable<byte> _state = new NetworkVariable<byte>();
+        // The attack it's winding up or making, +1 (0 for none), so a boar paws before a charge but rears before a gore.
+        readonly NetworkVariable<byte> _attack = new NetworkVariable<byte>();
 
         // Host-only state.
         VoxelWorldManager _world;
@@ -59,6 +61,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Every PC: what it's doing, as the host last said.</summary>
         public MobState State => (MobState)_state.Value;
+
+        /// <summary>Every PC: which of its <see cref="MobDefinition.Attacks"/> it's winding up or making, or -1.</summary>
+        public int CurrentAttack => _attack.Value - 1;
 
         /// <summary>Host only: its brain, for tests and the debug readout.</summary>
         public MobBrain Brain => _brain;
@@ -157,6 +162,9 @@ namespace Voxelforge.Gameplay
             }
             if (_state.Value != (byte)_brain.State)
                 _state.Value = (byte)_brain.State;
+            byte attack = (byte)(_brain.CurrentAttack + 1);
+            if (_attack.Value != attack)
+                _attack.Value = attack;
 
             MotorInput input = default;
             switch (intent.Move)
