@@ -259,7 +259,7 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
-        /// Wear the bag under the cursor, take off the socket's bag, or hold the item in hand. With a chest open: take
+        /// Wear the bag or gear (Roadmap 5.5) under the cursor, take off the socket's bag, or hold the item in hand. With a chest open: take
         /// the chest stack under the cursor into the bag, or store the bag stack in the chest.
         /// </summary>
         public void Use()
@@ -289,6 +289,13 @@ namespace Voxelforge.Gameplay
             if (_bag.Rules.BagSlotsOf(itemId) > 0)
             {
                 _bag.RequestEquip(slot);
+                return;
+            }
+            if (_bag.Rules.EquipSlotOf(itemId) != EquipSlot.None)
+            {
+                // Worn gear (Roadmap 5.5): put it on, swapping out whatever was in that slot.
+                _bag.RequestEquipGear(slot);
+                Say("Equipped!");
                 return;
             }
             if (_hands != null)

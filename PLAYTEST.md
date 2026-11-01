@@ -117,5 +117,23 @@ Best set-up: both players fight the same mobs. **F10** spawns a mob kind by each
 - [ ] Place your own Storage Chest and open it: no cache.
 - [ ] Save and quit (or F5), come back, open the same ruin chest: still nothing (it remembers). Save format is now 7; your old save loads fine.
 
+## Roadmap 5.5: Loot & Equipment (Step C: wearing gear)
+
+Press **F2** for a kit, open the bag (**B**), point at a piece of gear and press **Use**. (The panel that shows what you're wearing comes in Step D; until then the bag slot just empties.)
+
+### Putting it on
+- [ ] **Use** on gear says **Equipped!** and it leaves the bag. Use another piece for the same slot (e.g. Crown after the Cap): they **swap**, and the old one lands in the same bag slot.
+- [ ] Equipping works with the keyboard, the mouse and a gamepad, in each player's own window.
+- [ ] Bags and tools still work as before (Use on a bag wears it; Use on a pickaxe puts it in your hand).
+
+### Stats
+- [ ] **Stamina:** your health bar's maximum goes up when you put gear on (2 health per Stamina). Full best kit: about +80.
+- [ ] **Armor:** let a Boar gore you with and without gear on; the red damage numbers are smaller with gear (Common set about 18% less, best kit about 36% less).
+- [ ] **Power:** a spell's hit numbers on a Training Dummy go up with the Shardglass Wand or Skyrender (Skyrender alone +26%). Healing (Wellspring Totem, Hallowed Forge) and Bulwark Rune shields get stronger too.
+- [ ] Only the wearer gets stronger, never the partner.
+
+### Saving
+- [ ] Wear some gear, save and quit (or F5), come back: you're still wearing it (and your health maximum still includes it).
+
 ### Notes
 -

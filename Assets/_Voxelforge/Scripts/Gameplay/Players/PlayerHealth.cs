@@ -32,6 +32,7 @@ namespace Voxelforge.Gameplay
 
         // Host state.
         HeroHealth _rules;
+        PlayerBlockBag _bag;
 
         /// <summary>Every PC: health as the host last sent it.</summary>
         public float Health => _health.Value;
@@ -59,6 +60,7 @@ namespace Voxelforge.Gameplay
             if (!IsServer)
                 return;
             _rules = new HeroHealth(maxHealth);
+            TryGetComponent(out _bag); // Worn Armor (Roadmap 5.5).
             Send(force: true);
         }
 
@@ -78,6 +80,9 @@ namespace Voxelforge.Gameplay
         {
             if (!IsServer || _rules == null)
                 return default;
+            // Worn Armor cuts every hit (Roadmap 5.5).
+            if (_bag != null)
+                amount = GearRules.AfterArmor(amount, _bag.GearStats.armor);
             DamageResult result = _rules.Damage(amount, Time.time, _rules.Max * Mathf.Clamp01(floorShare));
             if (result.Taken > 0f)
                 Tell(HealthEventKind.Damaged, result.Taken, source, abilityId, sourcePosition);

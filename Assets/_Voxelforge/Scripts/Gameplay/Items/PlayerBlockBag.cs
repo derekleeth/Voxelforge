@@ -27,6 +27,7 @@ namespace Voxelforge.Gameplay
 
         readonly NetworkList<ItemStack> _synced = new NetworkList<ItemStack>();
         readonly NetworkVariable<EquippedBags> _bags = new NetworkVariable<EquippedBags>();
+        readonly NetworkVariable<EquippedGear> _gear = new NetworkVariable<EquippedGear>();
         ItemStacks _server;
         readonly List<int> _changed = new List<int>();
         float _lastRequestTime = float.NegativeInfinity;
@@ -61,6 +62,15 @@ namespace Voxelforge.Gameplay
         /// <summary>The bags this player wears.</summary>
         public EquippedBags Bags => _bags.Value;
 
+        /// <summary>The gear this player wears (Roadmap 5.5), as the host shared it.</summary>
+        public EquippedGear Gear => _gear.Value;
+
+        /// <summary>Everything the worn gear gives, added up.</summary>
+        public GearStats GearStats => GearStats.Sum(_gear.Value, Rules);
+
+        /// <summary>Every PC: the worn gear changed (Roadmap 5.5). The host uses it to update max health.</summary>
+        public event Action<EquippedGear> GearChanged;
+
         public IItemRules Rules => items != null ? items : ItemRules.Default;
 
         public ItemRegistry Items => items;
@@ -86,7 +96,16 @@ namespace Voxelforge.Gameplay
         {
             if (IsServer && _synced.Count == 0)
                 SyncAll();
+            _gear.OnValueChanged += OnGearChanged;
         }
+
+        public override void OnNetworkDespawn()
+        {
+            _gear.OnValueChanged -= OnGearChanged;
+            base.OnNetworkDespawn();
+        }
+
+        void OnGearChanged(EquippedGear before, EquippedGear after) => GearChanged?.Invoke(after);
 
         // ---- Host ----
 
@@ -255,6 +274,53 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Host only: wears the gear in slot <paramref name="index"/> (Roadmap 5.5) in its slot's socket. Whatever was
+        /// worn there goes back into the bag, into the slot just freed, so it's a straight swap.
+        /// </summary>
+        public bool ServerEquipGear(int index)
+        {
+            if (!CheckServer("equip gear from"))
+                return false;
+            EquippedGear gear = _gear.Value;
+            if (!EquippedGear.TryEquip(_server, ref gear, index, _changed))
+                return false;
+            Sync();
+            _gear.Value = gear;
+            return true;
+        }
+
+        /// <summary>Host only: takes off the gear in <paramref name="socket"/>, if the bag has room for it.</summary>
+        public bool ServerUnequipGear(int socket)
+        {
+            if (!CheckServer("unequip gear from") || socket < 0 || socket >= EquippedGear.SocketCount)
+                return false;
+            EquippedGear gear = _gear.Value;
+            if (gear[socket] == 0)
+                return false;
+            if (!EquippedGear.TryUnequip(_server, ref gear, socket, _changed))
+            {
+                ServerTellRefused(BagRefusal.NoRoom);
+                return false;
+            }
+            Sync();
+            _gear.Value = gear;
+            return true;
+        }
+
+        /// <summary>Host only: the gear from a saved profile (Roadmap 5.5). Unknown items are dropped from their sockets.</summary>
+        public void ServerRestoreGear(EquippedGear gear)
+        {
+            if (!CheckServer("restore gear on"))
+                return;
+            for (int i = 0; i < EquippedGear.SocketCount; i++)
+            {
+                if (gear[i] != 0 && EquippedGear.SocketOf(Rules.EquipSlotOf(gear[i])) != i)
+                    gear[i] = 0;
+            }
+            _gear.Value = gear;
+        }
+
+        /// <summary>
         /// Host only: Send to Partner (Roadmap 4.5). Gives slot <paramref name="index"/> to the nearest other hero,
         /// wherever they are; what their bag can't take lands at their feet as a loot bag.
         /// </summary>
@@ -403,6 +469,18 @@ namespace Voxelforge.Gameplay
                 UnequipRpc((byte)socket);
         }
 
+        public void RequestEquipGear(int index)
+        {
+            if (index >= 0 && index < SlotCount)
+                EquipGearRpc((byte)index);
+        }
+
+        public void RequestUnequipGear(int socket)
+        {
+            if (socket >= 0 && socket < EquippedGear.SocketCount)
+                UnequipGearRpc((byte)socket);
+        }
+
         public void RequestSendToPartner(int index)
         {
             if (index >= 0 && index < SlotCount)
@@ -455,6 +533,20 @@ namespace Voxelforge.Gameplay
         {
             if (Allowed(rpcParams))
                 ServerUnequipBag(socket);
+        }
+
+        [Rpc(SendTo.Server)]
+        void EquipGearRpc(byte index, RpcParams rpcParams = default)
+        {
+            if (Allowed(rpcParams))
+                ServerEquipGear(index);
+        }
+
+        [Rpc(SendTo.Server)]
+        void UnequipGearRpc(byte socket, RpcParams rpcParams = default)
+        {
+            if (Allowed(rpcParams))
+                ServerUnequipGear(socket);
         }
 
         /// <summary>Host: the request came from this bag's owner, and not too soon after the last one.</summary>

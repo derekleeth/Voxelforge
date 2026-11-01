@@ -171,6 +171,7 @@ namespace Voxelforge.Tests
         [TestCase(typeof(EquippedGear))]
         [TestCase(typeof(LootShares))]
         [TestCase(typeof(PersonalLoot))]
+        [TestCase(typeof(GearRules))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

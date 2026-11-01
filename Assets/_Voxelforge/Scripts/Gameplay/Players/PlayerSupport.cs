@@ -56,10 +56,12 @@ namespace Voxelforge.Gameplay
             int pick = SupportRules.PickPartner(_player.Aim.Eyes(transform.position), _player.Aim.Direction(input), _partnerFeet,
                 ability.Range, ability.AimCone);
             PlayerHealth target = pick >= 0 ? _partners[pick] : _health;
-            target.ServerShield(ability.ShieldAmount, ability.Duration, _player.PlayerId, ability.Id);
+            // Worn Power makes the shield stronger (Roadmap 5.5).
+            float amount = ability.ShieldAmount * (TryGetComponent(out PlayerBlockBag bag) ? GearRules.PowerScale(bag.GearStats.power) : 1f);
+            target.ServerShield(amount, ability.Duration, _player.PlayerId, ability.Id);
             // Shielding a hero angers whatever is fighting them (Roadmap 5.3).
             if (registry != null && registry.Targets != null && target.TryGetComponent(out PlayerController shielded))
-                registry.Targets.ServerSupportThreat(_player.PlayerId, shielded.PlayerId, ability.ShieldAmount, ability.ThreatScale);
+                registry.Targets.ServerSupportThreat(_player.PlayerId, shielded.PlayerId, amount, ability.ThreatScale);
         }
 
         /// <summary>

@@ -27,6 +27,7 @@ namespace Voxelforge.Gameplay
         PlayerCaster _caster;
         PlayerHealth _health;
         PlayerRace _race;
+        PlayerBlockBag _bag;
         float _lastRequestTime = float.NegativeInfinity;
 
         public ClassBook Book => classes;
@@ -48,18 +49,36 @@ namespace Voxelforge.Gameplay
             _caster = GetComponent<PlayerCaster>();
             _health = GetComponent<PlayerHealth>();
             _race = GetComponent<PlayerRace>();
+            _bag = GetComponent<PlayerBlockBag>();
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             _class.OnValueChanged += OnClassChanged;
+            if (IsServer && _bag != null)
+                _bag.GearChanged += OnGearChanged;
         }
 
         public override void OnNetworkDespawn()
         {
             _class.OnValueChanged -= OnClassChanged;
+            if (_bag != null)
+                _bag.GearChanged -= OnGearChanged;
             base.OnNetworkDespawn();
+        }
+
+        // Stamina on worn gear adds max health (Roadmap 5.5). Only health: the action bar and mana stay as they are.
+        void OnGearChanged(EquippedGear gear)
+        {
+            if (IsServer && _health != null && Definition is ClassDefinition definition)
+                _health.ServerSetMaxHealth(MaxHealthOf(definition));
+        }
+
+        float MaxHealthOf(ClassDefinition definition)
+        {
+            float health = RaceRules.Pools(definition, _race != null ? _race.Definition : null).MaxHealth;
+            return _bag != null ? health + GearRules.BonusHealth(_bag.GearStats.stamina) : health;
         }
 
         void OnClassChanged(HeroClassId before, HeroClassId after) => Changed?.Invoke(after);
@@ -115,7 +134,7 @@ namespace Voxelforge.Gameplay
             _actionBar.ServerSetLoadout(definition.Loadout, race);
             _caster.ServerSetPool(pools.MaxMana, pools.ManaRegen);
             if (_health != null)
-                _health.ServerSetMaxHealth(pools.MaxHealth);
+                _health.ServerSetMaxHealth(MaxHealthOf(definition));
             _class.Value = definition.Id;
         }
     }
