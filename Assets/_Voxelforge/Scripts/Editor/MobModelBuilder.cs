@@ -15,31 +15,51 @@ namespace Voxelforge.Editor
     /// <list type="bullet">
     /// <item><b>Import:</b> <c>Art/Models/Mobs/Name/Name.fbx</c> as a Generic rig; each Blender action (<c>Name|Clip</c>)
     /// becomes a clip called <c>Clip</c>, looping if it's a cycle. The host's motor moves the mob, so no root motion.</item>
-    /// <item><b>Material:</b> <c>Name_Body</c>, URP Lit with the baked albedo.</item>
+    /// <item><b>Materials:</b> <c>Name_Body</c>, URP Lit with the baked albedo; or, for a model with no albedo (the
+    /// Slime, step F), its own slots from <see cref="PlainMaterials"/>: see-through jelly, a glowing core.</item>
     /// <item><b>Animator:</b> <c>Name.controller</c>: a Locomotion blend tree on <c>Speed</c> (Idle, then Walk and Run
     /// at the speeds its <see cref="MobDefinition"/> moves at), and one state per other clip, which
     /// <see cref="MobAnimator"/> cross-fades to by name.</item>
-    /// <item><b>Prefab:</b> swaps the blocky stand-in body for the model, and <see cref="MobStandInView"/> for
-    /// <see cref="MobAnimator"/>.</item>
+    /// <item><b>Prefab:</b> swaps the blocky stand-in body for the model at its scale (one Slime model serves all three
+    /// sizes), and <see cref="MobStandInView"/> for <see cref="MobAnimator"/>.</item>
     /// </list>
     /// </summary>
     public static class MobModelBuilder
     {
         const string ModelRoot = "Assets/_Voxelforge/Art/Models/Mobs";
 
-        /// <summary>Each mob with a model: its Blender name, its definition and its prefab.</summary>
-        static readonly (string Name, string Definition, string Prefab)[] Models =
+        const string Data = "Assets/_Voxelforge/Data/Mobs/", Prefabs = "Assets/_Voxelforge/Prefabs/Mobs/";
+
+        /// <summary>
+        /// Each mob with a model: its Blender name, its definition, its prefab and how big the model is in it. A model
+        /// used by several mobs gets its animator from the first.
+        /// </summary>
+        static readonly (string Name, string Definition, string Prefab, float Scale)[] Models =
         {
-            ("Boar", "Assets/_Voxelforge/Data/Mobs/BristlebackBoar.asset", "Assets/_Voxelforge/Prefabs/Mobs/BristlebackBoar.prefab"),
-            ("Wolf", "Assets/_Voxelforge/Data/Mobs/FrostfangWolf.asset", "Assets/_Voxelforge/Prefabs/Mobs/FrostfangWolf.prefab"),
+            ("Boar", Data + "BristlebackBoar.asset", Prefabs + "BristlebackBoar.prefab", 1f),
+            ("Wolf", Data + "FrostfangWolf.asset", Prefabs + "FrostfangWolf.prefab", 1f),
+            ("Rhino", Data + "ThunderRhino.asset", Prefabs + "ThunderRhino.prefab", 1f),
+            ("Slime", Data + "CrystalSlime.asset", Prefabs + "CrystalSlime.prefab", 0.9f),
+            ("Slime", Data + "CrystalSlimeMedium.asset", Prefabs + "CrystalSlimeMedium.prefab", 0.64f),
+            ("Slime", Data + "CrystalSlimeSmall.asset", Prefabs + "CrystalSlimeSmall.prefab", 0.4f),
         };
+
+        /// <summary>A model's own material slots, for one with no baked albedo: colour, see-through, glow.</summary>
+        static readonly Dictionary<string, (Color Color, bool Clear, float Glow, float Smoothness)> PlainMaterials =
+            new Dictionary<string, (Color, bool, float, float)>
+            {
+                ["Slime_Shell"] = (new Color(0.35f, 0.85f, 1f, 0.5f), true, 0.25f, 0.85f),
+                ["Slime_Core"] = (new Color(0.62f, 0.30f, 1f), false, 1.1f, 0.6f),
+                ["Slime_Eye"] = (new Color(0.03f, 0.03f, 0.06f), false, 0f, 0.9f),
+            };
 
         static readonly HashSet<string> Looping = new HashSet<string> { "Idle", "Walk", "Run", "Paw", "Charge" };
 
         [MenuItem("Voxelforge/Rebuild Mob Models")]
         public static void Rebuild()
         {
-            foreach ((string name, string definitionPath, string prefabPath) in Models)
+            var built = new Dictionary<string, AnimatorController>();
+            foreach ((string name, string definitionPath, string prefabPath, float scale) in Models)
             {
                 string folder = $"{ModelRoot}/{name}";
                 string modelPath = $"{folder}/{name}.fbx";
@@ -50,10 +70,13 @@ namespace Voxelforge.Editor
                 }
                 var definition = AssetDatabase.LoadAssetAtPath<MobDefinition>(definitionPath)
                     ?? throw new FileNotFoundException(definitionPath);
-                ImportModel(modelPath);
-                BuildMaterial(folder, name, modelPath);
-                AnimatorController controller = BuildController(folder, name, modelPath, definition);
-                UpdatePrefab(prefabPath, modelPath, controller);
+                if (!built.TryGetValue(name, out AnimatorController controller))
+                {
+                    ImportModel(modelPath);
+                    BuildMaterials(folder, name, modelPath);
+                    controller = built[name] = BuildController(folder, name, modelPath, definition);
+                }
+                UpdatePrefab(prefabPath, modelPath, controller, scale, definition.Hops);
                 Debug.Log($"[Voxelforge] Rebuilt the {definition.DisplayName}'s model and animator.");
             }
             AssetDatabase.SaveAssets();
@@ -90,27 +113,82 @@ namespace Voxelforge.Editor
             return bar >= 0 ? take.Substring(bar + 1) : take;
         }
 
-        static void BuildMaterial(string folder, string name, string modelPath)
+        static void BuildMaterials(string folder, string name, string modelPath)
         {
             var albedo = AssetDatabase.LoadAssetAtPath<Texture2D>($"{folder}/Textures/{name}_Albedo.png");
             string materialFolder = $"{folder}/Materials";
             Directory.CreateDirectory(materialFolder);
-            string path = $"{materialFolder}/{name}_Body.mat";
+            var materials = new List<Material>();
+            if (albedo != null)
+            {
+                Material body = LoadOrCreate(materialFolder, $"{name}_Body");
+                body.SetTexture("_BaseMap", albedo);
+                body.SetColor("_BaseColor", Color.white);
+                body.SetFloat("_Smoothness", 0.12f);
+                materials.Add(body);
+            }
+            else
+            {
+                foreach (KeyValuePair<string, (Color Color, bool Clear, float Glow, float Smoothness)> plain in PlainMaterials)
+                {
+                    if (!plain.Key.StartsWith(name + "_", StringComparison.Ordinal))
+                        continue;
+                    Material material = LoadOrCreate(materialFolder, plain.Key);
+                    Paint(material, plain.Value.Color, plain.Value.Clear, plain.Value.Glow, plain.Value.Smoothness);
+                    materials.Add(material);
+                }
+            }
+
+            // Hand the materials to the model by the names Blender gave its slots.
+            var importer = (ModelImporter)AssetImporter.GetAtPath(modelPath);
+            foreach (Material material in materials)
+            {
+                material.enableInstancing = true;
+                EditorUtility.SetDirty(material);
+                importer.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), material.name), material);
+            }
+            importer.SaveAndReimport();
+        }
+
+        static Material LoadOrCreate(string folder, string name)
+        {
+            string path = $"{folder}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)
             {
-                material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = $"{name}_Body" };
+                material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
                 AssetDatabase.CreateAsset(material, path);
             }
-            material.SetTexture("_BaseMap", albedo);
-            material.SetColor("_BaseColor", Color.white);
-            material.SetFloat("_Smoothness", 0.12f);
-            material.enableInstancing = true;
-            EditorUtility.SetDirty(material);
+            return material;
+        }
 
-            var importer = (ModelImporter)AssetImporter.GetAtPath(modelPath);
-            importer.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), material.name), material);
-            importer.SaveAndReimport();
+        /// <summary>A plain URP Lit colour; see-through (alpha-blended) and glowing if asked.</summary>
+        static void Paint(Material material, Color color, bool clear, float glow, float smoothness)
+        {
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Smoothness", smoothness);
+            material.SetFloat("_Surface", clear ? 1f : 0f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", clear ? (float)UnityEngine.Rendering.BlendMode.SrcAlpha : 1f);
+            material.SetFloat("_DstBlend", clear ? (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha : 0f);
+            material.SetFloat("_ZWrite", clear ? 0f : 1f);
+            material.SetOverrideTag("RenderType", clear ? "Transparent" : "Opaque");
+            material.renderQueue = clear ? (int)UnityEngine.Rendering.RenderQueue.Transparent : -1;
+            if (clear)
+                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            else
+                material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            if (glow > 0f)
+            {
+                material.EnableKeyword("_EMISSION");
+                material.SetColor("_EmissionColor", new Color(color.r * glow, color.g * glow, color.b * glow, 1f));
+                material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
+            else
+            {
+                material.DisableKeyword("_EMISSION");
+                material.SetColor("_EmissionColor", Color.black);
+            }
         }
 
         static AnimatorController BuildController(string folder, string name, string modelPath, MobDefinition definition)
@@ -131,9 +209,11 @@ namespace Voxelforge.Editor
             tree.blendParameter = "Speed";
             tree.useAutomaticThresholds = false;
             float walk = definition.Motor.WalkSpeed;
-            tree.AddChild(Clip(clips, "Idle"), 0f);
-            tree.AddChild(Clip(clips, "Walk"), walk);
-            tree.AddChild(Clip(clips, "Run"), walk * definition.RunSpeed);
+            // A mob with no walk or run (a slime gets about in hops) wobbles in place, whatever its speed.
+            AnimationClip idle = Clip(clips, "Idle");
+            tree.AddChild(idle, 0f);
+            tree.AddChild(clips.TryGetValue("Walk", out AnimationClip walking) ? walking : idle, walk);
+            tree.AddChild(clips.TryGetValue("Run", out AnimationClip running) ? running : idle, walk * definition.RunSpeed);
             machine.defaultState = locomotion;
 
             int row = 0;
@@ -155,7 +235,7 @@ namespace Voxelforge.Editor
                 ? clip
                 : throw new InvalidOperationException($"The model has no {name} clip; check build_mobs.py.");
 
-        static void UpdatePrefab(string prefabPath, string modelPath, AnimatorController controller)
+        static void UpdatePrefab(string prefabPath, string modelPath, AnimatorController controller, float scale, bool hops)
         {
             GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
             try
@@ -165,7 +245,7 @@ namespace Voxelforge.Editor
                     UnityEngine.Object.DestroyImmediate(body.GetChild(i).gameObject);
                 body.localPosition = Vector3.zero;
                 body.localRotation = Quaternion.identity;
-                body.localScale = Vector3.one;
+                body.localScale = Vector3.one * scale;
 
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelPath), body);
                 model.name = "Model";
@@ -182,6 +262,7 @@ namespace Voxelforge.Editor
                 var serialized = new SerializedObject(view);
                 serialized.FindProperty("mob").objectReferenceValue = root.GetComponent<Mob>();
                 serialized.FindProperty("animator").objectReferenceValue = animator;
+                serialized.FindProperty("squash").objectReferenceValue = hops ? body : null;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
 
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);

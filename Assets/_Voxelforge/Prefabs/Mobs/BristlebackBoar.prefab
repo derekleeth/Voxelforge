@@ -29,7 +29,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8540372276657122409}
+  - {fileID: 5636776490761702115}
   m_Father: {fileID: 7063123576452172650}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7485586057937765207
@@ -170,9 +170,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobAnimator
   mob: {fileID: 6781440883332120610}
-  animator: {fileID: 2334363802671265299}
+  animator: {fileID: 1790733420886888601}
   fade: 0.12
---- !u!1001 &8146948140147182466
+  squash: {fileID: 0}
+--- !u!1001 &5310697404832591112
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -233,13 +234,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 53949e09a4ef7f245bf6a7eb0ac17364, type: 3}
---- !u!95 &2334363802671265299 stripped
+--- !u!95 &1790733420886888601 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 53949e09a4ef7f245bf6a7eb0ac17364, type: 3}
-  m_PrefabInstance: {fileID: 8146948140147182466}
+  m_PrefabInstance: {fileID: 5310697404832591112}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &8540372276657122409 stripped
+--- !u!4 &5636776490761702115 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 53949e09a4ef7f245bf6a7eb0ac17364, type: 3}
-  m_PrefabInstance: {fileID: 8146948140147182466}
+  m_PrefabInstance: {fileID: 5310697404832591112}
   m_PrefabAsset: {fileID: 0}

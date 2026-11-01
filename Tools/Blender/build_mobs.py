@@ -1,4 +1,5 @@
-"""Builds Voxelforge's overland mobs (Roadmap 5.2 step E): the Bristleback Boar and the Frostfang Wolf.
+"""Builds Voxelforge's overland mobs (Roadmap 5.2 steps E and F): the Bristleback Boar, the
+Frostfang Wolf, the Thunder Rhino and the Crystal Slime.
 
 Run inside Blender with Mobs.blend open (Text Editor, or exec over MCP) and build_hero.py next to it. build_all()
 rebuilds every mob in the current file and exports it for Unity; build_mob("Boar") rebuilds one. For each mob:
@@ -45,11 +46,24 @@ LEGS = ("FL", "FR", "BL", "BR")
 class Mob:
     """One mob's look: its parts' colours, its skeleton, its pieces and its clips."""
 
-    def __init__(self, name, parts, bones, height):
+    def __init__(self, name, parts, bones, height, slots=None, bake_albedo=True):
         self.name = name
         self.parts = parts            # part -> linear RGB
         self.bones = bones            # bone -> (head, tail, parent)
         self.height = height          # top of the body, for the bake's light-from-above
+        self.slots = slots or {}      # part -> material name, if not "<Name>_Body"
+        self.bake_albedo = bake_albedo  # False: Unity colours each material slot itself (the Slime)
+
+    def material_of(self, part):
+        return self.slots.get(part, f"{self.name}_Body")
+
+    def materials(self):
+        """Every material slot, in order: "<Name>_Body" first if any part uses it."""
+        names = []
+        for part in self.parts:
+            if self.material_of(part) not in names:
+                names.append(self.material_of(part))
+        return names
 
     def model(self):
         raise NotImplementedError
@@ -70,14 +84,15 @@ def on(bone, obj):
     return obj
 
 
-def _join(name, parts, bones):
-    """Merges the pieces into one mesh with a "Part" corner colour, like build_hero._join_pieces, and puts every vertex
-    in its piece's bone's vertex group at full weight."""
+def _join(name, parts, bones, slot_of=None):
+    """Merges the pieces into one mesh with a "Part" corner colour, like build_hero._join_pieces, puts every vertex
+    in its piece's bone's vertex group at full weight, and every face in its part's material slot (slot_of)."""
     names = list(parts)
     depsgraph = bpy.context.evaluated_depsgraph_get()
     bm = bmesh.new()
     color_layer = bm.loops.layers.float_color.new("Part")
     bone_layer = bm.verts.layers.int.new("Bone")
+    slot_layer = bm.faces.layers.int.new("Slot")
     bone_names = list(bones)
     for obj in hb._pieces:
         part = obj["part"]
@@ -88,10 +103,12 @@ def _join(name, parts, bones):
         bm.from_mesh(mesh)
         evaluated.to_mesh_clear()
         color = (*parts[part], 1.0)
+        slot = slot_of(part) if slot_of else 0
         for face in bm.faces:
             if face in before_faces:
                 continue
             face.smooth = True
+            face[slot_layer] = slot
             for loop in face.loops:
                 loop[color_layer] = color
         index = bone_names.index(_bone_of[obj.name])
@@ -279,15 +296,237 @@ class Wolf(Mob):
         }
 
 
-MOBS = {"Boar": Boar, "Wolf": Wolf}
+# ---------------------------------------------------------------------------------------------- the Rhino
+
+class Rhino(Mob):
+    """The Thunder Rhino: a big blue-grey plains beast with a stone-plated hide, a great ivory horn and storm-yellow
+    lightning marks down its back. About 1.75 m to the hump and 3.0 m horn to tail; it only looks that big: its
+    collision box stays 0.96 x 1.8 x 0.96, so it fits the nav grid (D-032)."""
+
+    def __init__(self):
+        front, back, side = -0.62, 0.62, 0.42
+        bones = {
+            "Root": ((0, 0, 0), (0, 0, 0.4), None),
+            "Hips": ((0, 0.85, 1.00), (0, 0.0, 1.06), "Root"),
+            "Chest": ((0, 0.0, 1.06), (0, -0.75, 1.12), "Hips"),
+            "Neck": ((0, -0.75, 1.10), (0, -1.00, 1.00), "Chest"),
+            "Head": ((0, -1.00, 1.00), (0, -1.70, 0.76), "Neck"),
+            "Tail": ((0, 1.02, 1.20), (0, 1.18, 0.86), "Hips"),
+        }
+        for leg in LEGS:
+            x = side * (1 if leg[1] == "L" else -1)
+            y = front if leg[0] == "F" else back
+            parent = "Chest" if leg[0] == "F" else "Hips"
+            bones[f"Upper_{leg}"] = ((x, y, 0.95), (x, y, 0.50), parent)
+            bones[f"Lower_{leg}"] = ((x, y, 0.50), (x, y, 0.04), f"Upper_{leg}")
+        parts = {
+            "hide": (0.17, 0.20, 0.26),
+            "hide_dark": (0.08, 0.09, 0.13),
+            "plate": (0.30, 0.33, 0.38),
+            "belly": (0.32, 0.33, 0.36),
+            "horn": (0.86, 0.80, 0.64),
+            "bolt": (1.0, 0.72, 0.08),
+            "hoof": (0.05, 0.05, 0.06),
+            "eye": (0.02, 0.02, 0.02),
+        }
+        super().__init__("Rhino", parts, bones, height=1.75)
+
+    def model(self):
+        b = self.bones
+        # --- Body: a barrel of a body, a shoulder hump, stone plates on the shoulders and flanks ---
+        on("Chest", hb.ball("hide", (0, -0.35, 1.08), 0.62, scale=(1.0, 1.15, 0.95), subdiv=1))
+        on("Chest", hb.ball("hide_dark", (0, -0.42, 1.55), 0.36, scale=(1.05, 1.25, 0.6), subdiv=1))     # hump
+        on("Chest", hb.ball("belly", (0, -0.25, 0.70), 0.42, scale=(1.0, 1.5, 0.5), segments=12, rings=8))
+        on("Hips", hb.ball("hide", (0, 0.42, 1.02), 0.57, scale=(0.95, 1.15, 0.92), subdiv=1))
+        for s in (-1, 1):
+            on("Chest", hb.box("plate", (0.55 * s, -0.42, 1.18), (0.16, 0.62, 0.52), bevel=0.06))
+            on("Hips", hb.box("plate", (0.50 * s, 0.45, 1.12), (0.16, 0.55, 0.45), bevel=0.06))
+        # Lightning marks: a bright yellow zig-zag down each stone plate.
+        for s in (-1, 1):
+            for bone, y0, x, z0 in (("Chest", -0.42, 0.635, 1.18), ("Hips", 0.45, 0.585, 1.12)):
+                for dy, dz in ((0.09, 0.15), (-0.02, 0.0), (0.07, -0.15)):
+                    on(bone, hb.box("bolt", (x * s, y0 + dy, z0 + dz), (0.03, 0.22, 0.07), bevel=0.012, subdiv=0))
+        # --- Neck and head: a heavy wedge of a head, the great horn and a smaller one behind it ---
+        on("Neck", hb.limb("hide", (0, -0.70, 1.12), (0, -1.02, 1.00), 0.45, 0.36, sides=12))
+        on("Head", hb.ball("hide", (0, -1.20, 0.96), 0.34, scale=(0.95, 1.35, 0.85), subdiv=1))
+        on("Head", hb.limb("hide", (0, -1.40, 0.88), (0, -1.68, 0.78), 0.24, 0.20, sides=12, rings=2))
+        on("Head", hb.ball("hide_dark", (0, -1.69, 0.78), 0.18, scale=(1.1, 0.35, 0.8), segments=10, rings=6))
+        on("Head", hb.limb("horn", (0, -1.58, 0.95), (0, -1.66, 1.20), 0.13, 0.08, sides=8, rings=2))
+        on("Head", hb.limb("horn", (0, -1.66, 1.20), (0, -1.78, 1.48), 0.085, 0.01, sides=8, rings=2))
+        on("Head", hb.limb("horn", (0, -1.34, 1.13), (0, -1.40, 1.33), 0.08, 0.01, sides=8, rings=2))
+        for s in (-1, 1):
+            on("Head", hb.ball("eye", (0.27 * s, -1.25, 1.03), 0.035, segments=8, rings=6))
+            on("Head", hb.box("hide_dark", (0.26 * s, -1.25, 1.08), (0.10, 0.08, 0.03), bevel=0.01, subdiv=0))
+            on("Head", hb.ball("hide", (0.25 * s, -0.98, 1.27), 0.09, scale=(0.5, 0.4, 1.3), segments=8, rings=6))
+        # --- Tail ---
+        on("Tail", hb.limb("hide", (0, 1.00, 1.20), (0, 1.17, 0.88), 0.05, 0.03, sides=6, rings=2))
+        on("Tail", hb.ball("hide_dark", (0, 1.18, 0.84), 0.06, scale=(1, 1, 1.5), segments=8, rings=6))
+        # --- Legs: pillars with wide, dark hooves ---
+        for leg in LEGS:
+            (x, y, top), (_, _, knee), _ = b[f"Upper_{leg}"]
+            on(f"Upper_{leg}", hb.limb("hide", (x, y, top + 0.1), (x, y, knee), 0.22, 0.18, sides=12))
+            on(f"Upper_{leg}", hb.ball("hide", (x, y, knee), 0.18, segments=10, rings=6))
+            on(f"Lower_{leg}", hb.limb("hide", (x, y, knee), (x, y, 0.12), 0.17, 0.16, sides=12))
+            on(f"Lower_{leg}", hb.box("hoof", (x, y - 0.03, 0.07), (0.38, 0.42, 0.14), bevel=0.04))
+
+    def clips(self):
+        return {
+            # Standing about, it grazes: the head goes down to the grass, chews, comes up to look round.
+            "Idle": (90, True, _graze),
+            "Walk": (36, True, lambda t: _walk(t, swing=18, lift=24, bob=0.035)),
+            "Run": (22, True, lambda t: _gallop(t, swing=30, lift=36, bob=0.07, pitch=4, head=10)),
+            # Windup 0.6 s: head down, horn levelled; on frame 18 it flicks the horn up and throws the hero.
+            "Attack": (32, False, lambda t: _toss(t, impact=18 / 32)),
+            "Hit": (12, False, _flinch),
+            "Death": (30, False, lambda t: _topple(t, width=0.78)),
+        }
+
+
+# ---------------------------------------------------------------------------------------------- the Slime
+
+class Slime(Mob):
+    """The Crystal Slime: a wobbling cube of translucent jelly, 1 m across, with a glowing Mana Crystal core and two
+    eyes floating inside. One model; the prefabs scale it to 0.9 (Large), 0.64 (Crystal Slime) and 0.4 (Small).
+    Its colours are its three materials (Slime_Shell, Slime_Core, Slime_Eye), which Unity makes see-through and
+    glowing, so it isn't baked. Its hops are real jumps on the host, so the squash and stretch while hopping is done
+    in code (MobAnimator); these clips are the wobble, the slam, a jiggle and the pop when it splits."""
+
+    def __init__(self):
+        bones = {
+            "Root": ((0, 0, 0), (0, 0, 0.25), None),
+            "Body": ((0, 0, 0.0), (0, 0, 0.5), "Root"),
+            "Core": ((0, 0, 0.45), (0, 0, 0.75), "Body"),
+        }
+        parts = {
+            "shell": (0.35, 0.85, 1.0),
+            "core": (0.75, 0.40, 1.0),
+            "shard": (0.55, 0.95, 1.0),
+            "eye": (0.02, 0.02, 0.04),
+        }
+        slots = {"shell": "Slime_Shell", "core": "Slime_Core", "shard": "Slime_Core", "eye": "Slime_Eye"}
+        super().__init__("Slime", parts, bones, height=1.0, slots=slots, bake_albedo=False)
+
+    def model(self):
+        on("Body", hb.box("shell", (0, 0, 0.5), (1.0, 1.0, 1.0), bevel=0.16, subdiv=1))
+        on("Core", hb.ball("core", (0, 0.06, 0.45), 0.2, subdiv=1))
+        # Crystal shards bristling out of the core.
+        for tip in ((0.10, 0.10, 0.72), (-0.20, 0.14, 0.62), (0.22, 0.02, 0.34), (-0.05, 0.25, 0.30)):
+            on("Core", hb.limb("shard", (0, 0.06, 0.45), tip, 0.08, 0.01, sides=5, rings=1))
+        for s in (-1, 1):
+            on("Body", hb.ball("eye", (0.17 * s, -0.40, 0.66), 0.075, scale=(0.8, 0.5, 1.15), segments=10, rings=8))
+        on("Body", hb.box("eye", (0, -0.42, 0.44), (0.18, 0.05, 0.05), bevel=0.02, subdiv=0))   # mouth
+
+    def clips(self):
+        return {
+            "Idle": (48, True, _wobble),
+            # Windup 0.5 s: squashes down, springs up, slams down on frame 15.
+            "Attack": (26, False, lambda t: _slam(t, impact=15 / 26)),
+            "Hit": (10, False, _jiggle),
+            # Splitting or dying: swells, then bursts flat.
+            "Death": (20, False, _pop),
+        }
+
+
+def _graze(t):
+    # Down to the grass over the first fifth, chew, then up to look round over the last quarter.
+    down = _ease(t / 0.2) * (1 - _ease((t - 0.72) / 0.18))
+    chew = math.sin(2 * math.pi * 9 * t) * down
+    return {
+        "Root": _p(pitch=4 * down),
+        "Neck": _p(pitch=38 * down),
+        "Head": _p(pitch=24 * down + 3 * chew, yaw=14 * math.sin(2 * math.pi * t) * (1 - down)),
+        "Tail": _p(yaw=20 * math.sin(4 * math.pi * t)),
+        "Upper_FL": _p(pitch=-4 * down), "Upper_FR": _p(pitch=-4 * down),
+    }
+
+
+def _toss(t, impact):
+    # Windup: head down with the horn levelled, scraping a forefoot. Strike: the horn flicks up. Recover.
+    if t < impact:
+        k = _ease(t / impact)
+        head, lunge, scrape = 34 * k, 0.05 * k, math.sin(math.pi * 3 * t / impact) * k
+    else:
+        u = (t - impact) / (1 - impact)
+        scrape = 0.0
+        if u < 0.22:
+            k = _ease(u / 0.22)
+            head, lunge = 34 - 80 * k, 0.05 - 0.30 * k
+        else:
+            k = 1 - _ease((u - 0.22) / 0.78)
+            head, lunge = -46 * k, -0.25 * k
+    return {
+        "Root": _p(pitch=head * 0.08, offset=(0, lunge, 0)),
+        "Neck": _p(pitch=head * 0.45),
+        "Head": _p(pitch=head * 0.55),
+        "Tail": _p(pitch=-25),
+        "Upper_FR": _p(pitch=-20 * scrape), "Lower_FR": _p(pitch=25 * max(0.0, scrape)),
+    }
+
+
+def _wobble(t):
+    a = 2 * math.pi * t
+    squash = 0.05 * math.sin(a)
+    return {
+        "Body": _p(roll=2 * math.sin(a + 1), scale=(1 + squash, 1 + squash, 1 - squash)),
+        "Core": _p(yaw=360 * t, offset=(0, 0, 0.02 * math.sin(2 * a))),
+    }
+
+
+def _slam(t, impact):
+    # Squash down, spring up stretched, slam flat on the impact, then wobble back.
+    up = impact * 0.78
+    if t < up:
+        k = _ease(t / up)
+        scale, lift = (1 + 0.3 * k, 1 + 0.3 * k, 1 - 0.38 * k), 0.0
+    elif t < impact:
+        k = (t - up) / (impact - up)
+        scale, lift = (0.8, 0.8, 1.35), 0.35 * math.sin(math.pi * k)
+    else:
+        u = (t - impact) / (1 - impact)
+        k = 1 - _ease(u)
+        wobble = math.sin(u * math.pi * 3) * 0.12 * k
+        scale, lift = (1 + 0.4 * k + wobble, 1 + 0.4 * k + wobble, 1 - 0.5 * k - wobble), 0.0
+    reach = -0.15 * (1 - _ease((t - impact) / 0.4)) if t >= up else 0.0
+    return {
+        "Root": _p(offset=(0, reach, lift)),
+        "Body": _p(scale=scale),
+        "Core": _p(yaw=720 * t),
+    }
+
+
+def _jiggle(t):
+    k = math.sin(math.pi * 4 * t) * (1 - t) * 0.18
+    return {
+        "Body": _p(pitch=-8 * (1 - t), scale=(1 - k, 1 - k, 1 + k)),
+        "Core": _p(offset=(0, 0.04 * (1 - t), 0)),
+    }
+
+
+def _pop(t):
+    # Swells round, then splats into a puddle as its core fades.
+    if t < 0.4:
+        k = _ease(t / 0.4)
+        scale = (1 + 0.25 * k, 1 + 0.25 * k, 1 + 0.25 * k)
+    else:
+        k = _ease((t - 0.4) / 0.6)
+        scale = (1.25 + 0.6 * k, 1.25 + 0.6 * k, 1.25 - 1.13 * k)
+    core = 1 - 0.9 * _ease((t - 0.3) / 0.5)
+    return {
+        "Body": _p(scale=scale),
+        "Core": _p(scale=(core, core, core)),
+    }
+
+
+MOBS = {"Boar": Boar, "Wolf": Wolf, "Rhino": Rhino, "Slime": Slime}
 
 
 # ---------------------------------------------------------------------------------------------- clip shapes
 # Each returns {bone: (pitch, yaw, roll, offset)} at t in [0, 1). Angles are degrees about the armature's axes
 # (pitch +X: a leg swings back, a head dips its nose); offsets are metres in the armature's space.
 
-def _p(pitch=0.0, yaw=0.0, roll=0.0, offset=(0.0, 0.0, 0.0)):
-    return (pitch, yaw, roll, offset)
+def _p(pitch=0.0, yaw=0.0, roll=0.0, offset=(0.0, 0.0, 0.0), scale=(1.0, 1.0, 1.0)):
+    """scale is along the armature's x, y and z (a slime squashing flat is (1.3, 1.3, 0.6))."""
+    return (pitch, yaw, roll, offset, scale)
 
 
 def _ease(x):
@@ -481,12 +720,19 @@ def build_body(mob, rig):
     hb._pieces.clear()
     _bone_of.clear()
     mob.model()
-    body = _join(mob.name, mob.parts, mob.bones)
+    slots = mob.materials()
+    body = _join(mob.name, mob.parts, mob.bones, lambda part: slots.index(mob.material_of(part)))
     mesh = body.data
     mesh.materials.clear()
-    mat = bpy.data.materials.get(f"{mob.name}_Body") or bpy.data.materials.new(f"{mob.name}_Body")
-    mat.use_nodes = True
-    mesh.materials.append(mat)
+    for name in slots:
+        mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+        mat.use_nodes = True
+        mesh.materials.append(mat)
+    # Material indices are set now the slots exist: Blender clamps them to the slots a mesh has.
+    slot_attr = mesh.attributes["Slot"].data
+    for poly in mesh.polygons:
+        poly.material_index = slot_attr[poly.index].value
+    mesh.attributes.remove(mesh.attributes["Slot"])
     body.parent = rig
     body.modifiers.new("Armature", "ARMATURE").object = rig
     tris = sum(len(p.vertices) - 2 for p in mesh.polygons)
@@ -558,14 +804,17 @@ def build_clips(mob, rig):
             t = frame / frames
             pose = shape(t if loop else t * frames / max(1, frames - 1))
             for pose_bone in rig.pose.bones:
-                pitch, yaw, roll, offset = pose.get(pose_bone.name, _p())
+                pitch, yaw, roll, offset, scale = pose.get(pose_bone.name, _p())
                 m = rest[pose_bone.name]
                 turn = Euler((math.radians(pitch), math.radians(roll), math.radians(yaw)), "XYZ").to_matrix()
                 local = (m.inverted() @ turn @ m).to_quaternion()
                 pose_bone.rotation_quaternion = local
                 pose_bone.location = m.inverted() @ Vector(offset)
+                # Each of the bone's own axes takes the scale of the armature axis it lies along.
+                pose_bone.scale = Vector([scale[max(range(3), key=lambda a: abs(m.col[i][a]))] for i in range(3)])
                 pose_bone.keyframe_insert("rotation_quaternion", frame=frame)
                 pose_bone.keyframe_insert("location", frame=frame)
+                pose_bone.keyframe_insert("scale", frame=frame)
         action.frame_range = (0, last)
         actions.append(action)
     # Each clip goes on its own NLA track, which is what the export reads: exporting "all actions" would also hand
@@ -609,7 +858,8 @@ def build_mob(name, export=True):
     build_clips(mob, rig)
     if export:
         unwrap(body)
-        bake(mob, body)
+        if mob.bake_albedo:
+            bake(mob, body)
         export_fbx(mob, rig, body)
     return rig, body
 
@@ -619,6 +869,6 @@ def build_all(export=True):
     results = {}
     for i, name in enumerate(MOBS):
         rig, body = build_mob(name, export)
-        rig.location.x = 2.0 * i
+        rig.location.x = 3.0 * i
         results[name] = (rig, body)
     return results
