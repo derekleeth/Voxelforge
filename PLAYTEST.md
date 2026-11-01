@@ -195,6 +195,7 @@ Wear a weapon in the **Main Hand** (bag, Use on it). Then the **Mine** button (l
 - [ ] Aim at a block (no foe in reach) and Mine **still mines** as before.
 - [ ] A wall between you and the mob: no hit.
 - [ ] Stop fighting: after about 1.5 seconds the weapon goes back on your back.
+- [ ] With a weapon worn, your **backpack isn't drawn** (the weapon hangs there instead); the bag's extra slots still work. Take the weapon off and the backpack comes back.
 - [ ] Power counts: with the Crown (+8) and Skyrender (+26), hits are about a third bigger.
 - [ ] Kills from weapon hits still give loot sacks and XP, and hitting a mob pulls its aggro like a spell does (the Paladin's 2× threat applies).
 - [ ] Holding the M.G.R.S. in your hand still shoots Mana Bolts instead (it wins over the worn weapon).

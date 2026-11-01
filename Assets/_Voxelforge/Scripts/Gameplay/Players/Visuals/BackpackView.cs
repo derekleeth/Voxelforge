@@ -5,7 +5,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Shows the biggest bag a player wears (<see cref="PlayerBlockBag.Bags"/>, Roadmap 4.5) on their hero's back, on every
-    /// PC, so you can see at a glance who's carrying the Delver's Rucksack. It hangs from the upper chest bone so it moves
+    /// PC, so you can see at a glance who's carrying the Delver's Rucksack (unless a Main Hand weapon is worn: that hangs
+    /// across the back instead, Roadmap 5.5). It hangs from the upper chest bone so it moves
     /// with the shoulders. Presentation only: what the bag holds is the host's business.
     /// </summary>
     [RequireComponent(typeof(PlayerBlockBag))]
@@ -96,7 +97,9 @@ namespace Voxelforge.Gameplay
 
         void LateUpdate()
         {
-            ushort biggest = Biggest(_bag.Bags, _bag.Rules);
+            // A weapon worn in the Main Hand hangs across the back (Roadmap 5.5, GearView), and the two models merged into
+            // a mess (play-test): while one is worn, the bag isn't drawn. Its slots still count.
+            ushort biggest = _bag.Gear.MainHand != 0 ? (ushort)0 : Biggest(_bag.Bags, _bag.Rules);
             if (biggest != _shown)
                 Show(biggest);
         }
