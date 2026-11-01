@@ -238,6 +238,20 @@ namespace Voxelforge.Tests
             Assert.AreEqual(0f, wand.Ability.BlockDamage, "It's for foes, not for digging.");
         }
 
+        [Test]
+        public void SwingPose_WindsUpThenStrikesThenRecovers()
+        {
+            (float arm, float elbow, float lean) start = HeroSwingView.Pose(0f, 160f, 45f, 70f, 14f);
+            Assert.AreEqual((0f, 0f, 0f), start);
+            (float arm, float elbow, float lean) up = HeroSwingView.Pose(0.37f, 160f, 45f, 70f, 14f);
+            Assert.Greater(up.arm, 140f, "Arm high over the shoulder at the end of the wind-up.");
+            Assert.Less(up.lean, 0f, "Leaning back.");
+            (float arm, float elbow, float lean) blow = HeroSwingView.Pose(0.579f, 160f, 45f, 70f, 14f);
+            Assert.AreEqual(45f, blow.arm, 2f, "The blow ends in front.");
+            Assert.Greater(blow.lean, 10f, "Leaning into it.");
+            Assert.AreEqual((0f, 0f, 0f), HeroSwingView.Pose(1f, 160f, 45f, 70f, 14f));
+        }
+
         // ---- What stats do ----
 
         [Test]

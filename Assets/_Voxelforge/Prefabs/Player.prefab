@@ -47,6 +47,7 @@ GameObject:
   - component: {fileID: 6465819664457673775}
   - component: {fileID: 1805784792305547359}
   - component: {fileID: 4835254897710712830}
+  - component: {fileID: 3004604667586978743}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -744,6 +745,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerWeapon
   ShowTopMostFoldoutHeaderGroup: 1
   holdSeconds: 1
+  impactDelay: 0.22
+  meleeCone: 75
+--- !u!114 &3004604667586978743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d2965b6375594945a1243c782039e7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HeroSwingView
+  animator: {fileID: 2811615453234438372}
+  windupAngle: 160
+  strikeAngle: 45
+  elbowBend: 70
+  lean: 14
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

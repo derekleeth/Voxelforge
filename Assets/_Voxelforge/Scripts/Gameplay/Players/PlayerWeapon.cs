@@ -1,3 +1,4 @@
+using System;
 using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
@@ -17,7 +18,16 @@ namespace Voxelforge.Gameplay
     public sealed class PlayerWeapon : NetworkBehaviour
     {
         [Tooltip("How long the weapon stays in the hand after the last attack, in seconds.")]
-        [SerializeField, Range(0.1f, 3f)] float holdSeconds = 1f;
+        [SerializeField, Range(0.1f, 3f)] float holdSeconds = 1.5f;
+
+        [Tooltip("Seconds from the start of a melee swing to the blow landing (the wind-up the hero's arm shows).")]
+        [SerializeField, Range(0f, 0.6f)] float impactDelay = 0.22f;
+
+        [Tooltip("A melee foe off to the side still counts if it's within this many degrees of where the hero looks.")]
+        [SerializeField, Range(0f, 180f)] float meleeCone = 75f;
+
+        // Where melee reach is measured from: the hero's chest, to the nearest side of the foe's body.
+        const float ChestHeight = 1.2f;
 
         readonly NetworkVariable<bool> _attacking = new NetworkVariable<bool>();
 
@@ -28,6 +38,14 @@ namespace Voxelforge.Gameplay
         PlayerAbilityCues _cues;
         float _nextSwing;
         float _attackUntil = float.NegativeInfinity;
+        // A melee blow on its way down (Roadmap 5.5 step G): it lands impactDelay after the swing starts.
+        bool _blowPending;
+        float _blowAt;
+        CombatTarget _blowFoe;
+        float _blowDamage;
+
+        /// <summary>Every PC: the hero started a melee swing lasting this many seconds (<see cref="HeroSwingView"/> animates it).</summary>
+        public event Action<float> Swung;
 
         /// <summary>Every PC: the hero is fighting with their worn weapon, so it's in their hand.</summary>
         public bool IsAttacking => _attacking.Value;
@@ -79,7 +97,10 @@ namespace Voxelforge.Gameplay
 
         static float Reach(ItemDefinition weapon) => weapon.IsRanged ? weapon.Ability.Range : weapon.Weapon.reach;
 
-        /// <summary>Host only: the foe to hit: the body the hero aims at (if no block is in the way), else the Tab target in reach.</summary>
+        /// <summary>
+        /// Host only: the foe to hit: the body the hero aims at (if no block is in the way), else the Tab target in reach,
+        /// else (melee) the nearest foe in front of the hero within reach of their chest.
+        /// </summary>
         bool TryFindFoe(PlayerInputFrame input, float range, out CombatTarget foe)
         {
             foe = default;
@@ -100,17 +121,38 @@ namespace Voxelforge.Gameplay
                     return true;
                 }
             }
-            if (_targeting != null && _targeting.TryGetTarget(targets, out ICombatCreature creature))
+            float3 chest = feet + new float3(0f, ChestHeight, 0f);
+            if (_targeting != null && _targeting.TryGetTarget(targets, out ICombatCreature creature) &&
+                DistanceToBody(chest, creature) <= range)
             {
-                CombatTarget target = CombatTarget.Of(creature);
-                float3 half = creature.HalfExtents;
-                if (math.distance(eyes, target.Position) - math.max(half.x, half.z) <= range)
-                {
-                    foe = target;
-                    return true;
-                }
+                foe = CombatTarget.Of(creature);
+                return true;
             }
-            return false;
+            // Melee only: mobs look bigger than their bodies and fight from a step away, so anything close in front counts.
+            if (range > MeleeSearchLimit || !targets.TryFindNearest(chest, range + 1f, out CombatTarget near) || !near.IsValid ||
+                near.Kind != CombatTargetKind.Creature || !targets.TryGetCreature(near.CreatureId, out ICombatCreature nearCreature) ||
+                DistanceToBody(chest, nearCreature) > range)
+                return false;
+            float3 look = _player.Aim.Direction(input);
+            float3 toFoe = near.Position - chest;
+            look.y = 0f;
+            toFoe.y = 0f;
+            if (math.lengthsq(toFoe) > 0.01f && math.lengthsq(look) > 0.01f &&
+                math.degrees(math.acos(math.clamp(math.dot(math.normalize(look), math.normalize(toFoe)), -1f, 1f))) > meleeCone)
+                return false;
+            foe = near;
+            return true;
+        }
+
+        // Melee reaches are a few metres; the wand's range is far longer and keeps to the aim and the Tab target.
+        const float MeleeSearchLimit = 6f;
+
+        /// <summary>From <paramref name="from"/> to the nearest point of the creature's body box, in metres.</summary>
+        static float DistanceToBody(float3 from, ICombatCreature creature)
+        {
+            float3 feet = creature.Feet, half = creature.HalfExtents;
+            float3 lo = feet - new float3(half.x, 0f, half.z), hi = feet + new float3(half.x, half.y * 2f, half.z);
+            return math.distance(from, math.clamp(from, lo, hi));
         }
 
         void FixedUpdate()
@@ -119,6 +161,8 @@ namespace Voxelforge.Gameplay
                 return;
             float now = Time.time;
             PlayerInputFrame input = _player.ServerInput;
+            if (_blowPending && now >= _blowAt)
+                LandBlow();
             if (input.IsPressed(PlayerButtons.Mine) && TryGetWeapon(out ItemDefinition weapon))
             {
                 if (weapon.IsRanged)
@@ -139,14 +183,30 @@ namespace Voxelforge.Gameplay
                 _attacking.Value = attacking;
         }
 
+        // The swing starts now (everyone sees the wind-up); the blow lands impactDelay later, on whatever it was aimed at.
         void Swing(ItemDefinition weapon, in CombatTarget foe, float now)
         {
-            _nextSwing = now + weapon.Weapon.swingSeconds;
-            CombatTargets targets = _player.Registry.Targets;
-            float damage = weapon.Weapon.damage * GearRules.PowerScale(_bag.GearStats.power);
-            TargetDamage result = targets.ServerDamage(foe, damage, _player.PlayerId);
-            if (result.Dealt > 0f && _cues != null)
-                _cues.ServerSend(AbilityCue.HitTarget(AbilityIds.WeaponStrike, foe, result));
+            float seconds = weapon.Weapon.swingSeconds;
+            _nextSwing = now + seconds;
+            _blowPending = true;
+            _blowAt = now + Mathf.Min(impactDelay, seconds * 0.5f);
+            _blowFoe = foe;
+            _blowDamage = weapon.Weapon.damage * GearRules.PowerScale(_bag.GearStats.power);
+            SwungRpc(Mathf.Min(0.6f, seconds * 0.9f));
         }
+
+        void LandBlow()
+        {
+            _blowPending = false;
+            CombatTargets targets = _player.Registry != null ? _player.Registry.Targets : null;
+            if (targets == null || _player.IsKnockedOut)
+                return;
+            TargetDamage result = targets.ServerDamage(_blowFoe, _blowDamage, _player.PlayerId);
+            if (result.Dealt > 0f && _cues != null)
+                _cues.ServerSend(AbilityCue.HitTarget(AbilityIds.WeaponStrike, _blowFoe, result));
+        }
+
+        [Rpc(SendTo.Everyone)]
+        void SwungRpc(float seconds) => Swung?.Invoke(seconds);
     }
 }

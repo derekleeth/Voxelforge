@@ -141,9 +141,9 @@ namespace Voxelforge.Gameplay
             if (held != _shown)
                 Show(held);
 
-            // Ease in and out of the swing, so starting and stopping don't snap. A melee weapon swings as it hits.
-            bool mining = (_miner != null && _miner.IsMining) ||
-                          (fighting && _shownDefinition != null && _shownDefinition.Weapon.IsMelee);
+            // Ease in and out of the swing, so starting and stopping don't snap. A weapon held to fight doesn't wiggle:
+            // the whole arm swings it (HeroSwingView).
+            bool mining = !fighting && _miner != null && _miner.IsMining;
             _swingWeight = Mathf.MoveTowards(_swingWeight, mining ? 1f : 0f, Time.deltaTime * 6f);
             if (mining)
                 _swingTime += Time.deltaTime;
