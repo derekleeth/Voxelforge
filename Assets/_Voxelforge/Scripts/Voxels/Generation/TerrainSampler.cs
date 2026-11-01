@@ -36,7 +36,7 @@ namespace Voxelforge.Voxels
         /// Bump this whenever terrain output changes on purpose (new rules or new settings values).
         /// Saves (Roadmap 3.4) record it, so an old save can tell it was made by a different generator.
         /// </summary>
-        public const int GeneratorVersion = 3; // 2: trees (Roadmap 2.6). 3: Thunderhoof Plains and mesas (4.7).
+        public const int GeneratorVersion = 4; // 2: trees (Roadmap 2.6). 3: Thunderhoof Plains and mesas (4.7). 4: stamps (5.4).
 
         /// <summary>A mesa's cliff shows banded rock where at least this much of the column is mesa; below it, the usual layers.</summary>
         public const float MesaRockFrom = 0.15f;

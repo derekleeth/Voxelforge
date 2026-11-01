@@ -1336,6 +1336,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.VoxelWorldManager
   blockRegistry: {fileID: 11400000, guid: b8e1140c51dd2b149bb196ce79c82e4b, type: 2}
   terrainSettings: {fileID: 11400000, guid: 4f0cf8fed6974367a54bcc927e4fe5b2, type: 2}
+  stampLibrary: {fileID: 11400000, guid: 3c9d9f5e8a3e5ac4196b79392150703e, type: 2}
+  stampKeepClearRadius: 96
+  stampKeepClearCenter: {x: 256, y: 256}
   worldSeed: 20261027
   randomizeSeedOnPlay: 0
   chunkMaterial: {fileID: 2100000, guid: 5ee5e8c52c9196249955d2e268fc5f7d, type: 2}

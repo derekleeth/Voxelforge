@@ -27,6 +27,7 @@ namespace Voxelforge.Tests
         TerrainSettings _settings;
         BlockRegistry _registry;
         NativeArray<BiomeInfo> _biomes;
+        StampTable _noStamps;
         TerrainParams _terrain;
 
         [SetUp]
@@ -37,6 +38,7 @@ namespace Voxelforge.Tests
             Assert.IsNotNull(_settings, $"Missing {TerrainAssetPath}");
             Assert.IsNotNull(_registry, $"Missing {RegistryAssetPath}");
             _biomes = _settings.CreateBiomeLookup(Allocator.Persistent);
+            _noStamps = StampTable.CreateEmpty(Allocator.Persistent);
             _terrain = _settings.ToTerrainParams();
         }
 
@@ -45,6 +47,7 @@ namespace Voxelforge.Tests
         {
             if (_biomes.IsCreated)
                 _biomes.Dispose();
+            _noStamps.Dispose();
         }
 
         [Test]
@@ -206,7 +209,7 @@ namespace Voxelforge.Tests
                 Biomes = _biomes,
                 Voxels = voxels,
                 IsUniform = isUniform,
-            }.Run();
+            }.WithStamps(_noStamps).Run();
             uniform = isUniform.Value;
             isUniform.Dispose();
             return voxels;

@@ -48,5 +48,27 @@ Best set-up: one player is a **Runeforged Paladin** (the tank). The other is a *
 - [ ] Can a healer accidentally pull mobs? Should they?
 - [ ] F4 FPS with 20+ mobs still around 120+?
 
+---
+
+## Roadmap 5.4: Ruins & the Sunken Arena (Steps A-B)
+
+Your saved world (seed 20261027) keeps all your edits; ruins only appear in ground nobody has dug or built on yet. Map markers and the **F6** "take me there" key come in Step C, so for now walk (or sprint) there. Positions are block x, z.
+
+### Find the ruins near spawn (256, 256)
+- [ ] **Frost Shrine** at about **(156, 361)**, up in the Snowy Peaks: a ring of snow-capped pillars round a glowing rune slab.
+- [ ] **Broken Watchtower** at about **(230, 51)**: a mossy tower stump with a south doorway, its top lying in pieces to the east, plus a torch and a chest inside (the chest is empty until loot, 5.5).
+- [ ] **Standing Stones** at about **(473, 486)**, Thunderhoof Plains: red and sandstone stones round a fire pit, with a lintel over one pair.
+- [ ] More of each further out (another watchtower at (127, 524), stones at (17, 30)).
+- [ ] Ruins sit on the ground properly on slopes (a brick or stone foundation under them, never floating), and no tree grows through one.
+
+### The Sunken Arena (for the 5.9 boss)
+- [ ] Nearest at about **(199, 1110)**, 855 blocks north of spawn (a long sprint, or wait for F6 in Step C).
+- [ ] A deep pit of dark Warded Stone with glowing gold runes, two stairways down (north and south), torch-lit pillars and a two-step dais in the middle.
+- [ ] **Warded Stone can't be mined, and EarthShatter or Pyroblast can't crater it.** Ruin Bricks can be mined.
+- [ ] Mobs that chase you follow you down the stairs and back up.
+
+### New blocks
+- [ ] Ruin Brick, Mossy Ruin Brick and Warded Stone look right up close, and sound like stone to walk on and mine.
+
 ### Notes
 -

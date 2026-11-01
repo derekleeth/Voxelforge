@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0abfc2195f82bfe41a494c9be47dba40, type: 3}
+  m_Name: StampLibrary
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.StampLibrary
+  stamps:
+  - {fileID: 11400000, guid: 13030b631e9f3ce4aab5aa3c9b4b0bc0, type: 2}
+  - {fileID: 11400000, guid: 42b0362c62a88904e818a5595c961943, type: 2}
+  - {fileID: 11400000, guid: a9ffeae951db3e24bae044258bab20d4, type: 2}
+  - {fileID: 11400000, guid: 64b7b80ffba21fe4fb8b2cad791ca839, type: 2}

@@ -46,6 +46,12 @@ MonoBehaviour:
     surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
   - block: {fileID: 11400000, guid: 1023b3dceffeb6c40a7ceabeaa877e32, type: 2}
     surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: a877b4533f663de4c8794dedbc704b44, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: 791dbea61dcabdc43beda8c88553ca7f, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: fc045ac4627a82a4a97724f053d3dc06, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
   jump: {fileID: 8300000, guid: 566c293bf392d084fb863c9b529f787c, type: 3}
   pickupPop: {fileID: 8300000, guid: dcf9661d0c60cbb4a8c1f757bd3d162d, type: 3}
   treeCreak: {fileID: 8300000, guid: 4fa8c22f6690d7b429caba6493099dd0, type: 3}

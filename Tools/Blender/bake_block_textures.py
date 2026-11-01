@@ -133,6 +133,29 @@ class Graph:
         self.links.new(n.outputs["Color"], sep.inputs[0])
         return n.outputs["Distance"], sep.outputs[0]
 
+    def bricks(self, across=2, rows=4, mortar=0.035, offset=0.5):
+        """
+        A running-bond brick wall over the UV square: `across` bricks per row and `rows` rows, so it tiles seamlessly.
+        Returns (mortar 0..1, 1 in the joints; random 0..1 per brick).
+        """
+        su, sv = self.uv()
+        vec = self.node("ShaderNodeCombineXYZ")
+        self.link(su, vec.inputs[0])
+        self.link(sv, vec.inputs[1])
+        n = self.node("ShaderNodeTexBrick", offset=offset, offset_frequency=2, squash=1.0, squash_frequency=2)
+        self.links.new(vec.outputs[0], n.inputs["Vector"])
+        n.inputs["Scale"].default_value = 1.0
+        n.inputs["Brick Width"].default_value = 1.0 / across
+        n.inputs["Row Height"].default_value = 1.0 / rows
+        n.inputs["Mortar Size"].default_value = mortar
+        n.inputs["Mortar Smooth"].default_value = 0.35
+        n.inputs["Bias"].default_value = 0.0
+        n.inputs["Color1"].default_value = (0.0, 0.0, 0.0, 1.0)
+        n.inputs["Color2"].default_value = (1.0, 1.0, 1.0, 1.0)
+        sep = self.node("ShaderNodeSeparateColor")
+        self.links.new(n.outputs["Color"], sep.inputs[0])
+        return n.outputs["Fac"], sep.outputs[0]
+
     # --- math ----------------------------------------------------------------------------------------------------
 
     def math(self, op, a, b=0.0, clamp=False):
@@ -453,6 +476,66 @@ def make_earthen_rock(g):
     return g.outputs(color, height, roughness, emission)
 
 
+def ruin_brick_channels(g, offset):
+    """Weathered grey-tan stone bricks (Roadmap 5.4): chipped corners, worn faces, dark sunken mortar."""
+    mortar, brick_random = g.bricks(across=2, rows=4, mortar=0.014)
+    chips = g.noise(g.torus(3.2, offset), detail=4, roughness=0.6)
+    grit = g.noise(g.torus(9.0, offset), detail=6, roughness=0.7)
+    # Each brick bulges a little, less where the weather has chipped it.
+    face = g.math("SUBTRACT", 1.0, mortar)
+    chipped = g.remap(chips, 0.62, 0.72, 0.0, 0.35, smooth=True)
+    height = g.math("MULTIPLY", face, g.math("SUBTRACT", g.remap(brick_random, 0, 1, 0.75, 0.95), chipped))
+    height = g.math("ADD", height, g.math("MULTIPLY", grit, 0.08), clamp=True)
+    base = g.ramp(brick_random, [(0.0, (0.47, 0.44, 0.40)), (0.5, (0.57, 0.53, 0.47)), (1.0, (0.65, 0.60, 0.52))])
+    base = g.mix(base, g.ramp(grit, [(0.3, (0.40, 0.38, 0.35)), (0.7, (0.70, 0.66, 0.58))]), 0.2)
+    # Chipped spots are darker, freshly broken stone; the joints a warm dark grey.
+    base = g.mix(base, (0.36, 0.33, 0.30), g.math("MULTIPLY", chipped, 2.0, clamp=True))
+    color = g.mix(base, (0.30, 0.27, 0.23), mortar)
+    return color, height, mortar
+
+
+def make_ruin_brick(g):
+    color, height, _ = ruin_brick_channels(g, (11.0, -3.0, 6.0, 2.0))
+    return g.outputs(g.shade(color, height, 0.55, 1.12), height, 0.86)
+
+
+def make_mossy_ruin_brick(g):
+    """The same old bricks with green moss creeping over them from the joints."""
+    offset = (-6.0, 8.0, 1.0, -4.0)
+    color, height, mortar = ruin_brick_channels(g, offset)
+    patches = g.noise(g.torus(1.6, offset), detail=4, roughness=0.55)
+    fuzz = g.noise(g.torus(12.0, offset), detail=4, roughness=0.6)
+    # Moss sits in the joints and spreads over the faces in patches.
+    moss = g.math("ADD", g.remap(patches, 0.5, 0.62, smooth=True), g.math("MULTIPLY", mortar, 0.45), clamp=True)
+    moss = g.math("MULTIPLY", moss, g.remap(fuzz, 0.3, 0.55), clamp=True)
+    green = g.ramp(fuzz, [(0.3, (0.24, 0.36, 0.12)), (0.7, (0.42, 0.56, 0.20))])
+    color = g.mix(g.shade(color, height, 0.55, 1.12), green, moss)
+    height = g.math("ADD", height, g.math("MULTIPLY", moss, 0.12), clamp=True)
+    return g.outputs(color, height, g.remap(moss, 0.0, 1.0, 0.86, 0.95))
+
+
+def make_warded_stone(g):
+    """
+    The boss arena's walls (Roadmap 5.4): big blocks of dark blue-grey slate, carved with gold runes that glow faintly,
+    so it reads at once as old magic nobody can dig through.
+    """
+    offset = (4.0, 9.0, -7.0, 3.0)
+    mortar, block_random = g.bricks(across=1, rows=2, mortar=0.025)
+    grit = g.noise(g.torus(6.0, offset), detail=5, roughness=0.6)
+    face = g.math("SUBTRACT", 1.0, mortar)
+    height = g.math("ADD", g.math("MULTIPLY", face, 0.85), g.math("MULTIPLY", grit, 0.08), clamp=True)
+    base = g.ramp(block_random, [(0.0, (0.20, 0.22, 0.28)), (1.0, (0.28, 0.30, 0.37))])
+    base = g.mix(base, g.ramp(grit, [(0.3, (0.16, 0.17, 0.22)), (0.7, (0.36, 0.38, 0.45))]), 0.25)
+    # Runes: thin cell edges of a coarse voronoi, kept only where a slow noise says so, so each block has a few glyphs.
+    edge, _ = g.voronoi(g.torus(1.4, offset), "DISTANCE_TO_EDGE", randomness=0.9)
+    line = g.remap(edge, 0.03, 0.0, smooth=True)
+    keep = g.remap(g.noise(g.torus(0.9, offset), detail=2, roughness=0.4), 0.5, 0.56, smooth=True)
+    rune = g.math("MULTIPLY", g.math("MULTIPLY", line, keep), face, clamp=True)
+    color = g.mix(g.shade(base, height, 0.5, 1.15), (1.0, 0.78, 0.32), rune)
+    height = g.math("SUBTRACT", height, g.math("MULTIPLY", rune, 0.25), clamp=True)
+    return g.outputs(color, height, g.remap(rune, 0.0, 1.0, 0.7, 0.35), g.math("MULTIPLY", rune, 0.8))
+
+
 # Layer name -> (recipe, normal strength, AO strength, tiles vertically). Names must match the BlockTexture assets
 # in Unity. Grass Side doesn't tile vertically (grass on top, dirt below), so its edges aren't wrapped into each other.
 LAYERS = {
@@ -468,6 +551,10 @@ LAYERS = {
     "LogBark": (make_log_bark, 4.0, 0.9, True),
     "LogTop": (make_log_top, 2.5, 0.6, False),
     "EarthenRock": (make_earthen_rock, 4.5, 0.9, True),
+    # Roadmap 5.4: ruins and the boss arena.
+    "RuinBrick": (make_ruin_brick, 4.5, 1.0, True),
+    "MossyRuinBrick": (make_mossy_ruin_brick, 4.5, 1.0, True),
+    "WardedStone": (make_warded_stone, 4.0, 0.9, True),
 }
 
 

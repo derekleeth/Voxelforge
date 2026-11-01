@@ -21,6 +21,15 @@ namespace Voxelforge.Voxels
 
         [SerializeField] TerrainSettings terrainSettings;
 
+        [Tooltip("Ruins and arenas stamped into the terrain (Roadmap 5.4). Empty = all natural terrain.")]
+        [SerializeField] StampLibrary stampLibrary;
+
+        [Tooltip("No stamp's middle comes this close to the world spawn column, in blocks, so new heroes never start in a pit.")]
+        [SerializeField, Min(0)] int stampKeepClearRadius = 96;
+
+        [Tooltip("The world spawn column (x, z) stamps keep clear of: where PlayerJoinService puts new heroes.")]
+        [SerializeField] Vector2Int stampKeepClearCenter = new Vector2Int(256, 256);
+
         [Tooltip("The number the whole world grows from. Same seed = same world.")]
         [SerializeField] int worldSeed = 20261027;
 
@@ -86,6 +95,9 @@ namespace Voxelforge.Voxels
 
         /// <summary>The terrain and biomes this world is made from: the biome spawner (Roadmap 5.2) names biomes with it.</summary>
         public TerrainSettings TerrainSettings => terrainSettings;
+
+        /// <summary>The ruins and arenas this world may have (Roadmap 5.4), or null.</summary>
+        public StampLibrary StampLibrary => stampLibrary;
 
         /// <summary>
         /// The name of the biome whose blocks cover column (<paramref name="x"/>, <paramref name="z"/>), for the debug
@@ -178,6 +190,14 @@ namespace Voxelforge.Voxels
             _world = new VoxelWorld(blockRegistry.CreateLookup(Unity.Collections.Allocator.Persistent));
             _generator = new ChunkGenerationScheduler(_world, new WorldSeed(worldSeed), terrainSettings.ToTerrainParams(),
                 terrainSettings.CreateBiomeLookup(Unity.Collections.Allocator.Persistent), maxGenerationJobsInFlight);
+            if (stampLibrary != null)
+            {
+                var biomeNames = new System.Collections.Generic.List<string>();
+                foreach (BiomeSettings biome in terrainSettings.Biomes)
+                    biomeNames.Add(biome.Name);
+                _generator.Stamps = stampLibrary.CreateTable(biomeNames, Unity.Collections.Allocator.Persistent,
+                    new Unity.Mathematics.int2(stampKeepClearCenter.x, stampKeepClearCenter.y), stampKeepClearRadius);
+            }
             _scheduler = new ChunkMeshScheduler(_world, transform, chunkMaterial, maxJobsInFlight)
             {
                 IsChunkIncoming = _generator.IsRequested,

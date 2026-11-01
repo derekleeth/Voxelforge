@@ -29,6 +29,7 @@ namespace Voxelforge.Voxels
         readonly TerrainParams _terrain;
         readonly int _maxJobsInFlight;
         NativeArray<BiomeInfo> _biomes;
+        StampTable _stamps;
 
         readonly Queue<ChunkCoord> _requests = new Queue<ChunkCoord>();
         readonly HashSet<ChunkCoord> _requested = new HashSet<ChunkCoord>(); // Queued or generating.
@@ -45,6 +46,7 @@ namespace Voxelforge.Voxels
             Seed = seed;
             _terrain = terrain;
             _biomes = biomes;
+            _stamps = StampTable.CreateEmpty(Allocator.Persistent);
             _maxJobsInFlight = math.max(1, maxJobsInFlight);
         }
 
@@ -55,6 +57,22 @@ namespace Voxelforge.Voxels
 
         /// <summary>The biome list, owned by this scheduler. Other jobs may read it while the scheduler is alive.</summary>
         public NativeArray<BiomeInfo> Biomes => _biomes;
+
+        /// <summary>
+        /// The ruins and arenas stamped into the terrain (Roadmap 5.4); none until one is given. Set it before any chunk is
+        /// requested: the scheduler takes ownership, disposes the old one and disposes this one with itself.
+        /// </summary>
+        public StampTable Stamps
+        {
+            get => _stamps;
+            set
+            {
+                if (_pending.Count > 0)
+                    throw new InvalidOperationException("Set the stamps before generating any chunks.");
+                _stamps.Dispose();
+                _stamps = value;
+            }
+        }
 
         /// <summary>Chunks waiting for a free job slot.</summary>
         public int QueuedCount => _requests.Count;
@@ -138,7 +156,7 @@ namespace Voxelforge.Voxels
                     Biomes = _biomes,
                     Voxels = pending.Voxels,
                     IsUniform = pending.IsUniform,
-                }.Schedule();
+                }.WithStamps(_stamps).Schedule();
                 _pending.Add(pending);
             }
             JobHandle.ScheduleBatchedJobs();
@@ -202,6 +220,7 @@ namespace Voxelforge.Voxels
             }
             if (_biomes.IsCreated)
                 _biomes.Dispose();
+            _stamps.Dispose();
         }
     }
 }

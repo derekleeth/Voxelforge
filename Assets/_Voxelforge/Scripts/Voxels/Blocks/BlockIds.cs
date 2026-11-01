@@ -44,5 +44,14 @@ namespace Voxelforge.Voxels
         /// crumbles back to air after a while (<c>EarthWorks</c>) and drops nothing when mined.
         /// </summary>
         public const ushort EarthenRock = 16;
+        /// <summary>Weathered stone bricks that old ruins are built of (Roadmap 5.4). Mined with a pick.</summary>
+        public const ushort RuinBrick = 17;
+        /// <summary>Ruin Brick with moss creeping over it (Roadmap 5.4).</summary>
+        public const ushort MossyRuinBrick = 18;
+        /// <summary>
+        /// Dark slate carved with faintly glowing runes, the boss arena's floor and walls (Roadmap 5.4). Unbreakable and
+        /// blast-proof, so nobody digs out of (or into) a boss fight.
+        /// </summary>
+        public const ushort WardedStone = 19;
     }
 }

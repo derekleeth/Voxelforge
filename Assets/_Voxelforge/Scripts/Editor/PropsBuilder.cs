@@ -308,6 +308,9 @@ namespace Voxelforge.Editor
                     case BlockIds.Sandstone:
                     case BlockIds.RedRock:
                     case BlockIds.EarthenRock:
+                    case BlockIds.RuinBrick:
+                    case BlockIds.MossyRuinBrick:
+                    case BlockIds.WardedStone:
                         kind = HarvestKind.Pick;
                         break;
                     case BlockIds.TreeTrunk:
