@@ -64,7 +64,7 @@ namespace Voxelforge.Gameplay
             Vector3 hero = self.VisualRoot.position;
             var center = new float2(hero.x, hero.z);
             _land.Draw(tiles, explored, center, new float2(RadiusBlocks), unitsPerBlock);
-            _markers.Draw(markers, center, unitsPerBlock, round: true, new float2(radius), self.PlayerId);
+            _markers.Draw(markers, center, unitsPerBlock, round: true, new float2(radius), self.PlayerId, explored);
         }
 
         public void Dispose() => _land.Dispose();

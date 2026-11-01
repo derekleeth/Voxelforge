@@ -32,6 +32,7 @@ namespace Voxelforge.Gameplay
         PlayerCaster _caster;
         PlayerBlockBag _bag;
         PlayerHealth _health;
+        PlayerExplorer _explorer;
 
         /// <summary>Every PC for hits and mana; the owner's PC for refusals and pickups.</summary>
         public event Action<CombatTextEvent> Raised;
@@ -43,6 +44,7 @@ namespace Voxelforge.Gameplay
             _caster = GetComponent<PlayerCaster>();
             _bag = GetComponent<PlayerBlockBag>();
             _health = GetComponent<PlayerHealth>();
+            _explorer = GetComponent<PlayerExplorer>();
         }
 
         void OnEnable()
@@ -57,6 +59,8 @@ namespace Voxelforge.Gameplay
             }
             if (_health != null)
                 _health.Changed += OnHealth;
+            if (_explorer != null)
+                _explorer.Discovered += OnDiscovered;
         }
 
         void OnDisable()
@@ -71,6 +75,8 @@ namespace Voxelforge.Gameplay
             }
             if (_health != null)
                 _health.Changed -= OnHealth;
+            if (_explorer != null)
+                _explorer.Discovered -= OnDiscovered;
         }
 
         float3 Head => (float3)transform.position + new float3(0f, overHead, 0f);
@@ -167,6 +173,14 @@ namespace Voxelforge.Gameplay
                 break;
             }
             _aggroWarnings.Prune(now);
+        }
+
+        /// <summary>Roadmap 5.4: the host says this hero found a ruin or arena.</summary>
+        void OnDiscovered(StampId stamp, int2 centre)
+        {
+            StampLibrary library = _player.WorldManager != null ? _player.WorldManager.StampLibrary : null;
+            string name = library != null && library.TryGet(stamp, out StampDefinition definition) ? definition.DisplayName : "Ruins";
+            Raise(new CombatTextEvent { Kind = CombatTextKind.Discovered, Label = name, Position = Head });
         }
 
         void OnRefused(CastCheck reason) =>

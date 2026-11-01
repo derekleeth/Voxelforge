@@ -39,6 +39,8 @@ namespace Voxelforge.Gameplay
         Taunted,
         /// <summary>The hero is about to pull a mob off whoever is tanking it (Roadmap 5.3, <see cref="AggroWarnings"/>).</summary>
         PullingAggro,
+        /// <summary>The hero found a ruin or arena called <see cref="CombatTextEvent.Label"/> (Roadmap 5.4).</summary>
+        Discovered,
     }
 
     /// <summary>
@@ -58,6 +60,8 @@ namespace Voxelforge.Gameplay
         public CastCheck Reason;
         /// <summary>For <see cref="CombatTextKind.BagRefused"/>.</summary>
         public BagRefusal BagReason;
+        /// <summary>A name to show, for <see cref="CombatTextKind.Discovered"/>.</summary>
+        public string Label;
         /// <summary>Where in the world it starts floating.</summary>
         public float3 Position;
     }

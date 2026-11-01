@@ -99,6 +99,9 @@ namespace Voxelforge.Voxels
         /// <summary>The ruins and arenas this world may have (Roadmap 5.4), or null.</summary>
         public StampLibrary StampLibrary => stampLibrary;
 
+        /// <summary>Where this world's ruins and arenas are (Roadmap 5.4), for maps and discoveries. Null before it starts.</summary>
+        public StampSiteCache StampSites { get; private set; }
+
         /// <summary>
         /// The name of the biome whose blocks cover column (<paramref name="x"/>, <paramref name="z"/>), for the debug
         /// overlay (Roadmap 4.7: finding the Thunderhoof Plains). Builds a sampler each call, so not for gameplay.
@@ -198,6 +201,7 @@ namespace Voxelforge.Voxels
                 _generator.Stamps = stampLibrary.CreateTable(biomeNames, Unity.Collections.Allocator.Persistent,
                     new Unity.Mathematics.int2(stampKeepClearCenter.x, stampKeepClearCenter.y), stampKeepClearRadius);
             }
+            StampSites = new StampSiteCache(_generator);
             _scheduler = new ChunkMeshScheduler(_world, transform, chunkMaterial, maxJobsInFlight)
             {
                 IsChunkIncoming = _generator.IsRequested,

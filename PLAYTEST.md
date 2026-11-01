@@ -4,7 +4,7 @@ Everything built today that still needs trying in the real game. Tick each box a
 
 **Before you start:** close any running built copy of Voxelforge (it holds the network port, so the editor can't host). Then press Play, and both players join.
 
-**Handy keys:** **F10** spawns the next mob kind near every hero (Shift+F10 clears them). **Tab** picks a target. **K** opens the class window. **F4** shows FPS.
+**Handy keys:** **F10** spawns the next mob kind near every hero (Shift+F10 clears them). **F6** takes the whole party to the nearest ruin someone hasn't found (**Shift+F6**: the nearest boss arena). **Tab** picks a target. **K** opens the class window. **M** opens the World Map. **F4** shows FPS.
 
 ---
 
@@ -50,9 +50,9 @@ Best set-up: one player is a **Runeforged Paladin** (the tank). The other is a *
 
 ---
 
-## Roadmap 5.4: Ruins & the Sunken Arena (Steps A-B)
+## Roadmap 5.4: Ruins & the Sunken Arena (Steps A-C)
 
-Your saved world (seed 20261027) keeps all your edits; ruins only appear in ground nobody has dug or built on yet. Map markers and the **F6** "take me there" key come in Step C, so for now walk (or sprint) there. Positions are block x, z.
+Your saved world (seed 20261027) keeps all your edits; ruins only appear in ground nobody has dug or built on yet. Walk there, or press **F6** / **Shift+F6**. Positions are block x, z.
 
 ### Find the ruins near spawn (256, 256)
 - [ ] **Frost Shrine** at about **(156, 361)**, up in the Snowy Peaks: a ring of snow-capped pillars round a glowing rune slab.
@@ -62,10 +62,18 @@ Your saved world (seed 20261027) keeps all your edits; ruins only appear in grou
 - [ ] Ruins sit on the ground properly on slopes (a brick or stone foundation under them, never floating), and no tree grows through one.
 
 ### The Sunken Arena (for the 5.9 boss)
-- [ ] Nearest at about **(199, 1110)**, 855 blocks north of spawn (a long sprint, or wait for F6 in Step C).
+- [ ] Nearest at about **(199, 1110)**, 855 blocks north of spawn. **Shift+F6** drops the party on the boss dais in the middle.
 - [ ] A deep pit of dark Warded Stone with glowing gold runes, two stairways down (north and south), torch-lit pillars and a two-step dais in the middle.
 - [ ] **Warded Stone can't be mined, and EarthShatter or Pyroblast can't crater it.** Ruin Bricks can be mined.
 - [ ] Mobs that chase you follow you down the stairs and back up.
+
+### Finding them: map markers & discovery (Step C)
+- [ ] Walk up to a ruin: **DISCOVERED! Broken Watchtower** (or whichever) pops up, only in the finder's view, once.
+- [ ] Open the map (**M**) and check the minimap: a **brown broken-tower** marker for ruins, a **red ring** for arenas, but only where *that* player has explored. The other player doesn't see it until they've been there too.
+- [ ] Ruins don't show as arrows round the map's edge.
+- [ ] After quitting and coming back, found ruins are still on your map, and loading the saved map doesn't pop up "DISCOVERED!" again.
+- [ ] **F6** again and again hops the party to new ruins each time (it prefers ones someone hasn't found). It waits for the land to load and then lands everyone side by side.
+- [ ] F6 into a site where neither player has been: both get DISCOVERED!
 
 ### New blocks
 - [ ] Ruin Brick, Mossy Ruin Brick and Warded Stone look right up close, and sound like stone to walk on and mine.

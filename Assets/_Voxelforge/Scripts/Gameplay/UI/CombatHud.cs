@@ -46,6 +46,8 @@ namespace Voxelforge.Gameplay
         readonly PlayerHudPanel[] _panels = new PlayerHudPanel[MaxSlots];
         readonly TargetHealthBook _targets = new TargetHealthBook();
         PartyMarkers _party;
+        // Ruins and arenas (Roadmap 5.4), made once the world knows where they are.
+        StampMarkers _stampMarkers;
         readonly List<MapMarker> _markers = new List<MapMarker>();
         readonly Dictionary<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>> _heroes =
             new Dictionary<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>>();
@@ -86,6 +88,8 @@ namespace Voxelforge.Gameplay
             PlayerController.AnyDespawned -= OnHeroDespawned;
             _party?.Dispose();
             _party = null;
+            _stampMarkers?.Dispose();
+            _stampMarkers = null;
             foreach (KeyValuePair<PlayerAbilityCues, Action<AbilityCue, AbilityDefinition>> hero in _heroes)
             {
                 if (hero.Key != null)
@@ -139,6 +143,10 @@ namespace Voxelforge.Gameplay
             _targets.Expire(now);
             _targets.Follow(targets);
             _markers.Clear();
+            if (_stampMarkers == null && world != null && world.StampSites != null)
+                _stampMarkers = new StampMarkers(world.StampSites);
+            // Sites first, so heroes and homes draw over them.
+            _stampMarkers?.CollectMarkers(_markers);
             _party?.CollectMarkers(_markers);
             MapTileCache mapTiles = world != null ? world.MapTiles : null;
 
@@ -153,6 +161,8 @@ namespace Voxelforge.Gameplay
                     continue;
                 }
 
+                if (_stampMarkers != null && player.TryGetComponent(out PlayerExplorer explorer))
+                    _stampMarkers.Watch(explorer.Map);
                 panel = _panels[slot] ??= new PlayerHudPanel(_canvas, skin, (byte)slot, ItemName, id => Icons.Get(id));
                 panel.Bind(player, input?.ControlScheme);
                 panel.SetVisible(true);

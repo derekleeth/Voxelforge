@@ -13,7 +13,7 @@ namespace Voxelforge.Gameplay
     {
         const int Size = 64;
 
-        static Sprite _disc, _ring, _hero, _edge, _home;
+        static Sprite _disc, _ring, _hero, _edge, _home, _ruin, _arena;
 
         public static Sprite Disc => _disc ??= Make("Map Disc", p => math.length(p) - 0.96f, edge: 0f);
 
@@ -31,6 +31,17 @@ namespace Voxelforge.Gameplay
         public static Sprite Home => _home ??= Make("Map Home", p => Polygon(p,
             new float2(-0.62f, -0.82f), new float2(0.62f, -0.82f), new float2(0.62f, 0.12f), new float2(0.9f, 0.12f),
             new float2(0f, 0.92f), new float2(-0.9f, 0.12f), new float2(-0.62f, 0.12f)));
+
+        /// <summary>A ruin (Roadmap 5.4): a broken tower, its top jagged where it fell.</summary>
+        public static Sprite Ruin => _ruin ??= Make("Map Ruin", p => Polygon(p,
+            new float2(-0.62f, -0.86f), new float2(0.62f, -0.86f), new float2(0.62f, 0.3f), new float2(0.38f, 0.62f),
+            new float2(0.22f, 0.2f), new float2(0.02f, 0.88f), new float2(-0.2f, 0.42f), new float2(-0.4f, 0.78f),
+            new float2(-0.62f, 0.4f)));
+
+        /// <summary>A boss arena (Roadmap 5.4): a thick ring with a diamond in the middle, like a target.</summary>
+        public static Sprite Arena => _arena ??= Make("Map Arena", p => math.min(
+            math.abs(math.length(p) - 0.7f) - 0.2f,
+            math.abs(p.x) + math.abs(p.y) - 0.32f), edge: 0.16f);
 
         /// <summary>
         /// A sprite from a signed distance (negative inside) over -1..1. The outer <paramref name="edge"/> of the shape is

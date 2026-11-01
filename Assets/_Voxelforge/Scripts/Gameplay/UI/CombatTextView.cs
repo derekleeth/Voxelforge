@@ -173,6 +173,12 @@ namespace Voxelforge.Gameplay
                     size *= 1.1f;
                     burst = true;
                     break;
+                case CombatTextKind.Discovered:
+                    words = $"DISCOVERED!\n{e.Label}";
+                    colour = _skin.pickup;
+                    size *= 1.25f;
+                    burst = true;
+                    break;
                 case CombatTextKind.PullingAggro:
                     words = "PULLING AGGRO!";
                     colour = _skin.refusal;

@@ -6,11 +6,15 @@ using Voxelforge.Core;
 
 namespace Voxelforge.Gameplay
 {
-    /// <summary>What a map marker shows (Roadmap 4.8). Dungeons and ruins (5.3) will join the list.</summary>
+    /// <summary>What a map marker shows (Roadmap 4.8).</summary>
     public enum MapMarkerKind : byte
     {
         Hero,
         Home,
+        /// <summary>A ruin (Roadmap 5.4). Only on maps whose player has explored it, and never as an edge arrow.</summary>
+        Ruin,
+        /// <summary>A boss arena (Roadmap 5.4), shown like a <see cref="Ruin"/>.</summary>
+        Arena,
     }
 
     /// <summary>One thing to draw on a player's minimap and World Map (Roadmap 4.8).</summary>
@@ -27,7 +31,7 @@ namespace Voxelforge.Gameplay
     }
 
     /// <summary>
-    /// Something that puts markers on the maps (Roadmap 4.8): the party now, and later dungeon stamps (5.3). Every map
+    /// Something that puts markers on the maps (Roadmap 4.8): the party, and ruins and arenas (5.4). Every map
     /// asks every source once a frame, so a source should be cheap.
     /// </summary>
     public interface IMapMarkerSource

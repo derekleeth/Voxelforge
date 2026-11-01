@@ -104,7 +104,7 @@ namespace Voxelforge.Gameplay
             Vector2 paper = _paper.rect.size;
             float2 half = new float2(paper.x, paper.y) * 0.5f;
             _land.Draw(tiles, explored, model.Center, half / model.UnitsPerBlock, model.UnitsPerBlock);
-            _markers.Draw(markers, model.Center, model.UnitsPerBlock, round: false, half, self.PlayerId);
+            _markers.Draw(markers, model.Center, model.UnitsPerBlock, round: false, half, self.PlayerId, explored);
 
             if (scheme != _scheme || map.HasHome != _hasHome)
             {

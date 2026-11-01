@@ -52,6 +52,8 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.Taunted:
                 case CombatTextKind.PullingAggro:
                     return 1.6f;
+                case CombatTextKind.Discovered:
+                    return 3f;
                 case CombatTextKind.Refused:
                 case CombatTextKind.BagRefused:
                     return 1.2f;

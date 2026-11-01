@@ -892,6 +892,7 @@ GameObject:
   m_Component:
   - component: {fileID: 531815692}
   - component: {fileID: 531815691}
+  - component: {fileID: 531815693}
   m_Layer: 0
   m_Name: Mob Debug Spawner
   m_TagString: Untagged
@@ -932,6 +933,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &531815693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 531815690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbd1df736253cd64b94d6b1c3f0c5d83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.StampDebugTravel
+  networkManager: {fileID: 2147055199}
+  world: {fileID: 1325734895}
+  players: {fileID: 2147055197}
+  chunkLoader: {fileID: 1325734897}
+  searchRadius: 3000
+  loadWaitSeconds: 15
 --- !u!1 &684737378
 GameObject:
   m_ObjectHideFlags: 0
