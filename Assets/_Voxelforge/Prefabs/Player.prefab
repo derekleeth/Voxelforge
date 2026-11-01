@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 368659319514688893}
   - component: {fileID: 6126350313353818499}
   - component: {fileID: 8078124071735052176}
+  - component: {fileID: 756589546276304344}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -642,6 +643,59 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   range: 40
   keepRange: 45
+--- !u!114 &756589546276304344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb7d59628c56b43469e96064fbc953c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.GearView
+  animator: {fileID: 2811615453234438372}
+  head:
+    Bone: 10
+    Offset: {x: 0, y: 0.2, z: 0}
+    Rotation: {x: 0, y: 0, z: 0}
+    Scale: 1.25
+  chest:
+    Bone: 7
+    Offset: {x: 0, y: -0.09, z: 0}
+    Rotation: {x: 0, y: 0, z: 0}
+    Scale: 1.1
+  leftLeg:
+    Bone: 3
+    Offset: {x: 0, y: 0.02, z: 0.01}
+    Rotation: {x: 0, y: 0, z: 0}
+    Scale: 1.25
+  rightLeg:
+    Bone: 4
+    Offset: {x: 0, y: 0.02, z: 0.01}
+    Rotation: {x: 0, y: 0, z: 0}
+    Scale: 1.25
+  leftFoot:
+    Bone: 5
+    Offset: {x: 0, y: -0.215, z: 0.05}
+    Rotation: {x: 0, y: 0, z: 0}
+    Scale: 1.45
+  rightFoot:
+    Bone: 6
+    Offset: {x: 0, y: -0.215, z: 0.05}
+    Rotation: {x: 0, y: 0, z: 0}
+    Scale: 1.45
+  mainHand:
+    Bone: 54
+    Offset: {x: -0.15, y: -0.28, z: -0.2}
+    Rotation: {x: 0, y: 0, z: -30}
+    Scale: 1
+  offHand:
+    Bone: 15
+    Offset: {x: -0.1, y: 0.07, z: 0}
+    Rotation: {x: 270, y: 270, z: 0}
+    Scale: 0.8
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

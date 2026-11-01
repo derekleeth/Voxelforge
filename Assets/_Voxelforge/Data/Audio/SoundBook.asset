@@ -62,6 +62,10 @@ MonoBehaviour:
   sprintWind: {fileID: 8300000, guid: 4f52dd01c993cb14689af947919a8b3d, type: 3}
   mapOpen: {fileID: 8300000, guid: cb45e46a156a7a54dbd8b3235a27005e, type: 3}
   mapClose: {fileID: 8300000, guid: b1225ac4f12477a4a9abf78e2bebb848, type: 3}
+  lootRare: {fileID: 8300000, guid: 183dc63547854044b9d7ac7a0b167819, type: 3}
+  lootEpic: {fileID: 8300000, guid: 3950ddd23686e354c847b345a3b6c62b, type: 3}
+  lootLegendary: {fileID: 8300000, guid: 1182d546e288fc44f8556b439403bdcc, type: 3}
+  gearEquip: {fileID: 8300000, guid: f10d42de3e72b0645a577e51156927a1, type: 3}
   loops:
   - decoration: {fileID: 11400000, guid: a6e88c1d67d36444481add0b0458f1e6, type: 2}
     clip: {fileID: 8300000, guid: 1c22145e70ef6d04ea3bc34d0a9a1fb3, type: 3}

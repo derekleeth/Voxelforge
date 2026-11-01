@@ -62,6 +62,17 @@ namespace Voxelforge.Gameplay
         [Tooltip("The World Map folding shut (Roadmap 4.8).")]
         [SerializeField] AudioClip mapClose;
 
+        [Tooltip("A Rare loot sack going into the bag (Roadmap 5.5). Common loot uses the pickup pop.")]
+        [SerializeField] AudioClip lootRare;
+
+        [SerializeField] AudioClip lootEpic;
+
+        [Tooltip("A Legendary: a little fanfare.")]
+        [SerializeField] AudioClip lootLegendary;
+
+        [Tooltip("A hero putting on or taking off a piece of gear (Roadmap 5.5).")]
+        [SerializeField] AudioClip gearEquip;
+
         [Header("Loops")]
         [SerializeField] AmbientLoop[] loops = Array.Empty<AmbientLoop>();
 
@@ -78,6 +89,20 @@ namespace Voxelforge.Gameplay
         public AudioClip SprintWind => sprintWind;
         public AudioClip MapOpen => mapOpen;
         public AudioClip MapClose => mapClose;
+        public AudioClip GearEquip => gearEquip;
+
+        /// <summary>The sound of loot of <paramref name="rarity"/> going into a bag (Roadmap 5.5): the plain pop for Common.</summary>
+        public AudioClip LootPickup(ItemRarity rarity)
+        {
+            AudioClip clip = rarity switch
+            {
+                ItemRarity.Legendary => lootLegendary,
+                ItemRarity.Epic => lootEpic,
+                ItemRarity.Rare => lootRare,
+                _ => null,
+            };
+            return clip != null ? clip : pickupPop;
+        }
         public AmbientLoop[] Loops => loops;
 
         /// <summary>How the block with this ID sounds. Never null if there's a default surface.</summary>

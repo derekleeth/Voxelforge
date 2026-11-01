@@ -156,5 +156,24 @@ Press **F2** for a kit, open the bag (**B**), point at a piece of gear and press
 ### Fit
 - [ ] The bag window is a row taller now. It still fits inside each player's half of the screen in split-screen, with a chest open too.
 
+## Roadmap 5.5: Loot & Equipment (Step E: wearing it & sounds)
+
+Stand-in models (5.9 brings the real armour sets). Try it on **both races** (a Wayfarer and a Thunderhoof).
+
+### Gear on the hero (both players see it on each other)
+- [ ] **Head:** cap / wolf-eared hood / crystal crown sits on top of the head.
+- [ ] **Chest:** jerkin / tusk-shouldered jerkin / purple hauberk over the chest.
+- [ ] **Legs:** a guard on each **shin**, moving with the legs as you walk and run.
+- [ ] **Feet:** big boots over the hero's own, one on each foot, moving as you walk.
+- [ ] **Main hand:** the weapon is **slung across your back**, head up over the right shoulder (Skyrender looks huge!).
+- [ ] **Off hand:** the buckler / Thunderhorn Shield on the **outside of the left forearm**, upright when the arms are down.
+- [ ] Taking a piece off removes it at once; swapping shows the new one.
+- [ ] Gear pieces fade with the hero when the camera squeezes in close (like the held item does).
+- [ ] Odd fits to note: anything floating, sunk into the body or pointing the wrong way, on either race.
+
+### Sounds
+- [ ] Putting gear on or taking it off: a leather-and-metal **clank** (not when you first join with gear already on).
+- [ ] Picking up a **Rare** sack: a bright chime. **Epic:** a longer shimmering run. **Legendary:** a little **fanfare**. Common: the usual pop.
+
 ### Notes
 -

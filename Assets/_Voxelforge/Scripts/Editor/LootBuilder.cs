@@ -228,6 +228,9 @@ namespace Voxelforge.Editor
             stats.FindPropertyRelative("stamina").intValue = item.Stats.stamina;
             stats.FindPropertyRelative("power").intValue = item.Stats.power;
             serialized.FindProperty("mesh").objectReferenceValue = mesh;
+            // Legs and feet are worn as one piece per leg (step E): build_loot.py makes "<model>Worn".
+            serialized.FindProperty("wornMesh").objectReferenceValue =
+                item.Slot == EquipSlot.Legs || item.Slot == EquipSlot.Feet ? LoadMesh(item.Model + "Worn") : null;
             serialized.FindProperty("material").objectReferenceValue = material;
             serialized.FindProperty("heldPosition").vector3Value = PropsBuilder.Grip;
             serialized.FindProperty("heldRotation").vector3Value =

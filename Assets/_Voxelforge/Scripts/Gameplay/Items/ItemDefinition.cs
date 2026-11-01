@@ -37,6 +37,10 @@ namespace Voxelforge.Gameplay
         [Tooltip("What it gives while worn. Only worn gear has stats.")]
         [SerializeField] GearStats stats;
 
+        [Tooltip("Legs and Feet: the piece shown on each leg or foot of the hero wearing it (one thigh guard, one boot). " +
+                 "Empty = the model above, shown once.")]
+        [SerializeField] Mesh wornMesh;
+
         [Header("Look")]
         [Tooltip("The model. Its origin is where the hand grips it (tools) or its bottom centre (props); +Y is up.")]
         [SerializeField] Mesh mesh;
@@ -93,6 +97,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>True if it's worn in one of the six gear sockets (Roadmap 5.5).</summary>
         public bool IsWornGear => equipSlot != EquipSlot.None;
+
+        /// <summary>What's drawn on the hero wearing it: the one-limb piece for legs and feet, else the model.</summary>
+        public Mesh WornMesh => wornMesh != null ? wornMesh : mesh;
 
         /// <summary>True if any of its multipliers is set.</summary>
         public bool IsTool => toolPower.pick > 0f || toolPower.axe > 0f || toolPower.any > 0f;

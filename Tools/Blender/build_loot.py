@@ -366,6 +366,47 @@ def build_boots_wind():
     return b
 
 
+# ---- Worn on the hero (5.5 step E): one leg's thigh guard or one boot, hung on each leg's bone by GearView ----
+# Thigh: origin at the hip joint, hanging down (-Z) to the knee. Boot: origin at the middle of the sole.
+
+def thigh(b, region_name, radius=0.105):
+    b.part(region_name, P.cylinder((0, 0, 0.02), (0, 0, -0.3), radius, radius * 0.85, 8))
+
+
+def one_boot(b, region_name, trim):
+    # A deep toe box and a tall shaft, so it fits over the hero's own chunky boot.
+    b.part(region_name, P.box((0, 0.03, 0.075), (0.14, 0.28, 0.15)))
+    b.part(region_name, P.box((0, -0.02, 0.22), (0.14, 0.17, 0.16)))
+    b.part(trim, P.box((0, -0.02, 0.3), (0.16, 0.19, 0.04)))
+
+
+def build_leggings_worn():
+    b = builder()
+    thigh(b, "hide_boar")
+    return b
+
+
+def build_greaves_worn():
+    b = builder()
+    thigh(b, "hide_rhino", 0.115)
+    b.part("rare_steel", P.box((0, 0.1, -0.29), (0.14, 0.05, 0.12)))  # Knee guard.
+    return b
+
+
+def build_boots_worn():
+    b = builder()
+    one_boot(b, "leather", "hide_boar")
+    return b
+
+
+def build_boots_wind_worn():
+    b = builder()
+    one_boot(b, "rare_steel", "fur")
+    for sx in (-1, 1):
+        b.part("frost", P.box((sx * 0.07, -0.08, 0.2), (0.02, 0.1, 0.12)))
+    return b
+
+
 # ---- Main hand: grip at the origin, along +Z ----
 
 def build_cudgel():
@@ -461,6 +502,11 @@ MODELS = {
     "LootHauberk": build_hauberk,
     "LootBlade": build_blade,
     "LootMaul": build_maul,
+    # Worn pieces for the legs and feet (step E), one per leg: LootBuilder finds them by "<model>Worn".
+    "LootLeggingsWorn": build_leggings_worn,
+    "LootGreavesWorn": build_greaves_worn,
+    "LootBootsWorn": build_boots_worn,
+    "LootBootsWindWorn": build_boots_wind_worn,
 }
 
 

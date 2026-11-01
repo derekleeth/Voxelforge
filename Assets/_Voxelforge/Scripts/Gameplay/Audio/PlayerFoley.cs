@@ -74,7 +74,14 @@ namespace Voxelforge.Gameplay
             /// <summary>Only set for this PC's own players: nobody else's map is open here.</summary>
             public PlayerWorldMap Map;
             public bool MapOpen;
+            /// <summary>Roadmap 5.5: a clank when they put gear on or take it off.</summary>
+            public PlayerBlockBag Bag;
+            public Action<EquippedGear> OnGear;
+            public float SpawnedAt;
         }
+
+        // A hero's saved gear arrives just after they join: that isn't them putting it on.
+        const float QuietAfterJoin = 2f;
 
         readonly List<Hero> _heroes = new List<Hero>();
 
@@ -115,6 +122,13 @@ namespace Voxelforge.Gameplay
                 hero.OnHealth = e => OnHealth(hero, e);
                 hero.Health.Changed += hero.OnHealth;
             }
+            hero.SpawnedAt = Time.time;
+            hero.Bag = player.GetComponent<PlayerBlockBag>();
+            if (hero.Bag != null)
+            {
+                hero.OnGear = _ => OnGear(hero);
+                hero.Bag.GearChanged += hero.OnGear;
+            }
             _heroes.Add(hero);
         }
 
@@ -132,9 +146,20 @@ namespace Voxelforge.Gameplay
                 hero.Cues.Received -= hero.OnCue;
             if (hero.Health != null)
                 hero.Health.Changed -= hero.OnHealth;
+            if (hero.Bag != null)
+                hero.Bag.GearChanged -= hero.OnGear;
             StopCastLoop(hero);
             StopWind(hero);
             _heroes.RemoveAt(index);
+        }
+
+        void OnGear(Hero hero)
+        {
+            if (router == null || sounds == null || sounds.GearEquip == null || hero.Player == null ||
+                Time.time - hero.SpawnedAt < QuietAfterJoin)
+                return;
+            router.Play(sounds.GearEquip, (float3)hero.Player.transform.position + new float3(0f, 1f, 0f), 0.6f,
+                UnityEngine.Random.Range(0.94f, 1.06f), 16f);
         }
 
         void LateUpdate()

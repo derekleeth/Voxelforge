@@ -254,7 +254,13 @@ namespace Voxelforge.Gameplay
             loot.ServerGiveTo(nearestBag, _given);
             foreach (ItemStack stack in _given)
                 nearestBag.ServerTellPickedUp(stack.ItemId, stack.Count);
-            if (_given.Count > 0)
+            if (_given.Count == 0)
+                return;
+            // Personal loot (Roadmap 5.5) rings out by the best thing inside; everything else pops.
+            ItemRarity rarity = loot.Personal.IsPersonal ? loot.Personal.Rarity : ItemRarity.Common;
+            if (rarity > ItemRarity.Common && router != null && sounds != null)
+                router.Play(sounds.LootPickup(rarity), Middle(nearest), rarity == ItemRarity.Legendary ? 1f : 0.7f, 1f, 24f);
+            else
                 PlayPop(Middle(nearest), 1f);
         }
 

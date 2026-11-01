@@ -23,6 +23,7 @@ MonoBehaviour:
     armor: 5
     stamina: 3
     power: 2
+  wornMesh: {fileID: 3732421530516812223, guid: f69fe711216376644a665be6d8398f76, type: 3}
   mesh: {fileID: -6600136488358143557, guid: 174b77ac3ad79274b83f21819f72c646, type: 3}
   material: {fileID: 2100000, guid: dd051200d50c5394fa9e446290eb5432, type: 2}
   heldPosition: {x: 0, y: 0.08, z: 0}

@@ -162,6 +162,11 @@ namespace Voxelforge.Editor
             written.Add(Write("MobImpact", MobImpact(new Random(331))));
             // Roadmap 5.3: the Paladin's taunt.
             written.Add(Write("Oathbrand", Oathbrand(new Random(337))));
+            // Roadmap 5.5: picking up loot, by rarity, and putting gear on.
+            written.Add(Write("LootRare", LootChime(new Random(347), new[] { 1047f, 1319f, 1568f }, 0.05f, 0.5f)));
+            written.Add(Write("LootEpic", LootChime(new Random(349), new[] { 784f, 988f, 1175f, 1568f, 1976f }, 0.055f, 0.8f)));
+            written.Add(Write("LootLegendary", LootFanfare(new Random(353))));
+            written.Add(Write("GearEquip", GearEquip(new Random(359))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -326,6 +331,57 @@ namespace Voxelforge.Editor
             AddTone(buffer, 0f, 520f, 1500f, 0.05f, 1f);
             AddTone(buffer, 0f, 1040f, 3000f, 0.03f, 0.3f);
             AddNoise(buffer, rng, 0f, 0.002f, 0.3f, 2000f, 10000f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>
+        /// Rare or Epic loot going into the bag (Roadmap 5.5): the pickup pop, then bells running up the
+        /// <paramref name="notes"/> with a glittery hiss, longer and fuller for Epic.
+        /// </summary>
+        static float[] LootChime(Random rng, float[] notes, float step, float ring)
+        {
+            float[] buffer = New(0.25f + notes.Length * step + ring);
+            AddTone(buffer, 0f, 520f, 1500f, 0.05f, 0.7f);
+            for (int i = 0; i < notes.Length; i++)
+                AddBell(buffer, 0.04f + i * step, notes[i], ring, 0.4f);
+            AddNoise(buffer, rng, 0.04f, notes.Length * step + ring * 0.5f, 0.12f, 6000f, 14000f);
+            return Finish(buffer, 0.7f);
+        }
+
+        /// <summary>
+        /// A Legendary (Roadmap 5.5): a little brass fanfare (two short pickups, then a held major chord) over a soft boom,
+        /// with bells sparkling on top.
+        /// </summary>
+        static float[] LootFanfare(Random rng)
+        {
+            float[] buffer = New(2.2f);
+            AddTone(buffer, 0f, 80f, 45f, 0.25f, 0.6f);
+            AddNoise(buffer, rng, 0f, 0.08f, 0.3f, 200f, 2000f);
+            void Brass(float start, float note, float length, float amp)
+            {
+                for (int h = 1; h <= 4; h++) // A few harmonics read as brass rather than a pure tone.
+                    AddTone(buffer, start, note * h, note * h, length, amp / h);
+            }
+            Brass(0.05f, 523f, 0.12f, 0.35f);
+            Brass(0.2f, 659f, 0.12f, 0.35f);
+            Brass(0.35f, 523f, 1.1f, 0.3f);
+            Brass(0.35f, 659f, 1.1f, 0.25f);
+            Brass(0.35f, 784f, 1.1f, 0.25f);
+            foreach ((float at, float note) in new[] { (0.4f, 2093f), (0.5f, 2637f), (0.6f, 3136f), (0.75f, 4186f) })
+                AddBell(buffer, at, note, 0.9f, 0.18f);
+            AddNoise(buffer, rng, 0.35f, 1.2f, 0.08f, 7000f, 15000f);
+            return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>Putting gear on (Roadmap 5.5): a quick leather creak and buckle, then a small metal clink.</summary>
+        static float[] GearEquip(Random rng)
+        {
+            float[] buffer = New(0.45f);
+            AddNoise(buffer, rng, 0f, 0.09f, 0.45f, 250f, 1400f);
+            AddTone(buffer, 0f, 160f, 110f, 0.06f, 0.35f);
+            AddBell(buffer, 0.08f, 1245f, 0.18f, 0.35f);
+            AddBell(buffer, 0.1f, 1865f, 0.12f, 0.15f);
+            AddNoise(buffer, rng, 0.08f, 0.01f, 0.3f, 3000f, 10000f);
             return Finish(buffer, 0.6f);
         }
 
@@ -1204,6 +1260,10 @@ namespace Voxelforge.Editor
             serialized.FindProperty("sprintWind").objectReferenceValue = Clip("SprintWind");
             serialized.FindProperty("mapOpen").objectReferenceValue = Clip("MapOpen");
             serialized.FindProperty("mapClose").objectReferenceValue = Clip("MapClose");
+            serialized.FindProperty("lootRare").objectReferenceValue = Clip("LootRare");
+            serialized.FindProperty("lootEpic").objectReferenceValue = Clip("LootEpic");
+            serialized.FindProperty("lootLegendary").objectReferenceValue = Clip("LootLegendary");
+            serialized.FindProperty("gearEquip").objectReferenceValue = Clip("GearEquip");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;
