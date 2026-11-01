@@ -148,9 +148,10 @@ namespace Voxelforge.Gameplay
             float dealt = HurtTargets(ability, point, struck, area);
 
             // A spell that hits a target spends itself on it: no crater, and the Training Dummy isn't broken
-            // (Roadmap 4.6 play-test: blasts dug a pit round the dummy). Craters only happen on the ground.
+            // (Roadmap 4.6 play-test: blasts dug a pit round the dummy). Craters only happen on the ground, and never in a
+            // fight (5.6 play-test: misses left the battlefield full of holes); the blast still hurts foes in it.
             _damage.Clear();
-            if (!onTarget)
+            if (!onTarget && !InBattle())
                 AbilityImpact.Resolve(ability, point, block, damage, _damage);
             VoxelBatchResult result = world.RequestDamageVoxels(_damage, _player.PlayerId, area);
             if (logHits)
@@ -160,6 +161,21 @@ namespace Voxelforge.Gameplay
         }
 
         CombatTargets Targets => _player.Registry != null ? _player.Registry.Targets : null;
+
+        [Tooltip("Spells keep the ground safe for this many seconds after the hero's last fight ends, so a blast landing as " +
+                 "the last mob falls doesn't dig either.")]
+        [SerializeField, Range(0f, 15f)] float battleCalmSeconds = 5f;
+
+        float _battleUntil = float.NegativeInfinity;
+
+        /// <summary>Host: a mob is fighting this hero, or was a moment ago (spells don't dig then).</summary>
+        bool InBattle()
+        {
+            CombatTargets targets = Targets;
+            if (targets != null && targets.ServerIsFighting(_player.PlayerId))
+                _battleUntil = Time.time + battleCalmSeconds;
+            return Time.time < _battleUntil;
+        }
 
         /// <summary>
         /// Host: the ability's creature damage (Roadmap 4.6) to the target it hit, or, with an area, to every target in it:

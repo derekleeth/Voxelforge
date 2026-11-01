@@ -31,14 +31,19 @@ namespace Voxelforge.Gameplay
         [Tooltip("Seconds between hits.")]
         [Min(0.1f)] public float swingSeconds;
 
-        [Tooltip("How far it reaches, in metres from the hero's eyes.")]
+        [Tooltip("How far it reaches, in metres from the hero's chest to the edge of the foe.")]
         [Min(0.5f)] public float reach;
 
-        public WeaponStats(float damage, float swingSeconds, float reach)
+        [Tooltip("Looks only: a flat blade (a sword) whose edge is along the model's X, so it swings edge-first. Off: a " +
+                 "head whose striking faces are the model's ±Z (a maul), swung face-first.")]
+        public bool flatBlade;
+
+        public WeaponStats(float damage, float swingSeconds, float reach, bool flatBlade = false)
         {
             this.damage = damage;
             this.swingSeconds = swingSeconds;
             this.reach = reach;
+            this.flatBlade = flatBlade;
         }
 
         public bool IsMelee => damage > 0f;

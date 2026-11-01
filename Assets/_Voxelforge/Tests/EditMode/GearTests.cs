@@ -252,6 +252,16 @@ namespace Voxelforge.Tests
             Assert.AreEqual((0f, 0f, 0f), HeroSwingView.Pose(1f, 160f, 45f, 70f, 14f));
         }
 
+        [Test]
+        public void WristCock_CocksBackInTheWindup_AndSnapsStraightAtTheBlow()
+        {
+            Assert.AreEqual(HeroSwingView.RestingCock, HeroSwingView.WristCock(-1f), "Not swinging: held at rest.");
+            Assert.AreEqual(HeroSwingView.RestingCock, HeroSwingView.WristCock(0f));
+            Assert.Greater(HeroSwingView.WristCock(0.37f), HeroSwingView.RestingCock, "Cocked back over the shoulder.");
+            Assert.Less(HeroSwingView.WristCock(0.579f), 25f, "Nearly in line with the arm as it lands.");
+            Assert.AreEqual(HeroSwingView.RestingCock, HeroSwingView.WristCock(0.999f), 1f, "Back to rest.");
+        }
+
         // ---- What stats do ----
 
         [Test]

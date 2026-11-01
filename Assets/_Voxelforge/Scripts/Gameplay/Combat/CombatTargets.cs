@@ -304,6 +304,20 @@ namespace Voxelforge.Gameplay
             return best < float.MaxValue;
         }
 
+        /// <summary>
+        /// Host only: a living mob is fighting <paramref name="hero"/> (has them on its threat list, Roadmap 5.3). While
+        /// they are, their spells leave the ground alone (5.6 play-test: fights left craters everywhere).
+        /// </summary>
+        public bool ServerIsFighting(PlayerId hero)
+        {
+            foreach (ICombatCreature creature in _creatures)
+            {
+                if (creature is Mob mob && mob.ServerThreat is ThreatTable threat && threat.Contains(hero))
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>Host only: the target nearest <paramref name="point"/> within <paramref name="radius"/> metres.</summary>
         public bool TryFindNearest(float3 point, float radius, out CombatTarget nearest)
         {

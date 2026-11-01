@@ -313,6 +313,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerStaff
   ShowTopMostFoldoutHeaderGroup: 1
   logHits: 0
+  battleCalmSeconds: 5
 --- !u!114 &6004430841717266802
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -760,8 +761,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HeroSwingView
   animator: {fileID: 2811615453234438372}
-  windupAngle: 160
-  strikeAngle: 45
+  windupAngle: 150
+  strikeAngle: 35
   elbowBend: 70
   lean: 14
 --- !u!1 &5120874411902635000

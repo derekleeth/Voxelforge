@@ -65,9 +65,9 @@ namespace Voxelforge.Editor
 
         // Main Hand weapons (step G): melee ones swing for damage every swingSeconds within reach; the wand shoots.
         static Item Melee(ushort id, string model, string name, ItemRarity rarity, int armor, int stamina, int power,
-            float damage, float swingSeconds, float reach) =>
+            float damage, float swingSeconds, float reach, bool flatBlade = false) =>
             new Item(id, model, name, ItemCategory.Gear, rarity, EquipSlot.MainHand, new GearStats(armor, stamina, power), Hold.Weapon,
-                new WeaponStats(damage, swingSeconds, reach));
+                new WeaponStats(damage, swingSeconds, reach, flatBlade));
 
         static Item Ranged(ushort id, string model, string name, ItemRarity rarity, int armor, int stamina, int power, string ability) =>
             new Item(id, model, name, ItemCategory.Gear, rarity, EquipSlot.MainHand, new GearStats(armor, stamina, power), Hold.Weapon,
@@ -110,7 +110,7 @@ namespace Voxelforge.Editor
             // Epic.
             Gear(ItemIds.CrystalDeepCrown, "LootCrown", "Crown of the Crystal Deep", ItemRarity.Epic, EquipSlot.Head, 8, 7, 8),
             Gear(ItemIds.StormhideHauberk, "LootHauberk", "Stormhide Hauberk", ItemRarity.Epic, EquipSlot.Chest, 18, 10, 4),
-            Melee(ItemIds.GlacierheartBlade, "LootBlade", "Glacierheart Blade", ItemRarity.Epic, 2, 5, 16, 13f, 0.6f, 2.8f),
+            Melee(ItemIds.GlacierheartBlade, "LootBlade", "Glacierheart Blade", ItemRarity.Epic, 2, 5, 16, 13f, 0.6f, 2.8f, flatBlade: true),
 
             // Legendary.
             // Slow and huge.
@@ -248,6 +248,7 @@ namespace Voxelforge.Editor
             weapon.FindPropertyRelative("damage").floatValue = item.Weapon.damage;
             weapon.FindPropertyRelative("swingSeconds").floatValue = Mathf.Max(0.1f, item.Weapon.swingSeconds);
             weapon.FindPropertyRelative("reach").floatValue = Mathf.Max(0.5f, item.Weapon.reach);
+            weapon.FindPropertyRelative("flatBlade").boolValue = item.Weapon.flatBlade;
             serialized.FindProperty("ability").objectReferenceValue =
                 item.Shoots != null ? AssetDatabase.LoadAssetAtPath<AbilityDefinition>(item.Shoots) : null;
             serialized.FindProperty("mesh").objectReferenceValue = mesh;

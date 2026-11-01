@@ -10,16 +10,18 @@ namespace Voxelforge.Gameplay
     /// only: <see cref="PlayerWeapon.Swung"/> says when; the blow itself is the host's.
     /// </summary>
     [RequireComponent(typeof(PlayerWeapon))]
+    // Before HeldItemView, which points the weapon from where this leaves the arm.
+    [DefaultExecutionOrder(-50)]
     public sealed class HeroSwingView : MonoBehaviour
     {
         [Tooltip("The hero's humanoid Animator (Visual/Hero).")]
         [SerializeField] Animator animator;
 
         [Tooltip("How far up and back the arm winds up, in degrees from hanging down.")]
-        [SerializeField, Range(60f, 200f)] float windupAngle = 160f;
+        [SerializeField, Range(60f, 200f)] float windupAngle = 150f;
 
         [Tooltip("Where the blow ends, in degrees up from hanging down (in front of the hero).")]
-        [SerializeField, Range(0f, 120f)] float strikeAngle = 45f;
+        [SerializeField, Range(0f, 120f)] float strikeAngle = 35f;
 
         [Tooltip("How much the elbow bends during the wind-up, in degrees.")]
         [SerializeField, Range(0f, 120f)] float elbowBend = 70f;
@@ -50,6 +52,41 @@ namespace Voxelforge.Gameplay
         {
             _start = Time.time;
             _seconds = Mathf.Max(0.2f, seconds);
+        }
+
+        /// <summary>
+        /// How far through the swing playing now it is, 0-1, or -1 when the hero isn't swinging. <see cref="HeldItemView"/>
+        /// cocks and snaps the wrist with it (<see cref="WristCock"/>).
+        /// </summary>
+        public float Progress
+        {
+            get
+            {
+                float t = (Time.time - _start) / _seconds;
+                return t > 0f && t < 1f ? t : -1f;
+            }
+        }
+
+        /// <summary>The wrist when nothing's swinging: the weapon held out at right angles to the forearm.</summary>
+        public const float RestingCock = 90f;
+
+        /// <summary>
+        /// The angle, in degrees, between the forearm and the weapon's handle at <paramref name="t"/> through a swing
+        /// (<see cref="RestingCock"/> outside one): cocked back over the shoulder in the wind-up, snapping almost straight
+        /// so the head lines up with the arm at the blow, then easing back.
+        /// </summary>
+        public static float WristCock(float t)
+        {
+            if (t <= 0f || t >= 1f)
+                return RestingCock;
+            if (t < WindupEnd)
+                return Mathf.Lerp(RestingCock, 115f, Mathf.SmoothStep(0f, 1f, t / WindupEnd));
+            if (t < StrikeEnd)
+            {
+                float k = (t - WindupEnd) / (StrikeEnd - WindupEnd);
+                return Mathf.Lerp(115f, 15f, k * k);
+            }
+            return Mathf.Lerp(15f, RestingCock, Mathf.SmoothStep(0f, 1f, (t - StrikeEnd) / (1f - StrikeEnd)));
         }
 
         /// <summary>

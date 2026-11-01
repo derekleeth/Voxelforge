@@ -41,6 +41,7 @@ namespace Voxelforge.Gameplay
         PlayerHands _hands;
         PlayerMiner _miner;
         PlayerWeapon _weapon;
+        HeroSwingView _swingView;
         PlayerController _player;
         PlayerAbilityCues _cues;
         Transform _hand;
@@ -62,6 +63,7 @@ namespace Voxelforge.Gameplay
             _hands = GetComponent<PlayerHands>();
             _miner = GetComponent<PlayerMiner>();
             _weapon = GetComponent<PlayerWeapon>();
+            _swingView = GetComponent<HeroSwingView>();
             _player = GetComponent<PlayerController>();
             _cues = GetComponent<PlayerAbilityCues>();
             _body = GetComponent<HeroBody>();
@@ -151,6 +153,8 @@ namespace Voxelforge.Gameplay
             float sinceShot = _cues != null ? Time.time - _cues.LastShotTime : float.PositiveInfinity;
             float recoil = recoilAngle * Mathf.Exp(-sinceShot * recoilSettle);
             _pivot.localRotation = Quaternion.AngleAxis(-swing * swingAngle * _swingWeight + recoil, swingAxis);
+            if (fighting && _shownDefinition != null && _shownDefinition.Weapon.IsMelee)
+                AimWeapon(_shownDefinition.Weapon.flatBlade);
 
             if (_light.enabled)
             {
@@ -160,6 +164,30 @@ namespace Voxelforge.Gameplay
                 float wobble = Mathf.PerlinNoise(t * 6f, _flickerSeed) * 0.7f + Mathf.PerlinNoise(t * 17f, _flickerSeed + 31f) * 0.3f;
                 _light.intensity = glow.intensity * (1f + glow.flicker * (wobble - 0.5f));
             }
+        }
+
+        /// <summary>
+        /// A melee weapon in a fight (Roadmap 5.5 step G) is held like a real one, whatever the hand bone's own turn: the
+        /// handle sticks out of the fist at right angles to the forearm, in the plane the arm swings in
+        /// (<see cref="HeroSwingView"/>), so it goes over the shoulder and comes down in front. A maul's striking face
+        /// (the model's ±Z) leads the swing; a flat blade leads with its edge (the model's X), its flat facing sideways.
+        /// </summary>
+        void AimWeapon(bool flatBlade)
+        {
+            Transform elbow = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightLowerArm) : null;
+            if (elbow == null || _hand == null)
+                return;
+            Vector3 forearm = (_hand.position - elbow.position).normalized;
+            Vector3 across = Vector3.ProjectOnPlane(transform.right, forearm).normalized;
+            if (forearm == Vector3.zero || across == Vector3.zero)
+                return;
+            // Turning the forearm forward about the hero's right by the wrist's cock: a quarter turn at rest (hanging arm,
+            // handle forward), further back in the wind-up, and nearly straight at the blow, so the head comes down in line.
+            float cock = _swingView != null ? HeroSwingView.WristCock(_swingView.Progress) : HeroSwingView.RestingCock;
+            Vector3 handle = Quaternion.AngleAxis(-cock, across) * forearm;
+            Vector3 travel = Vector3.Cross(across, handle);
+            Transform model = _filter.transform;
+            model.rotation = Quaternion.LookRotation(flatBlade ? across : travel, handle);
         }
 
         /// <summary>The hero's right hand bone, or null before <c>Start</c> or on a hero without one.</summary>

@@ -183,6 +183,13 @@ Wear a weapon in the **Main Hand** (bag, Use on it). Then the **Mine** button (l
 - [ ] Walk up to a boar and hold Mine: the weapon comes **off your back into your hand**, and your hero **winds up over the shoulder and smashes down** in front (leaning into it). The hit lands as the weapon comes down: numbers pop up, its health bar drops, a thud and white sparks.
 - [ ] You don't have to aim exactly: any mob **in front of you** (roughly where you're looking) and within reach gets hit. Reach is measured to the edge of the mob's body, so standing where it fights you is close enough.
 - [ ] The swing looks right on both races (Wayfarer and Thunderhoof).
+- [ ] **Skyrender / cudgel:** the head goes back over the shoulder, then the wrist snaps and the head **slams down square** into the ground in front (not sideways).
+- [ ] **Glacierheart Blade:** it slashes **edge-first** (you see its flat side from beside the hero, and its thin edge leads).
+
+### No craters in a fight
+- [ ] While a mob is fighting you (and for 5 s after it dies), spells that miss and hit the ground (Pyroblast, Arcane Orb, EarthShatter, M.G.R.S. bolts) still flash, hurt and stun mobs in the blast, but **don't dig holes**.
+- [ ] Out of a fight, EarthShatter and the M.G.R.S. still dig and crater as before.
+- [ ] Earthen Wall and Rising Pillar still raise rock in a fight (they build, they don't dig).
 - [ ] Each weapon feels different: cudgel **8** every 0.8 s, blade **13** every 0.6 s (fast), Skyrender **26** every 1.2 s (slow, huge). Reach about 2.6-3 m.
 - [ ] **Tab** a mob and stand next to it: Mine hits it even if you're not aiming right at it.
 - [ ] Aim at a block (no foe in reach) and Mine **still mines** as before.
@@ -223,7 +230,7 @@ Wear a weapon in the **Main Hand** (bag, Use on it). Then the **Mine** button (l
 ## Roadmap 5.6: Experience & Levels (Step B: HUD & celebration)
 
 ### In each player's own view
-- [ ] A **gold starburst badge** with your level number sits at the left end of your action bar.
+- [ ] A **gold starburst badge** with your level number sits at the left end of your action bar. Two-digit levels show both digits (**10**, not "1").
 - [ ] A thin **gold XP bar** runs under the action bar with **"40 / 135 XP"**; it fills as you kill things and empties on a level-up. At level 20 it's full and says **Max level**.
 - [ ] Kills show **+20 XP** in gold over your hero; several quick kills add up (**+35 XP**).
 - [ ] A level-up shows a big **LEVEL UP! Level 5** burst, and the badge bounces.

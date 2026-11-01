@@ -27,6 +27,7 @@ MonoBehaviour:
     damage: 13
     swingSeconds: 0.6
     reach: 2.8
+    flatBlade: 1
   wornMesh: {fileID: 0}
   mesh: {fileID: 153188462363001256, guid: 18d800a9528b15343ace301219a8cb10, type: 3}
   material: {fileID: 2100000, guid: dd051200d50c5394fa9e446290eb5432, type: 2}

@@ -121,7 +121,11 @@ namespace Voxelforge.Gameplay
                 new Vector2(-4f, 0f), new Vector2(badge, badge));
             HudWidgets.Stretch(HudWidgets.Image("Burst", _badge, skin.starburst, XpGold).rectTransform, -badge * 0.12f);
             _levelText = HudWidgets.Label("Number", _badge, skin.comicFont, badge * 0.5f, Color.white, TextAlignmentOptions.Center);
-            HudWidgets.Stretch(_levelText.rectTransform);
+            HudWidgets.Stretch(_levelText.rectTransform, badge * 0.12f);
+            // Two digits (10-20) shrink to fit inside the burst.
+            _levelText.enableAutoSizing = true;
+            _levelText.fontSizeMin = badge * 0.25f;
+            _levelText.fontSizeMax = badge * 0.5f;
             RectTransform xp = HudWidgets.Place(HudWidgets.Rect("XP", Root), new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -1f), new Vector2(width - Padding * 2f, XpBarHeight));
             HudWidgets.Stretch(HudWidgets.Image("Back", xp, skin.barBack, Color.white).rectTransform, 1f);
@@ -160,11 +164,12 @@ namespace Voxelforge.Gameplay
                 if (_levelShown.Level != 255 && state.EffectiveLevel > _levelShown.EffectiveLevel)
                     _badgeBounceUntil = now + 0.6f;
                 _levelShown = state;
-                _levelText.SetText("{0}", (float)state.EffectiveLevel);
+                // Plain text: TMP's SetText("{0}", 10f) dropped the trailing zero and showed "1" (5.6 play-test).
+                _levelText.text = state.EffectiveLevel.ToString();
                 _xpFill.fillAmount = LevelRules.Progress(state, level.Book);
                 int need = level.Book != null ? level.Book.XpToNext(state.EffectiveLevel) : 0;
                 if (need > 0)
-                    _xpText.SetText("{0} / {1} XP", (float)state.Xp, (float)need);
+                    _xpText.text = $"{state.Xp} / {need} XP";
                 else
                     _xpText.SetText("Max level");
             }
