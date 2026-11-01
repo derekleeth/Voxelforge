@@ -412,9 +412,10 @@ namespace Voxelforge.Gameplay
                 text = model.CursorSocket >= 0 ? "An empty bag socket: wear a bag here for more slots." : "";
             else
             {
-                string name = _itemName?.Invoke(stack.ItemId) ?? $"Item {stack.ItemId}";
+                ItemRarity rarity = rules.RarityOf(stack.ItemId);
+                string name = RarityColors.Wrap(_itemName?.Invoke(stack.ItemId) ?? $"Item {stack.ItemId}", rarity);
                 int bagSlots = rules.BagSlotsOf(stack.ItemId);
-                string kind = bagSlots > 0 ? $"Bag, +{bagSlots} slots" : rules.CategoryOf(stack.ItemId).ToString();
+                string kind = bagSlots > 0 ? $"Bag, +{bagSlots} slots" : GearText.Kind(rules, stack.ItemId);
                 text = model.CursorSocket >= 0 ? $"{name}  ({kind}) - Use to take off" : $"{name}  ({kind})";
             }
             if (!string.IsNullOrEmpty(message))

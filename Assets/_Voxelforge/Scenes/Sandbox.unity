@@ -893,6 +893,7 @@ GameObject:
   - component: {fileID: 531815692}
   - component: {fileID: 531815691}
   - component: {fileID: 531815693}
+  - component: {fileID: 531815694}
   m_Layer: 0
   m_Name: Mob Debug Spawner
   m_TagString: Untagged
@@ -951,6 +952,22 @@ MonoBehaviour:
   chunkLoader: {fileID: 1325734897}
   searchRadius: 3000
   loadWaitSeconds: 15
+--- !u!114 &531815694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 531815690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f49f3ad346b3154cb5313726badb45f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.LootDebugKit
+  networkManager: {fileID: 2147055199}
+  players: {fileID: 2147055197}
+  items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
+  materialCount: 5
 --- !u!1 &684737378
 GameObject:
   m_ObjectHideFlags: 0

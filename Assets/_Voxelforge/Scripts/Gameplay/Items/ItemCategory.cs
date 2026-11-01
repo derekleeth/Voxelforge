@@ -9,7 +9,7 @@ namespace Voxelforge.Gameplay
         /// <summary>On an <see cref="ItemDefinition"/>: work it out from the ID (blocks are Blocks, the rest Gear).</summary>
         Auto = 0,
         Blocks = 1,
-        /// <summary>Tools, weapons, bags and (5.4) armour. One per slot.</summary>
+        /// <summary>Tools, weapons, bags and (5.5) armour. One per slot.</summary>
         Gear = 2,
         /// <summary>Potions and food (5.6).</summary>
         Consumables = 3,
@@ -28,6 +28,15 @@ namespace Voxelforge.Gameplay
 
         /// <summary>How many slots the item adds when equipped as a bag (Roadmap 4.5), or 0 if it isn't a bag.</summary>
         int BagSlotsOf(ushort itemId);
+
+        /// <summary>How rare the item is (Roadmap 5.5). Common for anything nobody described.</summary>
+        ItemRarity RarityOf(ushort itemId);
+
+        /// <summary>Where the item is worn (Roadmap 5.5), or <see cref="EquipSlot.None"/> if it isn't gear you wear.</summary>
+        EquipSlot EquipSlotOf(ushort itemId);
+
+        /// <summary>What the item gives while worn (Roadmap 5.5). Zero for anything that isn't worn gear.</summary>
+        GearStats StatsOf(ushort itemId);
     }
 
     /// <summary>The rules for items nobody has described: blocks stack to 999, everything else is one-per-slot gear.</summary>
@@ -53,5 +62,8 @@ namespace Voxelforge.Gameplay
         public ItemCategory CategoryOf(ushort itemId) => DefaultCategory(itemId);
         public int MaxStackOf(ushort itemId) => DefaultMaxStack(CategoryOf(itemId));
         public int BagSlotsOf(ushort itemId) => 0;
+        public ItemRarity RarityOf(ushort itemId) => ItemRarity.Common;
+        public EquipSlot EquipSlotOf(ushort itemId) => EquipSlot.None;
+        public GearStats StatsOf(ushort itemId) => default;
     }
 }

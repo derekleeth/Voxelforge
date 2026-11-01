@@ -4,8 +4,8 @@ using Voxelforge.Voxels;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// One item that isn't a plain block (Roadmap 3.5): a tool, or the look of a prop block such as a torch when it's
-    /// held or dropped. Create one with Assets &gt; Create &gt; Voxelforge &gt; Item Definition, then add it to the
+    /// One item that isn't a plain block (Roadmap 3.5): a tool, a bag, a crafting material or a piece of gear (5.5), or
+    /// the look of a prop block such as a torch when it's held or dropped. Create one with Assets &gt; Create &gt; Voxelforge &gt; Item Definition, then add it to the
     /// <see cref="ItemRegistry"/>.
     /// </summary>
     [CreateAssetMenu(menuName = "Voxelforge/Item Definition", fileName = "NewItem")]
@@ -26,6 +26,16 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Slots it adds when worn as a bag (Roadmap 4.5). 0 = not a bag.")]
         [SerializeField, Range(0, 32)] int bagSlots;
+
+        [Header("Loot & gear (Roadmap 5.5)")]
+        [Tooltip("How rare it is: the colour of its name. Fixed for the item, never rolled.")]
+        [SerializeField] ItemRarity rarity;
+
+        [Tooltip("Where it's worn. None = not worn gear (bags have their own sockets).")]
+        [SerializeField] EquipSlot equipSlot;
+
+        [Tooltip("What it gives while worn. Only worn gear has stats.")]
+        [SerializeField] GearStats stats;
 
         [Header("Look")]
         [Tooltip("The model. Its origin is where the hand grips it (tools) or its bottom centre (props); +Y is up.")]
@@ -75,6 +85,15 @@ namespace Voxelforge.Gameplay
         /// <summary>True if it can be worn in a bag socket.</summary>
         public bool IsBag => bagSlots > 0;
 
+        public ItemRarity Rarity => rarity;
+        public EquipSlot EquipSlot => equipSlot;
+
+        /// <summary>What it gives while worn; zero unless it's worn gear.</summary>
+        public GearStats Stats => equipSlot != EquipSlot.None ? stats : default;
+
+        /// <summary>True if it's worn in one of the six gear sockets (Roadmap 5.5).</summary>
+        public bool IsWornGear => equipSlot != EquipSlot.None;
+
         /// <summary>True if any of its multipliers is set.</summary>
         public bool IsTool => toolPower.pick > 0f || toolPower.axe > 0f || toolPower.any > 0f;
 
@@ -91,7 +110,8 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default,
-            AbilityDefinition ability = null, ItemCategory category = ItemCategory.Auto, int maxStack = 0, int bagSlots = 0)
+            AbilityDefinition ability = null, ItemCategory category = ItemCategory.Auto, int maxStack = 0, int bagSlots = 0,
+            ItemRarity rarity = ItemRarity.Common, EquipSlot equipSlot = EquipSlot.None, GearStats stats = default)
         {
             var definition = CreateInstance<ItemDefinition>();
             definition.name = displayName;
@@ -102,6 +122,9 @@ namespace Voxelforge.Gameplay
             definition.category = category;
             definition.maxStack = maxStack;
             definition.bagSlots = bagSlots;
+            definition.rarity = rarity;
+            definition.equipSlot = equipSlot;
+            definition.stats = stats;
             return definition;
         }
     }

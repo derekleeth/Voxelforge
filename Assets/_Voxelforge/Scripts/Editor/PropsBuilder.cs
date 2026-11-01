@@ -41,7 +41,7 @@ namespace Voxelforge.Editor
         static readonly Color Glow = new Color(2.2f, 2.2f, 2.2f);
         // Held and dropped items glow harder than placed props: in the hand they're small, and a torch flame at 2.2 was
         // barely noticeable (4.1 play-test).
-        static readonly Color HeldGlow = new Color(3.5f, 3.5f, 3.5f);
+        internal static readonly Color HeldGlow = new Color(3.5f, 3.5f, 3.5f);
         // A held torch lights the cave around the hero: like a placed torch (2.4 over 10 m), a little softer.
         static readonly DecorationLight HeldTorchLight = new DecorationLight
         {
@@ -51,9 +51,9 @@ namespace Voxelforge.Editor
 
         // Held poses in the Wayfarer's right hand bone (2.5), measured on its idle pose: tools held out front, ready
         // to swing with the head pointing down at the block; torches and workbenches upright. The grip sits in the palm.
-        static readonly Vector3 Grip = new Vector3(0f, 0.08f, 0f);
-        static readonly Vector3 ToolPose = new Vector3(352f, 314f, 70.8f);
-        static readonly Vector3 UprightPose = new Vector3(359.5f, 323.9f, 148f);
+        internal static readonly Vector3 Grip = new Vector3(0f, 0.08f, 0f);
+        internal static readonly Vector3 ToolPose = new Vector3(352f, 314f, 70.8f);
+        internal static readonly Vector3 UprightPose = new Vector3(359.5f, 323.9f, 148f);
         // The M.G.R.S. (3.6) is aimed, not swung: its barrel points ahead of the hero and a little up.
         static readonly Vector3 StaffPose = new Vector3(72.3f, 233.3f, 350.7f);
         static readonly Color TorchLight = new Color(1f, 0.64f, 0.32f);

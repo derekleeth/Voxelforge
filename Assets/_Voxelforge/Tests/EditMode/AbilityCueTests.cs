@@ -164,6 +164,11 @@ namespace Voxelforge.Tests
         [TestCase(typeof(ZoneRules))]
         [TestCase(typeof(EarthWorks))]
         [TestCase(typeof(EarthTimers))]
+        [TestCase(typeof(LootTable))]
+        [TestCase(typeof(LootBook))]
+        [TestCase(typeof(LootRoller))]
+        [TestCase(typeof(GearStats))]
+        [TestCase(typeof(EquippedGear))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

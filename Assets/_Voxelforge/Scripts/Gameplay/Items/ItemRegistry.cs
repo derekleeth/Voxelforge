@@ -48,6 +48,12 @@ namespace Voxelforge.Gameplay
 
         public int BagSlotsOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.BagSlots : 0;
 
+        public ItemRarity RarityOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.Rarity : ItemRarity.Common;
+
+        public EquipSlot EquipSlotOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.EquipSlot : EquipSlot.None;
+
+        public GearStats StatsOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.Stats : default;
+
         /// <summary>The item's name: its definition's, else its block's, else "Item 1234".</summary>
         public string DisplayName(ushort id, BlockRegistry blocks)
         {
@@ -79,6 +85,15 @@ namespace Voxelforge.Gameplay
                     errors.Add($"'{item.DisplayName}' needs a mesh and a material.");
                 if (item.IsBag && (ItemIds.IsBlock(item.Id) || item.MaxStack != 1))
                     errors.Add($"'{item.DisplayName}' is a bag, so it must be a one-per-slot item, not a block.");
+                if (item.IsWornGear)
+                {
+                    if (ItemIds.IsBlock(item.Id) || item.MaxStack != 1 || item.Category != ItemCategory.Gear)
+                        errors.Add($"'{item.DisplayName}' is worn gear, so it must be a one-per-slot Gear item, not a block.");
+                    if (item.IsBag || item.IsTool || item.IsRanged)
+                        errors.Add($"'{item.DisplayName}' is worn gear, so it can't also be a bag, a tool or a ranged item.");
+                    if (item.Stats.IsZero)
+                        errors.Add($"'{item.DisplayName}' is worn gear with no stats.");
+                }
                 if (item.Ability != null)
                 {
                     foreach (string problem in AbilityBook.Check(item.Ability))

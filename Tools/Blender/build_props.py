@@ -399,9 +399,11 @@ def gem(c, radii, axis=Vector((0, 0, 1))):
 # ----------------------------------------------------------------------------------------------------------------
 
 class MeshBuilder:
-    """Flat-shaded faces with their own corners: position, normal, uv and colour (1, 1, 1, sway)."""
+    """Flat-shaded faces with their own corners: position, normal, uv and colour (1, 1, 1, sway). region_of maps an area
+    name to its (u0, v0, u1, v1) in the atlas: this file's atlas unless another script (build_loot.py) brings its own."""
 
-    def __init__(self):
+    def __init__(self, region_of=None):
+        self.region_of = region_of or region
         self.positions, self.normals, self.uvs, self.colours, self.faces = [], [], [], [], []
 
     def part(self, name, faces, grain=Vector((0, 0, 1)), sway=None):
@@ -414,7 +416,7 @@ class MeshBuilder:
             values = [p.dot(axis) for p in points]
             return min(values), max(max(values) - min(values), 1e-6)
         spans = {"g": span(g), "u": span(u), "w": span(w)}
-        u0, v0, u1, v1 = region(name)
+        u0, v0, u1, v1 = self.region_of(name)
         pad = 2.0 / SIZE
         def to_uv(s, t):
             return u0 + pad + s * (u1 - u0 - 2 * pad), v0 + pad + t * (v1 - v0 - 2 * pad)

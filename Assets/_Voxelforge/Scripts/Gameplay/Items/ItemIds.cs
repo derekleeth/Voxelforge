@@ -26,6 +26,43 @@ namespace Voxelforge.Gameplay
         /// <summary>A big framed rucksack: +16 slots.</summary>
         public const ushort DelversRucksack = 1012;
 
+        // Crafting materials (Roadmap 5.5) dropped by mobs: 1100-1199. Leatherworking and Alchemy (5.8) use them.
+        public const ushort BoarHide = 1100;
+        public const ushort BoarTusk = 1101;
+        public const ushort WolfPelt = 1102;
+        public const ushort Frostfang = 1103;
+        /// <summary>A Crystal Slime's glowing core.</summary>
+        public const ushort CrystalShard = 1104;
+        public const ushort RhinoHide = 1105;
+        public const ushort ThunderHorn = 1106;
+        /// <summary>Elemental essences: a bit of each biome's magic, rarer than hides and fangs.</summary>
+        public const ushort EarthEssence = 1107;
+        public const ushort FrostEssence = 1108;
+        public const ushort StormEssence = 1109;
+        public const ushort ArcaneEssence = 1110;
+
+        // Worn gear (Roadmap 5.5): 1200-1399, grouped by rarity. LootBuilder sets their stats.
+        public const ushort BristlehideCap = 1200;
+        public const ushort BristlehideJerkin = 1201;
+        public const ushort BristlehideLeggings = 1202;
+        public const ushort TrailwornBoots = 1203;
+        public const ushort IronboundCudgel = 1204;
+        public const ushort OakBuckler = 1205;
+
+        public const ushort FrostfangHood = 1210;
+        public const ushort TuskhideJerkin = 1211;
+        public const ushort RhinohideGreaves = 1212;
+        public const ushort WindrunnerBoots = 1213;
+        public const ushort ShardglassWand = 1214;
+        public const ushort ThunderhornShield = 1215;
+
+        public const ushort CrystalDeepCrown = 1220;
+        public const ushort StormhideHauberk = 1221;
+        public const ushort GlacierheartBlade = 1222;
+
+        /// <summary>The one Legendary for now: a storm-forged maul from the high mesas.</summary>
+        public const ushort Skyrender = 1230;
+
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;
     }

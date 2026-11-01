@@ -3,13 +3,15 @@ using UnityEditor;
 namespace Voxelforge.Editor
 {
     /// <summary>
-    /// Import settings for the Blender foliage (Roadmap 2.6) and props (3.5): the decoration renderer draws the raw
+    /// Import settings for the Blender foliage (Roadmap 2.6), props (3.5) and loot (5.5): the decoration renderer draws the raw
     /// meshes with their vertex colours and custom normals, so Unity must keep those exactly and add nothing else.
     /// </summary>
     public sealed class FoliageImportSettings : AssetPostprocessor
     {
-        static readonly string[] ModelDirs = { "Assets/_Voxelforge/Art/Models/Foliage/", "Assets/_Voxelforge/Art/Models/Props/" };
-        static readonly string[] TextureDirs = { "Assets/_Voxelforge/Art/Textures/Foliage/", "Assets/_Voxelforge/Art/Textures/Props/" };
+        static readonly string[] ModelDirs = { "Assets/_Voxelforge/Art/Models/Foliage/", "Assets/_Voxelforge/Art/Models/Props/",
+            "Assets/_Voxelforge/Art/Models/Loot/" };
+        static readonly string[] TextureDirs = { "Assets/_Voxelforge/Art/Textures/Foliage/", "Assets/_Voxelforge/Art/Textures/Props/",
+            "Assets/_Voxelforge/Art/Textures/Loot/" };
 
         static bool IsIn(string path, string[] dirs)
         {

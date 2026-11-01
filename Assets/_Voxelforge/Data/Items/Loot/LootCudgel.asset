@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27dcee36aa6d030498f13f390444dd34, type: 3}
+  m_Name: LootCudgel
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
+  id: 1204
+  displayName: Ironbound Cudgel
+  category: 2
+  maxStack: 0
+  bagSlots: 0
+  rarity: 0
+  equipSlot: 5
+  stats:
+    armor: 0
+    stamina: 1
+    power: 4
+  mesh: {fileID: 8896867417342412677, guid: d9ddad4f44a45c644be2c1d0ffded5a7, type: 3}
+  material: {fileID: 2100000, guid: dd051200d50c5394fa9e446290eb5432, type: 2}
+  heldPosition: {x: 0, y: 0.08, z: 0}
+  heldRotation: {x: 352, y: 314, z: 70.8}
+  heldScale: 1
+  dropSize: 1.5
+  heldLight:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
+  toolPower:
+    pick: 0
+    axe: 0
+    any: 0
+  ability: {fileID: 0}
+  muzzle: {x: 0, y: 0, z: 0}

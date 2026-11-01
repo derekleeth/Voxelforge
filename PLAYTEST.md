@@ -4,7 +4,7 @@ Everything built today that still needs trying in the real game. Tick each box a
 
 **Before you start:** close any running built copy of Voxelforge (it holds the network port, so the editor can't host). Then press Play, and both players join.
 
-**Handy keys:** **F10** spawns the next mob kind near every hero (Shift+F10 clears them). **F6** takes the whole party to the nearest ruin someone hasn't found (**Shift+F6**: the nearest boss arena). **Tab** picks a target. **K** opens the class window. **M** opens the World Map. **F4** shows FPS.
+**Handy keys:** **F10** spawns the next mob kind near every hero (Shift+F10 clears them). **F6** takes the whole party to the nearest ruin someone hasn't found (**Shift+F6**: the nearest boss arena). **Tab** picks a target. **K** opens the class window. **M** opens the World Map. **B** opens the bag. **F2** gives every hero a loot kit (one of every piece of gear, 5 of each material). **F4** shows FPS.
 
 ---
 
@@ -77,6 +77,22 @@ Your saved world (seed 20261027) keeps all your edits; ruins only appear in grou
 
 ### New blocks
 - [ ] Ruin Brick, Mossy Ruin Brick and Warded Stone look right up close, and sound like stone to walk on and mine.
+
+---
+
+## Roadmap 5.5: Loot & Equipment (Step A)
+
+Step A is the loot data, so most of it is checked by looking in the bag after **F2** (mob drops come in Step B).
+
+### The loot kit and rarity colours (F2, then B)
+- [ ] Press **F2**: both players get pickup text for each item, only in their own view.
+- [ ] Open the bag (**B**). The **Gear & Tools** tab has 16 new pieces; the **Materials** tab has 11 materials (5 of each).
+- [ ] Point at items. Their names show in **rarity colours**: Common white (Bristlehide Cap), Rare blue (Tuskhide Jerkin, Earth Essence), Epic purple (Crown of the Crystal Deep), Legendary orange (**Skyrender, Maul of the High Mesa**).
+- [ ] Gear says its slot and stats, e.g. "Rare Chest: Armor 11, Stamina 6". Materials say "Materials" (essences: "Rare Materials").
+- [ ] Every item has a picture in its slot: hides, tusk, fang, horn, crystal shard, four glowing essences in gold cages, caps/hood/crown, jerkins/hauberk, leggings/greaves, boots, cudgel, wand, blade, the big molten maul, buckler and shield.
+- [ ] Hold a weapon (select it on the hotbar): the cudgel, wand, blade and maul sit in the hand like a tool. Armour pieces are held small and upright (just stand-ins until 5.9).
+- [ ] Materials stack (press F2 twice: 10 Boar Hide in one slot); gear doesn't.
+- [ ] Send to Partner and dropping work for the new items.
 
 ### Notes
 -
