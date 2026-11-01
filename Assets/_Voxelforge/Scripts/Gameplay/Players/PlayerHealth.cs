@@ -142,6 +142,15 @@ namespace Voxelforge.Gameplay
                 Tell(HealthEventKind.Incoming, seconds, PlayerId.None, AbilityIds.None, from);
         }
 
+        /// <summary>Host only: back to full health (a level-up, Roadmap 5.6). Not while knocked out.</summary>
+        public void ServerRefill()
+        {
+            if (!IsServer || _rules == null)
+                return;
+            _rules.Refill();
+            Send(force: true);
+        }
+
         /// <summary>Host only: a new most health (a class, 4.6), keeping the same share of it.</summary>
         public void ServerSetMaxHealth(float max)
         {

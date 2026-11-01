@@ -459,6 +459,7 @@ GameObject:
   m_Component:
   - component: {fileID: 306212244}
   - component: {fileID: 306212243}
+  - component: {fileID: 306212245}
   m_Layer: 0
   m_Name: Mob Spawner
   m_TagString: Untagged
@@ -510,6 +511,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &306212245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 306212242}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 835d38e7399e6c340a121d2aa495573d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ExperienceAwards
+  networkManager: {fileID: 2147055199}
+  players: {fileID: 2147055197}
+  book: {fileID: 11400000, guid: 046bb491e3493fc4a94c1db54bb11419, type: 2}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -914,6 +930,7 @@ GameObject:
   - component: {fileID: 531815691}
   - component: {fileID: 531815693}
   - component: {fileID: 531815694}
+  - component: {fileID: 531815695}
   m_Layer: 0
   m_Name: Mob Debug Spawner
   m_TagString: Untagged
@@ -988,6 +1005,20 @@ MonoBehaviour:
   players: {fileID: 2147055197}
   items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
   materialCount: 5
+--- !u!114 &531815695
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 531815690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e8cfbc0179d52a4999c828840d9a96e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.LevelDebugKeys
+  networkManager: {fileID: 2147055199}
+  players: {fileID: 2147055197}
 --- !u!1 &684737378
 GameObject:
   m_ObjectHideFlags: 0

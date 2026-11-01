@@ -153,6 +153,7 @@ namespace Voxelforge.Tests
             p1.Explored = new HashSet<int2> { new int2(0, 0), new int2(-1, -1), new int2(-40, 12), new int2(7, -300) };
             p1.Gear = new EquippedGear { Head = ItemIds.FrostfangHood, MainHand = ItemIds.Skyrender };
             p1.LootedCaches = new HashSet<int3> { new int3(230, 71, 51), new int3(-127, 64, 524) };
+            p1.Level = new LevelState(7, 55);
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
             save.Profiles.Add(p1.Uuid, p1);
             save.Profiles.Add(p2.Uuid, p2);
@@ -202,6 +203,8 @@ namespace Voxelforge.Tests
                 CollectionAssert.AreEquivalent(want.Explored, got.Explored, "Explored map cells (v6).");
                 Assert.AreEqual(want.Gear, got.Gear, "Worn gear (v7).");
                 CollectionAssert.AreEquivalent(want.LootedCaches, got.LootedCaches, "Looted ruin caches (v7).");
+                Assert.AreEqual(want.Level.EffectiveLevel, got.Level.EffectiveLevel, "Level (v8).");
+                Assert.AreEqual(want.Level.Xp, got.Level.Xp, "XP (v8).");
             }
             CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock and its time left (v4).");
 
@@ -333,6 +336,21 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Version7Save_StillLoads_AsLevelOneHeroes()
+        {
+            WorldSave save = OldSample(keepV4: true, keepV5: true, keepV6: true, keepV7: true);
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 7), out WorldSave loaded));
+            foreach (PlayerProfile want in save.Profiles.Values)
+            {
+                PlayerProfile got = loaded.Profiles[want.Uuid];
+                Assert.AreEqual(want.Gear, got.Gear, "The gear survives.");
+                CollectionAssert.AreEquivalent(want.LootedCaches, got.LootedCaches);
+                Assert.AreEqual(1, got.Level.EffectiveLevel, "Before 5.6 everyone was level 1.");
+                Assert.AreEqual(0, got.Level.Xp);
+            }
+        }
+
+        [Test]
         public void Version6Save_StillLoads_WithNoGearAndNoCachesLooted()
         {
             WorldSave save = OldSample(keepV4: true, keepV5: true, keepV6: true);
@@ -368,11 +386,14 @@ namespace Voxelforge.Tests
         /// <paramref name="keepV6"/>, no explored cells (v6); unless <paramref name="keepV5"/>, no race (v5); and unless
         /// <paramref name="keepV4"/>, no worn bags, class, chests or earth either.
         /// </summary>
-        static WorldSave OldSample(bool keepV4 = false, bool keepV5 = false, bool keepV6 = false)
+        static WorldSave OldSample(bool keepV4 = false, bool keepV5 = false, bool keepV6 = false, bool keepV7 = false)
         {
             WorldSave save = SampleSave();
             foreach (PlayerProfile profile in save.Profiles.Values)
             {
+                profile.Level = LevelState.Start;
+                if (keepV7)
+                    continue;
                 profile.Gear = default;
                 profile.LootedCaches.Clear();
                 if (keepV6)
@@ -387,7 +408,7 @@ namespace Voxelforge.Tests
                 profile.Bags = default;
                 profile.Class = HeroClassId.Adventurer;
             }
-            if (keepV4 || keepV5 || keepV6)
+            if (keepV4 || keepV5 || keepV6 || keepV7)
                 return save;
             save.Chests.Clear();
             save.Earth.Clear();
@@ -406,6 +427,10 @@ namespace Voxelforge.Tests
         static byte[] OlderFile(WorldSave save, int version)
         {
             var body = new List<byte>(WorldSaveFile.EncodeBody(save));
+            int levelBlock = 4 + save.Profiles.Count * (16 + 1 + 4);
+            body.RemoveRange(body.Count - 4 - levelBlock, levelBlock); // Levels and XP (v8).
+            if (version >= 7)
+                return SaveFileBytes(body, version);
             int gearBlock = 4 + save.Profiles.Count * (16 + 2 * EquippedGear.SocketCount + 4);
             body.RemoveRange(body.Count - 4 - gearBlock, gearBlock); // Gear and looted caches (v7).
             if (version >= 6)
@@ -450,9 +475,9 @@ namespace Voxelforge.Tests
         {
             byte[] full = WorldSaveFile.EncodeBody(save);
             var empty = new WorldSave { Seed = save.Seed, GeneratorVersion = save.GeneratorVersion, SavedUtc = save.SavedUtc, Deltas = save.Deltas };
-            // The same body with no profiles, chests, earth, explored cells or gear is: header + deltas + 5 zero counts + end
-            // marker.
-            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4;
+            // The same body with no profiles, chests, earth, explored cells, gear or levels is: header + deltas + 6 zero
+            // counts + end marker.
+            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4;
             int profiles = 0;
             foreach (PlayerProfile profile in save.Profiles.Values)
                 profiles += FullProfileBytes(profile);

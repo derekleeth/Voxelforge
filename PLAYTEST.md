@@ -4,7 +4,7 @@ Everything built today that still needs trying in the real game. Tick each box a
 
 **Before you start:** close any running built copy of Voxelforge (it holds the network port, so the editor can't host). Then press Play, and both players join.
 
-**Handy keys:** **F10** spawns the next mob kind near every hero (Shift+F10 clears them). **F6** takes the whole party to the nearest ruin someone hasn't found (**Shift+F6**: the nearest boss arena). **Tab** picks a target. **K** opens the class window. **M** opens the World Map. **B** opens the bag. **F2** gives every hero a loot kit (one of every piece of gear, 5 of each material). **F4** shows FPS.
+**Handy keys:** **F10** spawns the next mob kind near every hero (Shift+F10 clears them). **F6** takes the whole party to the nearest ruin someone hasn't found (**Shift+F6**: the nearest boss arena). **Tab** picks a target. **K** opens the class window. **M** opens the World Map. **B** opens the bag. **F1** gives every hero a level (Shift+F1: back to 1). **F2** gives every hero a loot kit (one of every piece of gear, 5 of each material). **F4** shows FPS.
 
 ---
 
@@ -174,6 +174,27 @@ Stand-in models (5.9 brings the real armour sets). Try it on **both races** (a W
 ### Sounds
 - [ ] Putting gear on or taking it off: a leather-and-metal **clank** (not when you first join with gear already on).
 - [ ] Picking up a **Rare** sack: a bright chime. **Epic:** a longer shimmering run. **Legendary:** a little **fanfare**. Common: the usual pop.
+
+---
+
+## Roadmap 5.6: Experience & Levels (Step A: XP and levels)
+
+**F1** takes every hero up a level; **Shift+F1** puts everyone back to level 1. (The level badge and XP bar arrive in Step B, below.)
+
+### Earning XP
+- [ ] Kill mobs: Boar 20 XP, Wolf 15, Rhino 40, Crystal Slime 25 (its pieces 10 and 5). About **5 boars** to reach level 2.
+- [ ] **Both** players get the full XP when a mob dies within about 40 m of them, even if only one fought it (the healer too).
+- [ ] A partner far away (more than 40 m, e.g. back at base) gets nothing for that kill.
+
+### Levelling up
+- [ ] Each level adds **+10 max health** and **+5 max mana** (watch the numbers on the bars), and **refills** both.
+- [ ] Levelling up in the middle of casting doesn't cancel the cast.
+- [ ] A knocked-out hero who levels up doesn't wake up early.
+- [ ] Level 20 is the cap (F1 stops there).
+- [ ] Gear Stamina and level both count: put on Stamina gear at level 5 and the maximum includes both.
+
+### Saving
+- [ ] Get to level 3 or so, save and quit (or F5), come back: same level and XP, and the bigger health and mana. Save format is now 8; older saves start at level 1.
 
 ### Notes
 -

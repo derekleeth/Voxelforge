@@ -361,6 +361,8 @@ namespace Voxelforge.Gameplay
                 }
                 if (player.TryGetComponent(out PlayerClass heroClass))
                     profile.Class = heroClass.Class;
+                if (player.TryGetComponent(out PlayerLevel level))
+                    profile.Level = level.State;
                 if (player.TryGetComponent(out PlayerRace race))
                 {
                     profile.Race = race.Race;

@@ -146,6 +146,30 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>
+        /// Host only: a new most mana (gear or a level, Roadmap 5.6), keeping the same share of it. Unlike
+        /// <see cref="ServerSetPool"/> it leaves a cast going and the regen alone.
+        /// </summary>
+        public void ServerSetMaxMana(float maxMana)
+        {
+            if (!IsServer || _caster == null)
+                return;
+            float share = _caster.MaxMana > 0f ? _caster.Mana / _caster.MaxMana : 1f;
+            _caster.SetMaxMana(maxMana);
+            _caster.SetMana(_caster.MaxMana * share);
+            _maxMana.Value = _caster.MaxMana;
+            _mana.Value = _caster.Mana;
+        }
+
+        /// <summary>Host only: back to full mana (a level-up, Roadmap 5.6).</summary>
+        public void ServerRefillMana()
+        {
+            if (!IsServer || _caster == null)
+                return;
+            _caster.Refill();
+            _mana.Value = _caster.Mana;
+        }
+
+        /// <summary>
         /// Host only: mana comes back <paramref name="bonus"/> faster again (0.5 = half as fast again) for
         /// <paramref name="seconds"/>, e.g. while standing by a Wellspring Totem, which renews it every pulse (Roadmap 4.6).
         /// The biggest boost going wins; boosts don't add up.

@@ -144,6 +144,9 @@ namespace Voxelforge.Gameplay
             player.TryGetComponent(out PlayerHearth hearth);
             if (profile != null && hearth != null)
                 hearth.ServerRestore(profile.HasHome, profile.HomeBlock);
+            // The level before the class (Roadmap 5.6), so the pools the class sets include it.
+            if (player.TryGetComponent(out PlayerLevel heroLevel))
+                heroLevel.ServerRestore(profile != null ? profile.Level : LevelState.Start);
             // Race first (Roadmap 4.7): the class adds the race's bonuses and racial in when it's applied.
             if (player.TryGetComponent(out PlayerRace race))
                 race.ServerRestore(profile != null ? profile.Race : RaceId.Wayfarer, profile != null && profile.RaceChosen);

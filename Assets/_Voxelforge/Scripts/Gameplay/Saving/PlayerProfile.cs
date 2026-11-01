@@ -58,6 +58,9 @@ namespace Voxelforge.Gameplay
         /// </summary>
         public HashSet<int3> LootedCaches = new HashSet<int3>();
 
+        /// <summary>Their level and XP (Roadmap 5.6). Saves from before 5.6 load as a new level 1 hero.</summary>
+        public LevelState Level = LevelState.Start;
+
         public PlayerProfile Clone() => new PlayerProfile
         {
             Uuid = Uuid,
@@ -74,6 +77,7 @@ namespace Voxelforge.Gameplay
             Explored = new HashSet<int2>(Explored),
             Gear = Gear,
             LootedCaches = new HashSet<int3>(LootedCaches),
+            Level = Level,
         };
     }
 }

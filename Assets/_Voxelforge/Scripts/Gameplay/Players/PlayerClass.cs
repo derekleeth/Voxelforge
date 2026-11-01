@@ -28,6 +28,7 @@ namespace Voxelforge.Gameplay
         PlayerHealth _health;
         PlayerRace _race;
         PlayerBlockBag _bag;
+        PlayerLevel _level;
         float _lastRequestTime = float.NegativeInfinity;
 
         public ClassBook Book => classes;
@@ -50,6 +51,7 @@ namespace Voxelforge.Gameplay
             _health = GetComponent<PlayerHealth>();
             _race = GetComponent<PlayerRace>();
             _bag = GetComponent<PlayerBlockBag>();
+            _level = GetComponent<PlayerLevel>();
         }
 
         public override void OnNetworkSpawn()
@@ -58,6 +60,8 @@ namespace Voxelforge.Gameplay
             _class.OnValueChanged += OnClassChanged;
             if (IsServer && _bag != null)
                 _bag.GearChanged += OnGearChanged;
+            if (IsServer && _level != null)
+                _level.Changed += OnLevelChanged;
         }
 
         public override void OnNetworkDespawn()
@@ -65,20 +69,41 @@ namespace Voxelforge.Gameplay
             _class.OnValueChanged -= OnClassChanged;
             if (_bag != null)
                 _bag.GearChanged -= OnGearChanged;
+            if (_level != null)
+                _level.Changed -= OnLevelChanged;
             base.OnNetworkDespawn();
         }
 
-        // Stamina on worn gear adds max health (Roadmap 5.5). Only health: the action bar and mana stay as they are.
-        void OnGearChanged(EquippedGear gear)
+        // Stamina on worn gear (Roadmap 5.5) and the hero's level (5.6) add to the pools. Only the pools: the action bar
+        // and a cast in progress stay as they are.
+        void OnGearChanged(EquippedGear gear) => RefreshPools();
+
+        void OnLevelChanged(LevelState state) => RefreshPools();
+
+        void RefreshPools()
         {
-            if (IsServer && _health != null && Definition is ClassDefinition definition)
+            if (!IsServer || !(Definition is ClassDefinition definition))
+                return;
+            if (_health != null)
                 _health.ServerSetMaxHealth(MaxHealthOf(definition));
+            if (_caster != null)
+                _caster.ServerSetMaxMana(MaxManaOf(definition));
         }
 
         float MaxHealthOf(ClassDefinition definition)
         {
             float health = RaceRules.Pools(definition, _race != null ? _race.Definition : null).MaxHealth;
-            return _bag != null ? health + GearRules.BonusHealth(_bag.GearStats.stamina) : health;
+            if (_bag != null)
+                health += GearRules.BonusHealth(_bag.GearStats.stamina);
+            if (_level != null)
+                health += LevelRules.BonusHealth(_level.Level, _level.Book);
+            return health;
+        }
+
+        float MaxManaOf(ClassDefinition definition)
+        {
+            float mana = RaceRules.Pools(definition, _race != null ? _race.Definition : null).MaxMana;
+            return _level != null ? mana + LevelRules.BonusMana(_level.Level, _level.Book) : mana;
         }
 
         void OnClassChanged(HeroClassId before, HeroClassId after) => Changed?.Invoke(after);
@@ -132,7 +157,7 @@ namespace Voxelforge.Gameplay
             RaceDefinition race = _race != null ? _race.Definition : null;
             HeroPools pools = RaceRules.Pools(definition, race);
             _actionBar.ServerSetLoadout(definition.Loadout, race);
-            _caster.ServerSetPool(pools.MaxMana, pools.ManaRegen);
+            _caster.ServerSetPool(MaxManaOf(definition), pools.ManaRegen);
             if (_health != null)
                 _health.ServerSetMaxHealth(MaxHealthOf(definition));
             _class.Value = definition.Id;

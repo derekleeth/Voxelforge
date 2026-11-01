@@ -172,6 +172,10 @@ namespace Voxelforge.Tests
         [TestCase(typeof(LootShares))]
         [TestCase(typeof(PersonalLoot))]
         [TestCase(typeof(GearRules))]
+        [TestCase(typeof(LevelBook))]
+        [TestCase(typeof(LevelRules))]
+        [TestCase(typeof(PlayerLevel))]
+        [TestCase(typeof(ExperienceAwards))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

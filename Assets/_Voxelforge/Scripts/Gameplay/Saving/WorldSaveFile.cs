@@ -60,10 +60,10 @@ namespace Voxelforge.Gameplay
         /// 1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). 3: each profile's worn bags, and the Storage
         /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). 5: each
         /// profile's race and whether they've chosen it (4.7). 6: each player's explored map cells, after the earth
-        /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). Older
-        /// saves still load.
+        /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). 8:
+        /// each player's level and XP, after that (5.6). Older saves still load.
         /// </summary>
-        public const int FormatVersion = 7;
+        public const int FormatVersion = 8;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -163,6 +163,16 @@ namespace Voxelforge.Gameplay
                         writer.Write(block.y);
                         writer.Write(block.z);
                     }
+                }
+
+                // Levels and XP (v8).
+                writer.Write(save.Profiles.Count);
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    writer.Write(profile.Uuid.High);
+                    writer.Write(profile.Uuid.Low);
+                    writer.Write((byte)profile.Level.EffectiveLevel);
+                    writer.Write(profile.Level.Xp);
                 }
                 writer.Write(EndMarker);
             }
@@ -335,6 +345,20 @@ namespace Voxelforge.Gameplay
                             profile.Gear = gear;
                             profile.LootedCaches = caches;
                         }
+                    }
+                }
+
+                if (format >= 8)
+                {
+                    int levelled = reader.ReadInt32();
+                    if (levelled < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int p = 0; p < levelled; p++)
+                    {
+                        var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
+                        var level = new LevelState(reader.ReadByte(), reader.ReadInt32());
+                        if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
+                            profile.Level = level;
                     }
                 }
 
