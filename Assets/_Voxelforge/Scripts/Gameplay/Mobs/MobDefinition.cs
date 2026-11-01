@@ -63,6 +63,37 @@ namespace Voxelforge.Gameplay
         [Min(0f)] public float DazedSeconds;
     }
 
+    /// <summary>Where the biome spawner (Roadmap 5.2 step D) puts a mob.</summary>
+    public enum MobSpawnPlace : byte
+    {
+        /// <summary>The spawner never places it (a slime that only comes from splitting).</summary>
+        Nowhere,
+        /// <summary>On open ground under the sky.</summary>
+        Surface,
+        /// <summary>On a cave floor well under the ground.</summary>
+        Cave,
+    }
+
+    /// <summary>Where and in what numbers the biome spawner places a mob (Roadmap 5.2 step D).</summary>
+    [Serializable]
+    public struct MobSpawnRule
+    {
+        public MobSpawnPlace Place;
+
+        [Tooltip("Biomes it lives in, matched against the start of the biome's name (\"Meadows\" matches \"Meadows (Elwynn style)\"). Empty: any biome.")]
+        public string[] Biomes;
+
+        [Tooltip("It also lives on any ground above the snow line, whatever the biome.")]
+        public bool AboveSnowLine;
+
+        [Tooltip("How many spawn together: a pair, a pack, a herd.")]
+        [Min(1)] public int GroupMin;
+        [Min(1)] public int GroupMax;
+
+        [Tooltip("How likely it is picked over other mobs that live in the same place.")]
+        [Min(0f)] public float Weight;
+    }
+
     /// <summary>
     /// One kind of creature (Roadmap 5.2): its health, body, how it moves, what it does and how it fights. The host runs
     /// it (<see cref="Mob"/>, <see cref="MobBrain"/>), so these numbers are only trusted on the host. Create one with
@@ -137,6 +168,10 @@ namespace Voxelforge.Gameplay
 
         [SerializeField, Min(0)] int splitCount = 2;
 
+        [Header("Spawning")]
+        [Tooltip("Where the biome spawner puts it, and how many at a time.")]
+        [SerializeField] MobSpawnRule spawn = new MobSpawnRule { GroupMin = 1, GroupMax = 1, Weight = 1f };
+
         public MobId Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public Mob Prefab => prefab;
@@ -159,6 +194,7 @@ namespace Voxelforge.Gameplay
         public float HopPause => hopPause;
         public MobDefinition SplitInto => splitInto;
         public int SplitCount => splitInto != null ? splitCount : 0;
+        public MobSpawnRule Spawn => spawn;
 
         /// <summary>How far round it looks for packmates, in metres.</summary>
         public float PackRadius => callRadius > 0f ? callRadius : 25f;
@@ -210,6 +246,13 @@ namespace Voxelforge.Gameplay
         {
             this.callRadius = callRadius;
             this.calmSeconds = calmSeconds;
+            return this;
+        }
+
+        /// <summary>For tests and tools: where the biome spawner puts it.</summary>
+        internal MobDefinition WithSpawn(MobSpawnRule rule)
+        {
+            spawn = rule;
             return this;
         }
 

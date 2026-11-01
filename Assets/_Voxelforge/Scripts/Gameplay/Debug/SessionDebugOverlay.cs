@@ -34,6 +34,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Optional: shows how many sounds are playing (Roadmap 3.9).")]
         [SerializeField] SoundRouter sounds;
 
+        [Tooltip("Optional: shows how many mobs are about, near each hero and in all (Roadmap 5.2).")]
+        [SerializeField] MobSpawner mobs;
+
         [SerializeField] bool visible = true;
 
         [Tooltip("How many seconds of frames the average and 1% low FPS cover.")]
@@ -225,6 +228,8 @@ namespace Voxelforge.Gameplay
             }
 
             AppendTerrain();
+            if (mobs != null && network.IsServer)
+                _text.Append($"\nmobs: {mobs.Alive}/{mobs.TotalCap}{(mobs.IsSpawning ? "" : "  (spawning off: Ctrl+F10)")}");
 
             foreach (PlayerController player in session.Players.Players)
             {
@@ -236,6 +241,8 @@ namespace Voxelforge.Gameplay
                 _text.Append($"\n{player.PlayerId}  slot {player.LocalSlot}  ({p.x:F1}, {p.y:F1}, {p.z:F1})  {state}");
                 if (world != null)
                     _text.Append($"  {world.BiomeNameAt(Mathf.FloorToInt(p.x), Mathf.FloorToInt(p.z))}");
+                if (mobs != null && network.IsServer)
+                    _text.Append($"  mobs {mobs.NearHero(player.PlayerId)}/{mobs.PerHeroCap}");
             }
 
             AppendLocalSlots();

@@ -54,3 +54,11 @@ MonoBehaviour:
   hopPause: 0.4
   splitInto: {fileID: 0}
   splitCount: 2
+  spawn:
+    Place: 1
+    Biomes:
+    - Snowy Peaks
+    AboveSnowLine: 1
+    GroupMin: 3
+    GroupMax: 4
+    Weight: 1

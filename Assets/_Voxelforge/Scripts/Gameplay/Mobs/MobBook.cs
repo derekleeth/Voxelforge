@@ -61,6 +61,14 @@ namespace Voxelforge.Gameplay
                     else if (!mobs.Contains(mob.SplitInto))
                         errors.Add($"'{mob.DisplayName}' splits into '{mob.SplitInto.DisplayName}', which isn't in the book.");
                 }
+                MobSpawnRule spawn = mob.Spawn;
+                if (spawn.Place != MobSpawnPlace.Nowhere)
+                {
+                    if (spawn.GroupMin < 1 || spawn.GroupMax < spawn.GroupMin)
+                        errors.Add($"'{mob.DisplayName}' spawns in groups of {spawn.GroupMin}-{spawn.GroupMax}; it needs 1 or more, smallest first.");
+                    if (spawn.Weight <= 0f)
+                        errors.Add($"'{mob.DisplayName}' has a spawn place but a weight of 0, so it never spawns.");
+                }
                 if (mob.Attacks.Length == 0)
                     errors.Add($"'{mob.DisplayName}' has no attacks.");
                 foreach (MobAttack attack in mob.Attacks)

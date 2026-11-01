@@ -429,6 +429,67 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &306212242
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 306212244}
+  - component: {fileID: 306212243}
+  m_Layer: 0
+  m_Name: Mob Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &306212243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 306212242}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96e61cbb1e1779d47b456c3ef74483d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.MobSpawner
+  networkManager: {fileID: 2147055199}
+  world: {fileID: 1325734895}
+  players: {fileID: 2147055197}
+  mobs: {fileID: 11400000, guid: cfdfccf1b47009847bd5a4e277bd61b0, type: 2}
+  spawning: 1
+  interval: 2
+  ringInner: 24
+  ringOuter: 56
+  nearRadius: 64
+  perHeroCap: 6
+  totalCap: 20
+  keepAway: 20
+  despawnDistance: 80
+  spotsPerTry: 6
+  caveDepth: 8
+  caveShare: 0.35
+  groupSpread: 3
+--- !u!4 &306212244
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 306212242}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1788,6 +1849,7 @@ MonoBehaviour:
   drops: {fileID: 974320860}
   saves: {fileID: 1566640755}
   sounds: {fileID: 444543919}
+  mobs: {fileID: 306212243}
   visible: 1
   statsWindowSeconds: 10
 --- !u!114 &2147055196
@@ -1973,3 +2035,4 @@ SceneRoots:
   - {fileID: 83969904}
   - {fileID: 684737380}
   - {fileID: 444543920}
+  - {fileID: 306212244}

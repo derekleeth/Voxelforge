@@ -54,3 +54,11 @@ MonoBehaviour:
   hopPause: 0.4
   splitInto: {fileID: 0}
   splitCount: 2
+  spawn:
+    Place: 1
+    Biomes:
+    - Thunderhoof Plains
+    AboveSnowLine: 0
+    GroupMin: 2
+    GroupMax: 3
+    Weight: 1

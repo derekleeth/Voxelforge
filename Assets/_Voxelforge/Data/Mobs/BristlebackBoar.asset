@@ -55,3 +55,21 @@ MonoBehaviour:
     ChargeSpeed: 3
     ChargeDistance: 18
     DazedSeconds: 1.5
+  callRadius: 0
+  callSeconds: 0
+  maxBiters: 0
+  circleRadius: 4
+  fleeBelowShare: 0
+  calmSeconds: 0
+  hops: 0
+  hopPause: 0.4
+  splitInto: {fileID: 0}
+  splitCount: 2
+  spawn:
+    Place: 1
+    Biomes:
+    - Meadows
+    AboveSnowLine: 0
+    GroupMin: 1
+    GroupMax: 2
+    Weight: 1

@@ -84,6 +84,9 @@ namespace Voxelforge.Voxels
 
         public ChunkGenerationScheduler Generator => _generator;
 
+        /// <summary>The terrain and biomes this world is made from: the biome spawner (Roadmap 5.2) names biomes with it.</summary>
+        public TerrainSettings TerrainSettings => terrainSettings;
+
         /// <summary>
         /// The name of the biome whose blocks cover column (<paramref name="x"/>, <paramref name="z"/>), for the debug
         /// overlay (Roadmap 4.7: finding the Thunderhoof Plains). Builds a sampler each call, so not for gameplay.
