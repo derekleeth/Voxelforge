@@ -26,6 +26,7 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerHands _hands;
+        PlayerWeapon _weapon;
 
         /// <summary>Every PC: this player is hitting a block right now, so their tool swings (<see cref="HeldItemView"/>).</summary>
         public bool IsMining => _mining.Value;
@@ -34,6 +35,7 @@ namespace Voxelforge.Gameplay
         {
             _player = GetComponent<PlayerController>();
             _hands = GetComponent<PlayerHands>();
+            _weapon = GetComponent<PlayerWeapon>();
         }
 
         void FixedUpdate()
@@ -55,6 +57,8 @@ namespace Voxelforge.Gameplay
                 return VoxelDamageResult.NoDamage;
             if (_hands != null && _hands.TryGetHeldAbility(out _))
                 return VoxelDamageResult.NoDamage; // Mine casts the M.G.R.S.'s ability instead (PlayerCaster, 4.1).
+            if (_weapon != null && _weapon.ServerWantsToAttack(input))
+                return VoxelDamageResult.NoDamage; // A foe in the worn weapon's reach: Mine attacks it (Roadmap 5.5 step G).
             if (!_player.Aim.TryAim(world.World, transform.position, input, out VoxelHit hit))
                 return VoxelDamageResult.NoDamage;
 

@@ -45,6 +45,7 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerHands _hands;
+        PlayerWeapon _weapon;
         PlayerTargeting _targeting;
         // The M.G.R.S. (or another held tool) cast this one: it only locks on when the camera is near the target.
         AbilityDefinition _heldCast;
@@ -93,6 +94,7 @@ namespace Voxelforge.Gameplay
         {
             _player = GetComponent<PlayerController>();
             _hands = GetComponent<PlayerHands>();
+            _weapon = GetComponent<PlayerWeapon>();
             _staff = GetComponent<PlayerStaff>();
             _cues = GetComponent<PlayerAbilityCues>();
             _actionBar = GetComponent<PlayerActionBar>();
@@ -221,7 +223,9 @@ namespace Voxelforge.Gameplay
                 // The M.G.R.S.: holding Mine keeps casting it. Running dry is said once per press, so holding doesn't spam.
                 if ((pressed & PlayerButtons.Mine) != 0)
                     _toldNoMana = false;
-                if (input.IsPressed(PlayerButtons.Mine) && _hands.TryGetHeldAbility(out AbilityDefinition held))
+                // The worn wand (Roadmap 5.5 step G) shoots the same way, but only at a foe in range.
+                if (input.IsPressed(PlayerButtons.Mine) && (_hands.TryGetHeldAbility(out AbilityDefinition held) ||
+                    (_weapon != null && _weapon.ServerTryGetRangedAttack(input, out held))))
                 {
                     CastCheck check = TryCast(held, now, input);
                     if (check == CastCheck.Ok)

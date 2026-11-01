@@ -70,6 +70,7 @@ namespace Voxelforge.Gameplay
         }
 
         PlayerBlockBag _bag;
+        PlayerWeapon _weapon;
         HeroBody _body;
         Piece[] _pieces;
         EquippedGear _shown;
@@ -78,6 +79,7 @@ namespace Voxelforge.Gameplay
         void Awake()
         {
             _bag = GetComponent<PlayerBlockBag>();
+            _weapon = GetComponent<PlayerWeapon>();
             _body = GetComponent<HeroBody>();
         }
 
@@ -190,10 +192,15 @@ namespace Voxelforge.Gameplay
         void LateUpdate()
         {
             EquippedGear gear = _bag.Gear;
-            if (_shownAny && gear.Equals(_shown))
+            bool fighting = _weapon != null && _weapon.IsAttacking;
+            if (_shownAny && gear.Equals(_shown) && fighting == _drawn)
                 return;
+            _drawn = fighting;
             Show(gear);
         }
+
+        // The main-hand weapon is in the hero's hand while they fight with it (step G), so not on their back.
+        bool _drawn;
 
         /// <summary>Editor checks only: dresses a hero placed outside play mode (still in its T-pose) in <paramref name="gear"/>.</summary>
         internal void Preview(EquippedGear gear)
@@ -222,7 +229,7 @@ namespace Voxelforge.Gameplay
                     piece.Filter.sharedMesh = definition.WornMesh;
                     piece.Renderer.sharedMaterial = definition.Material;
                 }
-                piece.Transform.gameObject.SetActive(show);
+                piece.Transform.gameObject.SetActive(show && !(_drawn && piece.Socket == EquippedGear.SocketOf(EquipSlot.MainHand)));
             }
         }
     }

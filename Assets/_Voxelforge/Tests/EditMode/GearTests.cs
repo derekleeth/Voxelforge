@@ -186,6 +186,58 @@ namespace Voxelforge.Tests
             Assert.AreEqual("Armor 0 (-0% dmg)\nStamina 0  Power 0", GearText.Summary(default));
         }
 
+        // ---- Weapons (step G) ----
+
+        [Test]
+        public void Registry_Validate_NeedsMainHandWeaponsToSwingOrShoot()
+        {
+            AbilityDefinition bolt = AbilityDefinition.Create(AbilityIds.ShardBolt, "Bolt", manaCost: 0f, cooldown: 0.7f, castTime: 0f,
+                range: 20f, projectileSpeed: 30f);
+            var bad = new[]
+            {
+                ItemDefinition.Create(1300, "Limp Stick", equipSlot: EquipSlot.MainHand, stats: new GearStats(0, 1, 0)),
+                ItemDefinition.Create(1301, "Shooting Hat", ability: bolt, equipSlot: EquipSlot.Head, stats: new GearStats(1, 0, 0)),
+                ItemDefinition.Create(1302, "Club", equipSlot: EquipSlot.MainHand, stats: new GearStats(0, 1, 0),
+                    weapon: new WeaponStats(8f, 0.8f, 2.6f)),
+                ItemDefinition.Create(1303, "Wand", ability: bolt, equipSlot: EquipSlot.MainHand, stats: new GearStats(0, 1, 5)),
+            };
+            ItemRegistry registry = ItemRegistry.Create(bad);
+            try
+            {
+                List<string> errors = registry.Validate(null);
+                Assert.That(errors, Has.Some.Contains("'Limp Stick' is a Main Hand weapon that neither swings"));
+                Assert.That(errors, Has.Some.Contains("'Shooting Hat' shoots, so it must be a Main Hand weapon"));
+                Assert.That(errors, Has.None.Contains("'Club' is"), "A club with damage is fine.");
+                Assert.That(errors, Has.None.Contains("'Wand' is"), "A wand that shoots is fine.");
+                Assert.AreEqual(default(WeaponStats), bad[1].Weapon, "Only Main Hand items have weapon stats.");
+            }
+            finally
+            {
+                foreach (ItemDefinition definition in bad)
+                    Object.DestroyImmediate(definition);
+                Object.DestroyImmediate(registry);
+                Object.DestroyImmediate(bolt);
+            }
+        }
+
+        [Test]
+        public void RealWeapons_EachSwingOrShoot_AndTheWandShootsFreeShardBolts()
+        {
+            var items = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemRegistry>("Assets/_Voxelforge/Data/Items/ItemRegistry.asset");
+            foreach (ushort id in new[] { ItemIds.IronboundCudgel, ItemIds.GlacierheartBlade, ItemIds.Skyrender })
+            {
+                Assert.IsTrue(items.TryGet(id, out ItemDefinition weapon));
+                Assert.IsTrue(weapon.Weapon.IsMelee, $"{weapon.DisplayName} should swing.");
+                Assert.That(weapon.Weapon.reach, Is.InRange(2f, 3.5f));
+                Assert.That(weapon.Weapon.damage / weapon.Weapon.swingSeconds, Is.InRange(5f, 30f), $"{weapon.DisplayName}'s damage a second.");
+            }
+            Assert.IsTrue(items.TryGet(ItemIds.ShardglassWand, out ItemDefinition wand));
+            Assert.IsTrue(wand.IsRanged);
+            Assert.AreEqual(AbilityIds.ShardBolt, wand.Ability.Id);
+            Assert.AreEqual(0f, wand.Ability.ManaCost, "The wand is free to shoot.");
+            Assert.AreEqual(0f, wand.Ability.BlockDamage, "It's for foes, not for digging.");
+        }
+
         // ---- What stats do ----
 
         [Test]

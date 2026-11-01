@@ -23,6 +23,11 @@ MonoBehaviour:
     armor: 0
     stamina: 2
     power: 10
+  weapon:
+    damage: 0
+    swingSeconds: 0.1
+    reach: 0.5
+  wornMesh: {fileID: 0}
   mesh: {fileID: 8140073046048476033, guid: 2610d6f71e375a1449660513bfe31d6b, type: 3}
   material: {fileID: 2100000, guid: dd051200d50c5394fa9e446290eb5432, type: 2}
   heldPosition: {x: 0, y: 0.08, z: 0}
@@ -40,5 +45,5 @@ MonoBehaviour:
     pick: 0
     axe: 0
     any: 0
-  ability: {fileID: 0}
+  ability: {fileID: 11400000, guid: cdd019ebe68a2274c92d54558ab3caca, type: 2}
   muzzle: {x: 0, y: 0, z: 0}

@@ -176,6 +176,7 @@ namespace Voxelforge.Tests
         [TestCase(typeof(LevelRules))]
         [TestCase(typeof(PlayerLevel))]
         [TestCase(typeof(ExperienceAwards))]
+        [TestCase(typeof(PlayerWeapon))]
         public void Rules_HoldNothingYouSeeOrHear(Type rules)
         {
             const BindingFlags All = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |

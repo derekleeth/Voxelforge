@@ -175,6 +175,28 @@ Stand-in models (5.9 brings the real armour sets). Try it on **both races** (a W
 - [ ] Putting gear on or taking it off: a leather-and-metal **clank** (not when you first join with gear already on).
 - [ ] Picking up a **Rare** sack: a bright chime. **Epic:** a longer shimmering run. **Legendary:** a little **fanfare**. Common: the usual pop.
 
+## Roadmap 5.5: Loot & Equipment (Step G: weapon attacks)
+
+Wear a weapon in the **Main Hand** (bag, Use on it). Then the **Mine** button (left click / RT / Q / Right Shift) attacks a foe in reach instead of mining.
+
+### Melee: Ironbound Cudgel, Glacierheart Blade, Skyrender
+- [ ] Aim at a boar up close and hold Mine: the weapon comes **off your back into your hand** and **swings**; the boar takes damage (numbers pop up, its health bar drops), and you hear a thud with white sparks.
+- [ ] Each weapon feels different: cudgel **8** every 0.8 s, blade **13** every 0.6 s (fast), Skyrender **26** every 1.2 s (slow, huge). Reach about 2.6-3 m.
+- [ ] **Tab** a mob and stand next to it: Mine hits it even if you're not aiming right at it.
+- [ ] Aim at a block (no foe in reach) and Mine **still mines** as before.
+- [ ] A wall between you and the mob: no hit.
+- [ ] Stop fighting: after about a second the weapon goes back on your back.
+- [ ] Power counts: with the Crown (+8) and Skyrender (+26), hits are about a third bigger.
+- [ ] Kills from weapon hits still give loot sacks and XP, and hitting a mob pulls its aggro like a spell does (the Paladin's 2× threat applies).
+- [ ] Holding the M.G.R.S. in your hand still shoots Mana Bolts instead (it wins over the worn weapon).
+
+### Ranged: Shardglass Wand
+- [ ] With the wand worn, aim at (or Tab) a mob up to about 22 m away and hold Mine: it fires small **pink-cyan crystal bolts** (9 damage every 0.7 s), **free** (no mana).
+- [ ] Aim at the ground with no foe in range: Mine mines as usual (the wand never digs).
+
+### Feel (talk it over)
+- [ ] Are weapons too strong or too weak next to spells? Should melee have a bigger swing animation?
+
 ---
 
 ## Roadmap 5.6: Experience & Levels (Step A: XP and levels)

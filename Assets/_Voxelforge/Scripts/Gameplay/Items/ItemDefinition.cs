@@ -37,6 +37,10 @@ namespace Voxelforge.Gameplay
         [Tooltip("What it gives while worn. Only worn gear has stats.")]
         [SerializeField] GearStats stats;
 
+        [Tooltip("Main Hand melee weapons (step G): how hard and fast it hits and how far it reaches. A ranged weapon " +
+                 "(the wand) leaves this empty and sets Ability below instead.")]
+        [SerializeField] WeaponStats weapon;
+
         [Tooltip("Legs and Feet: the piece shown on each leg or foot of the hero wearing it (one thigh guard, one boot). " +
                  "Empty = the model above, shown once.")]
         [SerializeField] Mesh wornMesh;
@@ -98,6 +102,9 @@ namespace Voxelforge.Gameplay
         /// <summary>True if it's worn in one of the six gear sockets (Roadmap 5.5).</summary>
         public bool IsWornGear => equipSlot != EquipSlot.None;
 
+        /// <summary>A Main Hand melee weapon's hits (Roadmap 5.5 step G); empty for everything else.</summary>
+        public WeaponStats Weapon => equipSlot == EquipSlot.MainHand ? weapon : default;
+
         /// <summary>What's drawn on the hero wearing it: the one-limb piece for legs and feet, else the model.</summary>
         public Mesh WornMesh => wornMesh != null ? wornMesh : mesh;
 
@@ -118,7 +125,8 @@ namespace Voxelforge.Gameplay
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default,
             AbilityDefinition ability = null, ItemCategory category = ItemCategory.Auto, int maxStack = 0, int bagSlots = 0,
-            ItemRarity rarity = ItemRarity.Common, EquipSlot equipSlot = EquipSlot.None, GearStats stats = default)
+            ItemRarity rarity = ItemRarity.Common, EquipSlot equipSlot = EquipSlot.None, GearStats stats = default,
+            WeaponStats weapon = default)
         {
             var definition = CreateInstance<ItemDefinition>();
             definition.name = displayName;
@@ -132,6 +140,7 @@ namespace Voxelforge.Gameplay
             definition.rarity = rarity;
             definition.equipSlot = equipSlot;
             definition.stats = stats;
+            definition.weapon = weapon;
             return definition;
         }
     }

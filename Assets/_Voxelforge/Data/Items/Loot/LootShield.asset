@@ -23,6 +23,11 @@ MonoBehaviour:
     armor: 11
     stamina: 4
     power: 0
+  weapon:
+    damage: 0
+    swingSeconds: 0.1
+    reach: 0.5
+  wornMesh: {fileID: 0}
   mesh: {fileID: -3294956023006139560, guid: 4f862a8da6b2f3846843c06373e241e3, type: 3}
   material: {fileID: 2100000, guid: dd051200d50c5394fa9e446290eb5432, type: 2}
   heldPosition: {x: 0, y: 0.08, z: 0}

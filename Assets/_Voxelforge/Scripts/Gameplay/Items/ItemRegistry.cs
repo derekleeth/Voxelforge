@@ -89,8 +89,12 @@ namespace Voxelforge.Gameplay
                 {
                     if (ItemIds.IsBlock(item.Id) || item.MaxStack != 1 || item.Category != ItemCategory.Gear)
                         errors.Add($"'{item.DisplayName}' is worn gear, so it must be a one-per-slot Gear item, not a block.");
-                    if (item.IsBag || item.IsTool || item.IsRanged)
-                        errors.Add($"'{item.DisplayName}' is worn gear, so it can't also be a bag, a tool or a ranged item.");
+                    if (item.IsBag || item.IsTool)
+                        errors.Add($"'{item.DisplayName}' is worn gear, so it can't also be a bag or a tool.");
+                    if (item.IsRanged && item.EquipSlot != EquipSlot.MainHand)
+                        errors.Add($"'{item.DisplayName}' shoots, so it must be a Main Hand weapon.");
+                    if (item.EquipSlot == EquipSlot.MainHand && !item.IsRanged && !item.Weapon.IsMelee)
+                        errors.Add($"'{item.DisplayName}' is a Main Hand weapon that neither swings (no damage) nor shoots.");
                     if (item.Stats.IsZero)
                         errors.Add($"'{item.DisplayName}' is worn gear with no stats.");
                 }

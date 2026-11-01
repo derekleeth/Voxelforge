@@ -36,10 +36,15 @@ namespace Voxelforge.Editor
             public readonly EquipSlot Slot;
             public readonly GearStats Stats;
             public readonly Hold Hold;
+            public readonly WeaponStats Weapon;
+            /// <summary>The ability a ranged weapon shoots (the wand), as its asset path; null for everything else.</summary>
+            public readonly string Shoots;
 
             public Item(ushort id, string model, string name, ItemCategory category, ItemRarity rarity, EquipSlot slot = EquipSlot.None,
-                GearStats stats = default, Hold hold = Hold.Upright)
+                GearStats stats = default, Hold hold = Hold.Upright, WeaponStats weapon = default, string shoots = null)
             {
+                Weapon = weapon;
+                Shoots = shoots;
                 Id = id;
                 Model = model;
                 Name = name;
@@ -57,6 +62,16 @@ namespace Voxelforge.Editor
         static Item Gear(ushort id, string model, string name, ItemRarity rarity, EquipSlot slot, int armor, int stamina, int power,
             Hold hold = Hold.Upright) =>
             new Item(id, model, name, ItemCategory.Gear, rarity, slot, new GearStats(armor, stamina, power), hold);
+
+        // Main Hand weapons (step G): melee ones swing for damage every swingSeconds within reach; the wand shoots.
+        static Item Melee(ushort id, string model, string name, ItemRarity rarity, int armor, int stamina, int power,
+            float damage, float swingSeconds, float reach) =>
+            new Item(id, model, name, ItemCategory.Gear, rarity, EquipSlot.MainHand, new GearStats(armor, stamina, power), Hold.Weapon,
+                new WeaponStats(damage, swingSeconds, reach));
+
+        static Item Ranged(ushort id, string model, string name, ItemRarity rarity, int armor, int stamina, int power, string ability) =>
+            new Item(id, model, name, ItemCategory.Gear, rarity, EquipSlot.MainHand, new GearStats(armor, stamina, power), Hold.Weapon,
+                shoots: ability);
 
         // ---- Every material and piece of gear (model = its FBX in Art/Models/Loot) ----
         static readonly Item[] Items =
@@ -79,7 +94,8 @@ namespace Voxelforge.Editor
             Gear(ItemIds.BristlehideJerkin, "LootJerkin", "Bristlehide Jerkin", ItemRarity.Common, EquipSlot.Chest, 6, 3, 0),
             Gear(ItemIds.BristlehideLeggings, "LootLeggings", "Bristlehide Leggings", ItemRarity.Common, EquipSlot.Legs, 5, 2, 0),
             Gear(ItemIds.TrailwornBoots, "LootBoots", "Trailworn Boots", ItemRarity.Common, EquipSlot.Feet, 3, 1, 0),
-            Gear(ItemIds.IronboundCudgel, "LootCudgel", "Ironbound Cudgel", ItemRarity.Common, EquipSlot.MainHand, 0, 1, 4, Hold.Weapon),
+            //                                                                                        Armor Stamina Power  Damage Swing Reach
+            Melee(ItemIds.IronboundCudgel, "LootCudgel", "Ironbound Cudgel", ItemRarity.Common, 0, 1, 4, 8f, 0.8f, 2.6f),
             Gear(ItemIds.OakBuckler, "LootBuckler", "Oak Buckler", ItemRarity.Common, EquipSlot.OffHand, 5, 1, 0),
 
             // Rare: one piece themed on each mob.
@@ -87,17 +103,18 @@ namespace Voxelforge.Editor
             Gear(ItemIds.TuskhideJerkin, "LootJerkinTusk", "Tuskhide Jerkin", ItemRarity.Rare, EquipSlot.Chest, 11, 6, 0),
             Gear(ItemIds.RhinohideGreaves, "LootGreaves", "Rhinohide Greaves", ItemRarity.Rare, EquipSlot.Legs, 9, 5, 0),
             Gear(ItemIds.WindrunnerBoots, "LootBootsWind", "Windrunner Boots", ItemRarity.Rare, EquipSlot.Feet, 5, 3, 2),
-            Gear(ItemIds.ShardglassWand, "LootWand", "Shardglass Wand", ItemRarity.Rare, EquipSlot.MainHand, 0, 2, 10, Hold.Weapon),
+            // Shoots Shard Bolts (9 damage every 0.7 s, 22 m; AbilityBuilder).
+            Ranged(ItemIds.ShardglassWand, "LootWand", "Shardglass Wand", ItemRarity.Rare, 0, 2, 10, AbilityBuilder.ShardBoltPath),
             Gear(ItemIds.ThunderhornShield, "LootShield", "Thunderhorn Shield", ItemRarity.Rare, EquipSlot.OffHand, 11, 4, 0),
 
             // Epic.
             Gear(ItemIds.CrystalDeepCrown, "LootCrown", "Crown of the Crystal Deep", ItemRarity.Epic, EquipSlot.Head, 8, 7, 8),
             Gear(ItemIds.StormhideHauberk, "LootHauberk", "Stormhide Hauberk", ItemRarity.Epic, EquipSlot.Chest, 18, 10, 4),
-            Gear(ItemIds.GlacierheartBlade, "LootBlade", "Glacierheart Blade", ItemRarity.Epic, EquipSlot.MainHand, 2, 5, 16, Hold.Weapon),
+            Melee(ItemIds.GlacierheartBlade, "LootBlade", "Glacierheart Blade", ItemRarity.Epic, 2, 5, 16, 13f, 0.6f, 2.8f),
 
             // Legendary.
-            Gear(ItemIds.Skyrender, "LootMaul", "Skyrender, Maul of the High Mesa", ItemRarity.Legendary, EquipSlot.MainHand, 6, 12, 26,
-                Hold.Weapon),
+            // Slow and huge.
+            Melee(ItemIds.Skyrender, "LootMaul", "Skyrender, Maul of the High Mesa", ItemRarity.Legendary, 6, 12, 26, 26f, 1.2f, 3f),
         };
 
         // Every Common piece, which most tables share at the same weight.
@@ -227,6 +244,12 @@ namespace Voxelforge.Editor
             stats.FindPropertyRelative("armor").intValue = item.Stats.armor;
             stats.FindPropertyRelative("stamina").intValue = item.Stats.stamina;
             stats.FindPropertyRelative("power").intValue = item.Stats.power;
+            SerializedProperty weapon = serialized.FindProperty("weapon");
+            weapon.FindPropertyRelative("damage").floatValue = item.Weapon.damage;
+            weapon.FindPropertyRelative("swingSeconds").floatValue = Mathf.Max(0.1f, item.Weapon.swingSeconds);
+            weapon.FindPropertyRelative("reach").floatValue = Mathf.Max(0.5f, item.Weapon.reach);
+            serialized.FindProperty("ability").objectReferenceValue =
+                item.Shoots != null ? AssetDatabase.LoadAssetAtPath<AbilityDefinition>(item.Shoots) : null;
             serialized.FindProperty("mesh").objectReferenceValue = mesh;
             // Legs and feet are worn as one piece per leg (step E): build_loot.py makes "<model>Worn".
             serialized.FindProperty("wornMesh").objectReferenceValue =

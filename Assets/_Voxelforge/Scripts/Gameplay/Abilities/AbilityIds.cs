@@ -53,5 +53,14 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Runeforged Paladin (Roadmap 5.3): brand a foe with your oath, so it fights only you for a moment.</summary>
         public const ushort Oathbrand = 15;
+
+        /// <summary>
+        /// A melee weapon's hit (Roadmap 5.5 step G): never cast, it's the look and sound of a cudgel, blade or maul
+        /// landing on a foe (<see cref="PlayerWeapon"/>).
+        /// </summary>
+        public const ushort WeaponStrike = 16;
+
+        /// <summary>What the Shardglass Wand shoots (Roadmap 5.5 step G): a quick crystal bolt, for foes only.</summary>
+        public const ushort ShardBolt = 17;
     }
 }

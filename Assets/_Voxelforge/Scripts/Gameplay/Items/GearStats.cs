@@ -19,6 +19,32 @@ namespace Voxelforge.Gameplay
     }
 
     /// <summary>
+    /// How a melee weapon hits (Roadmap 5.5 step G): worn in the Main Hand, the Mine button swings it at a foe in
+    /// <see cref="reach"/> instead of mining. Ranged weapons (the wand) shoot their item's ability instead.
+    /// </summary>
+    [Serializable]
+    public struct WeaponStats
+    {
+        [Tooltip("Damage each hit does, before Power.")]
+        [Min(0f)] public float damage;
+
+        [Tooltip("Seconds between hits.")]
+        [Min(0.1f)] public float swingSeconds;
+
+        [Tooltip("How far it reaches, in metres from the hero's eyes.")]
+        [Min(0.5f)] public float reach;
+
+        public WeaponStats(float damage, float swingSeconds, float reach)
+        {
+            this.damage = damage;
+            this.swingSeconds = swingSeconds;
+            this.reach = reach;
+        }
+
+        public bool IsMelee => damage > 0f;
+    }
+
+    /// <summary>
     /// What a piece of gear gives while worn (Roadmap 5.5). <see cref="GearRules"/> turns the totals into effects:
     /// Armor cuts mob damage, Stamina adds health, Power strengthens spells and healing.
     /// </summary>

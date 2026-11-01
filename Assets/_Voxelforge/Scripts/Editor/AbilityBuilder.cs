@@ -38,6 +38,9 @@ namespace Voxelforge.Editor
     {
         const string AbilityDir = "Assets/_Voxelforge/Data/Abilities";
         public const string ManaBoltPath = AbilityDir + "/ManaBolt.asset";
+        // Roadmap 5.5 step G: weapons. The strike is never cast; it's how a melee hit looks and sounds.
+        public const string WeaponStrikePath = AbilityDir + "/WeaponStrike.asset";
+        public const string ShardBoltPath = AbilityDir + "/ShardBolt.asset";
         public const string ArcaneOrbPath = AbilityDir + "/ArcaneOrb.asset";
         public const string PyroblastPath = AbilityDir + "/Pyroblast.asset";
         public const string EarthShatterPath = AbilityDir + "/EarthShatter.asset";
@@ -162,13 +165,24 @@ namespace Voxelforge.Editor
                 AbilityElement.Nature, manaCost: 0f, cooldown: 120f, castTime: 0f, range: 0f, aoeRadius: 0f,
                 speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.SelfHeal, healAmount: 0.25f);
 
+            // Weapons (Roadmap 5.5 step G). The strike's numbers are the weapon's own (LootBuilder); only its look is used.
+            AbilityDefinition weaponStrike = MakeAbility(WeaponStrikePath, AbilityIds.WeaponStrike, "Weapon Strike",
+                "A blow from the weapon in your main hand.",
+                AbilityElement.Physical, manaCost: 0f, cooldown: 0f, castTime: 0f, range: 3f, aoeRadius: 0f,
+                speed: 1f, blockDamage: 0f, creatureDamage: 0f);
+            // The Shardglass Wand: free to shoot, quick, and only for foes (it doesn't break blocks).
+            AbilityDefinition shardBolt = MakeAbility(ShardBoltPath, AbilityIds.ShardBolt, "Shard Bolt",
+                "A crystal shard flicked from your wand.",
+                AbilityElement.Arcane, manaCost: 0f, cooldown: 0.7f, castTime: 0f, range: 22f, aoeRadius: 0f,
+                speed: 34f, blockDamage: 0f, creatureDamage: 9f);
+
             var book = LoadOrCreate<AbilityBook>(BookPath);
             var serialized = new SerializedObject(book);
             SerializedProperty list = serialized.FindProperty("abilities");
             AbilityDefinition[] all =
             {
                 manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar,
-                earthenWall, wellspring, thunderhead, hoofquake, secondWind, oathbrand,
+                earthenWall, wellspring, thunderhead, hoofquake, secondWind, oathbrand, weaponStrike, shardBolt,
             };
             list.arraySize = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -276,6 +290,18 @@ namespace Voxelforge.Editor
                 impactSparks: 0, impactSpeed: 3f, castMotes: 0f, castLight: 0f,
                 castLoop: null, release: "SecondWind", impact: null, releaseVolume: 0.9f, impactVolume: 0.8f);
 
+            // Weapons: a white-steel burst and a solid thud for a melee hit; the wand's bolt is a pink-cyan crystal.
+            AbilityLook weaponStrikeLook = MakeLook($"{LookDir}/WeaponStrikeLook.asset", weaponStrike, new Color(0.95f, 0.92f, 0.85f),
+                AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.1f, light: 1.5f, lightRange: 4f, muzzleSparks: 0,
+                impactSparks: 22, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: null, impact: "MobImpact", releaseVolume: 0.7f, impactVolume: 0.9f,
+                debrisChunks: 0, shake: 0.15f, blastLight: 0f, maxDistance: 30f);
+            AbilityLook shardBoltLook = MakeLook($"{LookDir}/ShardBoltLook.asset", shardBolt, new Color(0.9f, 0.55f, 1f),
+                AbilityCoreShape.Gem, coreSize: 0.16f, trailTime: 0.14f, light: 3f, lightRange: 5f, muzzleSparks: 6,
+                impactSparks: 18, impactSpeed: 4f, castMotes: 0f, castLight: 0f,
+                castLoop: null, release: "BoltFire", impact: "BoltImpact", releaseVolume: 0.5f, impactVolume: 0.6f,
+                debrisChunks: 0, shake: 0f, blastLight: 0f, maxDistance: 35f);
+
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
             serialized.FindProperty("defaultLook").objectReferenceValue = manaBoltLook;
@@ -284,7 +310,7 @@ namespace Voxelforge.Editor
             {
                 manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
                 stoneSpearLook, risingPillarLook, earthenWallLook, wellspringLook, thunderheadLook, hoofquakeLook,
-                secondWindLook, oathbrandLook,
+                secondWindLook, oathbrandLook, weaponStrikeLook, shardBoltLook,
             };
             list.arraySize = allLooks.Length;
             for (int i = 0; i < allLooks.Length; i++)

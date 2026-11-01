@@ -46,6 +46,7 @@ GameObject:
   - component: {fileID: 756589546276304344}
   - component: {fileID: 6465819664457673775}
   - component: {fileID: 1805784792305547359}
+  - component: {fileID: 4835254897710712830}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -729,6 +730,20 @@ MonoBehaviour:
   seconds: 1.6
   height: 6
   width: 1.4
+--- !u!114 &4835254897710712830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f562dfd5246f7b42b205989f99ffa3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerWeapon
+  ShowTopMostFoldoutHeaderGroup: 1
+  holdSeconds: 1
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

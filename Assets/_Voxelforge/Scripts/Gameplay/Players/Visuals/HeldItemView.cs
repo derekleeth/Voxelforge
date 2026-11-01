@@ -40,6 +40,7 @@ namespace Voxelforge.Gameplay
 
         PlayerHands _hands;
         PlayerMiner _miner;
+        PlayerWeapon _weapon;
         PlayerController _player;
         PlayerAbilityCues _cues;
         Transform _hand;
@@ -60,6 +61,7 @@ namespace Voxelforge.Gameplay
         {
             _hands = GetComponent<PlayerHands>();
             _miner = GetComponent<PlayerMiner>();
+            _weapon = GetComponent<PlayerWeapon>();
             _player = GetComponent<PlayerController>();
             _cues = GetComponent<PlayerAbilityCues>();
             _body = GetComponent<HeroBody>();
@@ -133,12 +135,15 @@ namespace Voxelforge.Gameplay
 
         void LateUpdate()
         {
-            ushort held = _hands.HeldItem;
+            // Fighting with the worn weapon (Roadmap 5.5 step G) takes it off the back into the hand for a while.
+            bool fighting = _weapon != null && _weapon.IsAttacking && _weapon.WornWeapon != 0;
+            ushort held = fighting ? _weapon.WornWeapon : _hands.HeldItem;
             if (held != _shown)
                 Show(held);
 
-            // Ease in and out of the swing, so starting and stopping don't snap.
-            bool mining = _miner != null && _miner.IsMining;
+            // Ease in and out of the swing, so starting and stopping don't snap. A melee weapon swings as it hits.
+            bool mining = (_miner != null && _miner.IsMining) ||
+                          (fighting && _shownDefinition != null && _shownDefinition.Weapon.IsMelee);
             _swingWeight = Mathf.MoveTowards(_swingWeight, mining ? 1f : 0f, Time.deltaTime * 6f);
             if (mining)
                 _swingTime += Time.deltaTime;
