@@ -6,8 +6,8 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// What a world remembers about one player between sessions (Roadmap 3.4, D-017): where they stood, which way they
-    /// faced, their block bag, their Home Totem (3.8), their class (4.6), their race (4.7) and the map cells they've
-    /// explored (4.8). Kept under their
+    /// faced, their block bag, their Home Totem (3.8), their class (4.6), their race (4.7), the map cells they've
+    /// explored (4.8), and their worn gear and the ruin chests they've had loot from (5.5). Kept under their
     /// <see cref="PlayerUuid"/>, so it survives players joining in a different order.
     /// </summary>
     public sealed class PlayerProfile
@@ -50,6 +50,14 @@ namespace Voxelforge.Gameplay
         /// <summary>The map cells they've explored (Roadmap 4.8, <see cref="ExploredMap"/>). Saves from before 4.8 have none.</summary>
         public HashSet<int2> Explored = new HashSet<int2>();
 
+        /// <summary>The gear they wear (Roadmap 5.5). Saves from before 5.5 have none.</summary>
+        public EquippedGear Gear;
+
+        /// <summary>
+        /// The ruin Storage Chests (by block) that have given them their one-time personal loot (Roadmap 5.5).
+        /// </summary>
+        public HashSet<int3> LootedCaches = new HashSet<int3>();
+
         public PlayerProfile Clone() => new PlayerProfile
         {
             Uuid = Uuid,
@@ -64,6 +72,8 @@ namespace Voxelforge.Gameplay
             Race = Race,
             RaceChosen = RaceChosen,
             Explored = new HashSet<int2>(Explored),
+            Gear = Gear,
+            LootedCaches = new HashSet<int3>(LootedCaches),
         };
     }
 }

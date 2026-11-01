@@ -381,6 +381,7 @@ GameObject:
   m_Component:
   - component: {fileID: 250688587}
   - component: {fileID: 250688586}
+  - component: {fileID: 250688588}
   m_Layer: 0
   m_Name: Loot Bags
   m_TagString: Untagged
@@ -429,6 +430,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &250688588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 250688585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e4f7ad15ac06c84dbc76ec38391294e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PersonalLoot
+  networkManager: {fileID: 2147055199}
+  players: {fileID: 2147055197}
+  chests: {fileID: 1043139414}
+  loot: {fileID: 250688586}
+  book: {fileID: 11400000, guid: 66b418d243720df42b5800b0112557e5, type: 2}
+  items: {fileID: 11400000, guid: e83545be73af7eb449fba9f0b24f00d7, type: 2}
+  popSpeed: 4
 --- !u!1 &306212242
 GameObject:
   m_ObjectHideFlags: 0

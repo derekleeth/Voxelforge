@@ -163,7 +163,7 @@ namespace Voxelforge.Gameplay
 
                 if (_stampMarkers != null && player.TryGetComponent(out PlayerExplorer explorer))
                     _stampMarkers.Watch(explorer.Map);
-                panel = _panels[slot] ??= new PlayerHudPanel(_canvas, skin, (byte)slot, ItemName, id => Icons.Get(id));
+                panel = _panels[slot] ??= new PlayerHudPanel(_canvas, skin, (byte)slot, ItemName, id => Icons.Get(id), items);
                 panel.Bind(player, input?.ControlScheme);
                 panel.SetVisible(true);
                 Rect own = PlayerScreenArea.Own(mode, player, view);

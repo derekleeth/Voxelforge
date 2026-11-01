@@ -130,6 +130,7 @@ namespace Voxelforge.Gameplay
             {
                 // After spawning: the bag's list only syncs once it's on the network.
                 List<ItemStack> lost = bag.ServerRestore(profile.Bag, profile.Bags);
+                bag.ServerRestoreCaches(profile.LootedCaches);
                 if (lost.Count > 0)
                 {
                     // Rare (a bag's size changed): leave them in a loot bag where the player comes back.

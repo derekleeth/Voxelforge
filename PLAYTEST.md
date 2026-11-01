@@ -94,5 +94,28 @@ Step A is the loot data, so most of it is checked by looking in the bag after **
 - [ ] Materials stack (press F2 twice: 10 Boar Hide in one slot); gear doesn't.
 - [ ] Send to Partner and dropping work for the new items.
 
+## Roadmap 5.5: Loot & Equipment (Step B: personal loot)
+
+Best set-up: both players fight the same mobs. **F10** spawns a mob kind by each hero (press again for the next kind).
+
+### Mob drops, one sack each
+- [ ] Both players hit a **Boar** and kill it: a sack pops out of the body **for each player**, dyed in that player's colour.
+- [ ] Walk over your **partner's** sack: it doesn't fly to you, and you can't pick it up. Your own flies into your bag.
+- [ ] Pickups say **+2 Boar Hide** for common materials; gear and Rare+ items say **LOOT!** with the name in its rarity colour (blue, purple). Epic gets a comic burst; **LEGENDARY!** for Skyrender. Only in the looter's own view.
+- [ ] A **Rare** sack has a soft coloured glow; **Epic** and **Legendary** sacks have a pillar of light you can see across a fight.
+- [ ] The **healer** (who only healed the tank) still gets their own sack.
+- [ ] One player kills a mob alone: only they get a sack.
+- [ ] Each mob drops its own stuff: Boar (Boar Hide, Boar Tusk, Earth Essence), Wolf (Wolf Pelt, Frostfang, Frost Essence), Rhino (Rhino Hide, Thunder Horn, Storm Essence), Crystal Slimes (Crystal Shards, Arcane Essence; small ones only shards).
+- [ ] Roughly a third of kills give a piece of gear (generous for today). Too many? Too few?
+- [ ] Leave your sack lying there for a while: it doesn't vanish while you're still in the game.
+- [ ] Bag full: your sack waits ("Bag full!") until you make room.
+
+### Ruin chests (one-time personal cache)
+- [ ] **F6** to a Broken Watchtower and open its chest (aim + Interact): a sack in your colour pops out of the chest and flies into your bag (2 rolls: gear, plus a chance of essences).
+- [ ] Close and open it again: **nothing more** for you. Your partner opens it: **they** get their own cache.
+- [ ] The chest still works as normal shared storage after that.
+- [ ] Place your own Storage Chest and open it: no cache.
+- [ ] Save and quit (or F5), come back, open the same ruin chest: still nothing (it remembers). Save format is now 7; your old save loads fine.
+
 ### Notes
 -

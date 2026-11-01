@@ -60,9 +60,10 @@ namespace Voxelforge.Gameplay
         /// 1: Roadmap 3.4. 2: each profile ends with its Home Totem (3.8). 3: each profile's worn bags, and the Storage
         /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). 5: each
         /// profile's race and whether they've chosen it (4.7). 6: each player's explored map cells, after the earth
-        /// (4.8). Older saves still load.
+        /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). Older
+        /// saves still load.
         /// </summary>
-        public const int FormatVersion = 6;
+        public const int FormatVersion = 7;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -143,6 +144,24 @@ namespace Voxelforge.Gameplay
                     {
                         writer.Write(cell.x);
                         writer.Write(cell.y);
+                    }
+                }
+
+                // Worn gear and looted ruin caches (v7), one block per profile.
+                writer.Write(save.Profiles.Count);
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    writer.Write(profile.Uuid.High);
+                    writer.Write(profile.Uuid.Low);
+                    for (int i = 0; i < EquippedGear.SocketCount; i++)
+                        writer.Write(profile.Gear[i]);
+                    HashSet<int3> caches = profile.LootedCaches ?? new HashSet<int3>();
+                    writer.Write(caches.Count);
+                    foreach (int3 block in caches)
+                    {
+                        writer.Write(block.x);
+                        writer.Write(block.y);
+                        writer.Write(block.z);
                     }
                 }
                 writer.Write(EndMarker);
@@ -291,6 +310,31 @@ namespace Voxelforge.Gameplay
                             cells.Add(new int2(reader.ReadInt32(), reader.ReadInt32()));
                         if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
                             profile.Explored = cells;
+                    }
+                }
+
+                if (format >= 7)
+                {
+                    int looters = reader.ReadInt32();
+                    if (looters < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int p = 0; p < looters; p++)
+                    {
+                        var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
+                        var gear = new EquippedGear();
+                        for (int i = 0; i < EquippedGear.SocketCount; i++)
+                            gear[i] = reader.ReadUInt16();
+                        int cacheCount = reader.ReadInt32();
+                        if (cacheCount < 0)
+                            return WorldLoadResult.Corrupt;
+                        var caches = new HashSet<int3>();
+                        for (int c = 0; c < cacheCount; c++)
+                            caches.Add(new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32()));
+                        if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
+                        {
+                            profile.Gear = gear;
+                            profile.LootedCaches = caches;
+                        }
                     }
                 }
 

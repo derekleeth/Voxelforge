@@ -29,11 +29,14 @@ namespace Voxelforge.Gameplay
         readonly HudSkin _skin;
         readonly Label[] _labels;
         readonly Func<ushort, string> _itemName;
+        readonly IItemRules _rules;
 
-        public CombatTextView(RectTransform parent, HudSkin skin, int capacity, Func<ushort, string> itemName)
+        public CombatTextView(RectTransform parent, HudSkin skin, int capacity, Func<ushort, string> itemName,
+            IItemRules rules = null)
         {
             _skin = skin;
             _itemName = itemName;
+            _rules = rules ?? ItemRules.Default;
             _labels = new Label[capacity];
             for (int i = 0; i < capacity; i++)
             {
@@ -133,10 +136,24 @@ namespace Voxelforge.Gameplay
                     size *= 0.7f;
                     break;
                 case CombatTextKind.Pickup:
-                    words = $"+{e.Amount} {_itemName?.Invoke(e.ItemId) ?? "?"}";
-                    colour = _skin.pickup;
-                    size *= 0.7f;
+                {
+                    // Loot (Roadmap 5.5): gear and anything above Common pops in its rarity colour, Epic and up with a burst.
+                    ItemRarity rarity = _rules.RarityOf(e.ItemId);
+                    string name = _itemName?.Invoke(e.ItemId) ?? "?";
+                    if (rarity == ItemRarity.Common && _rules.EquipSlotOf(e.ItemId) == EquipSlot.None)
+                    {
+                        words = $"+{e.Amount} {name}";
+                        colour = _skin.pickup;
+                        size *= 0.7f;
+                        break;
+                    }
+                    words = rarity == ItemRarity.Legendary ? $"LEGENDARY!\n<size=75%>{name}</size>"
+                        : e.Amount > 1 ? $"LOOT!\n<size=75%>{e.Amount} {name}</size>" : $"LOOT!\n<size=75%>{name}</size>";
+                    colour = RarityColors.Of(rarity);
+                    size *= rarity >= ItemRarity.Epic ? 1.2f : 0.95f;
+                    burst = rarity >= ItemRarity.Epic;
                     break;
+                }
                 case CombatTextKind.TargetHit:
                     words = e.Amount.ToString();
                     colour = _skin.ElementColor(e.Element);

@@ -141,7 +141,24 @@ namespace Voxelforge.Gameplay
         /// starting at <paramref name="velocity"/>. <paramref name="notFor"/> (whoever dropped them) can't pick them up
         /// until they've walked away from them once.
         /// </summary>
-        public void ServerSpawn(float3 position, IReadOnlyList<ItemStack> stacks, float3 velocity, PlayerId notFor = default)
+        public void ServerSpawn(float3 position, IReadOnlyList<ItemStack> stacks, float3 velocity, PlayerId notFor = default) =>
+            Spawn(position, stacks, velocity, notFor, default);
+
+        /// <summary>
+        /// Host only: personal loot (Roadmap 5.5, D-036). Drops <paramref name="stacks"/> in sacks that only
+        /// <paramref name="owner"/> can pick up, in their team colour, glowing for <paramref name="best"/> (the rarest
+        /// thing inside). They don't time out while the owner is still in the game.
+        /// </summary>
+        public void ServerSpawnFor(PlayerController owner, float3 position, IReadOnlyList<ItemStack> stacks, float3 velocity,
+            ItemRarity best)
+        {
+            if (owner == null || !owner.PlayerId.IsValid)
+                return;
+            var personal = new PersonalSack { Owner = owner.PlayerId.Value, Rarity = best, Tint = owner.TeamColor };
+            Spawn(position, stacks, velocity, PlayerId.None, personal);
+        }
+
+        void Spawn(float3 position, IReadOnlyList<ItemStack> stacks, float3 velocity, PlayerId notFor, PersonalSack personal)
         {
             if (!IsServer || lootBagPrefab == null || world == null || world.World == null)
                 return;
@@ -152,19 +169,19 @@ namespace Voxelforge.Gameplay
                     continue;
                 _chunk.Add(stacks[i]);
                 if (_chunk.Count == LootBag.MaxStacks)
-                    SpawnOne(position, velocity, notFor);
+                    SpawnOne(position, velocity, notFor, personal);
             }
             if (_chunk.Count > 0)
-                SpawnOne(position, velocity, notFor);
+                SpawnOne(position, velocity, notFor, personal);
         }
 
-        void SpawnOne(float3 position, float3 velocity, PlayerId notFor)
+        void SpawnOne(float3 position, float3 velocity, PlayerId notFor, PersonalSack personal)
         {
-            // Several sacks at once (a big chest) spread out a little.
+            // Several sacks at once (a big chest, or one per hero from a mob) spread out a little.
             float angle = UnityEngine.Random.value * math.PI * 2f;
-            float3 spread = _bags.Count > 0 ? new float3(math.sin(angle), 0f, math.cos(angle)) * 0.8f : float3.zero;
+            float3 spread = _bags.Count > 0 || personal.IsPersonal ? new float3(math.sin(angle), 0f, math.cos(angle)) * 0.8f : float3.zero;
             LootBag bag = Instantiate(lootBagPrefab, position, Quaternion.identity);
-            bag.ServerInitialize(world.World, _chunk, velocity + spread, notFor);
+            bag.ServerInitialize(world.World, _chunk, velocity + spread, notFor, personal);
             bag.NetworkObject.Spawn(destroyWithScene: true);
             _chunk.Clear();
         }
@@ -181,7 +198,7 @@ namespace Voxelforge.Gameplay
                     _bags.RemoveAt(i);
                     continue;
                 }
-                if (Time.time - bag.SpawnTime > lifetimeSeconds || bag.IsEmpty)
+                if ((Time.time - bag.SpawnTime > lifetimeSeconds && !OwnerStillHere(bag)) || bag.IsEmpty)
                 {
                     _bags.RemoveAt(i);
                     bag.NetworkObject.Despawn(destroy: true);
@@ -239,6 +256,20 @@ namespace Voxelforge.Gameplay
                 nearestBag.ServerTellPickedUp(stack.ItemId, stack.Count);
             if (_given.Count > 0)
                 PlayPop(Middle(nearest), 1f);
+        }
+
+        // Personal loot waits for its owner as long as they're in the game (Roadmap 5.5).
+        bool OwnerStillHere(LootBag bag)
+        {
+            PlayerId owner = bag.ServerOwner;
+            if (!owner.IsValid || players == null)
+                return false;
+            foreach (PlayerController player in players.Players)
+            {
+                if (player != null && player.PlayerId == owner)
+                    return true;
+            }
+            return false;
         }
 
         static bool HasRoomForAny(PlayerBlockBag bag, LootBag loot)

@@ -56,7 +56,7 @@ namespace Voxelforge.Gameplay
         string _scheme;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
-            Func<ushort, Texture> itemIcon)
+            Func<ushort, Texture> itemIcon, IItemRules itemRules = null)
         {
             _barArea = NestedCanvas($"Player {slot + 1} HUD", canvas);
             _barGroup = HudWidgets.Rect("Bottom", _barArea);
@@ -73,7 +73,7 @@ namespace Voxelforge.Gameplay
             _targetBars = new TargetBarsView(_textArea, skin);
             _threatMarks = new ThreatMarksView(_textArea, skin);
             _targetMarker = new TargetMarkerView(_textArea, skin);
-            _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName);
+            _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName, itemRules);
 
             // The minimap (Roadmap 4.8), on its own canvas: it moves every frame, and nothing else should rebuild for it.
             _mapArea = NestedCanvas($"Player {slot + 1} Map", canvas);

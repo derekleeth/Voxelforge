@@ -39,6 +39,18 @@ namespace Voxelforge.Gameplay
         /// <summary>Host only: how many chests have slots (opened at least once, or loaded with something in them).</summary>
         public int Count => _chests.Count;
 
+        /// <summary>Host only: a hero opened the chest at the block (Roadmap 5.5: a ruin's chest gives loot once).</summary>
+        public event System.Action<PlayerController, int3> ServerOpened;
+
+        /// <summary>Host only: the world made this chest (a 5.4 ruin's), and nobody has placed or changed it since.</summary>
+        public bool ServerIsGenerated(int3 block)
+        {
+            VoxelDeltaLog edits = world != null ? world.DeltaLog : null;
+            return ServerIsChest(block) && edits != null && !edits.TryGet(block, out _);
+        }
+
+        internal void ServerTellOpened(PlayerController player, int3 block) => ServerOpened?.Invoke(player, block);
+
         void OnEnable()
         {
             if (world != null)

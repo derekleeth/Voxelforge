@@ -191,6 +191,7 @@ namespace Voxelforge.Gameplay
             _slots.Clear();
             foreach (ItemStack stack in slots.Stacks)
                 _slots.Add(stack);
+            chests.ServerTellOpened(_player, block);
         }
 
         /// <summary>Host: the open chest's slots, if it still stands, plus the bag's.</summary>

@@ -96,6 +96,12 @@ namespace Voxelforge.Gameplay
         /// <summary>Every PC: a defeated mob is leaving the world (its body disappears in a poof).</summary>
         public event Action<Mob> Vanishing;
 
+        /// <summary>
+        /// Host only: a mob was just defeated, by the hit from the <see cref="PlayerId"/> (Roadmap 5.5). Its
+        /// <see cref="Rules"/> still hold everyone who fought it, so <see cref="PersonalLoot"/> can roll for each.
+        /// </summary>
+        public static event Action<Mob, PlayerId> ServerDefeated;
+
         /// <summary>Every PC: what it's doing, as the host last said.</summary>
         public MobState State => (MobState)_state.Value;
 
@@ -164,6 +170,7 @@ namespace Voxelforge.Gameplay
             {
                 _despawnAt = Time.time + defeatedSeconds;
                 _state.Value = (byte)MobState.Defeated;
+                ServerDefeated?.Invoke(this, instigator);
                 ServerSplit();
             }
             if (result.Dealt > 0f)

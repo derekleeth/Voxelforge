@@ -349,6 +349,9 @@ namespace Voxelforge.Gameplay
                 {
                     profile.Bag = bag.ServerSnapshot();
                     profile.Bags = bag.Bags;
+                    // Looted caches only ever grow, like explored cells (Roadmap 5.5).
+                    if (bag.ServerLootedCaches.Count != profile.LootedCaches.Count)
+                        profile.LootedCaches = new HashSet<int3>(bag.ServerLootedCaches);
                 }
                 if (player.TryGetComponent(out PlayerHearth hearth))
                 {

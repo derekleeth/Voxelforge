@@ -2,12 +2,16 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using Voxelforge.Core;
 using Voxelforge.Gameplay;
 using Voxelforge.Voxels;
 
 namespace Voxelforge.Tests
 {
-    /// <summary>Roadmap 5.5 step A: rarity, gear data, loot tables and the loot roller, without any networking.</summary>
+    /// <summary>
+    /// Roadmap 5.5: rarity, gear data, loot tables and the loot roller (step A), and who gets personal loot (step B),
+    /// without any networking.
+    /// </summary>
     public class LootTests
     {
         const string RegistryAssetPath = "Assets/_Voxelforge/Data/Items/ItemRegistry.asset";
@@ -224,6 +228,71 @@ namespace Voxelforge.Tests
             Assert.AreEqual(ItemRules.BigStack, items.MaxStackOf(ItemIds.BoarHide));
             Assert.AreEqual(1, items.MaxStackOf(ItemIds.Skyrender));
             Assert.AreEqual(ItemRarity.Legendary, items.RarityOf(ItemIds.Skyrender));
+        }
+
+        // ---- Who gets loot (step B) ----
+
+        static readonly PlayerId P1 = new PlayerId(1);
+        static readonly PlayerId P2 = new PlayerId(2);
+        static readonly PlayerId P3 = new PlayerId(3);
+
+        [Test]
+        public void Fighters_EveryoneOnTheThreatTable_AndTheKiller_OnceEach()
+        {
+            var threat = new List<ThreatEntry> { new ThreatEntry { Hero = P2, Threat = 50f }, new ThreatEntry { Hero = P1, Threat = 4f } };
+            var fighters = new List<PlayerId>();
+            LootShares.Fighters(threat, P1, _ => true, fighters);
+            CollectionAssert.AreEqual(new[] { P2, P1 }, fighters, "The killer is already on the table, so only once.");
+
+            LootShares.Fighters(threat, P3, _ => true, fighters);
+            CollectionAssert.AreEqual(new[] { P2, P1, P3 }, fighters, "A one-hit kill still gets the killer loot.");
+        }
+
+        [Test]
+        public void Fighters_LeavesOutHeroesWhoLeft_AndNobodyOrTheWorld()
+        {
+            var threat = new List<ThreatEntry>
+            {
+                new ThreatEntry { Hero = P1, Threat = 10f }, new ThreatEntry { Hero = P2, Threat = 10f },
+                new ThreatEntry { Hero = PlayerId.World, Threat = 1f },
+            };
+            var fighters = new List<PlayerId>();
+            LootShares.Fighters(threat, PlayerId.None, id => id != P2, fighters);
+            CollectionAssert.AreEqual(new[] { P1 }, fighters);
+            LootShares.Fighters(null, PlayerId.None, _ => true, fighters);
+            Assert.IsEmpty(fighters, "Nobody fought it (it fell in a crater nobody made), so nobody gets anything.");
+        }
+
+        [Test]
+        public void Best_IsTheRarestThingInTheSack()
+        {
+            ItemRegistry registry = Registry();
+            Assert.AreEqual(ItemRarity.Common, LootShares.Best(new List<ItemStack>(), registry));
+            Assert.AreEqual(ItemRarity.Rare, LootShares.Best(new[] { new ItemStack(Hide, 3), new ItemStack(Fang, 1) }, registry));
+            Assert.AreEqual(ItemRarity.Legendary, LootShares.Best(new[] { new ItemStack(Sword, 1), new ItemStack(Helm, 1) }, registry));
+        }
+
+        [Test]
+        public void RuinCache_OnlyFromAWorldMadeChest_OncePerHero()
+        {
+            var chest = new Unity.Mathematics.int3(230, 71, 51);
+            var looted = new HashSet<Unity.Mathematics.int3>();
+            Assert.IsFalse(LootShares.OwesRuinCache(false, looted, chest), "A chest a player placed gives nothing.");
+            Assert.IsTrue(LootShares.OwesRuinCache(true, looted, chest));
+            looted.Add(chest);
+            Assert.IsFalse(LootShares.OwesRuinCache(true, looted, chest), "Only once for each hero.");
+            Assert.IsTrue(LootShares.OwesRuinCache(true, new HashSet<Unity.Mathematics.int3>(), chest), "The partner still gets theirs.");
+        }
+
+        [Test]
+        public void PersonalSack_OnlyItsOwnerCanTakeIt()
+        {
+            var personal = new PersonalSack { Owner = P1.Value, Rarity = ItemRarity.Epic };
+            Assert.IsTrue(LootBag.CanTake(personal, PlayerId.None, P1));
+            Assert.IsFalse(LootBag.CanTake(personal, PlayerId.None, P2), "Partners never take each other's loot.");
+            Assert.IsTrue(LootBag.CanTake(default, P1, P2), "An ordinary sack: anyone but whoever just dropped it.");
+            Assert.IsFalse(LootBag.CanTake(default, P1, P1));
+            Assert.IsTrue(LootBag.CanTake(default, PlayerId.None, P1));
         }
 
         // ---- Gear data ----

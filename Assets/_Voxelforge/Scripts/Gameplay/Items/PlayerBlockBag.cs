@@ -351,6 +351,20 @@ namespace Voxelforge.Gameplay
         public List<ItemStack> ServerSnapshot() => new List<ItemStack>(_server.Stacks);
 
         /// <summary>
+        /// Host only: the ruin Storage Chests (by block) that have already given this hero their one-time personal loot
+        /// (Roadmap 5.5, <see cref="PersonalLoot"/>). Saved in the profile.
+        /// </summary>
+        public HashSet<int3> ServerLootedCaches { get; } = new HashSet<int3>();
+
+        /// <summary>Host only: the looted ruin caches from a saved profile (Roadmap 5.5).</summary>
+        public void ServerRestoreCaches(IEnumerable<int3> caches)
+        {
+            ServerLootedCaches.Clear();
+            if (caches != null)
+                ServerLootedCaches.UnionWith(caches);
+        }
+
+        /// <summary>
         /// Host only: the slots themselves, for a Storage Chest (Roadmap 4.5, <see cref="PlayerChest"/>) to move stacks
         /// in and out of. Call <see cref="ServerSyncSlots"/> with the slots it changed.
         /// </summary>
