@@ -57,11 +57,13 @@ namespace Voxelforge.Gameplay
                     return 3f;
                 case CombatTextKind.Refused:
                 case CombatTextKind.BagRefused:
+                case CombatTextKind.NeedsSkill:
                     return 1.2f;
                 case CombatTextKind.Pickup:
                 case CombatTextKind.Sent:
                 case CombatTextKind.Shielded:
                 case CombatTextKind.XpGained:
+                case CombatTextKind.SkillUp:
                     return 1.4f;
                 default:
                     return 1f;

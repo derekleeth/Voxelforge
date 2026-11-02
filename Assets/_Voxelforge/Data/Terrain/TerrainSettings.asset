@@ -141,10 +141,47 @@ MonoBehaviour:
   cavernMaxY: 56
   caveEntranceDepth: 8
   caveFloorY: 1
-  oreBlock: {fileID: 11400000, guid: 4453419398101434290095d64f9ce111, type: 2}
-  oreFrequency: 0.14
-  oreThreshold: 0.78
-  oreMaxY: 80
+  oreVeins:
+  - block: {fileID: 11400000, guid: 4453419398101434290095d64f9ce111, type: 2}
+    frequency: 0.13
+    threshold: 0.8
+    minY: 1
+    maxY: 40
+    topFade: 12
+    richness: 0.88
+    biomeRichness:
+    - biome: Snowy Peaks (Dun Morogh style)
+      richness: 0.87
+    - biome: Red Crags (Redridge style)
+      richness: 0.83
+  - block: {fileID: 11400000, guid: 6a83f814ae2c50040b09a96e105b57c8, type: 2}
+    frequency: 0.15
+    threshold: 0.78
+    minY: 1
+    maxY: 56
+    topFade: 12
+    richness: 0.88
+    biomeRichness:
+    - biome: Red Crags (Redridge style)
+      richness: 0.97
+    - biome: Snowy Peaks (Dun Morogh style)
+      richness: 0.97
+  - block: {fileID: 11400000, guid: ba0c3670dc1e20d4e98d8bddefa6e686, type: 2}
+    frequency: 0.16
+    threshold: 0.66
+    minY: 1
+    maxY: 80
+    topFade: 10
+    richness: 1
+    biomeRichness:
+    - biome: Desert (Tanaris style)
+      richness: 1.2
+    - biome: Thunderhoof Plains
+      richness: 1.1
+    - biome: Red Crags (Redridge style)
+      richness: 0.85
+    - biome: Snowy Peaks (Dun Morogh style)
+      richness: 0.85
   treeTrunkBlock: {fileID: 11400000, guid: 31dc7fe8e0604ed692878b00cec8cabb, type: 2}
   treeCellSize: 6
   treeMinHeight: 4

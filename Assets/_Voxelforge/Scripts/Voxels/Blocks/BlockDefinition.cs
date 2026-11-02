@@ -20,6 +20,9 @@ namespace Voxelforge.Voxels
         [Tooltip("The block that drops when this one is mined or chopped. Empty = this block itself.")]
         [SerializeField] BlockDefinition drop;
 
+        [Tooltip("An item ID (1000 or more) that drops instead of a block, e.g. ore (Roadmap 5.7). 0 = drop a block as above.")]
+        [SerializeField] ushort dropItem;
+
         [Tooltip("How many blocks drop. 0 = nothing drops.")]
         [SerializeField, Range(0, 16)] int dropCount = 1;
 
@@ -64,7 +67,7 @@ namespace Voxelforge.Voxels
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public int MaxDurability => maxDurability;
-        public ushort DropId => drop != null ? drop.Id : id;
+        public ushort DropId => dropItem != 0 ? dropItem : drop != null ? drop.Id : id;
         public int DropCount => dropCount;
         public bool IsSolid => isSolid;
         public bool IsTransparent => isTransparent;
@@ -115,7 +118,7 @@ namespace Voxelforge.Voxels
         internal static BlockDefinition Create(ushort id, string displayName, int maxDurability = 20,
             bool isSolid = true, bool isTransparent = false, int lightEmission = 0, BiomeTint biomeTint = BiomeTint.None,
             BlockDefinition drop = null, int dropCount = 1, HarvestKind harvestKind = HarvestKind.Any, bool isProp = false,
-            bool needsSupport = false, bool blastProof = false)
+            bool needsSupport = false, bool blastProof = false, ushort dropItem = 0)
         {
             var definition = CreateInstance<BlockDefinition>();
             definition.name = displayName;
@@ -123,6 +126,7 @@ namespace Voxelforge.Voxels
             definition.displayName = displayName;
             definition.maxDurability = maxDurability;
             definition.drop = drop;
+            definition.dropItem = dropItem;
             definition.dropCount = dropCount;
             definition.isSolid = isSolid;
             definition.isTransparent = isTransparent;

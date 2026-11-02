@@ -17,6 +17,9 @@ namespace Voxelforge.Editor
         const string ModelDir = "Assets/_Voxelforge/Art/Models/Loot";
         const string AtlasPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_Atlas.png";
         const string GlowPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_Glow.png";
+        // Roadmap 5.7: the ore items have their own atlas (build_ores() in build_loot.py).
+        const string OreAtlasPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_OreAtlas.png";
+        const string OreGlowPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_OreGlow.png";
         const string MaterialDir = "Assets/_Voxelforge/Art/Materials/Loot";
         const string ItemDir = "Assets/_Voxelforge/Data/Items/Loot";
         const string LootDir = "Assets/_Voxelforge/Data/Loot";
@@ -117,6 +120,14 @@ namespace Voxelforge.Editor
             Melee(ItemIds.Skyrender, "LootMaul", "Skyrender, Maul of the High Mesa", ItemRarity.Legendary, 6, 12, 26, 26f, 1.2f, 3f),
         };
 
+        // Ore (Roadmap 5.7): what the ore blocks drop, on the ore atlas. Mana Crystal is rarer and deeper, so blue.
+        static readonly Item[] Ores =
+        {
+            Ingredient(ItemIds.CopperOre, "LootOreCopper", "Copper Ore"),
+            Ingredient(ItemIds.IronOre, "LootOreIron", "Iron Ore"),
+            Ingredient(ItemIds.ManaCrystal, "LootManaCrystal", "Mana Crystal", ItemRarity.Rare),
+        };
+
         // Every Common piece, which most tables share at the same weight.
         static readonly ushort[] Commons =
         {
@@ -184,8 +195,10 @@ namespace Voxelforge.Editor
         {
             var atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(AtlasPath);
             var glow = AssetDatabase.LoadAssetAtPath<Texture2D>(GlowPath);
+            var oreAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(OreAtlasPath);
+            var oreGlow = AssetDatabase.LoadAssetAtPath<Texture2D>(OreGlowPath);
             var registry = AssetDatabase.LoadAssetAtPath<ItemRegistry>(RegistryPath);
-            if (atlas == null || glow == null || registry == null)
+            if (atlas == null || glow == null || oreAtlas == null || oreGlow == null || registry == null)
             {
                 Debug.LogError($"[Voxelforge] Missing {AtlasPath}, {GlowPath} or {RegistryPath}. Run build_all() in " +
                                "Tools/Blender/build_loot.py and Build Props & Items first.");
@@ -194,12 +207,20 @@ namespace Voxelforge.Editor
             EnsureFolder(MaterialDir);
             EnsureFolder(ItemDir);
             EnsureFolder(LootDir);
-            Material held = MakeHeldMaterial(atlas, glow);
+            Material held = MakeHeldMaterial(atlas, glow, "Loot_Held");
+            Material oreHeld = MakeHeldMaterial(oreAtlas, oreGlow, "Loot_OreHeld");
 
             var made = new List<Object>();
             foreach (Item item in Items)
             {
                 ItemDefinition definition = MakeItem(item, held);
+                if (definition == null)
+                    return;
+                made.Add(definition);
+            }
+            foreach (Item item in Ores)
+            {
+                ItemDefinition definition = MakeItem(item, oreHeld);
                 if (definition == null)
                     return;
                 made.Add(definition);
@@ -223,7 +244,7 @@ namespace Voxelforge.Editor
             if (problems.Count > 0)
                 Debug.LogError("[Voxelforge] Build Loot made assets with problems:\n" + string.Join("\n", problems));
             else
-                Debug.Log($"[Voxelforge] Built {Items.Length} loot items and {tables.Count} loot tables.");
+                Debug.Log($"[Voxelforge] Built {Items.Length + Ores.Length} loot items and {tables.Count} loot tables.");
         }
 
         static ItemDefinition MakeItem(Item item, Material material)
@@ -299,9 +320,9 @@ namespace Voxelforge.Editor
             return table;
         }
 
-        static Material MakeHeldMaterial(Texture2D atlas, Texture2D glow)
+        static Material MakeHeldMaterial(Texture2D atlas, Texture2D glow, string name)
         {
-            string path = $"{MaterialDir}/Loot_Held.mat";
+            string path = $"{MaterialDir}/{name}.mat";
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material == null)

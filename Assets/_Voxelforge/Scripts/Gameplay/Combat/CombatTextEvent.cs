@@ -45,6 +45,13 @@ namespace Voxelforge.Gameplay
         XpGained,
         /// <summary>The hero reached level <see cref="CombatTextEvent.Amount"/> (Roadmap 5.6).</summary>
         LevelUp,
+        /// <summary>A profession (<see cref="CombatTextEvent.Label"/>) went up to <see cref="CombatTextEvent.Amount"/> (Roadmap 5.7).</summary>
+        SkillUp,
+        /// <summary>
+        /// The hero tried to gather something needing <see cref="CombatTextEvent.Amount"/> in a profession
+        /// (<see cref="CombatTextEvent.Label"/>) (Roadmap 5.7).
+        /// </summary>
+        NeedsSkill,
     }
 
     /// <summary>
@@ -64,7 +71,7 @@ namespace Voxelforge.Gameplay
         public CastCheck Reason;
         /// <summary>For <see cref="CombatTextKind.BagRefused"/>.</summary>
         public BagRefusal BagReason;
-        /// <summary>A name to show, for <see cref="CombatTextKind.Discovered"/>.</summary>
+        /// <summary>A name to show, for <see cref="CombatTextKind.Discovered"/>, <see cref="CombatTextKind.SkillUp"/> and <see cref="CombatTextKind.NeedsSkill"/>.</summary>
         public string Label;
         /// <summary>Where in the world it starts floating.</summary>
         public float3 Position;

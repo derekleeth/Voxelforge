@@ -34,6 +34,7 @@ namespace Voxelforge.Gameplay
         PlayerHealth _health;
         PlayerExplorer _explorer;
         PlayerLevel _level;
+        PlayerProfessions _professions;
 
         /// <summary>Every PC for hits and mana; the owner's PC for refusals and pickups.</summary>
         public event Action<CombatTextEvent> Raised;
@@ -47,6 +48,7 @@ namespace Voxelforge.Gameplay
             _health = GetComponent<PlayerHealth>();
             _explorer = GetComponent<PlayerExplorer>();
             _level = GetComponent<PlayerLevel>();
+            _professions = GetComponent<PlayerProfessions>();
         }
 
         void OnEnable()
@@ -68,6 +70,11 @@ namespace Voxelforge.Gameplay
                 _level.XpGained += OnXpGained;
                 _level.LeveledUp += OnLeveledUp;
             }
+            if (_professions != null)
+            {
+                _professions.SkilledUp += OnSkilledUp;
+                _professions.NeedsSkill += OnNeedsSkill;
+            }
         }
 
         void OnDisable()
@@ -88,6 +95,11 @@ namespace Voxelforge.Gameplay
             {
                 _level.XpGained -= OnXpGained;
                 _level.LeveledUp -= OnLeveledUp;
+            }
+            if (_professions != null)
+            {
+                _professions.SkilledUp -= OnSkilledUp;
+                _professions.NeedsSkill -= OnNeedsSkill;
             }
         }
 
@@ -200,6 +212,13 @@ namespace Voxelforge.Gameplay
 
         void OnLeveledUp(int level) =>
             Raise(new CombatTextEvent { Kind = CombatTextKind.LevelUp, Amount = level, Position = Head });
+
+        /// <summary>Roadmap 5.7: a profession went up, or the hero needs more skill (only in this hero's own view).</summary>
+        void OnSkilledUp(ProfessionId profession, int skill) =>
+            Raise(new CombatTextEvent { Kind = CombatTextKind.SkillUp, Label = profession.ToString(), Amount = skill, Position = Head });
+
+        void OnNeedsSkill(ProfessionId profession, int required) =>
+            Raise(new CombatTextEvent { Kind = CombatTextKind.NeedsSkill, Label = profession.ToString(), Amount = required, Position = Head });
 
         void OnRefused(CastCheck reason) =>
             Raise(new CombatTextEvent { Kind = CombatTextKind.Refused, Reason = reason, Position = Head });

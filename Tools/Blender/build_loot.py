@@ -32,6 +32,9 @@ importlib.reload(P)
 ART = P.ART
 ATLAS_PATH = os.path.join(ART, "Textures", "Loot", "Loot_Atlas.png")
 GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_Glow.png")
+# Roadmap 5.7: the ore items have their own small atlas, so the gear and materials above keep their UVs.
+ORE_ATLAS_PATH = os.path.join(ART, "Textures", "Loot", "Loot_OreAtlas.png")
+ORE_GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_OreGlow.png")
 MODEL_DIR = os.path.join(ART, "Models", "Loot")
 
 SIZE, CELL = P.SIZE, P.CELL
@@ -44,8 +47,16 @@ GRID = {
 }
 
 
+ORE_GRID = {"rock": (0, 0), "copper": (1, 0), "iron": (2, 0), "mana": (3, 0)}
+
+
 def region(name):
     col, row = GRID[name]
+    return col * 0.25, 1.0 - (row + 1) * 0.25, (col + 1) * 0.25, 1.0 - row * 0.25
+
+
+def ore_region(name):
+    col, row = ORE_GRID[name]
     return col * 0.25, 1.0 - (row + 1) * 0.25, (col + 1) * 0.25, 1.0 - row * 0.25
 
 
@@ -135,6 +146,44 @@ def paint_atlas(seed=55):
     for name, paint in painters.items():
         colour, light = paint()
         u0, v0, _, _ = region(name)
+        r0, c0 = int(round(v0 * SIZE)), int(round(u0 * SIZE))
+        albedo[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(colour, 0, 1)
+        glow[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(light, 0, 1)
+    return albedo, glow
+
+
+def paint_rust_metal(rng):
+    """Raw iron: dark grey metal blotched with rust."""
+    colour, _ = P.paint_metal(rng, rgb(86, 88, 98), 0.3)
+    rust = np.clip((P.noise(CELL, 6, rng, 3) - 0.55) * 4, 0, 1)[..., None]
+    colour = colour * (1 - 0.7 * rust) + rgb(150, 70, 30)[None, None, :] * 0.7 * rust
+    return colour, np.zeros_like(colour)
+
+
+def paint_copper(rng):
+    """Bright raw copper with green patina in the hollows."""
+    colour, _ = P.paint_metal(rng, rgb(222, 122, 56), 0.3)
+    patina = np.clip((P.noise(CELL, 5, rng, 3) - 0.62) * 5, 0, 1)[..., None]
+    colour = colour * (1 - 0.8 * patina) + rgb(70, 160, 130)[None, None, :] * 0.8 * patina
+    return colour, np.zeros_like(colour)
+
+
+def paint_ore_atlas(seed=57):
+    """The ore items' atlas (Roadmap 5.7): rough stone, copper, iron and glowing mana crystal; only the crystal glows."""
+    rng = np.random.default_rng(seed)
+    painters = {
+        "rock": lambda: P.paint_stone(rng),
+        "copper": lambda: paint_copper(rng),
+        "iron": lambda: paint_rust_metal(rng),
+        "mana": lambda: paint_glow(rng, rgb(150, 230, 255), rgb(120, 50, 230), glow=1.0),
+    }
+    albedo = np.zeros((SIZE, SIZE, 4), np.float32)
+    glow = np.zeros((SIZE, SIZE, 4), np.float32)
+    albedo[..., 3] = 1.0
+    glow[..., 3] = 1.0
+    for name, paint in painters.items():
+        colour, light = paint()
+        u0, v0, _, _ = ore_region(name)
         r0, c0 = int(round(v0 * SIZE)), int(round(u0 * SIZE))
         albedo[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(colour, 0, 1)
         glow[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(light, 0, 1)
@@ -252,6 +301,45 @@ def build_essence_storm():
 
 def build_essence_arcane():
     return essence("arcane")
+
+
+# ---- Ore (Roadmap 5.7): origin at the bottom centre, on the ore atlas ----
+
+def ore_lump(metal, nuggets):
+    """A chunk of rock with nuggets of metal bulging out of it."""
+    b = P.MeshBuilder(ore_region)
+    b.part("rock", P.gem((0, 0, 0.13), (0.17, 0.14, 0.13)))
+    b.part("rock", P.gem((0.06, -0.04, 0.1), (0.12, 0.1, 0.1), Vector((0.6, 0.3, 1))))
+    for (x, y, z, r) in nuggets:
+        b.part(metal, ball((x, y, z), r, sides=6))
+    return b
+
+
+def build_ore_copper():
+    return ore_lump("copper", [(0.08, 0.05, 0.2, 0.07), (-0.1, 0.02, 0.15, 0.06), (0.02, -0.11, 0.12, 0.055),
+                               (0.0, 0.03, 0.25, 0.05)])
+
+
+def build_ore_iron():
+    return ore_lump("iron", [(0.07, -0.06, 0.21, 0.075), (-0.09, 0.06, 0.16, 0.065), (0.11, 0.08, 0.1, 0.05)])
+
+
+def build_mana_crystal():
+    """One big faceted mana crystal and two small ones, on a scrap of rock."""
+    b = P.MeshBuilder(ore_region)
+    b.part("rock", P.gem((0, 0, 0.04), (0.13, 0.11, 0.05)))
+    b.part("mana", P.gem((0, 0, 0.24), (0.07, 0.06, 0.22)))
+    b.part("mana", P.gem((0.08, 0.04, 0.14), (0.045, 0.04, 0.12), Vector((0.45, 0.25, 1))))
+    b.part("mana", P.gem((-0.07, -0.05, 0.12), (0.04, 0.04, 0.1), Vector((-0.4, -0.3, 1))))
+    return b
+
+
+# The ore items, built on the ore atlas.
+ORE_MODELS = {
+    "LootOreCopper": build_ore_copper,
+    "LootOreIron": build_ore_iron,
+    "LootManaCrystal": build_mana_crystal,
+}
 
 
 # ---- Head: origin at the bottom of the head piece's opening ----
@@ -520,21 +608,21 @@ def preview_material(atlas, glow):
     return mat
 
 
-def build_models(material):
+def build_models(material, models=None, first_row=0):
     collection = bpy.data.collections.get("Loot")
     if collection is None:
         collection = bpy.data.collections.new("Loot")
         bpy.context.scene.collection.children.link(collection)
-    for i, (name, build) in enumerate(MODELS.items()):
+    for i, (name, build) in enumerate((models or MODELS).items()):
         b = build()
         obj = b.build(name, material, collection)
-        obj.location = ((i % 9) * 1.0, (i // 9) * 1.2, 0.0)
+        obj.location = ((i % 9) * 1.0, (first_row + i // 9) * 1.2, 0.0)
         print(f"{name}: {b.triangle_count()} triangles")
 
 
 def export_models(only=None):
     os.makedirs(MODEL_DIR, exist_ok=True)
-    for name in (only or MODELS):
+    for name in (only or list(MODELS) + list(ORE_MODELS)):
         obj = bpy.data.objects[name]
         saved = obj.location.copy()
         obj.location = (0.0, 0.0, 0.0)
@@ -557,8 +645,24 @@ def build_all(export=True, only=None):
     atlas_image = P.save_image("Loot_Atlas", albedo, ATLAS_PATH)
     glow_image = P.save_image("Loot_Glow", glow, GLOW_PATH)
     build_models(preview_material(atlas_image, glow_image))
+    build_ores(export=False)
     if export:
         export_models(only)
+
+
+def build_ores(export=True):
+    """Only the ore items (Roadmap 5.7) and their atlas, leaving the rest of the loot alone."""
+    albedo, glow = paint_ore_atlas()
+    atlas_image = P.save_image("Loot_OreAtlas", albedo, ORE_ATLAS_PATH)
+    glow_image = P.save_image("Loot_OreGlow", glow, ORE_GLOW_PATH)
+    old = bpy.data.materials.get("Loot_OrePreview")
+    if old is not None:
+        bpy.data.materials.remove(old)
+    material = P.preview_material(atlas_image, glow_image)
+    material.name = "Loot_OrePreview"
+    build_models(material, ORE_MODELS, first_row=5)
+    if export:
+        export_models(list(ORE_MODELS))
 
 
 if __name__ == "__main__":

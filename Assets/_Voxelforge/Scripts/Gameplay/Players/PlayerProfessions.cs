@@ -16,8 +16,12 @@ namespace Voxelforge.Gameplay
         [Tooltip("Data/Professions/ProfessionBook.asset (built by Voxelforge > Build Professions).")]
         [SerializeField] ProfessionBook book;
 
+        [Tooltip("Host: the shortest time between two \"Requires Mining 25\" messages to the owner, in seconds.")]
+        [SerializeField, Range(0f, 5f)] float needsSkillRepeat = 1.5f;
+
         readonly NetworkVariable<ProfessionSkills> _skills = new NetworkVariable<ProfessionSkills>(ProfessionSkills.Start);
         readonly System.Random _random = new System.Random(Environment.TickCount);
+        float _lastNeedsSkill = float.NegativeInfinity;
 
         /// <summary>Every PC: the skills, as the host last said.</summary>
         public ProfessionSkills Skills => _skills.Value;
@@ -29,6 +33,9 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Owner only: <see cref="ProfessionId"/> went up to this skill, for "Mining 12" in their own view.</summary>
         public event Action<ProfessionId, int> SkilledUp;
+
+        /// <summary>Owner only: the hero tried to gather something that needs this much skill in a profession.</summary>
+        public event Action<ProfessionId, int> NeedsSkill;
 
         public override void OnNetworkSpawn() => _skills.OnValueChanged += OnSkillsChanged;
 
@@ -42,6 +49,25 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Every PC: true if the hero's skill is enough for <paramref name="node"/>.</summary>
         public bool CanGather(in GatherNode node) => ProfessionRules.CanGather(_skills.Value, node);
+
+        /// <summary>The gatherable node for an ore block, herb or mob, if the book has one.</summary>
+        public bool TryGetNode(GatherNodeKind kind, ushort id, out GatherNode node)
+        {
+            node = default;
+            return book != null && book.TryGetNode(kind, id, out node);
+        }
+
+        /// <summary>
+        /// Host only: the hero tried to gather <paramref name="node"/> without the skill. Tells the owner (not more often
+        /// than every <see cref="needsSkillRepeat"/> seconds, as Mine is held down) so they see "Requires Mining 25".
+        /// </summary>
+        public void ServerTellNeedsSkill(in GatherNode node)
+        {
+            if (!IsServer || Time.time - _lastNeedsSkill < needsSkillRepeat)
+                return;
+            _lastNeedsSkill = Time.time;
+            NeedsSkillRpc((byte)node.Profession, (byte)Mathf.Min(node.RequiredSkill, byte.MaxValue));
+        }
 
         /// <summary>
         /// Host only: the hero just gathered <paramref name="node"/>, which may raise the skill. True if it went up.
@@ -106,5 +132,8 @@ namespace Voxelforge.Gameplay
 
         [Rpc(SendTo.Owner)]
         void SkilledUpRpc(byte profession, byte skill) => SkilledUp?.Invoke((ProfessionId)profession, skill);
+
+        [Rpc(SendTo.Owner)]
+        void NeedsSkillRpc(byte profession, byte required) => NeedsSkill?.Invoke((ProfessionId)profession, required);
     }
 }

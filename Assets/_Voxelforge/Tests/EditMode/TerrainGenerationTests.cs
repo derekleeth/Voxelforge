@@ -22,7 +22,7 @@ namespace Voxelforge.Tests
         /// Recorded output of <see cref="GoldenChunk_MatchesRecordedHash"/>. If this test fails, terrain output changed:
         /// that's fine on purpose (update this and bump <see cref="TerrainSampler.GeneratorVersion"/>), a bug otherwise.
         /// </summary>
-        const uint GoldenHash = 3653086797u; // GeneratorVersion 3: Thunderhoof Plains and mesas.
+        const uint GoldenHash = 1816195614u; // GeneratorVersion 5: ore tiers (Roadmap 5.7).
 
         TerrainSettings _settings;
         BlockRegistry _registry;
@@ -189,12 +189,13 @@ namespace Voxelforge.Tests
                 {
                     if (voxel.BlockId == BlockIds.Air)
                         air++;
-                    else if (voxel.BlockId == BlockIds.ManaCrystalOre)
+                    else if (voxel.BlockId == BlockIds.CopperOre || voxel.BlockId == BlockIds.IronOre ||
+                             voxel.BlockId == BlockIds.ManaCrystalOre)
                         ore++;
                 }
             }
             Assert.Greater(air, 0, "No caves between y=32 and y=63.");
-            Assert.Greater(ore, 0, "No Mana Crystal Ore between y=32 and y=63.");
+            Assert.Greater(ore, 0, "No ore between y=32 and y=63.");
         }
 
         NativeArray<Voxel> Generate(WorldSeed seed, ChunkCoord coord, out bool uniform)

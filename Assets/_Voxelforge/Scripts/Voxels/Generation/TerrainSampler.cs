@@ -11,8 +11,8 @@ namespace Voxelforge.Voxels
         public int Height;
         /// <summary>Index into the biome list of the biome whose blocks cover this column.</summary>
         public int Biome;
-        /// <summary>Blended ore richness of the biomes here. 1 = normal.</summary>
-        public float OreRichness;
+        /// <summary>Blended richness of each ore vein here (Roadmap 5.7), in <see cref="TerrainParams.OreVeins"/> order.</summary>
+        public float4 OreRichness;
         /// <summary>Trunk blocks stacked on the ground here (see <see cref="TreePlacement"/>). 0 = no tree.</summary>
         public int TreeHeight;
         /// <summary>
@@ -36,7 +36,7 @@ namespace Voxelforge.Voxels
         /// Bump this whenever terrain output changes on purpose (new rules or new settings values).
         /// Saves (Roadmap 3.4) record it, so an old save can tell it was made by a different generator.
         /// </summary>
-        public const int GeneratorVersion = 4; // 2: trees (Roadmap 2.6). 3: Thunderhoof Plains and mesas (4.7). 4: stamps (5.4).
+        public const int GeneratorVersion = 5; // 2: trees (Roadmap 2.6). 3: Thunderhoof Plains and mesas (4.7). 4: stamps (5.4). 5: ore tiers (5.7).
 
         /// <summary>A mesa's cliff shows banded rock where at least this much of the column is mesa; below it, the usual layers.</summary>
         public const float MesaRockFrom = 0.15f;
@@ -54,7 +54,7 @@ namespace Voxelforge.Voxels
         const uint TunnelASalt = 4;
         const uint TunnelBSalt = 5;
         const uint CavernSalt = 6;
-        const uint OreSalt = 7;
+        const uint OreSaltBase = 300;
         const uint BiomeSaltBase = 100;
         const uint MesaSaltBase = 200;
 
@@ -68,7 +68,7 @@ namespace Voxelforge.Voxels
         float3 _tunnelAOffset;
         float3 _tunnelBOffset;
         float3 _cavernOffset;
-        float3 _oreOffset;
+        FixedList64Bytes<float3> _oreOffsets;
         uint _jitterHash;
         uint _treeHash;
 
@@ -91,7 +91,9 @@ namespace Voxelforge.Voxels
             _tunnelAOffset = seed.NoiseOffset(TunnelASalt);
             _tunnelBOffset = seed.NoiseOffset(TunnelBSalt);
             _cavernOffset = seed.NoiseOffset(CavernSalt);
-            _oreOffset = seed.NoiseOffset(OreSalt);
+            _oreOffsets = new FixedList64Bytes<float3>();
+            for (int v = 0; v < terrain.OreVeins.Length; v++)
+                _oreOffsets.Add(seed.NoiseOffset(OreSaltBase + (uint)v));
             _jitterHash = seed.Hash(JitterSalt);
             _treeHash = TreePlacement.SeedHash(seed);
         }
@@ -176,7 +178,7 @@ namespace Voxelforge.Voxels
             BiomeWeights(climate, _weights);
 
             float height = 0f;
-            float oreRichness = 0f;
+            float4 oreRichness = float4.zero;
             float mesa = 0f;
             for (int i = 0; i < _biomes.Length; i++)
             {
@@ -184,7 +186,7 @@ namespace Voxelforge.Voxels
                 if (w <= 0f)
                     continue;
                 height += w * BiomeHeight(i, position);
-                oreRichness += w * _biomes[i].OreRichness;
+                oreRichness += w * _biomes[i].VeinRichness;
                 if (_biomes[i].MesaHeight > 0f)
                 {
                     float m = w * MesaShape(i, position);
@@ -265,7 +267,7 @@ namespace Voxelforge.Voxels
                 return MesaBand(w.y, biome);
             if (depth <= biome.SubsurfaceDepth)
                 return biome.SubsurfaceBlock;
-            return IsOre(w, column.OreRichness) ? _params.OreBlock : _params.StoneBlock;
+            return OreAt(w, column.OreRichness);
         }
 
         /// <summary>Which of a mesa's two rocks is at height <paramref name="y"/>: level bands, the same all round the mesa.</summary>
@@ -319,11 +321,26 @@ namespace Voxelforge.Voxels
             return noise.snoise(p * _params.CavernFrequency * new float3(1f, 2f, 1f) + _cavernOffset) > threshold;
         }
 
-        bool IsOre(int3 w, float richness)
+        /// <summary>
+        /// The ore at <paramref name="w"/>, or stone (Roadmap 5.7). Each vein is its own noise field; the first vein
+        /// whose field is high enough here wins. A vein thins out toward its top (<see cref="OreVeinInfo.TopFade"/>), so
+        /// digging deeper finds more.
+        /// </summary>
+        ushort OreAt(int3 w, float4 richness)
         {
-            if (w.y > _params.OreMaxY)
-                return false;
-            return noise.snoise((float3)w * _params.OreFrequency + _oreOffset) * richness > _params.OreThreshold;
+            for (int v = 0; v < _params.OreVeins.Length; v++)
+            {
+                OreVeinInfo vein = _params.OreVeins[v];
+                float rich = richness[v];
+                if (rich <= 0f || w.y < vein.MinY || w.y > vein.MaxY)
+                    continue;
+                float threshold = vein.Threshold;
+                if (vein.TopFade > 0)
+                    threshold += math.saturate((w.y - (vein.MaxY - vein.TopFade)) / (float)vein.TopFade) * (1f - threshold);
+                if (noise.snoise((float3)w * vein.Frequency + _oreOffsets[v]) * rich > threshold)
+                    return vein.Block;
+            }
+            return _params.StoneBlock;
         }
 
         /// <summary>Layered simplex noise (fractal Brownian motion), roughly -1..1.</summary>

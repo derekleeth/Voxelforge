@@ -63,6 +63,12 @@ namespace Voxelforge.Gameplay
         /// <summary>The one Legendary for now: a storm-forged maul from the high mesas.</summary>
         public const ushort Skyrender = 1230;
 
+        // Ore (Roadmap 5.7): what the ore blocks drop.
+        public const ushort CopperOre = 1300;
+        public const ushort IronOre = 1301;
+        /// <summary>Mined from Mana Crystal Ore (Mining 50). The M.G.R.S., Home Totem and Delver's Rucksack take it.</summary>
+        public const ushort ManaCrystal = 1302;
+
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;
     }

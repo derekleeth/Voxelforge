@@ -53,5 +53,15 @@ namespace Voxelforge.Voxels
         /// blast-proof, so nobody digs out of (or into) a boss fight.
         /// </summary>
         public const ushort WardedStone = 19;
+        /// <summary>Stone studded with copper (Roadmap 5.7): the first ore tier, Mining 1. Drops Copper Ore.</summary>
+        public const ushort CopperOre = 20;
+        /// <summary>Stone with rusty iron nuggets (Roadmap 5.7): the second ore tier, Mining 25. Drops Iron Ore.</summary>
+        public const ushort IronOre = 21;
+
+        /// <summary>
+        /// IDs from here up are items, not blocks (<c>ItemIds.FirstNonBlock</c>). A block can drop one (ore, Roadmap 5.7);
+        /// the item registry checks it exists.
+        /// </summary>
+        public const ushort FirstItem = 1000;
     }
 }

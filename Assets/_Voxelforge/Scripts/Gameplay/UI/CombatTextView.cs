@@ -201,6 +201,16 @@ namespace Voxelforge.Gameplay
                     size *= 1.45f;
                     burst = true;
                     break;
+                case CombatTextKind.SkillUp:
+                    words = $"{e.Label} {e.Amount}";
+                    colour = new Color(0.45f, 0.75f, 1f);
+                    size *= 0.85f;
+                    break;
+                case CombatTextKind.NeedsSkill:
+                    words = $"Requires {e.Label} {e.Amount}";
+                    colour = _skin.refusal;
+                    size *= 0.8f;
+                    break;
                 case CombatTextKind.Discovered:
                     words = $"DISCOVERED!\n{e.Label}";
                     colour = _skin.pickup;

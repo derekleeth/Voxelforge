@@ -16,12 +16,14 @@ MonoBehaviour:
   displayName: Mana Crystal Ore
   maxDurability: 150
   drop: {fileID: 0}
+  dropItem: 1302
   dropCount: 1
   harvestKind: 1
   isSolid: 1
   isTransparent: 0
   isProp: 0
   needsSupport: 0
+  blastProof: 1
   lightEmission: 7
   mapColor:
     serializedVersion: 2

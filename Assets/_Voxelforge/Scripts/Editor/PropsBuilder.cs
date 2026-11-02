@@ -158,7 +158,19 @@ namespace Voxelforge.Editor
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
             registry.TryGet(BlockIds.Stone, out BlockDefinition stone);
-            registry.TryGet(BlockIds.ManaCrystalOre, out BlockDefinition mana);
+            // Roadmap 5.7: Mana Crystal Ore drops the Mana Crystal item (Mining 50), made by Build Loot.
+            // Searched in the list, not with TryGet: the registry's lookup may be from before Build Loot added it.
+            ItemDefinition mana = null;
+            foreach (ItemDefinition item in items.Items)
+            {
+                if (item != null && item.Id == ItemIds.ManaCrystal)
+                    mana = item;
+            }
+            if (mana == null)
+            {
+                Debug.LogError("[Voxelforge] There's no Mana Crystal item yet. Run Voxelforge > Build Loot, then Build Props & Items again.");
+                return;
+            }
             registry.TryGet(BlockIds.Dirt, out BlockDefinition dirt);
             var book = LoadOrCreate<RecipeBook>($"{ItemDir}/RecipeBook.asset");
             SetList(book, "recipes",
@@ -305,6 +317,8 @@ namespace Voxelforge.Editor
                 {
                     case BlockIds.Stone:
                     case BlockIds.ManaCrystalOre:
+                    case BlockIds.CopperOre:
+                    case BlockIds.IronOre:
                     case BlockIds.Sandstone:
                     case BlockIds.RedRock:
                     case BlockIds.EarthenRock:

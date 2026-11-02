@@ -21,4 +21,22 @@ MonoBehaviour:
   bonusYieldRange: 50
   maxBonusYieldChance: 0.5
   heatMapSkill: 10
-  nodes: []
+  nodes:
+  - Profession: 0
+    Kind: 0
+    Id: 20
+    RequiredSkill: 1
+    Yield: {fileID: 0}
+    GatherSeconds: 0
+  - Profession: 0
+    Kind: 0
+    Id: 21
+    RequiredSkill: 25
+    Yield: {fileID: 0}
+    GatherSeconds: 0
+  - Profession: 0
+    Kind: 0
+    Id: 4
+    RequiredSkill: 50
+    Yield: {fileID: 0}
+    GatherSeconds: 0

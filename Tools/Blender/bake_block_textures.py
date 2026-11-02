@@ -408,6 +408,57 @@ def make_mana_crystal_ore(g):
     return g.outputs(color, g.math("ADD", height, 0.0, clamp=True), roughness, emission)
 
 
+def ore_nuggets(g, stone_offset, offset, scale, pick):
+    """Stone with chunky metal nuggets in about <pick> of the Voronoi cells (Roadmap 5.7): the stone colour and height,
+    and the nuggets' mask, core and facets."""
+    stone, stone_height, _ = stone_channels(g, stone_offset)
+    nugget_dist, nugget_random = g.voronoi(g.torus(scale, offset), "F1")
+    facets, _ = g.voronoi(g.torus(scale * 3.5, offset), "DISTANCE_TO_EDGE", randomness=0.9)
+    facets = g.remap(facets, 0.0, 0.12)
+    chosen = g.remap(nugget_random, 1.0 - pick, 1.0 - pick + 0.04)
+    inside = g.math("MULTIPLY", g.remap(nugget_dist, 0.62, 0.52), chosen)
+    core = g.remap(nugget_dist, 0.62, 0.1)
+    height = g.mix(stone_height, g.math("ADD", g.math("MULTIPLY", core, 0.35), 0.5), inside)
+    return stone, stone_height, inside, core, facets, height
+
+
+def make_copper_ore(g):
+    """Stone studded with bright copper nuggets, a little green patina round their edges (Roadmap 5.7)."""
+    stone, stone_height, inside, core, facets, height = ore_nuggets(g, (2.0, 9.0, -4.0, 6.0), (5.0, -3.0, 12.0, 1.0),
+                                                                    2.2, 0.42)
+    metal = g.ramp(g.math("ADD", g.math("MULTIPLY", core, 0.7), g.math("MULTIPLY", facets, 0.3)),
+                   [(0.0, (0.42, 0.18, 0.07)), (0.4, (0.78, 0.40, 0.16)), (0.8, (0.98, 0.64, 0.34)),
+                    (1.0, (1.0, 0.86, 0.62))])
+    patina = g.noise(g.torus(6.0, (1.0, 7.0, -2.0, 3.0)), detail=4, roughness=0.6)
+    rim = g.math("MULTIPLY", g.remap(core, 0.0, 0.25), g.remap(patina, 0.5, 0.7))
+    metal = g.mix(metal, g.ramp(patina, [(0.0, (0.20, 0.48, 0.40)), (1.0, (0.36, 0.66, 0.52))]),
+                  g.math("MULTIPLY", g.math("SUBTRACT", 1.0, g.remap(core, 0.0, 0.25)), rim))
+    color = g.mix(g.shade(stone, stone_height, 0.5, 1.15), metal, inside)
+    roughness = g.remap(inside, 0.0, 1.0, 0.82, 0.22)
+    return g.outputs(color, g.math("ADD", height, 0.0, clamp=True), roughness)
+
+
+def make_iron_ore(g):
+    """Darker stone with dark grey iron nuggets sitting in wide rusty red-brown stains (Roadmap 5.7)."""
+    offset = (-2.0, 11.0, 4.0, -9.0)
+    stone, stone_height, inside, core, facets, height = ore_nuggets(g, (-6.0, 3.0, 9.0, -8.0), offset, 2.2, 0.45)
+    stone = g.mix(stone, (0.30, 0.29, 0.30), 0.35)
+    metal = g.ramp(g.math("ADD", g.math("MULTIPLY", core, 0.7), g.math("MULTIPLY", facets, 0.3)),
+                   [(0.0, (0.14, 0.14, 0.16)), (0.45, (0.30, 0.31, 0.34)), (0.85, (0.55, 0.57, 0.62)),
+                    (1.0, (0.80, 0.82, 0.86))])
+    # A rust stain spreads well into the stone round each nugget.
+    nugget_dist, nugget_random = g.voronoi(g.torus(2.2, offset), "F1")
+    chosen = g.remap(nugget_random, 0.55, 0.59)
+    stain = g.math("MULTIPLY", g.remap(nugget_dist, 0.95, 0.6, smooth=True), chosen)
+    rust_noise = g.noise(g.torus(5.0, (8.0, -1.0, 2.0, 5.0)), detail=5, roughness=0.6)
+    stain = g.math("MULTIPLY", stain, g.remap(rust_noise, 0.3, 0.6), clamp=True)
+    rust = g.ramp(rust_noise, [(0.3, (0.48, 0.17, 0.06)), (0.7, (0.78, 0.36, 0.12))])
+    color = g.mix(g.shade(stone, stone_height, 0.5, 1.15), rust, g.math("MULTIPLY", stain, 0.9))
+    color = g.mix(color, g.shade(metal, height, 0.6, 1.2), inside)
+    roughness = g.remap(inside, 0.0, 1.0, 0.85, 0.3)
+    return g.outputs(color, g.math("ADD", height, 0.0, clamp=True), roughness)
+
+
 def make_log_bark(g):
     """Chopped-tree bark (Roadmap 3.2): deep vertical furrows that wander a little, rough plates between them."""
     offset = (4.0, -6.0, 2.0, 7.0)
@@ -555,6 +606,9 @@ LAYERS = {
     "RuinBrick": (make_ruin_brick, 4.5, 1.0, True),
     "MossyRuinBrick": (make_mossy_ruin_brick, 4.5, 1.0, True),
     "WardedStone": (make_warded_stone, 4.0, 0.9, True),
+    # Roadmap 5.7: ore tiers.
+    "CopperOre": (make_copper_ore, 5.0, 1.0, True),
+    "IronOre": (make_iron_ore, 5.0, 1.0, True),
 }
 
 

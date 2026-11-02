@@ -104,6 +104,15 @@ namespace Voxelforge.Gameplay
                         errors.Add($"'{item.DisplayName}' shoots: {problem}");
                 }
             }
+            // Blocks that drop an item (ore, Roadmap 5.7) need it to exist.
+            if (blocks != null)
+            {
+                foreach (BlockDefinition block in blocks.Blocks)
+                {
+                    if (block != null && block.DropCount > 0 && !ItemIds.IsBlock(block.DropId) && !seen.Contains(block.DropId))
+                        errors.Add($"'{block.DisplayName}' drops item {block.DropId}, which isn't in the item registry.");
+                }
+            }
             return errors;
         }
 

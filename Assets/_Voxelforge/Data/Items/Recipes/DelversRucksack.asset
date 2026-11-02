@@ -19,8 +19,8 @@ MonoBehaviour:
   - block: {fileID: 11400000, guid: 6116e2a7ba94e434e92c053406baad32, type: 2}
     item: {fileID: 0}
     count: 6
-  - block: {fileID: 11400000, guid: 4453419398101434290095d64f9ce111, type: 2}
-    item: {fileID: 0}
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: cc960af926acede4299bb557b42c7e42, type: 2}
     count: 3
   output:
     block: {fileID: 0}

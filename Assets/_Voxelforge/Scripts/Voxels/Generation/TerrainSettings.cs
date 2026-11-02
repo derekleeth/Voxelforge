@@ -60,17 +60,10 @@ namespace Voxelforge.Voxels
         [Tooltip("Caves never carve below this height, so the world always has a floor.")]
         [SerializeField, Min(0)] int caveFloorY = 1;
 
-        [Header("Mana Crystal Ore")]
-        [SerializeField] BlockDefinition oreBlock;
-
-        [Tooltip("Size of ore clusters. Bigger numbers make smaller, more scattered clusters.")]
-        [SerializeField, Range(0.02f, 0.5f)] float oreFrequency = 0.14f;
-
-        [Tooltip("Higher = rarer ore.")]
-        [SerializeField, Range(0f, 1f)] float oreThreshold = 0.78f;
-
-        [Tooltip("Ore only forms below this height.")]
-        [SerializeField] int oreMaxY = 80;
+        [Header("Ore (Roadmap 5.7)")]
+        [Tooltip("The ore tiers, at most 4. Where two would grow in the same block, the first in the list wins, so list " +
+                 "the rarest first. Written by Voxelforge > Build Professions.")]
+        [SerializeField] List<OreVein> oreVeins = new List<OreVein>();
 
         [Header("Trees")]
         [Tooltip("Invisible solid block that fills tree trunks, so trees block building and collide.")]
@@ -84,7 +77,12 @@ namespace Voxelforge.Voxels
 
         [SerializeField, Range(1, 16)] int treeMaxHeight = 6;
 
+        /// <summary>The most ore veins the generator can carry (<see cref="TerrainColumn.OreRichness"/> is a float4).</summary>
+        public const int MaxOreVeins = 4;
+
         public IReadOnlyList<BiomeSettings> Biomes => biomes;
+
+        public IReadOnlyList<OreVein> OreVeins => oreVeins;
 
         /// <summary>Returns every problem with these settings. An empty list means they're valid.</summary>
         public List<string> Validate(BlockRegistry registry)
@@ -95,7 +93,25 @@ namespace Voxelforge.Voxels
 
             CheckBlock(registry, stoneBlock, "Stone Block", errors);
             CheckBlock(registry, snowBlock, "Snow Block", errors);
-            CheckBlock(registry, oreBlock, "Ore Block", errors);
+            if (oreVeins.Count > MaxOreVeins)
+                errors.Add($"There are {oreVeins.Count} ore veins; the generator carries at most {MaxOreVeins}.");
+            for (int i = 0; i < oreVeins.Count; i++)
+            {
+                OreVein vein = oreVeins[i];
+                if (vein == null)
+                {
+                    errors.Add($"Ore vein {i} is empty.");
+                    continue;
+                }
+                CheckBlock(registry, vein.Block, $"Ore vein {i} Block", errors);
+                if (vein.MaxY < vein.MinY)
+                    errors.Add($"Ore vein {i} has Max Y below Min Y.");
+                foreach (OreBiomeRichness entry in vein.BiomeRichness)
+                {
+                    if (biomes.Find(b => b != null && b.Name == entry.biome) == null)
+                        errors.Add($"Ore vein {i} names a biome that doesn't exist: '{entry.biome}'.");
+                }
+            }
             CheckBlock(registry, treeTrunkBlock, "Tree Trunk Block", errors);
             if (treeMaxHeight < treeMinHeight)
                 errors.Add("Tree Max Height is lower than Tree Min Height.");
@@ -135,10 +151,7 @@ namespace Voxelforge.Voxels
                 CavernMaxY = cavernMaxY,
                 CaveEntranceDepth = math.max(caveEntranceDepth, 1f),
                 CaveFloorY = caveFloorY,
-                OreBlock = oreBlock != null ? oreBlock.Id : BlockIds.ManaCrystalOre,
-                OreFrequency = oreFrequency,
-                OreThreshold = oreThreshold,
-                OreMaxY = oreMaxY,
+                OreVeins = OreVeinLookup(),
                 TreeTrunkBlock = treeTrunkBlock != null ? treeTrunkBlock.Id : BlockIds.TreeTrunk,
                 TreeCellSize = treeCellSize,
                 TreeMinHeight = treeMinHeight,
@@ -146,13 +159,40 @@ namespace Voxelforge.Voxels
             };
         }
 
-        /// <summary>Builds the biome list for jobs, in the same order as <see cref="Biomes"/>. The caller must Dispose it.</summary>
+        /// <summary>
+        /// Builds the biome list for jobs, in the same order as <see cref="Biomes"/>, with each ore vein's richness there
+        /// (<see cref="BiomeInfo.VeinRichness"/>). The caller must Dispose it.
+        /// </summary>
         public NativeArray<BiomeInfo> CreateBiomeLookup(Allocator allocator)
         {
             var lookup = new NativeArray<BiomeInfo>(biomes.Count, allocator);
             for (int i = 0; i < biomes.Count; i++)
-                lookup[i] = biomes[i].ToBiomeInfo();
+            {
+                BiomeInfo info = biomes[i].ToBiomeInfo();
+                info.VeinRichness = VeinRichnessIn(biomes[i]);
+                lookup[i] = info;
+            }
             return lookup;
+        }
+
+        /// <summary>How rich each ore vein is in <paramref name="biome"/>: the vein's richness there times the biome's.</summary>
+        public float4 VeinRichnessIn(BiomeSettings biome)
+        {
+            float4 richness = float4.zero;
+            for (int v = 0; v < oreVeins.Count && v < MaxOreVeins; v++)
+            {
+                if (oreVeins[v] != null && oreVeins[v].Block != null)
+                    richness[v] = oreVeins[v].RichnessIn(biome.Name) * biome.OreRichness;
+            }
+            return richness;
+        }
+
+        FixedList128Bytes<OreVeinInfo> OreVeinLookup()
+        {
+            var veins = new FixedList128Bytes<OreVeinInfo>();
+            for (int v = 0; v < oreVeins.Count && v < MaxOreVeins; v++)
+                veins.Add(oreVeins[v] != null && oreVeins[v].Block != null ? oreVeins[v].ToVeinInfo() : default);
+            return veins;
         }
 
         static void CheckBlock(BlockRegistry registry, BlockDefinition block, string label, List<string> errors)
@@ -202,7 +242,7 @@ namespace Voxelforge.Voxels
         [Tooltip("How many layers of subsurface block sit under the surface before stone starts.")]
         [SerializeField, Range(0, 16)] int subsurfaceDepth = 3;
 
-        [Tooltip("How much Mana Crystal Ore grows underneath. 1 = normal.")]
+        [Tooltip("How much ore of every kind grows underneath. 1 = normal. Each ore vein has its own richness per biome too.")]
         [SerializeField, Range(0f, 2f)] float oreRichness = 1f;
 
         [Header("Mesas (Roadmap 4.7)")]
@@ -239,6 +279,7 @@ namespace Voxelforge.Voxels
         [SerializeField] Color foliageTint = Color.white;
 
         public string Name => name;
+        public float OreRichness => oreRichness;
         public BlockDefinition SurfaceBlock => surfaceBlock;
         public BlockDefinition SubsurfaceBlock => subsurfaceBlock;
         public float TreeChance => treeChance;
@@ -276,6 +317,103 @@ namespace Voxelforge.Voxels
         }
     }
 
+    /// <summary>How rich one ore vein is in one biome (Roadmap 5.7). Edited inside an <see cref="OreVein"/>.</summary>
+    [Serializable]
+    public struct OreBiomeRichness
+    {
+        [Tooltip("The biome's name, as in the biome list.")]
+        public string biome;
+
+        [Range(0f, 3f)] public float richness;
+
+        public OreBiomeRichness(string biome, float richness)
+        {
+            this.biome = biome;
+            this.richness = richness;
+        }
+    }
+
+    /// <summary>
+    /// One tier of ore (Roadmap 5.7): which block, how clustered and how rare, between which heights, and how rich in
+    /// each biome. Edited inside <see cref="TerrainSettings"/>.
+    /// </summary>
+    [Serializable]
+    public sealed class OreVein
+    {
+        [SerializeField] BlockDefinition block;
+
+        [Tooltip("Size of ore clusters. Bigger numbers make smaller, more scattered clusters.")]
+        [SerializeField, Range(0.02f, 0.5f)] float frequency = 0.14f;
+
+        [Tooltip("Higher = rarer ore.")]
+        [SerializeField, Range(0f, 1f)] float threshold = 0.78f;
+
+        [Tooltip("Ore only forms at or above this height...")]
+        [SerializeField] int minY = 1;
+
+        [Tooltip("...and at or below this one.")]
+        [SerializeField] int maxY = 80;
+
+        [Tooltip("Over this many blocks below Max Y the ore thins out to nothing, so it gets richer the deeper you dig.")]
+        [SerializeField, Min(0)] int topFade = 12;
+
+        [Tooltip("Richness in every biome not listed below. 0 = only in the listed biomes.")]
+        [SerializeField, Range(0f, 3f)] float richness = 1f;
+
+        [SerializeField] List<OreBiomeRichness> biomeRichness = new List<OreBiomeRichness>();
+
+        public BlockDefinition Block => block;
+        public int MinY => minY;
+        public int MaxY => maxY;
+        public IReadOnlyList<OreBiomeRichness> BiomeRichness => biomeRichness;
+
+        /// <summary>The vein's richness in the biome called <paramref name="biomeName"/>.</summary>
+        public float RichnessIn(string biomeName)
+        {
+            foreach (OreBiomeRichness entry in biomeRichness)
+            {
+                if (entry.biome == biomeName)
+                    return entry.richness;
+            }
+            return richness;
+        }
+
+        public OreVeinInfo ToVeinInfo() => new OreVeinInfo
+        {
+            Block = block != null ? block.Id : BlockIds.Stone,
+            Frequency = frequency,
+            Threshold = threshold,
+            MinY = minY,
+            MaxY = maxY,
+            TopFade = topFade,
+        };
+
+        /// <summary>Builds a vein in code, for tests and Build Professions.</summary>
+        public static OreVein Create(BlockDefinition block, float frequency, float threshold, int minY, int maxY, int topFade,
+            float richness, params OreBiomeRichness[] biomes) => new OreVein
+        {
+            block = block,
+            frequency = frequency,
+            threshold = threshold,
+            minY = minY,
+            maxY = maxY,
+            topFade = topFade,
+            richness = richness,
+            biomeRichness = new List<OreBiomeRichness>(biomes),
+        };
+    }
+
+    /// <summary>Job-friendly copy of an <see cref="OreVein"/> (Roadmap 5.7).</summary>
+    public struct OreVeinInfo
+    {
+        public ushort Block;
+        public float Frequency;
+        public float Threshold;
+        public int MinY;
+        public int MaxY;
+        public int TopFade;
+    }
+
     /// <summary>Job-friendly copy of the global values in <see cref="TerrainSettings"/>.</summary>
     public struct TerrainParams
     {
@@ -295,10 +433,8 @@ namespace Voxelforge.Voxels
         public float CaveEntranceDepth;
         public int CaveFloorY;
 
-        public ushort OreBlock;
-        public float OreFrequency;
-        public float OreThreshold;
-        public int OreMaxY;
+        /// <summary>The ore tiers (Roadmap 5.7), the first that hits a block winning. At most <see cref="TerrainSettings.MaxOreVeins"/>.</summary>
+        public FixedList128Bytes<OreVeinInfo> OreVeins;
 
         public ushort TreeTrunkBlock;
         public int TreeCellSize;
@@ -320,7 +456,10 @@ namespace Voxelforge.Voxels
         public ushort SurfaceBlock;
         public ushort SubsurfaceBlock;
         public int SubsurfaceDepth;
+        /// <summary>How much ore of every kind grows here. Already folded into <see cref="VeinRichness"/>.</summary>
         public float OreRichness;
+        /// <summary>How rich each ore vein (<see cref="TerrainParams.OreVeins"/>, in order) is here (Roadmap 5.7).</summary>
+        public float4 VeinRichness;
         public float TreeChance;
         /// <summary>0 = no mesas (Roadmap 4.7).</summary>
         public float MesaHeight;

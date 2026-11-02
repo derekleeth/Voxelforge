@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
+using Voxelforge.Gameplay;
 using Voxelforge.Voxels;
 using Object = UnityEngine.Object;
 
@@ -51,11 +52,24 @@ namespace Voxelforge.Tests
             Assert.AreEqual(BlockIds.Dirt, lookup[BlockIds.Grass].DropId);
             Assert.AreEqual(BlockIds.Log, lookup[BlockIds.TreeTrunk].DropId);
             Assert.AreEqual(1, lookup[BlockIds.TreeTrunk].DropCount);
-            foreach (ushort id in new[] { BlockIds.Dirt, BlockIds.Stone, BlockIds.ManaCrystalOre, BlockIds.Log })
+            foreach (ushort id in new[] { BlockIds.Dirt, BlockIds.Stone, BlockIds.Log })
             {
                 Assert.AreEqual(id, lookup[id].DropId, $"Block {id} should drop itself.");
                 Assert.AreEqual(1, lookup[id].DropCount, $"Block {id} should drop one.");
             }
+            // Roadmap 5.7: ore drops an ore item, not the block.
+            Assert.AreEqual(ItemIds.CopperOre, lookup[BlockIds.CopperOre].DropId);
+            Assert.AreEqual(ItemIds.IronOre, lookup[BlockIds.IronOre].DropId);
+            Assert.AreEqual(ItemIds.ManaCrystal, lookup[BlockIds.ManaCrystalOre].DropId);
+        }
+
+        [Test]
+        public void Validate_AllowsADropThatIsAnItem()
+        {
+            BlockDefinition ore = BlockDefinition.Create(BlockIds.CopperOre, "Copper Ore", dropItem: ItemIds.CopperOre);
+            _created.Add(ore);
+            CollectionAssert.IsEmpty(MakeRegistry(MakeBlock(BlockIds.Air, "Air", isSolid: false), ore).Validate(),
+                "The item registry checks item drops, not the block registry.");
         }
 
         [Test]

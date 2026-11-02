@@ -44,7 +44,7 @@ namespace Voxelforge.Voxels
 
             foreach (BlockDefinition block in seen.Values)
             {
-                if (block.DropCount > 0 && !seen.ContainsKey(block.DropId))
+                if (block.DropCount > 0 && block.DropId < BlockIds.FirstItem && !seen.ContainsKey(block.DropId))
                     errors.Add($"'{block.DisplayName}' drops block {block.DropId}, which isn't in the registry.");
             }
 

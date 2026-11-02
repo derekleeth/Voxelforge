@@ -115,8 +115,8 @@ namespace Voxelforge.Editor
             BlockTextureArrayBuilder.Rebuild();
         }
 
-        /// <summary>A plain textured cube block, one texture on every face, mined with a pick.</summary>
-        static BlockDefinition MakeCubeBlock(string name, ushort id, string displayName, int durability, bool blastProof,
+        /// <summary>A plain textured cube block, one texture on every face, mined with a pick. Ore uses it too (5.7).</summary>
+        internal static BlockDefinition MakeCubeBlock(string name, ushort id, string displayName, int durability, bool blastProof,
             int light, Color32 mapColor)
         {
             string texturePath = $"{TextureDir}/{name}.asset";
