@@ -32,6 +32,9 @@ namespace Voxelforge.Gameplay
         readonly TextMeshProUGUI _hints;
         string _scheme;
         bool _hasHome;
+        HeatMode _heatShown;
+        int _heatMaskShown = -1;
+        bool _heatUnlocked;
 
         public WorldMapView(RectTransform parent, HudSkin skin)
         {
@@ -91,7 +94,7 @@ namespace Voxelforge.Gameplay
         /// <param name="room">The space it may fill, in 1080p units: the player's own area less their action bar.</param>
         /// <param name="barRoom">Height kept clear for the action bar at the bottom, in 1080p units.</param>
         public void Tick(PlayerWorldMap map, MapTileCache tiles, ExploredMap explored, PlayerController self,
-            List<MapMarker> markers, Vector2 room, float barRoom, string scheme)
+            List<MapMarker> markers, Vector2 room, float barRoom, string scheme, MapHeatView heat = default)
         {
             var size = new Vector2(math.max(240f, room.x - Margin * 2f), math.max(200f, room.y - barRoom - Margin * 2f));
             if (_root.sizeDelta != size)
@@ -103,28 +106,36 @@ namespace Voxelforge.Gameplay
             WorldMapModel model = map.Model;
             Vector2 paper = _paper.rect.size;
             float2 half = new float2(paper.x, paper.y) * 0.5f;
-            _land.Draw(tiles, explored, model.Center, half / model.UnitsPerBlock, model.UnitsPerBlock);
+            _land.Draw(tiles, explored, model.Center, half / model.UnitsPerBlock, model.UnitsPerBlock, heat);
             _markers.Draw(markers, model.Center, model.UnitsPerBlock, round: false, half, self.PlayerId, explored);
 
-            if (scheme != _scheme || map.HasHome != _hasHome)
+            int heatMask = heat.IsShowing ? heat.Mask : 0;
+            if (scheme != _scheme || map.HasHome != _hasHome || map.HeatMode != _heatShown || heatMask != _heatMaskShown ||
+                map.HeatUnlocked != _heatUnlocked)
             {
                 _scheme = scheme;
                 _hasHome = map.HasHome;
-                _hints.text = Hints(scheme, _hasHome);
+                _heatShown = map.HeatMode;
+                _heatMaskShown = heatMask;
+                _heatUnlocked = map.HeatUnlocked;
+                string key = heat.IsShowing ? $"{_heatShown}: {heat.Heat.Describe(_heatShown, heatMask)}" : "Off";
+                _hints.text = Hints(scheme, _hasHome, _heatUnlocked ? key : null);
             }
         }
 
-        static string Hints(string scheme, bool hasHome)
+        /// <param name="heatKey">What the heat map shows (Roadmap 5.7), or null before any profession unlocks one.</param>
+        static string Hints(string scheme, bool hasHome, string heatKey)
         {
-            (string pan, string zoom, string centre, string home, string close) = scheme switch
+            (string pan, string zoom, string centre, string home, string close, string heat) = scheme switch
             {
-                "Gamepad" => ("Stick", "LB / RB", "A", "LT", "Select"),
-                "KeyboardLeft" => ("WASD", "Z / C", "Space", "E", "M"),
-                "KeyboardRight" => ("Arrows", ". / /", "R-Ctrl", "Enter", "Num +"),
-                _ => ("WASD", "Wheel", "Space", "Right-click", "M"),
+                "Gamepad" => ("Stick", "LB / RB", "A", "LT", "Select", "X"),
+                "KeyboardLeft" => ("WASD", "Z / C", "Space", "E", "M", "F"),
+                "KeyboardRight" => ("Arrows", ". / /", "R-Ctrl", "Enter", "Num +", ";"),
+                _ => ("WASD", "Wheel", "Space", "Right-click", "M", "F"),
             };
             string hearth = hasHome ? $"   <b>{home}</b> Hearth home" : "";
-            return $"<b>{pan}</b> Pan   <b>{zoom}</b> Zoom   <b>{centre}</b> Back to me{hearth}   <b>{close}</b> Close";
+            string heatHint = heatKey != null ? $"   <b>{heat}</b> Resources ({heatKey})" : "";
+            return $"<b>{pan}</b> Pan   <b>{zoom}</b> Zoom   <b>{centre}</b> Back to me{hearth}{heatHint}   <b>{close}</b> Close";
         }
 
         public void Dispose() => _land.Dispose();

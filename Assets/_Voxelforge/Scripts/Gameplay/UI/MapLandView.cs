@@ -10,15 +10,18 @@ namespace Voxelforge.Gameplay
     /// <summary>
     /// The land part of a map (Roadmap 4.8): the painted tiles from the shared <see cref="MapTileCache"/> under one
     /// player's own fog (<see cref="FogTexture"/>). Places everything from its parent's centre, so the parent decides the
-    /// map's size and clips it. The minimap and the World Map each have one.
+    /// map's size and clips it. The minimap and the World Map each have one. A heat map (Roadmap 5.7) washes over the
+    /// fog, so it hints at rich ground the player hasn't been to without showing the land.
     /// </summary>
     sealed class MapLandView : IDisposable
     {
         readonly RectTransform _root;
         readonly List<RawImage> _tiles = new List<RawImage>();
+        readonly List<RawImage> _heat = new List<RawImage>();
         readonly RawImage _fog;
         readonly FogTexture _fogTexture = new FogTexture();
         int _usedTiles;
+        int _usedHeat;
 
         public MapLandView(RectTransform parent)
         {
@@ -31,7 +34,8 @@ namespace Voxelforge.Gameplay
         /// Draws the land within <paramref name="halfSize"/> blocks of <paramref name="center"/> (world x, z), at
         /// <paramref name="unitsPerBlock"/>. Tiles still being painted show as blank parchment until they're ready.
         /// </summary>
-        public void Draw(MapTileCache tiles, ExploredMap explored, float2 center, float2 halfSize, float unitsPerBlock)
+        public void Draw(MapTileCache tiles, ExploredMap explored, float2 center, float2 halfSize, float unitsPerBlock,
+            MapHeatView heat = default)
         {
             _usedTiles = 0;
             if (tiles != null)
@@ -59,9 +63,44 @@ namespace Voxelforge.Gameplay
             _fogTexture.Update(explored, minCell, cells);
             if (_fog.texture != _fogTexture.Texture)
                 _fog.texture = _fogTexture.Texture;
-            if (_fog.transform.GetSiblingIndex() != _root.childCount - 1)
+            // New tiles are made at the end: keep the fog over them, and the heat map over the fog.
+            if (_fog.transform.GetSiblingIndex() != _root.childCount - 1 - _heat.Count)
+            {
                 _fog.transform.SetAsLastSibling();
+                foreach (RawImage heatImage in _heat)
+                    heatImage.transform.SetAsLastSibling();
+            }
             Place(_fog.rectTransform, minCell * ExploredMap.CellSize, cells * ExploredMap.CellSize, center, unitsPerBlock);
+
+            // The heat map (Roadmap 5.7), over the fog.
+            _usedHeat = 0;
+            if (heat.IsShowing)
+            {
+                int2 first = MapTile.Of(center - halfSize);
+                int2 last = MapTile.Of(center + halfSize);
+                for (int z = first.y; z <= last.y; z++)
+                for (int x = first.x; x <= last.x; x++)
+                {
+                    var tile = new int2(x, z);
+                    if (!heat.Heat.TryGetTexture(tile, heat.Mode, heat.Mask, out Texture2D texture))
+                        continue;
+                    RawImage image = NextHeat();
+                    if (image.texture != texture)
+                        image.texture = texture;
+                    Place(image.rectTransform, MapTile.Origin(tile), MapTile.Size, center, unitsPerBlock);
+                }
+            }
+            for (int i = _usedHeat; i < _heat.Count; i++)
+                HudWidgets.SetActive(_heat[i], false);
+        }
+
+        RawImage NextHeat()
+        {
+            if (_usedHeat == _heat.Count)
+                _heat.Add(NewImage("Heat")); // Made after the fog, so it draws over it.
+            RawImage next = _heat[_usedHeat++];
+            HudWidgets.SetActive(next, true);
+            return next;
         }
 
         static void Place(RectTransform rect, int2 originBlock, int2 sizeBlocks, float2 center, float unitsPerBlock)

@@ -175,7 +175,7 @@ namespace Voxelforge.Gameplay
                 _gatherer.Gathered += OnGathered;
         }
 
-        void OnGathered(ushort item) => _castBar.Gathered(item, Time.time);
+        void OnGathered(GatherNodeKind kind, ushort item) => _castBar.Gathered(item, Time.time);
 
         public void SetVisible(bool visible)
         {
@@ -200,8 +200,11 @@ namespace Voxelforge.Gameplay
         /// <param name="mapTiles">The painted map (Roadmap 4.8), shared by every panel. Null before the world starts.</param>
         /// <param name="markers">This frame's map markers: every hero and Home Totem (Roadmap 4.8).</param>
         public void Tick(PlayerView view, Rect ownArea, Rect textArea, float scale, TargetHealthBook targets,
-            CombatTargets creatures, MapTileCache mapTiles, List<MapMarker> markers, float now)
+            CombatTargets creatures, MapTileCache mapTiles, List<MapMarker> markers, float now, MapHeat heat = null)
         {
+            MapHeatView heatView = heat != null && _worldMap != null && _professions != null
+                ? heat.ViewFor(_worldMap.HeatMode, _professions.Skills)
+                : default;
             Fit(_barArea, ownArea, scale);
             Fit(_textArea, textArea, scale);
             Fit(_mapArea, ownArea, scale);
@@ -211,7 +214,7 @@ namespace Voxelforge.Gameplay
             {
                 // A quarter of the screen gets a smaller map, so it doesn't crowd the view.
                 float fit = Mathf.Clamp(Mathf.Min(ownArea.width, ownArea.height) / scale / 900f, 0.6f, 1f);
-                _minimap.Tick(mapTiles, _explorer != null ? _explorer.Map : null, _player, markers, fit);
+                _minimap.Tick(mapTiles, _explorer != null ? _explorer.Map : null, _player, markers, fit, heatView);
             }
 
             // Shrink the bar to fit a narrow view (a quarter of the screen, or a Voronoi half).
@@ -233,7 +236,7 @@ namespace Voxelforge.Gameplay
             Fit(_knockoutArea, ownArea, scale);
             _knockoutView.Tick(_player, _knockout, now);
 
-            TickWorldMap(ownArea, scale, shrink, mapTiles, markers);
+            TickWorldMap(ownArea, scale, shrink, mapTiles, markers, heatView);
             TickClassWindow(ownArea, scale, shrink, now);
             TickRaceWindow(ownArea, scale, shrink, now);
 
@@ -259,7 +262,8 @@ namespace Voxelforge.Gameplay
         }
 
         /// <summary>The World Map (Roadmap 4.8): fills the player's view above their action bar.</summary>
-        void TickWorldMap(Rect ownArea, float scale, float shrink, MapTileCache mapTiles, List<MapMarker> markers)
+        void TickWorldMap(Rect ownArea, float scale, float shrink, MapTileCache mapTiles, List<MapMarker> markers,
+            MapHeatView heat)
         {
             bool open = _worldMap != null && _worldMap.IsOpen;
             HudWidgets.SetActive(_worldMapArea, open);
@@ -268,7 +272,7 @@ namespace Voxelforge.Gameplay
             Fit(_worldMapArea, ownArea, scale);
             float barRoom = (_actionBar.Height + 24f) * shrink;
             _worldMapView.Tick(_worldMap, mapTiles, _explorer != null ? _explorer.Map : null, _player, markers,
-                new Vector2(ownArea.width / scale, ownArea.height / scale), barRoom, _scheme);
+                new Vector2(ownArea.width / scale, ownArea.height / scale), barRoom, _scheme, heat);
         }
 
         /// <summary>The class window (Roadmap 4.6): centred in the player's view above their action bar, shrunk to fit.</summary>

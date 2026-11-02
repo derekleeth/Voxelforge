@@ -76,6 +76,15 @@ namespace Voxelforge.Gameplay
         [Tooltip("A hero reaching a new level (Roadmap 5.6).")]
         [SerializeField] AudioClip levelUp;
 
+        [Tooltip("Roadmap 5.7: picking a herb, on every PC.")]
+        [SerializeField] AudioClip herbPick;
+
+        [Tooltip("Roadmap 5.7: skinning or salvaging a body, on every PC.")]
+        [SerializeField] AudioClip skinSlice;
+
+        [Tooltip("Roadmap 5.7: a profession going up a point, for the gatherer.")]
+        [SerializeField] AudioClip skillUp;
+
         [Header("Loops")]
         [SerializeField] AmbientLoop[] loops = Array.Empty<AmbientLoop>();
 
@@ -94,6 +103,9 @@ namespace Voxelforge.Gameplay
         public AudioClip MapClose => mapClose;
         public AudioClip GearEquip => gearEquip;
         public AudioClip LevelUp => levelUp;
+        public AudioClip HerbPick => herbPick;
+        public AudioClip SkinSlice => skinSlice;
+        public AudioClip SkillUp => skillUp;
 
         /// <summary>The sound of loot of <paramref name="rarity"/> going into a bag (Roadmap 5.5): the plain pop for Common.</summary>
         public AudioClip LootPickup(ItemRarity rarity)

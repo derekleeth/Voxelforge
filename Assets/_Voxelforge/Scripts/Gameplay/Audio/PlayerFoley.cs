@@ -80,6 +80,11 @@ namespace Voxelforge.Gameplay
             /// <summary>Roadmap 5.6: a fanfare when they reach a new level.</summary>
             public PlayerLevel Level;
             public Action<int> OnLevel;
+            /// <summary>Roadmap 5.7: a rustle or a slice when they finish gathering, a chime when a profession goes up.</summary>
+            public PlayerGatherer Gatherer;
+            public Action<GatherNodeKind, ushort> OnGathered;
+            public PlayerProfessions Professions;
+            public Action<ProfessionId, int> OnSkill;
             public float SpawnedAt;
         }
 
@@ -138,6 +143,18 @@ namespace Voxelforge.Gameplay
                 hero.OnLevel = _ => OnLevelUp(hero);
                 hero.Level.LeveledUp += hero.OnLevel;
             }
+            hero.Gatherer = player.GetComponent<PlayerGatherer>();
+            if (hero.Gatherer != null)
+            {
+                hero.OnGathered = (kind, _) => OnGathered(hero, kind);
+                hero.Gatherer.Gathered += hero.OnGathered;
+            }
+            hero.Professions = player.GetComponent<PlayerProfessions>();
+            if (hero.Professions != null)
+            {
+                hero.OnSkill = (_, _) => OnSkillUp(hero);
+                hero.Professions.SkilledUp += hero.OnSkill;
+            }
             _heroes.Add(hero);
         }
 
@@ -159,6 +176,10 @@ namespace Voxelforge.Gameplay
                 hero.Bag.GearChanged -= hero.OnGear;
             if (hero.Level != null)
                 hero.Level.LeveledUp -= hero.OnLevel;
+            if (hero.Gatherer != null)
+                hero.Gatherer.Gathered -= hero.OnGathered;
+            if (hero.Professions != null)
+                hero.Professions.SkilledUp -= hero.OnSkill;
             StopCastLoop(hero);
             StopWind(hero);
             _heroes.RemoveAt(index);
@@ -178,6 +199,23 @@ namespace Voxelforge.Gameplay
             if (router == null || sounds == null || sounds.LevelUp == null || hero.Player == null)
                 return;
             router.Play(sounds.LevelUp, (float3)hero.Player.transform.position + new float3(0f, 1f, 0f), 0.9f, 1f, 40f);
+        }
+
+        void OnGathered(Hero hero, GatherNodeKind kind)
+        {
+            AudioClip clip = sounds == null ? null : kind == GatherNodeKind.Mob ? sounds.SkinSlice : sounds.HerbPick;
+            if (router == null || clip == null || hero.Player == null)
+                return;
+            router.Play(clip, (float3)hero.Player.transform.position + new float3(0f, 0.6f, 0f), 0.7f,
+                UnityEngine.Random.Range(0.94f, 1.06f), 16f);
+        }
+
+        // Only the gatherer's PC hears about a skill-up (it's for their own view), so it's quiet and close.
+        void OnSkillUp(Hero hero)
+        {
+            if (router == null || sounds == null || sounds.SkillUp == null || hero.Player == null)
+                return;
+            router.Play(sounds.SkillUp, (float3)hero.Player.transform.position + new float3(0f, 1f, 0f), 0.45f, 1f, 12f);
         }
 
         void LateUpdate()

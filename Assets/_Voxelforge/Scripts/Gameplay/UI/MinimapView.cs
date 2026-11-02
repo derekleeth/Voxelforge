@@ -54,7 +54,8 @@ namespace Voxelforge.Gameplay
         public RectTransform Root => _root;
 
         /// <param name="scale">How much to shrink it to fit a small view (1 = full size).</param>
-        public void Tick(MapTileCache tiles, ExploredMap explored, PlayerController self, List<MapMarker> markers, float scale)
+        public void Tick(MapTileCache tiles, ExploredMap explored, PlayerController self, List<MapMarker> markers, float scale,
+            MapHeatView heat = default)
         {
             if (!Mathf.Approximately(_root.localScale.x, scale))
                 _root.localScale = new Vector3(scale, scale, 1f);
@@ -63,7 +64,7 @@ namespace Voxelforge.Gameplay
             float unitsPerBlock = radius / RadiusBlocks;
             Vector3 hero = self.VisualRoot.position;
             var center = new float2(hero.x, hero.z);
-            _land.Draw(tiles, explored, center, new float2(RadiusBlocks), unitsPerBlock);
+            _land.Draw(tiles, explored, center, new float2(RadiusBlocks), unitsPerBlock, heat);
             _markers.Draw(markers, center, unitsPerBlock, round: true, new float2(radius), self.PlayerId, explored);
         }
 

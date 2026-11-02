@@ -9,6 +9,8 @@ namespace Voxelforge.Gameplay
     /// <see cref="PlayerController"/> stops the hero and hands the controls to this: move pans, the bag's next and
     /// previous buttons zoom, Jump goes back to the hero, and Place hearths home (the gamepad's only way home now). Map,
     /// Inventory or a B tap close it. Hearthing is only a request: <see cref="PlayerHearth"/> asks the host (Law #2).
+    /// Interact switches the resource heat map (Roadmap 5.7) between Off, Ore and Herbs, once Mining or Herbalism is high
+    /// enough; the minimap shows the same one.
     /// </summary>
     [RequireComponent(typeof(PlayerController))]
     public sealed class PlayerWorldMap : MonoBehaviour
@@ -17,6 +19,7 @@ namespace Voxelforge.Gameplay
         PlayerInventory _inventory;
         PlayerClassMenu _classMenu;
         PlayerHearth _hearth;
+        PlayerProfessions _professions;
         readonly WorldMapModel _model = new WorldMapModel();
         PlayerButtons _previousButtons;
 
@@ -31,12 +34,35 @@ namespace Voxelforge.Gameplay
         /// <summary>Every PC: the hero has a Home Totem to hearth to, for the hint.</summary>
         public bool HasHome => _hearth != null && _hearth.HasHome;
 
+        /// <summary>
+        /// Owner only: which resource heat map their World Map and minimap show (Roadmap 5.7). Off whenever the skill
+        /// that unlocks it drops below the book's (a play-test reset).
+        /// </summary>
+        public HeatMode HeatMode
+        {
+            get
+            {
+                if (_heatMode == HeatMode.Off || _professions == null ||
+                    MapHeat.IsUnlocked(_heatMode, _professions.Skills, _professions.Book))
+                    return _heatMode;
+                return HeatMode.Off;
+            }
+        }
+
+        /// <summary>Owner only: Mining or Herbalism is high enough for a heat map, so the map says how to show it.</summary>
+        public bool HeatUnlocked => _professions != null &&
+                                    (MapHeat.IsUnlocked(HeatMode.Ore, _professions.Skills, _professions.Book) ||
+                                     MapHeat.IsUnlocked(HeatMode.Herbs, _professions.Skills, _professions.Book));
+
+        HeatMode _heatMode;
+
         void Awake()
         {
             _player = GetComponent<PlayerController>();
             _inventory = GetComponent<PlayerInventory>();
             _classMenu = GetComponent<PlayerClassMenu>();
             _hearth = GetComponent<PlayerHearth>();
+            _professions = GetComponent<PlayerProfessions>();
         }
 
         float2 Hero
@@ -91,6 +117,8 @@ namespace Voxelforge.Gameplay
                 _model.ZoomBy(-1);
             if ((pressed & PlayerButtons.Jump) != 0)
                 _model.Recenter(Hero);
+            if ((pressed & PlayerButtons.Interact) != 0 && _professions != null)
+                _heatMode = MapHeat.Next(HeatMode, _professions.Skills, _professions.Book);
             if ((pressed & PlayerButtons.Place) != 0 && _hearth != null)
             {
                 _hearth.OwnerRequestHearth();

@@ -122,6 +122,8 @@ namespace Voxelforge.Gameplay
             }
         }
 
+        MapHeat _heat;
+
         void OnDestroy()
         {
             for (int i = 0; i < _panels.Length; i++)
@@ -131,6 +133,8 @@ namespace Voxelforge.Gameplay
             }
             _icons?.Dispose();
             _looks?.Dispose();
+            _heat?.Dispose();
+            _heat = null;
         }
 
         void LateUpdate()
@@ -172,8 +176,13 @@ namespace Voxelforge.Gameplay
                 Rect text = mode == SplitMode.Merged
                     ? new Rect(r.x * Screen.width, (1f - r.y - r.height) * Screen.height, r.width * Screen.width, r.height * Screen.height)
                     : own;
-                panel.Tick(view, own, text, scale, _targets, targets, mapTiles, _markers, now);
+                // The resource heat maps (Roadmap 5.7), shared by every panel; made once the first hero is here to say
+                // which Profession Book the game uses.
+                if (_heat == null && player.TryGetComponent(out PlayerProfessions professions))
+                    _heat = MapHeat.Create(world, professions.Book);
+                panel.Tick(view, own, text, scale, _targets, targets, mapTiles, _markers, now, _heat);
             }
+            _heat?.EndFrame();
 
             VoxelWorld voxels = world != null ? world.World : null;
             _icons?.DrawQueued(voxels != null ? voxels.Blocks : default);

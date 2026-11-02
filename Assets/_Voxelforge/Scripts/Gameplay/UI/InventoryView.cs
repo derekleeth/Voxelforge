@@ -27,6 +27,9 @@ namespace Voxelforge.Gameplay
         const float InfoHeight = 34f;
         const float HintHeight = 50f;
         const float SectionGap = 12f;
+        // The professions row (Roadmap 5.7): a name and skill over a thin bar for each.
+        const float ProfessionHeight = 40f;
+        const float SkillBarHeight = 9f;
         // The Storage Chest pane (4.5): 9 slots to a row, a little smaller, so the rows are as wide as the bag's 8.
         const float ChestSlot = 54f;
         const float ChestPaneGap = 10f;
@@ -35,6 +38,9 @@ namespace Voxelforge.Gameplay
         static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
         static readonly Color InkBrown = new Color(0.25f, 0.13f, 0.06f);
         static readonly Color TabIdle = new Color(0.55f, 0.42f, 0.3f);
+        // Mining, Herbalism, Skinning: copper, leaf green, tanned hide.
+        static readonly Color[] SkillColors =
+            { new Color(0.85f, 0.45f, 0.18f), new Color(0.35f, 0.65f, 0.2f), new Color(0.65f, 0.45f, 0.28f) };
 
         sealed class Cell
         {
@@ -54,6 +60,12 @@ namespace Voxelforge.Gameplay
         readonly Cell[] _sockets = new Cell[EquippedBags.SocketCount];
         readonly Cell[] _gearSockets = new Cell[EquippedGear.SocketCount];
         readonly TextMeshProUGUI _gearTotals;
+        readonly TextMeshProUGUI[] _skillLabels = new TextMeshProUGUI[ProfessionSkills.Count];
+        readonly Image[] _skillFills = new Image[ProfessionSkills.Count];
+        ProfessionSkills _skillsShown;
+        bool _skillsKnown;
+        PlayerInventory _skillsOf;
+        PlayerProfessions _professions;
         GearStats _totalsShown = new GearStats(-1, -1, -1);
         EquippedGear _infoGear;
         IItemRules _rules = ItemRules.Default;
@@ -90,7 +102,8 @@ namespace Voxelforge.Gameplay
             float gridHeight = InventoryModel.VisibleRows * Slot + (InventoryModel.VisibleRows - 1) * Gap;
             Width = gridWidth + Pad * 2f;
             Height = Pad + TitleHeight + SectionGap * 0.5f + TabHeight + SectionGap + gridHeight + SectionGap + SocketSize +
-                     SectionGap + SocketSize + SectionGap + InfoHeight + SectionGap * 0.5f + HintHeight + Pad;
+                     SectionGap + SocketSize + SectionGap + ProfessionHeight + SectionGap + InfoHeight + SectionGap * 0.5f +
+                     HintHeight + Pad;
 
             Root = HudWidgets.Place(HudWidgets.Rect("Inventory", parent), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(Width, Height));
@@ -160,6 +173,32 @@ namespace Voxelforge.Gameplay
                 _gearSockets[i] = c;
             }
             y -= SocketSize + SectionGap;
+
+            // The gathering professions (Roadmap 5.7): each skill as a number and a bar towards the cap.
+            TextMeshProUGUI professionsLabel = HudWidgets.Label("Professions", Root, skin.titleFont, 26f, InkBrown,
+                TextAlignmentOptions.Left);
+            Row(professionsLabel.rectTransform, Pad, y, 150f, ProfessionHeight);
+            professionsLabel.text = "Professions";
+            float skillWidth = (gridWidth - 160f - Gap * (ProfessionSkills.Count - 1)) / ProfessionSkills.Count;
+            for (int i = 0; i < ProfessionSkills.Count; i++)
+            {
+                float x = Pad + 160f + i * (skillWidth + Gap);
+                TextMeshProUGUI label = HudWidgets.Label($"Skill {i}", Root, skin.titleFont, 20f, InkBrown, TextAlignmentOptions.Left);
+                FitInside(label, 13f, 20f);
+                label.textWrappingMode = TextWrappingModes.NoWrap;
+                Row(label.rectTransform, x, y, skillWidth, ProfessionHeight - SkillBarHeight - 2f);
+                RectTransform bar = Row(HudWidgets.Rect($"Skill Bar {i}", Root), x, y - ProfessionHeight + SkillBarHeight,
+                    skillWidth, SkillBarHeight);
+                HudWidgets.Stretch(HudWidgets.Image("Back", bar, skin.barBack, Color.white).rectTransform, 1f);
+                Image fill = HudWidgets.Image("Fill", bar, skin.barFill, SkillColors[i]);
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Horizontal;
+                HudWidgets.Stretch(fill.rectTransform, 1f);
+                HudWidgets.Stretch(HudWidgets.Image("Frame", bar, skin.barFrame, Color.white, Image.Type.Sliced).rectTransform, -2f);
+                _skillLabels[i] = label;
+                _skillFills[i] = fill;
+            }
+            y -= ProfessionHeight + SectionGap;
 
             _info = HudWidgets.Label("Info", Root, skin.titleFont, 26f, InkBrown, TextAlignmentOptions.Left);
             FitInside(_info, 16f, 26f);
@@ -361,8 +400,34 @@ namespace Voxelforge.Gameplay
                 _gearTotals.text = GearText.Summary(totals);
             }
 
+            TickSkills(inventory);
             TickChest(inventory, teamColor, pulse);
             UpdateInfo(inventory, rules, bags);
+        }
+
+        void TickSkills(PlayerInventory inventory)
+        {
+            if (_skillsOf != inventory)
+            {
+                _skillsOf = inventory;
+                _professions = inventory.GetComponent<PlayerProfessions>();
+                _skillsKnown = false;
+            }
+            if (_professions == null)
+                return;
+            ProfessionSkills skills = _professions.Skills;
+            if (_skillsKnown && skills.Equals(_skillsShown))
+                return;
+            _skillsKnown = true;
+            _skillsShown = skills;
+            float cap = _professions.Book != null ? _professions.Book.MaxSkill : 100f;
+            for (int i = 0; i < ProfessionSkills.Count; i++)
+            {
+                var profession = (ProfessionId)i;
+                int skill = skills.Get(profession);
+                _skillLabels[i].text = $"{profession} <b>{skill}</b>";
+                _skillFills[i].fillAmount = Mathf.Clamp01(skill / cap);
+            }
         }
 
         void TickChest(PlayerInventory inventory, Color teamColor, float pulse)

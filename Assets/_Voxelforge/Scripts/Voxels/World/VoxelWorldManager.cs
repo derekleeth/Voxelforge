@@ -82,6 +82,7 @@ namespace Voxelforge.Voxels
         bool _hasSavedWorld;
         float _meshingStartTime = -1f;
         MapTileCache _mapTiles;
+        ResourceHeatCache _resourceHeat;
         VoxelNavGrid _navGrid;
         NavPathService _paths;
 
@@ -124,6 +125,14 @@ namespace Voxelforge.Voxels
         /// </summary>
         public MapTileCache MapTiles => _mapTiles ??= _generator != null && _world != null
             ? new MapTileCache(Seed, _generator.Terrain, _generator.Biomes, _world.Blocks, capacity: 288, maxJobsInFlight: 6)
+            : null;
+
+        /// <summary>
+        /// The heat maps' data (Roadmap 5.7): how rich in ore and which biome each patch of the map is, worked out from the
+        /// seed and shared by every local player's map. Made the first time it's asked for; null before the world starts.
+        /// </summary>
+        public ResourceHeatCache ResourceHeat => _resourceHeat ??= _generator != null
+            ? new ResourceHeatCache(Seed, _generator.Terrain, _generator.Biomes)
             : null;
 
         /// <summary>Where creatures can walk (Roadmap 5.1): one solid bit per block, kept up to date with every edit.</summary>
@@ -277,6 +286,7 @@ namespace Voxelforge.Voxels
 
             _scheduler.Update();
             _mapTiles?.Update();
+            _resourceHeat?.Update();
             _editor.Damage.HealIdle(Time.time, damageHealSeconds);
             _crackRenderer?.Draw(_editor.Damage, _world);
             if (_decorationRenderer != null)
@@ -306,6 +316,7 @@ namespace Voxelforge.Voxels
             _navGrid?.Dispose();
             _scheduler?.Dispose();
             _mapTiles?.Dispose(); // Borrows the generator's biomes and the world's blocks.
+            _resourceHeat?.Dispose(); // Borrows the generator's biomes.
             _crackRenderer?.Dispose();
             _decorationRenderer?.Dispose();
             _decorations?.Dispose(); // Borrows the generator's biome list, so it goes first.

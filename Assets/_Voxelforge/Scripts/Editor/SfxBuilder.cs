@@ -169,6 +169,10 @@ namespace Voxelforge.Editor
             written.Add(Write("GearEquip", GearEquip(new Random(359))));
             // Roadmap 5.6: reaching a new level.
             written.Add(Write("LevelUp", LevelUp(new Random(367))));
+            // Roadmap 5.7: gathering.
+            written.Add(Write("HerbPick", HerbPick(new Random(373))));
+            written.Add(Write("SkinSlice", SkinSlice(new Random(379))));
+            written.Add(Write("SkillUp", SkillUp(new Random(383))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -396,6 +400,38 @@ namespace Voxelforge.Editor
                 AddBell(buffer, at, note, 0.8f, 0.14f);
             AddNoise(buffer, rng, 0.56f, 1.3f, 0.06f, 7000f, 15000f);
             return Finish(buffer, 0.85f);
+        }
+
+        /// <summary>Picking a herb (Roadmap 5.7): a rustle of leaves, a soft pluck as the stem gives, and a little glint.</summary>
+        static float[] HerbPick(Random rng)
+        {
+            float[] buffer = New(0.5f);
+            AddGrains(buffer, rng, 0f, 0.22f, 14, 0.03f, 0.35f, 1500f, 6500f);
+            AddTone(buffer, 0.18f, 520f, 360f, 0.05f, 0.4f);
+            AddNoise(buffer, rng, 0.18f, 0.02f, 0.25f, 800f, 3000f);
+            AddBell(buffer, 0.22f, 1568f, 0.18f, 0.12f);
+            return Finish(buffer, 0.55f);
+        }
+
+        /// <summary>Skinning or salvaging a body (Roadmap 5.7): two quick knife strokes and a leathery tear between them.</summary>
+        static float[] SkinSlice(Random rng)
+        {
+            float[] buffer = New(0.55f);
+            AddNoise(buffer, rng, 0f, 0.045f, 0.5f, 3000f, 12000f);
+            AddGrains(buffer, rng, 0.05f, 0.18f, 10, 0.025f, 0.3f, 350f, 2400f);
+            AddNoise(buffer, rng, 0.2f, 0.06f, 0.55f, 2500f, 11000f);
+            AddTone(buffer, 0.2f, 150f, 90f, 0.05f, 0.25f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>A profession going up a point (Roadmap 5.7): two small rising bells, much quieter than a level-up.</summary>
+        static float[] SkillUp(Random rng)
+        {
+            float[] buffer = New(0.7f);
+            AddBell(buffer, 0f, 880f, 0.35f, 0.3f);
+            AddBell(buffer, 0.09f, 1319f, 0.45f, 0.3f);
+            AddNoise(buffer, rng, 0.09f, 0.05f, 0.04f, 6000f, 14000f);
+            return Finish(buffer, 0.45f);
         }
 
         /// <summary>Putting gear on (Roadmap 5.5): a quick leather creak and buckle, then a small metal clink.</summary>
@@ -1290,6 +1326,9 @@ namespace Voxelforge.Editor
             serialized.FindProperty("lootLegendary").objectReferenceValue = Clip("LootLegendary");
             serialized.FindProperty("gearEquip").objectReferenceValue = Clip("GearEquip");
             serialized.FindProperty("levelUp").objectReferenceValue = Clip("LevelUp");
+            serialized.FindProperty("herbPick").objectReferenceValue = Clip("HerbPick");
+            serialized.FindProperty("skinSlice").objectReferenceValue = Clip("SkinSlice");
+            serialized.FindProperty("skillUp").objectReferenceValue = Clip("SkillUp");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;

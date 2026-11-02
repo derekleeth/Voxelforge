@@ -86,8 +86,11 @@ namespace Voxelforge.Gameplay
             ? Mathf.Clamp01((Time.time - _startLocal) / _state.Value.Seconds)
             : 0f;
 
-        /// <summary>Every PC: the hero finished gathering (the item in <see cref="GatheringItem"/>), for the cast bar's flash.</summary>
-        public event Action<ushort> Gathered;
+        /// <summary>
+        /// Every PC: the hero finished gathering a herb or a body (and the item the cast bar showed), for its flash and
+        /// sound.
+        /// </summary>
+        public event Action<GatherNodeKind, ushort> Gathered;
 
         HerbField Herbs => _player.Registry != null ? _player.Registry.Herbs : null;
         CombatTargets Targets => _player.Registry != null ? _player.Registry.Targets : null;
@@ -305,11 +308,11 @@ namespace Voxelforge.Gameplay
 
         void Stop(bool done)
         {
-            ushort item = _state.Value.Item;
+            GatherState was = _state.Value;
             _state.Value = default;
             _body = null;
             if (done)
-                GatheredRpc(item);
+                GatheredRpc((byte)was.Kind, was.Item);
         }
 
         void Begin(GatherNodeKind kind, in GatherNode node, ushort item, ulong target)
@@ -366,6 +369,6 @@ namespace Voxelforge.Gameplay
         }
 
         [Rpc(SendTo.Everyone)]
-        void GatheredRpc(ushort item) => Gathered?.Invoke(item);
+        void GatheredRpc(byte kind, ushort item) => Gathered?.Invoke((GatherNodeKind)kind, item);
     }
 }
