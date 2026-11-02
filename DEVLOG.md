@@ -5,6 +5,50 @@
 
 ---
 
+## 2026-11-01 - Session 1 (part 36): Tanks, Treasure, Legendary Loot & Level Ups! 🛡️🏛️⚔️⭐ Roadmap 5.3, 5.4, 5.5 & 5.6
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- **Monsters remember who's annoying them** (Roadmap 5.3, DECISIONS.md **D-034**). Every mob keeps a threat list and fights whoever is at the top. The **Runeforged Paladin** makes double threat, so they can hold monsters while the mage blasts away. Hit too hard and the monster turns on *you*!
+  - **Oathbrand** (Paladin, slot 4): a gold brand and an anvil *CLANG* make a monster come back to the Paladin.
+  - A **red eye** shows which monsters are after you, a **threat meter** shows how close you are to pulling one, and **PULLING AGGRO!** warns you before you do. All in your own half of the screen.
+- **Ruins and a boss arena are hidden in the world** (Roadmap 5.4, **D-035**): Broken Watchtowers, Frost Shrines, Standing Stones, and the deep **Sunken Arena** with unbreakable Warded Stone, waiting for the 5.10 boss. Walk near one and you get **DISCOVERED!** and a marker on your own map. **F6** hops the party to one nobody has found yet.
+- **Loot!** (Roadmap 5.5, **D-036**)
+  - Items have **rarity colours**: Common white, Rare blue, Epic purple, Legendary orange.
+  - Every hero who fought a monster gets **their own sack** in their team colour, so nobody fights over loot. Ruin chests give each player a one-time treasure stash.
+  - **Wear your gear:** Armor cuts damage, Stamina adds health, Power makes spells hit harder. It shows on your hero, with a Worn gear row in the bag and green/red comparisons.
+  - **Weapons swing!** Wear a cudgel, blade or the giant **Skyrender** and the Mine button smashes the monster in front of you. The Shardglass Wand shoots free crystal bolts.
+  - Fights don't leave craters everywhere any more; out of a fight, spells still dig.
+- **Levels!** (Roadmap 5.6, **D-037**) Defeating monsters gives XP to every hero within 40 m. Each level adds health and mana and fills both up, up to level 20. A gold badge and XP bar sit on your action bar, and levelling up shoots a **golden pillar of light** with a fanfare.
+- **No more seeing under the world:** we turned off GPU occlusion culling, which was sometimes hiding whole chunks below dug holes.
+
+### Play-test results 🎮
+- Derek and Kian play-tested everything in 5.3, 5.4, 5.5 and 5.6 in split screen, and **it all worked**: the tank held aggro, every ruin showed on the map and F6 took us there, we found the **Legendary maul and Skyrender**, and we got to **levels 9 and 10**! No craters after fights, and no grey void at the bottom of a deep hole. No tuning was needed.
+
+### Speed check (0.5.6 build) 🏎️
+- Fighting **20+ monsters** at 2560×1440, with occlusion culling off:
+  - Classic split screen: **131-140 FPS**. Our goal is 120+! ✅
+  - One player: **141-166 FPS**. ✅
+  - Dynamic split screen: **83 FPS**. ❌ That's below the goal, so it needs a closer look.
+- Blasting craters and digging tunnels round the base: no see-through gaps. ✅
+
+### Tests: 625 / 625 counted ✅
+- 519 → 553 (threat) → 564 (stamps and discovery) → 605 (loot and gear) → 625 (5.6 levels, weapon attacks and the crater guard).
+
+### Things we learned
+- When weapons only added Power, they felt like nothing. Giving them a real swing made them fun, so the play-test added step G.
+- Letting the hit land when the weapon *comes down* (not when you press the button) makes it feel heavy.
+
+### Next up
+- [x] Play-test 5.3, 5.4, 5.5 and 5.6, and the deep-hole fix ✅
+- [x] F4 with 20+ monsters in the 0.5.6 build ✅
+- [ ] Find out why Dynamic split screen dropped to 83 FPS (Classic holds 131-140)
+- [ ] Give F6's two jobs (split-screen style and ruin travel) their own keys
+- [ ] Find the slow frames behind the 40-45 FPS 1% low (open since 3.10)
+- [ ] Roadmap **5.7 Gathering Professions**
+
+---
+
 ## 2026-11-01 - Session 1 (part 35): The Wilds Wake Up! 🐗🐺🦏💎 Roadmap 5.2
 **Phase:** 5 - Monsters, Dungeons & Bosses
 

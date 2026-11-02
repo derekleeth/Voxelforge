@@ -5,6 +5,133 @@
 
 ---
 
+## D-037: Experience, Levels & the Level-Up Celebration
+- **Date:** 2026-11-01
+- **Status:** Accepted (steps A and B play-tested 2026-11-01 in split screen, played up to levels 9 and 10 in the 0.5.6 build)
+
+### Decisions
+- **One `LevelBook`, written by script.** `LevelBuilder` (Voxelforge > Build Levels) sets every number: cap **20**; level 1 → 2 takes **100 XP** (about 5 boars) and each level after needs **1.35×** as much, rounded to 10s (19 → 20 is about 22,300); **+10 max health and +5 max mana** a level. `LevelRules` is plain C# and tested.
+- **XP per mob kind:** Boar 20, Wolf 15 (they come in packs), Rhino 40, Crystal Slime 25 (Medium 10, Small 5, so a whole slime is worth 65).
+- **Shared, not split.** Every hero within **40 m** of a defeated mob gets its **full** XP, whether they fought it or not, so healers and builders level with the fighters and couch partners stay the same level. A partner far away (back at base) gets nothing. The host decides (Law #2).
+- **`PlayerLevel`** on each hero is host-synced. A level-up raises max health and mana (gear Stamina stacks on top, D-036) and **refills both**, without cancelling a cast or waking a knocked-out hero early. Saved in the profile (**save format 8**; older saves start at level 1).
+- **HUD in each player's own view** (Law #5): a gold starburst badge with the level (two digits fit) at the left end of the action bar, a thin XP bar under it ("40 / 135 XP", "Max level" at 20), "+20 XP" text that adds up over quick kills, and a big LEVEL UP! burst with a bouncing badge.
+- **Everyone sees and hears it:** a golden pillar of light round the hero who levelled (gone in under 2 s) and a short synthesised fanfare, on every PC.
+- **F1** gives every hero a level, **Shift+F1** puts everyone back to 1 (host debug keys).
+
+### Tuning after the play-test
+- Nothing needed changing.
+
+### Measured
+- Tests: 605 → 620.
+- **0.5.6 release build** (127.1 MB, GPU occlusion culling off), 2560×1440, **20+ mobs** around, fighting (F4):
+
+  | Camera | Average FPS | 1% low |
+  |---|---|---|
+  | Classic split, 2 players | **131-140** | 41-88 |
+  | Dynamic (Voronoi) split, 2 players | **83** | 68 |
+  | One player | 141-166 | 65-103 |
+
+  Classic split holds the 120 target with occlusion culling off. **Dynamic split misses it** (83, against 120-134 in 3.10's build), so that needs a look. The 40-ish 1% lows are the old slow-frame puzzle from D-023.
+
+### Deferred on purpose
+- XP from bosses (5.10) and from gathering and crafting (5.7 / 5.8).
+- Talents or spells unlocked by level.
+
+---
+
+## D-036: Rarity, Personal Loot, Gear Stats & Weapon Attacks
+- **Date:** 2026-11-01
+- **Status:** Accepted (steps A-E and G play-tested in split screen, 2026-11-01: rarity colours, personal sacks, ruin caches, equipping, the Worn gear row, gear on both races, loot sounds, melee and wand attacks; the Legendary maul and Skyrender both dropped in play)
+
+### Decisions
+- **Rarity is fixed per item, not rolled.** `ItemDefinition` gained `Rarity` (Common white, Rare blue, Epic purple, Legendary orange), an equipment slot (Head, Chest, Legs, Feet, Main Hand, Off Hand) and three stats (Armor, Stamina, Power). Random affixes can come later; a fixed item is easier to read and to balance for now.
+- **Loot data is built by script.** `LootBuilder` (Voxelforge > Build Loot) writes 11 mob materials, 16 starter gear pieces and one `LootTable` per mob into a `LootBook`, with every drop chance in one place. `LootRoller` is plain C# and tested. Each mob drops its own materials (Boar: hide, tusk, Earth Essence; Wolf: pelt, Frostfang, Frost Essence; Rhino: hide, Thunder Horn, Storm Essence; Crystal Slime: shards, Arcane Essence, small ones shards only).
+- **Personal loot, never shared drops.** When a mob dies the host rolls once for **every hero on its threat list** (so a healer who only healed still gets a roll), and each gets a sack dyed in their team colour that only they can pick up. Partners never compete for drops. Sacks don't time out while the owner is in the game, and a full bag leaves the sack waiting.
+- **Ruin chests give each player a one-time cache** (2 rolls) the first time they open one; after that it's ordinary shared storage. Which players have looted which chest is saved with the world (**save format 7**). Player-placed chests never give a cache.
+- **Gear is worn from the bag** (Use), synced by the host (`EquippedGear`) and saved in the profile. All numbers are in `GearRules`:
+  - Armor cuts mob damage by `armor / (armor + 100)`, capped at 60%. The Common set cuts about 18%, the best kit about 36%.
+  - Stamina adds 2 max health a point (best kit about +80).
+  - Power adds 1% to spell damage, healing and shields a point (Skyrender alone +26%). Only the wearer is affected.
+- **The equipment panel lives in the bag window** (no new window): a Worn gear row of 6 sockets with stat totals, rarity-tinted slots in the bag, chest and sockets, and a tooltip line comparing a piece with what's worn (gains green, losses red). The bag grew one row and still fits a quarter-screen split with a chest open.
+- **Worn gear shows on every PC** from bone sockets fitted to each body's bind pose, so one set of stand-in models fits both the Wayfarer and the Thunderhoof. The Main Hand weapon is slung on the back (and hides the backpack, so they don't merge); the Off Hand sits on the left forearm. 5.9 replaces the stand-ins with real armour sets.
+- **Weapons attack** (step G, added after the first build showed weapons only added Power): with a Main Hand weapon worn, **Mine attacks a foe in reach instead of mining**, or still mines when no foe is there.
+  - Melee (`WeaponStats`, set by `LootBuilder`): cudgel 8 every 0.8 s, blade 13 every 0.6 s, Skyrender 26 every 1.2 s, reach about 2.6-3 m. Reach is measured to the edge of the mob's body, and any mob in front of the hero (or the Tab target) counts, so you don't have to aim exactly. A wall in between blocks the hit.
+  - The hit lands as the overhead swing comes down, not when the button is pressed. The weapon comes off the back for the fight and goes back 1.5 s after.
+  - The Shardglass Wand fires free Shard Bolts (9 every 0.7 s, 22 m) as an `AbilityBuilder` ability; it never digs.
+  - Weapon damage scales with Power and makes threat, loot and XP exactly like a spell. A held M.G.R.S. wins over the worn weapon.
+- **No craters in a fight.** While any living mob has a hero on its threat list (`CombatTargets.ServerIsFighting`), that hero's spells that land on the ground still flash, hurt and stun but don't dig. Out of a fight they crater as before, and building spells (Earthen Wall, Rising Pillar) always build. Play-testing showed fights were leaving the land full of holes.
+- **Sounds and juice:** a chime for Rare, a shimmering run for Epic and a fanfare for Legendary pickups, a comic LEGENDARY! burst, glowing Rare sacks and a pillar of light over Epic and Legendary sacks, and an equip clank.
+
+### Tuning after the play-test
+- Nothing needed changing. Drop rates stay generous (about a third of kills give gear) until 5.7/5.8 add more ways to earn and spend loot.
+
+### Measured
+- Tests: 564 → 605 (steps A-E), plus weapon attack and crater-guard tests since.
+
+### Deferred on purpose
+- Real armour and weapon art per class (5.9); the stand-in models stay until then.
+- Rolled affixes, item levels and selling.
+- Skinning extra materials from bodies (5.7).
+
+---
+
+## D-035: Ruin and Arena Stamps, and Discovering Them on the Map
+- **Date:** 2026-11-01
+- **Status:** Accepted (play-tested 2026-11-01 in split screen: every ruin kind and the Sunken Arena found, F6 / Shift+F6 travel, map markers per player, DISCOVERED! toasts, Warded Stone holding)
+
+### Decisions
+- **Stamps are stamped in while the chunk generates,** not placed afterwards, so they need no save data and come back the same from the seed.
+  - `StampDefinition` assets (blocks, how far to sink, foundation block, biomes, chance, rotations) are baked into a Burst-readable `StampTable`.
+  - `StampPlacement` picks one candidate site per grid cell from the seed: one ruin per **192** blocks and one arena per **768**, never near the world spawn. `GenerateChunkJob` stamps the blocks in (Law #4), clears trees from the footprint and fills a foundation under it on slopes, so ruins never float. **Terrain generator v4.**
+  - Player edits replay over the top as usual (D-014), so ruins only appear in ground nobody has dug or built on yet.
+- **Three new blocks:** Ruin Brick and Mossy Ruin Brick (ordinary stone to mine), and **Warded Stone**, which can't be mined and that craters skip, so the boss arena keeps its shape.
+- **Stamps are built by script.** `StampBuilder` (Voxelforge > Build Stamps) builds the Broken Watchtower (Meadows, with a chest), Frost Shrine (Snowy Peaks), Sandstone Standing Stones (Thunderhoof Plains) and the **Sunken Arena**: a Warded Stone pit with two stairways, torch-lit pillars and a two-step boss dais for 5.10. Mobs path down and up its stairs on the normal nav grid (D-032).
+- **Discovery is per player and host-decided.** When `PlayerExplorer` reveals new map cells for a hero (D-031), it checks them for stamp sites and tells that hero's PC, which shows **DISCOVERED! (name)** in their own view only (Law #5). Sites show on that player's map and minimap only once they've explored them: a broken-tower marker for ruins, a red ring for arenas, with no edge arrows. A map loaded from the save never pops the toast again.
+- **F6 visits the nearest site someone hasn't found** (Shift+F6: the nearest arena). It prefers undiscovered sites, waits for the land to load and lands the party side by side. F6 is still the split-screen style key too (D-020), so every trip also flips Dynamic ↔ Classic; one of them needs its own key (README Known gaps).
+
+### Tuning after the play-test
+- Nothing needed changing: ruins sat properly on slopes, no trees grew through them, mobs followed heroes into and out of the arena, and Warded Stone held against EarthShatter and Pyroblast.
+
+### Measured
+- Tests: 553 → 564.
+- Chunk generation time with stamps wasn't measured separately; no new hitches were noticed while streaming in play.
+
+### Deferred on purpose
+- More ruin kinds and biome-specific dungeons.
+- The arena's boss (5.10).
+
+---
+
+## D-034: Threat Tables, the Paladin's Taunt & Per-Player Aggro UI
+- **Date:** 2026-11-01
+- **Status:** Accepted (play-tested 2026-11-01 in split screen: a Runeforged Paladin tanking boars, wolves and rhinos with a Geomancer and a Shaman; Oathbrand; aggro eyes, threat meter and PULLING AGGRO!)
+
+### Decisions
+- **A WoW-style threat table per mob and per Training Dummy** (`ThreatTable`, plain C#, tested), with every number in `ThreatRules`. It replaces D-033's "last attacker" list.
+  - `MobBrain` fights the top of the table, but only switches when someone passes the current target by **110%** in melee or **130%** at range, so aggro doesn't flicker. Never mid-charge: a boar finishes its charge the way it was aiming.
+  - Knocked-out heroes drop off the table, and a leash clears it.
+  - Noticing a hero puts 1 threat on them, so mobs that spot you and charge count as fighting you before anyone has hit them.
+- **Where threat comes from:** damage × the ability's `threatScale` × the class's `threatMultiplier`. Healing and shields make **half** threat, split among the mobs fighting the hero who was healed, so a healer can pull, but much later than a damage dealer. A stun makes 10.
+- **Runeforged Oath:** the Paladin makes 2× threat, and Rune Hammer 1.5× on top. The threat numbers for spells live in `AbilityBuilder`.
+- **Oathbrand** (Paladin, slot 4, 10 mana, 8 s cooldown): brands the Tab target, or the foe under the aim, so it fights only the Paladin for 3 s and puts the Paladin at the top of its threat. It works on wandering mobs, Training Dummies and circling wolves (which come straight in). No target costs nothing. Gold rune burst, anvil ring, branding-iron icon and TAUNTED! text. Class cards grew taller to fit 4 spells.
+- **Each mob shares a small threat view** (who it's fighting, and how close up to four heroes are to pulling it), sent at most 5 times a second and only when it changes. In each player's own view (Law #5):
+  - a red eye next to every mob that's after **them**;
+  - a thin threat meter under their Tab target's health bar (full red for the target, green to yellow as others close in);
+  - a **PULLING AGGRO!** warning over their hero, at most once every 3 s per mob.
+
+### Tuning after the play-test
+- Nothing needed changing: the tank held aggro, the mage could still pull by nuking hard, healers drew a little anger, and taunt cost and cooldown felt right.
+
+### Measured
+- Tests: 519 → 553.
+- FPS with 20+ mobs in the 0.5.6 build: 131-140 in Classic split, 83 in Dynamic split (details in D-037).
+
+### Deferred on purpose
+- Threat drops (fade, feign) and threat on non-combat actions.
+- Boss threat mechanics (5.10).
+
+---
+
 ## D-033: Overland Mobs, the Mob Brain, Biome Spawning & Hero Knock-Outs
 - **Date:** 2026-11-01
 - **Status:** Accepted (steps A-G play-tested one by one in split screen, 2026-10-31 to 2026-11-01; step H measured in the 0.5.2 build)
