@@ -1294,6 +1294,8 @@ namespace Voxelforge.Editor
                 ("Snow", "Snow"), ("Sandstone", "Stone"), ("RedRock", "Stone"), ("TreeTrunk", "Wood"), ("Log", "Wood"),
                 ("Torch", "Wood"), ("Workbench", "Wood"), ("HomeTotem", "Wood"), ("Chest", "Wood"), ("TrainingDummy", "Wood"),
                 ("EarthenRock", "Stone"), ("RuinBrick", "Stone"), ("MossyRuinBrick", "Stone"), ("WardedStone", "Stone"),
+                ("AlchemyTable", "Wood"), ("Forge", "Stone"), ("Anvil", "Stone"), ("TanningRack", "Wood"),
+                ("CopperOre", "Stone"), ("IronOre", "Stone"),
             };
             SerializedProperty list = serialized.FindProperty("blocks");
             list.arraySize = 0;

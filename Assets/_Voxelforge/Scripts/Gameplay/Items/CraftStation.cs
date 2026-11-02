@@ -98,16 +98,17 @@ namespace Voxelforge.Gameplay
             _ => CraftStationMask.None,
         };
 
-        static CraftStationMask MaskOfBlock(ushort blockId)
+        // Anywhere means the block is no station.
+        static CraftStation StationOfBlock(ushort blockId)
         {
             switch (blockId)
             {
-                case BlockIds.Workbench: return CraftStationMask.Workbench;
-                case BlockIds.AlchemyTable: return CraftStationMask.AlchemyTable;
-                case BlockIds.Forge: return CraftStationMask.Forge;
-                case BlockIds.Anvil: return CraftStationMask.Anvil;
-                case BlockIds.TanningRack: return CraftStationMask.TanningRack;
-                default: return CraftStationMask.None;
+                case BlockIds.Workbench: return CraftStation.Workbench;
+                case BlockIds.AlchemyTable: return CraftStation.AlchemyTable;
+                case BlockIds.Forge: return CraftStation.Forge;
+                case BlockIds.Anvil: return CraftStation.Anvil;
+                case BlockIds.TanningRack: return CraftStation.TanningRack;
+                default: return CraftStation.Anywhere;
             }
         }
 
@@ -128,11 +129,39 @@ namespace Voxelforge.Gameplay
                 int3 cell = middle + new int3(x, y, z);
                 if (!world.TryGetChunk(VoxelMath.WorldToChunk(cell), out _))
                     continue;
-                found |= MaskOfBlock(world.GetVoxel(cell).BlockId);
+                found |= MaskOf(StationOfBlock(world.GetVoxel(cell).BlockId));
                 if (found == All)
                     return found;
             }
             return found;
+        }
+
+        /// <summary>
+        /// The closest station within <paramref name="radius"/> blocks of <paramref name="center"/>, or
+        /// <see cref="CraftStation.Anywhere"/> if there's none: which tab the crafting window opens on.
+        /// </summary>
+        public static CraftStation Nearest(VoxelWorld world, float3 center, int radius)
+        {
+            CraftStation nearest = CraftStation.Anywhere;
+            if (world == null)
+                return nearest;
+            var middle = (int3)math.floor(center);
+            int best = int.MaxValue;
+            for (int y = -radius; y <= radius; y++)
+            for (int z = -radius; z <= radius; z++)
+            for (int x = -radius; x <= radius; x++)
+            {
+                int distance = x * x + y * y + z * z;
+                int3 cell = middle + new int3(x, y, z);
+                if (distance >= best || !world.TryGetChunk(VoxelMath.WorldToChunk(cell), out _))
+                    continue;
+                CraftStation station = StationOfBlock(world.GetVoxel(cell).BlockId);
+                if (station == CraftStation.Anywhere)
+                    continue;
+                best = distance;
+                nearest = station;
+            }
+            return nearest;
         }
     }
 }

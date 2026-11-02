@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -7,8 +8,9 @@ namespace Voxelforge.Gameplay
 {
     /// <summary>
     /// Crafting (Roadmap 3.5). Interact (unless aimed at a Storage Chest, <see cref="PlayerChest"/>) opens this player's recipe list in their own split-screen view
-    /// (<see cref="PlayerHud"/>, CLAUDE.md Law #5); Select Next / Previous choose a recipe and Place crafts it. The owning
-    /// PC sends only the recipe number with <see cref="RequestCraftRpc"/>. <b>The host</b> checks it with
+    /// (<see cref="PlayerHud"/>, CLAUDE.md Law #5) on the nearest station's tab, and the hero stands still while it's open
+    /// (Roadmap 5.8). The move controls choose a tab (left, right) and a recipe (up, down), as do Select Next / Previous,
+    /// and Place crafts it. The owning PC sends only the recipe number with <see cref="RequestCraftRpc"/>. <b>The host</b> checks it with
     /// <see cref="RecipeBook.Check"/>, including that the recipe's station is within reach of this hero and their skill
     /// (Roadmap 5.8), swaps the inputs for the output in the <see cref="PlayerBlockBag"/> all at once (Law #2), and lets
     /// the craft raise the skill.
@@ -31,12 +33,15 @@ namespace Voxelforge.Gameplay
 
         // How high above the feet the hero's middle is, where station reach is measured from.
         const float HeroMiddle = 0.9f;
+        // How long "Blacksmithing 12" stays on the window, in seconds.
+        const float SkillMessageSeconds = 3f;
 
         PlayerController _player;
         PlayerBlockBag _bag;
         PlayerChest _chest;
         PlayerGatherer _gatherer;
         PlayerProfessions _professions;
+        PlayerInventory _inventory;
         readonly List<ItemStack> _stacks = new List<ItemStack>();
         // The window checks every row every GUI event: one scan of the blocks around the hero a frame is plenty.
         CraftStationMask _nearby;
@@ -44,10 +49,14 @@ namespace Voxelforge.Gameplay
 
         // Owner state.
         bool _menuOpen;
-        int _cursor;
+        CraftingList _list;
+        NavRepeat _nav;
+        bool _sidewaysHeld;
         PlayerButtons _previousButtons;
         string _message;
         float _messageUntil;
+        string _skillMessage;
+        float _skillMessageUntil;
 
         // Host state.
         float _lastCraftTime = float.NegativeInfinity;
@@ -57,11 +66,17 @@ namespace Voxelforge.Gameplay
         /// <summary>Owner only: the recipe list is showing, so Select and Place drive it instead of building.</summary>
         public bool IsMenuOpen => _menuOpen;
 
-        /// <summary>Owner only: the highlighted recipe.</summary>
-        public int Cursor => _cursor;
+        /// <summary>Owner only: the tabs and rows the window shows.</summary>
+        public CraftingList List => _list ??= new CraftingList(recipes.Recipes);
+
+        /// <summary>Owner only: the highlighted recipe's place in the book, or -1 when the tab is empty.</summary>
+        public int Cursor => List.CursorRecipe;
 
         /// <summary>Owner only: a short message after crafting, or null.</summary>
         public string Message => Time.time < _messageUntil ? _message : null;
+
+        /// <summary>Owner only: "Blacksmithing 12" just after a skill went up, or null.</summary>
+        public string SkillMessage => Time.time < _skillMessageUntil ? _skillMessage : null;
 
         void Awake()
         {
@@ -70,6 +85,27 @@ namespace Voxelforge.Gameplay
             _chest = GetComponent<PlayerChest>();
             _gatherer = GetComponent<PlayerGatherer>();
             _professions = GetComponent<PlayerProfessions>();
+            _inventory = GetComponent<PlayerInventory>();
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (_professions != null)
+                _professions.SkilledUp += OnSkilledUp;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_professions != null)
+                _professions.SkilledUp -= OnSkilledUp;
+            _menuOpen = false;
+            base.OnNetworkDespawn();
+        }
+
+        void OnSkilledUp(ProfessionId profession, int skill)
+        {
+            _skillMessage = $"{profession} {skill}";
+            _skillMessageUntil = Time.time + SkillMessageSeconds;
         }
 
         void Update()
@@ -77,7 +113,13 @@ namespace Voxelforge.Gameplay
             if (!IsSpawned || !IsOwner || recipes == null)
                 return;
 
-            PlayerButtons buttons = _player.OwnerInput.Buttons;
+            // The bag or the map opening, or being knocked out, closes the window.
+            if (_menuOpen && (_player.OtherWindowOpen || _player.IsKnockedOut))
+                _menuOpen = false;
+
+            // While the window is open it has the controls (PlayerController.WindowOpen), so it reads them as pressed.
+            PlayerInputFrame input = _menuOpen ? _player.OwnerRawInput : _player.OwnerInput;
+            PlayerButtons buttons = input.Buttons;
             PlayerButtons pressed = buttons & ~_previousButtons;
             _previousButtons = buttons;
 
@@ -87,22 +129,30 @@ namespace Voxelforge.Gameplay
                 if (_menuOpen)
                     _menuOpen = false;
                 else if ((_gatherer == null || !_gatherer.OwnerTryGatherAimed()) && (_chest == null || !_chest.OwnerTryOpenAimed()))
+                {
                     _menuOpen = true;
+                    List.OpenAt(CraftStations.Nearest(_player.World, transform.position + Vector3.up * HeroMiddle, stationReach));
+                }
             }
             if (!_menuOpen || !_player.HasLanded)
                 return;
 
-            int count = recipes.Recipes.Count;
-            if (count == 0)
-                return;
+            bool pad = _inventory != null && _inventory.Scheme == "Gamepad";
+            float2 stick = input.Move + (pad ? PlayerInventory.DPad(buttons) : float2.zero);
+            int2 step = _nav.Update(stick, Time.unscaledTime);
+            // One tab a push: rows repeat while held, but repeating tabs would spin past the one you want.
+            if (step.x != 0 && !_sidewaysHeld)
+                List.StepTab(step.x);
+            _sidewaysHeld = math.abs(stick.x) > NavRepeat.Deadzone;
+            if (step.y != 0)
+                List.Move(step.y);
             if ((pressed & PlayerButtons.SelectNext) != 0)
-                _cursor = (_cursor + 1) % count;
+                List.Move(1);
             if ((pressed & PlayerButtons.SelectPrevious) != 0)
-                _cursor = (_cursor + count - 1) % count;
-            _cursor = Mathf.Clamp(_cursor, 0, count - 1);
+                List.Move(-1);
 
-            if ((pressed & PlayerButtons.Place) != 0 && Check(_cursor) == CraftCheck.Ok)
-                RequestCraftRpc((byte)_cursor);
+            if ((pressed & PlayerButtons.Place) != 0 && Cursor >= 0 && Check(Cursor) == CraftCheck.Ok)
+                RequestCraftRpc((byte)Cursor);
         }
 
         /// <summary>Any PC that can see blocks: can this player craft recipe <paramref name="index"/> right now?</summary>
@@ -126,6 +176,22 @@ namespace Voxelforge.Gameplay
         }
 
         ProfessionSkills Skills => _professions != null ? _professions.Skills : ProfessionSkills.Start;
+
+        /// <summary>This hero's skill in <paramref name="profession"/>.</summary>
+        public int SkillIn(ProfessionId profession) => Skills.Get(profession);
+
+        /// <summary>
+        /// How likely <paramref name="recipe"/> is to raise this hero's skill: the same colours as gathering. False for a
+        /// recipe of no profession.
+        /// </summary>
+        public bool TryGetDifficulty(RecipeDefinition recipe, out GatherDifficulty difficulty)
+        {
+            difficulty = default;
+            if (_professions == null || _professions.Book == null || !CraftStations.TryGetProfession(recipe.Station, out ProfessionId profession))
+                return false;
+            difficulty = ProfessionRules.Difficulty(Skills.Get(profession), recipe.RequiredSkill, _professions.Book);
+            return true;
+        }
 
         [Rpc(SendTo.Server)]
         void RequestCraftRpc(byte recipeIndex, RpcParams rpcParams = default)

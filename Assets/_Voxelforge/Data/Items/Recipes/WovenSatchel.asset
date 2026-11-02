@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: WovenSatchel
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeDefinition
   inputs:
-  - block: {fileID: 11400000, guid: 21c324f9c67985641ba27454981e6034, type: 2}
-    item: {fileID: 0}
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: ba118222631699c44b400392199d6a61, type: 2}
     count: 6
   output:
     block: {fileID: 0}
     item: {fileID: 11400000, guid: 41600bc456d95eb42ae6cf2d2d798f8b, type: 2}
     count: 1
-  station: 1
-  requiredSkill: 1
+  station: 5
+  requiredSkill: 10

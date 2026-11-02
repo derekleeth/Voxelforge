@@ -21,15 +21,15 @@ namespace Voxelforge.Editor
         const string OreAtlasPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_OreAtlas.png";
         const string OreGlowPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_OreGlow.png";
         const string MaterialDir = "Assets/_Voxelforge/Art/Materials/Loot";
-        const string ItemDir = "Assets/_Voxelforge/Data/Items/Loot";
+        internal const string ItemDir = "Assets/_Voxelforge/Data/Items/Loot";
         const string LootDir = "Assets/_Voxelforge/Data/Loot";
-        const string RegistryPath = "Assets/_Voxelforge/Data/Items/ItemRegistry.asset";
-        const string BlockRegistryPath = "Assets/_Voxelforge/Data/Blocks/BlockRegistry.asset";
+        internal const string RegistryPath = "Assets/_Voxelforge/Data/Items/ItemRegistry.asset";
+        internal const string BlockRegistryPath = "Assets/_Voxelforge/Data/Blocks/BlockRegistry.asset";
         internal const string BookPath = LootDir + "/LootBook.asset";
 
-        enum Hold { Upright, Weapon }
+        internal enum Hold { Upright, Weapon }
 
-        readonly struct Item
+        internal readonly struct Item
         {
             public readonly ushort Id;
             public readonly string Model;
@@ -59,15 +59,15 @@ namespace Voxelforge.Editor
             }
         }
 
-        static Item Ingredient(ushort id, string model, string name, ItemRarity rarity = ItemRarity.Common) =>
+        internal static Item Ingredient(ushort id, string model, string name, ItemRarity rarity = ItemRarity.Common) =>
             new Item(id, model, name, ItemCategory.Materials, rarity);
 
-        static Item Gear(ushort id, string model, string name, ItemRarity rarity, EquipSlot slot, int armor, int stamina, int power,
+        internal static Item Gear(ushort id, string model, string name, ItemRarity rarity, EquipSlot slot, int armor, int stamina, int power,
             Hold hold = Hold.Upright) =>
             new Item(id, model, name, ItemCategory.Gear, rarity, slot, new GearStats(armor, stamina, power), hold);
 
         // Main Hand weapons (step G): melee ones swing for damage every swingSeconds within reach; the wand shoots.
-        static Item Melee(ushort id, string model, string name, ItemRarity rarity, int armor, int stamina, int power,
+        internal static Item Melee(ushort id, string model, string name, ItemRarity rarity, int armor, int stamina, int power,
             float damage, float swingSeconds, float reach, bool flatBlade = false) =>
             new Item(id, model, name, ItemCategory.Gear, rarity, EquipSlot.MainHand, new GearStats(armor, stamina, power), Hold.Weapon,
                 new WeaponStats(damage, swingSeconds, reach, flatBlade));
@@ -247,12 +247,12 @@ namespace Voxelforge.Editor
                 Debug.Log($"[Voxelforge] Built {Items.Length + Ores.Length} loot items and {tables.Count} loot tables.");
         }
 
-        static ItemDefinition MakeItem(Item item, Material material)
+        internal static ItemDefinition MakeItem(Item item, Material material, string dir = ItemDir)
         {
             Mesh mesh = LoadMesh(item.Model);
             if (mesh == null)
                 return null;
-            var definition = LoadOrCreate<ItemDefinition>($"{ItemDir}/{item.Model}.asset");
+            var definition = LoadOrCreate<ItemDefinition>($"{dir}/{item.Model}.asset");
             var serialized = new SerializedObject(definition);
             serialized.FindProperty("id").intValue = item.Id;
             serialized.FindProperty("displayName").stringValue = item.Name;
@@ -320,7 +320,7 @@ namespace Voxelforge.Editor
             return table;
         }
 
-        static Material MakeHeldMaterial(Texture2D atlas, Texture2D glow, string name)
+        internal static Material MakeHeldMaterial(Texture2D atlas, Texture2D glow, string name)
         {
             string path = $"{MaterialDir}/{name}.mat";
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -354,7 +354,7 @@ namespace Voxelforge.Editor
             return null;
         }
 
-        static void AddToList(Object owner, string field, List<Object> entries)
+        internal static void AddToList(Object owner, string field, List<Object> entries)
         {
             var serialized = new SerializedObject(owner);
             SerializedProperty list = serialized.FindProperty(field);
@@ -372,7 +372,7 @@ namespace Voxelforge.Editor
             EditorUtility.SetDirty(owner);
         }
 
-        static T LoadOrCreate<T>(string path) where T : ScriptableObject
+        internal static T LoadOrCreate<T>(string path) where T : ScriptableObject
         {
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);
             if (asset == null)
@@ -383,7 +383,7 @@ namespace Voxelforge.Editor
             return asset;
         }
 
-        static void EnsureFolder(string path)
+        internal static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path))
                 return;

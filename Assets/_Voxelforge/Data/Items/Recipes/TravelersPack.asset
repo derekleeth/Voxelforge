@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: TravelersPack
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeDefinition
   inputs:
-  - block: {fileID: 11400000, guid: 21c324f9c67985641ba27454981e6034, type: 2}
-    item: {fileID: 0}
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: 41600bc456d95eb42ae6cf2d2d798f8b, type: 2}
+    count: 1
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: 4f2a61b49a1730642aa6b3c8d1b6df01, type: 2}
     count: 8
-  - block: {fileID: 11400000, guid: 6116e2a7ba94e434e92c053406baad32, type: 2}
-    item: {fileID: 0}
-    count: 4
   output:
     block: {fileID: 0}
     item: {fileID: 11400000, guid: 2ef3c44cfbeb5224980e6cfa116a132c, type: 2}
     count: 1
-  station: 1
-  requiredSkill: 1
+  station: 5
+  requiredSkill: 30

@@ -52,6 +52,18 @@ MonoBehaviour:
     surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
   - block: {fileID: 11400000, guid: fc045ac4627a82a4a97724f053d3dc06, type: 2}
     surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: 5130a16928f1ae34aa3119ed49f288bb, type: 2}
+    surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
+  - block: {fileID: 11400000, guid: f88d04292b58df448985a27e3e0ff71e, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: b2cad3ed19b9b16438039e64b4eae15e, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: 5037c532e43ed1a47accfa7f23f51036, type: 2}
+    surface: {fileID: 11400000, guid: f2b1188d6752c1445a063d29d5f54ba1, type: 2}
+  - block: {fileID: 11400000, guid: ba0c3670dc1e20d4e98d8bddefa6e686, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
+  - block: {fileID: 11400000, guid: 6a83f814ae2c50040b09a96e105b57c8, type: 2}
+    surface: {fileID: 11400000, guid: 15c0bd9b46daa7a49a7358cdaa1d1e0e, type: 2}
   jump: {fileID: 8300000, guid: 566c293bf392d084fb863c9b529f787c, type: 3}
   pickupPop: {fileID: 8300000, guid: dcf9661d0c60cbb4a8c1f757bd3d162d, type: 3}
   treeCreak: {fileID: 8300000, guid: 4fa8c22f6690d7b429caba6493099dd0, type: 3}

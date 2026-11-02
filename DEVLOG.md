@@ -5,6 +5,54 @@
 
 ---
 
+## 2026-11-01 - Session 1 (part 39): Smelt It, Hammer It, Wear It ⚒️🧵 Roadmap 5.8 steps C and D
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- **The crafting window has tabs:** General, Alchemy, Blacksmithing and Leatherworking, each showing your skill.
+  - It opens on the tab of the **closest station**, and left/right on the move controls changes tab.
+  - Your hero now **stands still** while it's open, like the bag.
+  - Recipes you don't have the skill for are greyed out and say what they need. A little dot shows how likely a recipe is to raise your skill: orange, yellow, green or grey.
+  - Gear shows its stats before you make it, and "Blacksmithing 2!" pops up when your skill goes up.
+- **Blacksmithing:** the Forge smelts ore into **Copper, Iron and Manaforged Bars**, and the Anvil hammers bars into a helm, breastplate, legplates, sabatons, a weapon and a shield in each metal. Plate is all about Armor.
+- **Leatherworking:** the Tanning Rack cures hides into **Cured, Wolfhide and Stormhide Leather**, then stitches caps, vests, breeches and boots that give Stamina and Power.
+- **Bags are upgrades now:** Woven Satchel from leather, then Satchel + leather makes a Traveler's Pack, then Pack + leather + Mana Crystals makes a Delver's Rucksack.
+- The **Anvil costs Copper Bars** now, so you have to build a Forge and smelt first.
+- That's **30 new pieces of gear** with simple stand-in models. Copper and Cured are Common, Iron and Wolfhide are Rare, Manaforged and Stormhide are Epic. Legendary stays for bosses.
+- Ore blocks now sound like stone when you walk on or mine them. They were using the grass sounds by accident!
+
+### What we learned
+- A window that takes over the controls has to read them "as pressed", because the game hides them from everything else while it's open. Otherwise the window would lock itself out.
+- Tabs shouldn't repeat when you hold the stick: the first test spun straight past the tab it wanted. Rows can repeat, tabs change once per push.
+- Tests can check that every skill from 1 to 100 still has a recipe that can raise it, so nobody gets stuck partway.
+
+### What's next
+- **5.8 step E:** Alchemy, with potions on action bar slots 7 and 8.
+- Found while testing: when a picked herb regrows, the game logs an error. Herbs still come back, but it needs fixing.
+
+---
+
+## 2026-11-01 - Session 1 (part 38): A Workshop You Can Build 🔥🔨 Roadmap 5.8 step B
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- **Four new stations** you make at a Workbench and place in the world:
+  - **Alchemy Table** (4 Logs, 2 Stone, 2 Sunpetal): a glowing flask over a little flame, with a mortar and pestle.
+  - **Forge** (12 Stone, 4 Logs): a stone hearth with a real fire inside and a warm light.
+  - **Anvil** (6 Copper Bars, 2 Logs, once step D added the bars): black iron on a stump.
+  - **Tanning Rack** (6 Logs, 2 Boar Hides): a hide laced into a wooden frame, with a little tub.
+- They're **blast-proof**, so a partner's spell can't flatten your workshop. Forge and Anvil need a pick, the other two an axe.
+- They don't make anything yet: their recipes arrive in steps D and E.
+
+### What we learned
+- New recipes must go on the end of the list, because the game sends a recipe's place in the book over the network. `PropsBuilder` now adds to the book instead of replacing it, so it can't wipe recipes from other builders either.
+- All four models reuse the paints already in the props atlas, so the atlas file didn't change at all.
+
+### What's next
+- **5.8 step C:** the crafting window gets tabs for General, Alchemy, Blacksmithing and Leatherworking.
+
+---
+
 ## 2026-11-01 - Session 1 (part 37): The First Sparks of Crafting 🔨⚗️ Roadmap 5.8 step A
 **Phase:** 5 - Monsters, Dungeons & Bosses
 

@@ -56,6 +56,7 @@ namespace Voxelforge.Gameplay
         PlayerClassMenu _classMenu;
         PlayerRaceMenu _raceMenu;
         PlayerWorldMap _worldMap;
+        PlayerCrafter _crafter;
         PlayerHealth _health;
         PlayerTargeting _targeting;
         uint _nextSequence;
@@ -127,11 +128,15 @@ namespace Voxelforge.Gameplay
         public PlayerInputFrame OwnerInput { get; private set; }
 
         /// <summary>
-        /// Owner only: one of this player's windows is open and has their controls: the inventory (Roadmap 4.5) or the
-        /// class window (4.6) or the World Map (4.8). The hero stands still, and the mouse player gets a free cursor.
+        /// Owner only: one of this player's windows is open and has their controls: the inventory (Roadmap 4.5), the class
+        /// window (4.6), the World Map (4.8) or the crafting window (5.8). The hero stands still, and the mouse player gets
+        /// a free cursor.
         /// </summary>
-        public bool WindowOpen => (_inventory != null && _inventory.IsOpen) || (_classMenu != null && _classMenu.IsOpen) ||
-                                  (_worldMap != null && _worldMap.IsOpen) || ChoosingRace;
+        public bool WindowOpen => OtherWindowOpen || (_crafter != null && _crafter.IsMenuOpen);
+
+        /// <summary>Owner only: a window other than crafting is open. Crafting gives way to it (<see cref="PlayerCrafter"/>).</summary>
+        public bool OtherWindowOpen => (_inventory != null && _inventory.IsOpen) || (_classMenu != null && _classMenu.IsOpen) ||
+                                       (_worldMap != null && _worldMap.IsOpen) || ChoosingRace;
 
         /// <summary>Owner only: the race window (Roadmap 4.7) is up, and every other window stays shut until they choose.</summary>
         public bool ChoosingRace => _raceMenu != null && _raceMenu.IsOpen;
@@ -253,6 +258,7 @@ namespace Voxelforge.Gameplay
             _classMenu = GetComponent<PlayerClassMenu>();
             _raceMenu = GetComponent<PlayerRaceMenu>();
             _worldMap = GetComponent<PlayerWorldMap>();
+            _crafter = GetComponent<PlayerCrafter>();
             _health = GetComponent<PlayerHealth>();
             _targeting = GetComponent<PlayerTargeting>();
         }

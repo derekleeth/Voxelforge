@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: DelversRucksack
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeDefinition
   inputs:
-  - block: {fileID: 11400000, guid: 21c324f9c67985641ba27454981e6034, type: 2}
-    item: {fileID: 0}
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: 2ef3c44cfbeb5224980e6cfa116a132c, type: 2}
+    count: 1
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: a639fa865ceffa24db837f015ac21959, type: 2}
     count: 10
-  - block: {fileID: 11400000, guid: 6116e2a7ba94e434e92c053406baad32, type: 2}
-    item: {fileID: 0}
-    count: 6
   - block: {fileID: 0}
     item: {fileID: 11400000, guid: cc960af926acede4299bb557b42c7e42, type: 2}
     count: 3
@@ -26,5 +26,5 @@ MonoBehaviour:
     block: {fileID: 0}
     item: {fileID: 11400000, guid: e92d9c9c90d24e54382c80a631a0517c, type: 2}
     count: 1
-  station: 1
-  requiredSkill: 1
+  station: 5
+  requiredSkill: 60

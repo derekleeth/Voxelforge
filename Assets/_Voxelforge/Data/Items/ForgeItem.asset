@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27dcee36aa6d030498f13f390444dd34, type: 3}
+  m_Name: ForgeItem
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.ItemDefinition
+  id: 23
+  displayName: Forge
+  category: 0
+  maxStack: 0
+  bagSlots: 0
+  rarity: 0
+  equipSlot: 0
+  stats:
+    armor: 0
+    stamina: 0
+    power: 0
+  weapon:
+    damage: 0
+    swingSeconds: 0
+    reach: 0
+    flatBlade: 0
+  wornMesh: {fileID: 0}
+  mesh: {fileID: 5685816728850260451, guid: 1b144bdf275256a44bdaf93877ef6c50, type: 3}
+  material: {fileID: 2100000, guid: fab227479e559a943bc9bce39de0233a, type: 2}
+  heldPosition: {x: 0, y: 0.08, z: 0}
+  heldRotation: {x: 359.5, y: 323.9, z: 148}
+  heldScale: 0.3
+  dropSize: 1.2
+  heldLight:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0.1
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
+  toolPower:
+    pick: 0
+    axe: 0
+    any: 0
+  ability: {fileID: 0}
+  muzzle: {x: 0, y: 0, z: 0}

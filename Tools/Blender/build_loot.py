@@ -35,6 +35,9 @@ GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_Glow.png")
 # Roadmap 5.7: the ore items have their own small atlas, so the gear and materials above keep their UVs.
 ORE_ATLAS_PATH = os.path.join(ART, "Textures", "Loot", "Loot_OreAtlas.png")
 ORE_GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_OreGlow.png")
+# Crafted gear and materials (Roadmap 5.8) have their own atlas too, so the older loot's stays pixel-identical.
+CRAFT_ATLAS_PATH = os.path.join(ART, "Textures", "Loot", "Loot_CraftAtlas.png")
+CRAFT_GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_CraftGlow.png")
 MODEL_DIR = os.path.join(ART, "Models", "Loot")
 
 SIZE, CELL = P.SIZE, P.CELL
@@ -49,6 +52,12 @@ GRID = {
 
 ORE_GRID = {"rock": (0, 0), "copper": (1, 0), "iron": (2, 0), "mana": (3, 0)}
 
+CRAFT_GRID = {
+    "copper": (0, 0), "steel": (1, 0), "manaforged": (2, 0), "mana_core": (3, 0),
+    "cured": (0, 1), "wolfhide": (1, 1), "stormhide": (2, 1), "strap": (3, 1),
+    "wood": (0, 2), "gold": (1, 2), "dark_iron": (2, 2),
+}
+
 
 def region(name):
     col, row = GRID[name]
@@ -57,6 +66,11 @@ def region(name):
 
 def ore_region(name):
     col, row = ORE_GRID[name]
+    return col * 0.25, 1.0 - (row + 1) * 0.25, (col + 1) * 0.25, 1.0 - row * 0.25
+
+
+def craft_region(name):
+    col, row = CRAFT_GRID[name]
     return col * 0.25, 1.0 - (row + 1) * 0.25, (col + 1) * 0.25, 1.0 - row * 0.25
 
 
@@ -184,6 +198,35 @@ def paint_ore_atlas(seed=57):
     for name, paint in painters.items():
         colour, light = paint()
         u0, v0, _, _ = ore_region(name)
+        r0, c0 = int(round(v0 * SIZE)), int(round(u0 * SIZE))
+        albedo[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(colour, 0, 1)
+        glow[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(light, 0, 1)
+    return albedo, glow
+
+
+def paint_craft_atlas(seed=58):
+    """Crafted gear's atlas (Roadmap 5.8): the three metals, the three leathers and their trims; only the mana core glows."""
+    rng = np.random.default_rng(seed)
+    painters = {
+        "copper": lambda: P.paint_metal(rng, rgb(214, 124, 66), 0.3),
+        "steel": lambda: P.paint_metal(rng, rgb(176, 184, 198), 0.35),
+        "manaforged": lambda: P.paint_metal(rng, rgb(86, 78, 186), 0.35),
+        "mana_core": lambda: paint_glow(rng, rgb(150, 230, 255), rgb(120, 50, 230), glow=1.0),
+        "cured": lambda: paint_hide(rng, rgb(168, 118, 72), rgb(96, 62, 36), 0.25),
+        "wolfhide": lambda: paint_hide(rng, rgb(128, 134, 146), rgb(70, 74, 86), 0.5),
+        "stormhide": lambda: paint_hide(rng, rgb(70, 92, 128), rgb(34, 46, 72), 0.3),
+        "strap": lambda: P.paint_wrap(rng, rgb(84, 54, 34), rgb(44, 28, 18)),
+        "wood": lambda: P.paint_wood(rng, rgb(150, 104, 62), rgb(96, 62, 36)),
+        "gold": lambda: P.paint_metal(rng, rgb(235, 182, 70), 0.3),
+        "dark_iron": lambda: P.paint_metal(rng, rgb(66, 68, 78), 0.25),
+    }
+    albedo = np.zeros((SIZE, SIZE, 4), np.float32)
+    glow = np.zeros((SIZE, SIZE, 4), np.float32)
+    albedo[..., 3] = 1.0
+    glow[..., 3] = 1.0
+    for name, paint in painters.items():
+        colour, light = paint()
+        u0, v0, _, _ = craft_region(name)
         r0, c0 = int(round(v0 * SIZE)), int(round(u0 * SIZE))
         albedo[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(colour, 0, 1)
         glow[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(light, 0, 1)
@@ -598,6 +641,199 @@ MODELS = {
 }
 
 
+# ---- Crafted gear and materials (Roadmap 5.8), on their own atlas. Same origins as the loot above. ----
+
+def craft_builder():
+    return P.MeshBuilder(craft_region)
+
+
+def build_bar(metal):
+    """Three ingots, stacked."""
+    b = craft_builder()
+    for x in (-0.09, 0.09):
+        b.part(metal, P.box((x, 0, 0.04), (0.16, 0.34, 0.08)), grain=Vector((0, 1, 0)))
+    b.part(metal, P.box((0, 0, 0.12), (0.16, 0.34, 0.08)), grain=Vector((0, 1, 0)))
+    return b
+
+
+def build_leather_roll(leather):
+    """A roll of cured leather tied with two straps."""
+    b = craft_builder()
+    b.part(leather, P.cylinder((-0.2, 0, 0.09), (0.2, 0, 0.09), 0.09, 0.09, 8), grain=Vector((1, 0, 0)))
+    for x in (-0.11, 0.11):
+        b.part("strap", P.cylinder((x - 0.02, 0, 0.09), (x + 0.02, 0, 0.09), 0.096, 0.096, 8), grain=Vector((1, 0, 0)))
+    return b
+
+
+def build_plate_head(metal, trim, core):
+    b = craft_builder()
+    b.part(metal, P.cylinder((0, 0, 0), (0, 0, 0.2), 0.185, 0.155, 8, phase=math.pi / 8))
+    b.part(metal, P.cylinder((0, 0, 0.2), (0, 0, 0.27), 0.155, 0.04, 8, phase=math.pi / 8))
+    b.part(trim, P.box((0, 0.165, 0.11), (0.28, 0.03, 0.04)))  # Brow.
+    b.part(trim, P.box((0, 0.175, 0.05), (0.04, 0.03, 0.12)))  # Nose guard.
+    if core:
+        b.part(core, P.gem((0, 0.18, 0.17), (0.035, 0.02, 0.045), Vector((0, 1, 0))))
+    return b
+
+
+def build_plate_chest(metal, trim, core):
+    b = craft_builder()
+    torso(b, metal, 0.46, 0.28, 0.52)
+    for z in (0.14, 0.28):  # Plates across the belly.
+        b.part(trim, P.box((0, 0.145, z), (0.4, 0.02, 0.05)))
+    for sx in (-1, 1):
+        b.part(metal, P.box((sx * 0.27, 0, 0.48), (0.16, 0.32, 0.12)))  # Pauldrons.
+        b.part(trim, P.box((sx * 0.27, 0, 0.55), (0.12, 0.26, 0.02)))
+    if core:
+        b.part(core, P.gem((0, 0.16, 0.4), (0.06, 0.02, 0.07), Vector((0, 1, 0))))
+    return b
+
+
+def build_plate_legs(metal, trim):
+    b = craft_builder()
+    legs(b, metal, belt=trim, width=0.12)
+    for sx in (-1, 1):
+        b.part(trim, P.box((sx * 0.1, 0.09, -0.42), (0.14, 0.05, 0.22)))  # Knee guards.
+    return b
+
+
+def build_plate_legs_worn(metal, trim):
+    b = craft_builder()
+    thigh(b, metal, 0.115)
+    b.part(trim, P.box((0, 0.1, -0.29), (0.14, 0.05, 0.12)))  # Knee guard.
+    return b
+
+
+def build_plate_feet(metal, trim):
+    b = craft_builder()
+    boots(b, metal, trim)
+    return b
+
+
+def build_plate_feet_worn(metal, trim):
+    b = craft_builder()
+    one_boot(b, metal, trim)
+    return b
+
+
+def build_mace(metal, trim):
+    b = craft_builder()
+    P.handle(b, "wood", bottom=-0.15, top=0.34, radius=0.03)
+    b.part(metal, P.cylinder((0, 0, 0.3), (0, 0, 0.56), 0.075, 0.075, 6))
+    for k in range(4):  # Flanges.
+        a = k * math.pi / 2
+        b.part(metal, P.box((math.cos(a) * 0.1, math.sin(a) * 0.1, 0.43), (0.08, 0.08, 0.2)))
+    b.part(trim, P.cylinder((0, 0, 0.27), (0, 0, 0.31), 0.05, 0.05, 6))
+    P.wrap(b, -0.1, 0.08, 0.036, "strap")
+    return b
+
+
+def build_sword(metal, trim, core, length=0.66, width=0.05):
+    b = craft_builder()
+    b.part("strap", P.cylinder((0, 0, -0.14), (0, 0, 0.1), 0.028, 0.028, 8))
+    b.part(trim, P.box((0, 0, 0.12), (0.24, 0.05, 0.04)))  # Cross-guard.
+    outline = [(-width, 0.0), (width, 0.0), (width * 0.9, length - 0.1), (0.0, length), (-width * 0.9, length - 0.1)]
+    b.part(metal, P.slab(outline, (0, 0, 0.14), Vector((1, 0, 0)), Vector((0, 0, 1)),
+                         lambda i: 0.03 if i in (0, 1) else 0.012), grain=Vector((0, 0, 1)))
+    if core:
+        b.part(core, P.gem((0, 0, -0.17), (0.04, 0.04, 0.04)))  # Pommel.
+    else:
+        b.part(trim, P.cylinder((0, 0, -0.18), (0, 0, -0.14), 0.04, 0.04, 6))
+    return b
+
+
+def build_kite_shield(metal, trim, core):
+    b = craft_builder()
+    outline = [(-0.25, 0.25), (0.25, 0.25), (0.24, -0.05), (0.0, -0.36), (-0.24, -0.05)]
+    b.part(metal, P.slab(outline, (0, 0.03, 0), Vector((1, 0, 0)), Vector((0, 0, 1)), lambda i: 0.05))
+    b.part(trim, P.box((0, 0.06, 0.0), (0.06, 0.02, 0.5)))  # A cross on the front.
+    b.part(trim, P.box((0, 0.06, 0.08), (0.42, 0.02, 0.06)))
+    b.part(core or trim, P.gem((0, 0.075, 0.08), (0.05, 0.03, 0.05), Vector((0, 1, 0))))
+    return b
+
+
+def build_leather_head(leather, trim, ears):
+    b = craft_builder()
+    b.part(leather, P.cylinder((0, -0.01, 0), (0, -0.03, 0.22), 0.185, 0.1, 8))
+    b.part(leather, P.cylinder((0, -0.03, 0.22), (0, -0.05, 0.28), 0.1, 0.0, 8))
+    b.part(trim, P.cylinder((0, 0, 0), (0, 0, 0.04), 0.195, 0.195, 8))  # Band.
+    if ears:
+        for sx in (-1, 1):
+            b.part(leather, P.cylinder((sx * 0.09, -0.02, 0.18), (sx * 0.12, -0.02, 0.3), 0.05, 0.0, 4))
+    return b
+
+
+def build_leather_chest(leather, trim, shoulders):
+    b = craft_builder()
+    torso(b, leather)
+    b.part(trim, P.box((0, 0, 0.1), (0.46, 0.28, 0.06)))  # Belt.
+    b.part("gold", P.box((0, 0.145, 0.1), (0.07, 0.01, 0.05)))  # Buckle.
+    b.part(trim, P.box((0.1, 0.135, 0.3), (0.05, 0.01, 0.42), Matrix.Rotation(math.radians(30), 3, "Y")))  # Bandolier.
+    if shoulders:
+        for sx in (-1, 1):
+            b.part(leather, P.box((sx * 0.25, 0, 0.47), (0.14, 0.3, 0.1)))
+            b.part(trim, P.box((sx * 0.25, 0, 0.53), (0.1, 0.24, 0.02)))
+    return b
+
+
+def build_leather_legs(leather, trim):
+    b = craft_builder()
+    legs(b, leather, belt=trim)
+    return b
+
+
+def build_leather_legs_worn(leather, trim):
+    b = craft_builder()
+    thigh(b, leather)
+    b.part(trim, P.cylinder((0, 0, -0.14), (0, 0, -0.18), 0.1, 0.098, 8))  # A strap round the thigh.
+    return b
+
+
+def build_leather_feet(leather, trim):
+    b = craft_builder()
+    boots(b, leather, trim)
+    return b
+
+
+def build_leather_feet_worn(leather, trim):
+    b = craft_builder()
+    one_boot(b, leather, trim)
+    return b
+
+
+def crafted_models():
+    """Each tier's name -> its builders. CraftingBuilder.cs finds them by name; worn pieces by "<model>Worn"."""
+    models = {
+        "CraftBarCopper": lambda: build_bar("copper"),
+        "CraftBarIron": lambda: build_bar("steel"),
+        "CraftBarManaforged": lambda: build_bar("manaforged"),
+        "CraftLeatherCured": lambda: build_leather_roll("cured"),
+        "CraftLeatherWolfhide": lambda: build_leather_roll("wolfhide"),
+        "CraftLeatherStormhide": lambda: build_leather_roll("stormhide"),
+    }
+    for tier, metal, trim, core in (("Copper", "copper", "dark_iron", None), ("Iron", "steel", "dark_iron", None),
+                                    ("Manaforged", "manaforged", "gold", "mana_core")):
+        models[f"Craft{tier}Head"] = lambda m=metal, t=trim, c=core: build_plate_head(m, t, c)
+        models[f"Craft{tier}Chest"] = lambda m=metal, t=trim, c=core: build_plate_chest(m, t, c)
+        models[f"Craft{tier}Legs"] = lambda m=metal, t=trim: build_plate_legs(m, t)
+        models[f"Craft{tier}LegsWorn"] = lambda m=metal, t=trim: build_plate_legs_worn(m, t)
+        models[f"Craft{tier}Feet"] = lambda m=metal, t=trim: build_plate_feet(m, t)
+        models[f"Craft{tier}FeetWorn"] = lambda m=metal, t=trim: build_plate_feet_worn(m, t)
+        models[f"Craft{tier}Shield"] = lambda m=metal, t=trim, c=core: build_kite_shield(m, t, c)
+    models["CraftCopperWeapon"] = lambda: build_mace("copper", "dark_iron")
+    models["CraftIronWeapon"] = lambda: build_sword("steel", "dark_iron", None)
+    models["CraftManaforgedWeapon"] = lambda: build_sword("manaforged", "gold", "mana_core", 0.84, 0.065)
+    for tier, leather, trim, fancy in (("Cured", "cured", "strap", False), ("Wolfhide", "wolfhide", "strap", True),
+                                       ("Stormhide", "stormhide", "gold", True)):
+        models[f"Craft{tier}Head"] = lambda l=leather, t=trim, f=fancy: build_leather_head(l, t, f)
+        models[f"Craft{tier}Chest"] = lambda l=leather, t=trim, f=fancy: build_leather_chest(l, t, f)
+        models[f"Craft{tier}Legs"] = lambda l=leather, t=trim: build_leather_legs(l, t)
+        models[f"Craft{tier}LegsWorn"] = lambda l=leather, t=trim: build_leather_legs_worn(l, t)
+        models[f"Craft{tier}Feet"] = lambda l=leather, t=trim: build_leather_feet(l, t)
+        models[f"Craft{tier}FeetWorn"] = lambda l=leather, t=trim: build_leather_feet_worn(l, t)
+    return models
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # Blender scene and export
 # ----------------------------------------------------------------------------------------------------------------
@@ -663,6 +899,22 @@ def build_ores(export=True):
     build_models(material, ORE_MODELS, first_row=5)
     if export:
         export_models(list(ORE_MODELS))
+
+
+def build_crafted(export=True):
+    """Only the crafted items (Roadmap 5.8) and their atlas, leaving the rest of the loot alone."""
+    albedo, glow = paint_craft_atlas()
+    atlas_image = P.save_image("Loot_CraftAtlas", albedo, CRAFT_ATLAS_PATH)
+    glow_image = P.save_image("Loot_CraftGlow", glow, CRAFT_GLOW_PATH)
+    old = bpy.data.materials.get("Loot_CraftPreview")
+    if old is not None:
+        bpy.data.materials.remove(old)
+    material = P.preview_material(atlas_image, glow_image)
+    material.name = "Loot_CraftPreview"
+    models = crafted_models()
+    build_models(material, models, first_row=7)
+    if export:
+        export_models(list(models))
 
 
 if __name__ == "__main__":

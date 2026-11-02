@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 515e2e85cef25524883dbd65b9619d29, type: 3}
+  m_Name: WolfhideTrousers
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeDefinition
+  inputs:
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: 4f2a61b49a1730642aa6b3c8d1b6df01, type: 2}
+    count: 4
+  output:
+    block: {fileID: 0}
+    item: {fileID: 11400000, guid: e9bbf799eb788484ea7507d6107d7649, type: 2}
+    count: 1
+  station: 5
+  requiredSkill: 38

@@ -24,7 +24,7 @@ namespace Voxelforge.Tests
         [SetUp]
         public void SetUp()
         {
-            var blocks = new NativeArray<BlockInfo>(BlockIds.Workbench + 1, Allocator.Persistent);
+            var blocks = new NativeArray<BlockInfo>(BlockIds.Anvil + 1, Allocator.Persistent);
             blocks[BlockIds.Air] = new BlockInfo { Id = BlockIds.Air, Flags = BlockFlags.Registered | BlockFlags.Transparent };
             blocks[BlockIds.Dirt] = new BlockInfo
                 { Id = BlockIds.Dirt, MaxDurability = 20, Flags = BlockFlags.Registered | BlockFlags.Solid, Harvest = HarvestKind.Any };
@@ -40,6 +40,14 @@ namespace Voxelforge.Tests
                 Id = BlockIds.Workbench, MaxDurability = 40, Harvest = HarvestKind.Axe,
                 Flags = BlockFlags.Registered | BlockFlags.Solid | BlockFlags.Transparent | BlockFlags.Prop,
             };
+            foreach (ushort station in new[] { BlockIds.Forge, BlockIds.Anvil })
+            {
+                blocks[station] = new BlockInfo
+                {
+                    Id = station, MaxDurability = 60, Harvest = HarvestKind.Pick,
+                    Flags = BlockFlags.Registered | BlockFlags.Solid | BlockFlags.Transparent | BlockFlags.Prop,
+                };
+            }
             _world = new VoxelWorld(blocks);
             _world.CreateChunk(new ChunkCoord(0, 0, 0), new Voxel(BlockIds.Stone));
             _world.CreateChunk(new ChunkCoord(0, 1, 0));
@@ -242,6 +250,23 @@ namespace Voxelforge.Tests
             Assert.AreEqual(CraftStationMask.Workbench, CraftStations.ScanNear(_world, new float3(4.5f, 32.9f, 4.5f), 4));
             Assert.AreEqual(CraftStationMask.None, CraftStations.ScanNear(_world, new float3(4.5f, 32.9f, 4.5f), 3));
             Assert.AreEqual(CraftStationMask.None, CraftStations.ScanNear(null, float3.zero, 4));
+        }
+
+        [Test]
+        public void Nearest_PicksTheClosestStation()
+        {
+            var middle = new float3(4.5f, 32.9f, 4.5f);
+            Assert.AreEqual(CraftStation.Anywhere, CraftStations.Nearest(_world, middle, 4));
+            Assert.AreEqual(CraftStation.Anywhere, CraftStations.Nearest(null, middle, 4));
+
+            _editor.RequestModifyVoxel(new int3(8, 32, 4), BlockIds.Anvil, P1);
+            Assert.AreEqual(CraftStation.Anvil, CraftStations.Nearest(_world, middle, 4));
+
+            _editor.RequestModifyVoxel(new int3(6, 32, 4), BlockIds.Forge, P1);
+            Assert.AreEqual(CraftStation.Forge, CraftStations.Nearest(_world, middle, 4));
+
+            _editor.RequestModifyVoxel(new int3(3, 32, 4), BlockIds.Workbench, P1);
+            Assert.AreEqual(CraftStation.Workbench, CraftStations.Nearest(_world, middle, 4), "Below a block's distance away, in any direction.");
         }
     }
 }

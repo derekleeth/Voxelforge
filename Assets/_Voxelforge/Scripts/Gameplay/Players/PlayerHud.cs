@@ -78,7 +78,12 @@ namespace Voxelforge.Gameplay
         {
             // The inventory (Roadmap 4.5) and class (4.6) windows cover the middle of the view; these would draw over them.
             if (player.WindowOpen)
+            {
+                // The crafting window (5.8) is one of those windows, and it's drawn from here.
+                if (player.TryGetComponent(out PlayerCrafter crafting) && crafting.IsMenuOpen)
+                    DrawCrafting(player, view, crafting, player.TryGetComponent(out PlayerBlockBag craftingBag) ? craftingBag : null, scale);
                 return;
+            }
 
             float3 feet = player.transform.position;
             PlayerInputFrame input = player.OwnerInput;
@@ -120,10 +125,7 @@ namespace Voxelforge.Gameplay
             }
 
             if (player.TryGetComponent(out PlayerCrafter crafter))
-            {
-                _craftingWindow ??= new CraftingWindow(ItemName, id => Icons?.Get(id));
-                _craftingWindow.Draw(OwnArea(player, view), crafter, bag, player.TeamColor, scale);
-            }
+                DrawCrafting(player, view, crafter, bag, scale);
 
             if (player.TryGetComponent(out PlayerHearth hearth))
             {
@@ -144,6 +146,12 @@ namespace Voxelforge.Gameplay
                     range = Mathf.Max(range, spell.Range);
             }
             return range;
+        }
+
+        void DrawCrafting(PlayerController player, PlayerView view, PlayerCrafter crafter, PlayerBlockBag bag, float scale)
+        {
+            _craftingWindow ??= new CraftingWindow(ItemName, id => Icons?.Get(id));
+            _craftingWindow.Draw(OwnArea(player, view), crafter, bag, player.TeamColor, scale);
         }
 
         Rect OwnArea(PlayerController player, PlayerView view) => PlayerScreenArea.Own(cameras.Layout.Mode, player, view);

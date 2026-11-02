@@ -20,11 +20,13 @@ namespace Voxelforge.Editor
     /// its recipe, and <c>ManaBolt.mat</c>, the additive glow for its bolts, trails and sparks.</item>
     /// <item>The Home Totem (Roadmap 3.8): block 13, its prop with a soft green light, its item and its recipe.</item>
     /// <item>The wearable bags (Roadmap 4.5): Woven Satchel, Traveler's Pack and Delver's Rucksack, Gear items with their
-    /// extra slots, and workbench recipes for now (5.6 Leatherworking will make them from hides).</item>
+    /// extra slots. Their recipes keep their places in the book, but <see cref="CraftingBuilder"/> writes them (Roadmap 5.8).</item>
     /// <item>The Storage Chest (Roadmap 4.5): block 14, its body prop (the lid is drawn by <see cref="ChestLids"/>), its
     /// item and its recipe (8 Logs, anywhere).</item>
     /// <item>The Training Dummy (Roadmap 4.6): block 15, its prop, its item and its recipe (3 Logs + 2 Dirt at a
     /// workbench).</item>
+    /// <item>The crafting stations (Roadmap 5.8): Alchemy Table, Forge, Anvil and Tanning Rack, blocks 22-25, with their
+    /// props, items and recipes at a workbench. <see cref="CraftingBuilder"/> writes the Anvil's, which takes Copper Bars.</item>
     /// </list>
     /// </summary>
     public static class PropsBuilder
@@ -58,6 +60,7 @@ namespace Voxelforge.Editor
         static readonly Vector3 StaffPose = new Vector3(72.3f, 233.3f, 350.7f);
         static readonly Color TorchLight = new Color(1f, 0.64f, 0.32f);
         static readonly Color HomeGlow = new Color(0.35f, 1f, 0.45f);
+        static readonly Color ForgeGlow = new Color(1f, 0.5f, 0.22f);
 
         // The M.G.R.S.'s muzzle (3.6) is the top of the gold barrel crown in build_props.py (z 1.15 in Blender, +Y in
         // Unity). What it shoots is the Mana Bolt ability (4.1, AbilityBuilder).
@@ -94,7 +97,18 @@ namespace Voxelforge.Editor
             BlockDefinition dummy = MakeBlock("TrainingDummy", BlockIds.TrainingDummy, durability: 40, solid: true,
                 needsSupport: false, light: 0, HarvestKind.Axe, new Color32(196, 172, 124, 255), blastProof: true,
                 displayName: "Training Dummy");
-            AddToList(registry, "blocks", torch, workbench, homeTotem, chest, dummy);
+            // Roadmap 5.8. Blast-proof like the chest: a partner's spell shouldn't flatten a base's workshop.
+            BlockDefinition alchemyTable = MakeBlock("AlchemyTable", BlockIds.AlchemyTable, durability: 60, solid: true,
+                needsSupport: false, light: 0, HarvestKind.Axe, new Color32(90, 190, 200, 255), blastProof: true,
+                displayName: "Alchemy Table");
+            BlockDefinition forge = MakeBlock("Forge", BlockIds.Forge, durability: 60, solid: true, needsSupport: false,
+                light: 0, HarvestKind.Pick, new Color32(220, 110, 50, 255), blastProof: true);
+            BlockDefinition anvil = MakeBlock("Anvil", BlockIds.Anvil, durability: 60, solid: true, needsSupport: false,
+                light: 0, HarvestKind.Pick, new Color32(80, 84, 94, 255), blastProof: true);
+            BlockDefinition tanningRack = MakeBlock("TanningRack", BlockIds.TanningRack, durability: 60, solid: true,
+                needsSupport: false, light: 0, HarvestKind.Axe, new Color32(140, 90, 55, 255), blastProof: true,
+                displayName: "Tanning Rack");
+            AddToList(registry, "blocks", torch, workbench, homeTotem, chest, dummy, alchemyTable, forge, anvil, tanningRack);
             SetHarvestKinds(registry);
 
             // ---- Prop decorations ----
@@ -104,8 +118,12 @@ namespace Voxelforge.Editor
             Mesh totemMesh = LoadMesh("HomeTotem");
             Mesh chestBodyMesh = LoadMesh("ChestBody");
             Mesh dummyMesh = LoadMesh("TrainingDummy");
+            Mesh alchemyTableMesh = LoadMesh("AlchemyTable");
+            Mesh forgeMesh = LoadMesh("Forge");
+            Mesh anvilMesh = LoadMesh("Anvil");
+            Mesh tanningRackMesh = LoadMesh("TanningRack");
             if (torchFloorMesh == null || torchWallMesh == null || workbenchMesh == null || totemMesh == null || chestBodyMesh == null ||
-                dummyMesh == null)
+                dummyMesh == null || alchemyTableMesh == null || forgeMesh == null || anvilMesh == null || tanningRackMesh == null)
                 return;
             var floorLight = new DecorationLight
             {
@@ -125,7 +143,14 @@ namespace Voxelforge.Editor
                     castShadows: true),
                 // Just the body: ChestLids draws the lid so it can open (Roadmap 4.5).
                 MakeProp("Chest", chestBodyMesh, world, chest, PropAttach.Any, default, castShadows: true),
-                MakeProp("TrainingDummy", dummyMesh, world, dummy, PropAttach.Any, default, castShadows: true));
+                MakeProp("TrainingDummy", dummyMesh, world, dummy, PropAttach.Any, default, castShadows: true),
+                MakeProp("AlchemyTable", alchemyTableMesh, world, alchemyTable, PropAttach.Any, default, castShadows: true),
+                // A warm glow out of the Forge's open front, lower and steadier than a torch's.
+                MakeProp("Forge", forgeMesh, world, forge, PropAttach.Any,
+                    new DecorationLight { enabled = true, color = ForgeGlow, intensity = 2.2f, range = 8f, offset = new Vector3(0f, 0.35f, -0.3f), flicker = 0.25f },
+                    castShadows: true),
+                MakeProp("Anvil", anvilMesh, world, anvil, PropAttach.Any, default, castShadows: true),
+                MakeProp("TanningRack", tanningRackMesh, world, tanningRack, PropAttach.Any, default, castShadows: true));
 
             // ---- Items ----
             ItemDefinition woodenPickaxe = MakeItem("WoodenPickaxe", ItemIds.WoodenPickaxe, "Wooden Pickaxe", held, new ToolPower(2f, 1f, 1.5f));
@@ -151,29 +176,34 @@ namespace Voxelforge.Editor
                 heldScale: 0.3f, upright: true);
             ItemDefinition dummyItem = MakeItem("TrainingDummy", BlockIds.TrainingDummy, "Training Dummy", held, default,
                 "TrainingDummyItem", dropSize: 1.2f, heldScale: 0.3f, upright: true);
+            ItemDefinition alchemyTableItem = MakeItem("AlchemyTable", BlockIds.AlchemyTable, "Alchemy Table", held, default,
+                "AlchemyTableItem", dropSize: 1.3f, heldScale: 0.3f, upright: true);
+            ItemDefinition forgeItem = MakeItem("Forge", BlockIds.Forge, "Forge", held, default, "ForgeItem", dropSize: 1.2f,
+                heldScale: 0.3f, upright: true);
+            ItemDefinition anvilItem = MakeItem("Anvil", BlockIds.Anvil, "Anvil", held, default, "AnvilItem", dropSize: 1.3f,
+                heldScale: 0.3f, upright: true);
+            ItemDefinition tanningRackItem = MakeItem("TanningRack", BlockIds.TanningRack, "Tanning Rack", held, default,
+                "TanningRackItem", dropSize: 1.3f, heldScale: 0.3f, upright: true);
             var items = LoadOrCreate<ItemRegistry>($"{ItemDir}/ItemRegistry.asset");
             AddToList(items, "items", woodenPickaxe, stonePickaxe, stoneAxe, destiny, torchItem, benchItem, mgrs, totemItem,
-                satchel, pack, rucksack, chestItem, dummyItem);
+                satchel, pack, rucksack, chestItem, dummyItem, alchemyTableItem, forgeItem, anvilItem, tanningRackItem);
 
             // ---- Recipes (add new ones at the end: a recipe's place in the book is sent over the network) ----
             registry.TryGet(BlockIds.Log, out BlockDefinition log);
             registry.TryGet(BlockIds.Stone, out BlockDefinition stone);
-            // Roadmap 5.7: Mana Crystal Ore drops the Mana Crystal item (Mining 50), made by Build Loot.
-            // Searched in the list, not with TryGet: the registry's lookup may be from before Build Loot added it.
-            ItemDefinition mana = null;
-            foreach (ItemDefinition item in items.Items)
+            // Roadmap 5.7: Mana Crystal Ore drops the Mana Crystal item (Mining 50), made by Build Loot, as is the hide the
+            // Tanning Rack needs. Sunpetal comes from Build Professions.
+            ItemDefinition mana = FindItem(items, ItemIds.ManaCrystal);
+            ItemDefinition boarHide = FindItem(items, ItemIds.BoarHide);
+            ItemDefinition sunpetal = FindItem(items, ItemIds.Sunpetal);
+            if (mana == null || boarHide == null || sunpetal == null)
             {
-                if (item != null && item.Id == ItemIds.ManaCrystal)
-                    mana = item;
-            }
-            if (mana == null)
-            {
-                Debug.LogError("[Voxelforge] There's no Mana Crystal item yet. Run Voxelforge > Build Loot, then Build Props & Items again.");
+                Debug.LogError("[Voxelforge] Some ingredients don't exist yet. Run Voxelforge > Build Loot and Build Professions, then Build Props & Items again.");
                 return;
             }
             registry.TryGet(BlockIds.Dirt, out BlockDefinition dirt);
             var book = LoadOrCreate<RecipeBook>($"{ItemDir}/RecipeBook.asset");
-            SetList(book, "recipes",
+            AddToList(book, "recipes",
                 MakeRecipe("Workbench", new ItemAmount(workbench, 1), false, new ItemAmount(log, 4)),
                 MakeRecipe("Torches", new ItemAmount(torch, 4), false, new ItemAmount(log, 1)),
                 MakeRecipe("WoodenPickaxe", new ItemAmount(woodenPickaxe, 1), true, new ItemAmount(log, 3)),
@@ -184,14 +214,19 @@ namespace Voxelforge.Editor
                 MakeRecipe("Mgrs", new ItemAmount(mgrs, 1), true,
                     new ItemAmount(log, 3), new ItemAmount(stone, 2), new ItemAmount(mana, 5)),
                 MakeRecipe("HomeTotem", new ItemAmount(homeTotem, 1), true, new ItemAmount(log, 4), new ItemAmount(mana, 1)),
-                // Roadmap 4.5. Bark and stone for now; Leatherworking (5.6) replaces these with hides.
-                MakeRecipe("WovenSatchel", new ItemAmount(satchel, 1), true, new ItemAmount(log, 6)),
-                MakeRecipe("TravelersPack", new ItemAmount(pack, 1), true, new ItemAmount(log, 8), new ItemAmount(stone, 4)),
-                MakeRecipe("DelversRucksack", new ItemAmount(rucksack, 1), true,
-                    new ItemAmount(log, 10), new ItemAmount(stone, 6), new ItemAmount(mana, 3)),
+                // Roadmap 4.5's bags. Leatherworking (5.8, CraftingBuilder) writes these.
+                RecipeSlot("WovenSatchel"),
+                RecipeSlot("TravelersPack"),
+                RecipeSlot("DelversRucksack"),
                 MakeRecipe("Chest", new ItemAmount(chest, 1), false, new ItemAmount(log, 8)),
                 // Roadmap 4.6: something to practise spells on.
-                MakeRecipe("TrainingDummy", new ItemAmount(dummy, 1), true, new ItemAmount(log, 3), new ItemAmount(dirt, 2)));
+                MakeRecipe("TrainingDummy", new ItemAmount(dummy, 1), true, new ItemAmount(log, 3), new ItemAmount(dirt, 2)),
+                // Roadmap 5.8: the stations. CraftingBuilder writes the Anvil's, because it takes Copper Bars.
+                MakeRecipe("AlchemyTable", new ItemAmount(alchemyTable, 1), true,
+                    new ItemAmount(log, 4), new ItemAmount(stone, 2), new ItemAmount(sunpetal, 2)),
+                MakeRecipe("Forge", new ItemAmount(forge, 1), true, new ItemAmount(stone, 12), new ItemAmount(log, 4)),
+                RecipeSlot("Anvil"),
+                MakeRecipe("TanningRack", new ItemAmount(tanningRack, 1), true, new ItemAmount(log, 6), new ItemAmount(boarHide, 2)));
             MakeBoltMaterial();
 
             AssetDatabase.SaveAssets();
@@ -325,6 +360,8 @@ namespace Voxelforge.Editor
                     case BlockIds.RuinBrick:
                     case BlockIds.MossyRuinBrick:
                     case BlockIds.WardedStone:
+                    case BlockIds.Forge:
+                    case BlockIds.Anvil:
                         kind = HarvestKind.Pick;
                         break;
                     case BlockIds.TreeTrunk:
@@ -333,6 +370,8 @@ namespace Voxelforge.Editor
                     case BlockIds.HomeTotem:
                     case BlockIds.Chest:
                     case BlockIds.TrainingDummy:
+                    case BlockIds.AlchemyTable:
+                    case BlockIds.TanningRack:
                         kind = HarvestKind.Axe;
                         break;
                     default:
@@ -343,6 +382,17 @@ namespace Voxelforge.Editor
                 serialized.FindProperty("harvestKind").enumValueIndex = (int)kind;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        /// <summary>Searched in the list, not with TryGet: the registry's lookup may be from before another builder added it.</summary>
+        static ItemDefinition FindItem(ItemRegistry items, ushort id)
+        {
+            foreach (ItemDefinition item in items.Items)
+            {
+                if (item != null && item.Id == id)
+                    return item;
+            }
+            return null;
         }
 
         static Mesh LoadMesh(string model)
@@ -407,6 +457,9 @@ namespace Voxelforge.Editor
             return item;
         }
 
+        /// <summary>A recipe that holds its place in the book here, while another builder writes what's in it.</summary>
+        static RecipeDefinition RecipeSlot(string name) => LoadOrCreate<RecipeDefinition>($"{RecipeDir}/{name}.asset");
+
         static RecipeDefinition MakeRecipe(string name, ItemAmount output, bool needsWorkbench, params ItemAmount[] inputs)
         {
             var recipe = LoadOrCreate<RecipeDefinition>($"{RecipeDir}/{name}.asset");
@@ -455,18 +508,6 @@ namespace Voxelforge.Editor
                 list.arraySize++;
                 list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = entry;
             }
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(owner);
-        }
-
-        /// <summary>Replaces a list field with exactly <paramref name="entries"/>, in order.</summary>
-        static void SetList(Object owner, string field, params Object[] entries)
-        {
-            var serialized = new SerializedObject(owner);
-            SerializedProperty list = serialized.FindProperty(field);
-            list.arraySize = entries.Length;
-            for (int i = 0; i < entries.Length; i++)
-                list.GetArrayElementAtIndex(i).objectReferenceValue = entries[i];
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(owner);
         }

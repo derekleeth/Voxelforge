@@ -1,7 +1,7 @@
 """Builds Voxelforge's props and tools (Roadmap 3.5): pickaxes, an axe, The Pick of Destiny, torches, the workbench,
 Kian's M.G.R.S. (Magic Gun Rifle Staff, used in 3.6), the Home Totem (3.8), the three wearable bags, the
 drawstring loot bag and the Storage Chest (4.5), the Training Dummy, the Rune Hammer, the Stone Spear and the
-Shaman's two totems (4.6).
+Shaman's two totems (4.6), and the crafting stations (5.8): Alchemy Table, Forge, Anvil and Tanning Rack.
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one 1024 x 1024 atlas into Art/Textures/Props/Props_Atlas.png, plus a glow map (Props_Glow.png) that is
@@ -883,6 +883,118 @@ def build_training_dummy():
     return b
 
 
+# The crafting stations (5.8): stand-ins that 5.9 replaces, each with a silhouette that reads from across a base. They
+# stand in their block like any prop, with the front facing -Y (Unity -Z). Only the bottom block is solid, so the
+# table's flask and the Forge's chimney can rise above it, like the Training Dummy's head.
+def build_alchemy_table():
+    """A dark table with a glowing flask over a little flame, a mortar and pestle and a green bottle."""
+    b = MeshBuilder()
+    top_z, top_t, half = 0.7, 0.07, 0.46
+    b.part("wood_dark", box((0, 0, top_z + top_t / 2), (half * 2, half * 2, top_t)), grain=Vector((1, 0, 0)))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            b.part("wood", box((sx * (half - 0.07), sy * (half - 0.07), top_z / 2), (0.1, 0.1, top_z)))
+    b.part("planks", box((0, 0, 0.2), (half * 2 - 0.12, half * 2 - 0.12, 0.04)), grain=Vector((1, 0, 0)))  # Shelf.
+    z = top_z + top_t
+    # The flask, on an iron ring over its burner.
+    x, y = -0.14, 0.08
+    for angle in (45.0, 165.0, 285.0):
+        foot = Vector((math.cos(math.radians(angle)), math.sin(math.radians(angle)), 0.0)) * 0.13
+        b.part("iron", cylinder(Vector((x, y, z)) + foot, Vector((x, y, z + 0.16)) + foot * 0.9, 0.014, 0.014, 5))
+    b.part("iron", cylinder((x, y, z + 0.15), (x, y, z + 0.17), 0.15, 0.15, 10))
+    flame(b, (x, y, z), 0.13, 0.05)
+    b.part("mana", cylinder((x, y, z + 0.17), (x, y, z + 0.27), 0.09, 0.17, 10))
+    b.part("mana", cylinder((x, y, z + 0.27), (x, y, z + 0.38), 0.17, 0.07, 10))
+    b.part("steel", cylinder((x, y, z + 0.38), (x, y, z + 0.52), 0.045, 0.04, 8))
+    b.part("wood", cylinder((x, y, z + 0.52), (x, y, z + 0.57), 0.05, 0.055, 8))  # Cork.
+    # The mortar and its pestle.
+    b.part("stone", cylinder((0.26, -0.2, z), (0.26, -0.2, z + 0.13), 0.09, 0.14, 10))
+    b.part("wood_dark", cylinder((0.26, -0.2, z + 0.13), (0.26, -0.2, z + 0.135), 0.115, 0.115, 10))
+    b.part("wood", cylinder((0.25, -0.2, z + 0.1), (0.36, -0.14, z + 0.3), 0.02, 0.03, 6))
+    # A squat green bottle.
+    b.part("hearth", cylinder((0.26, 0.24, z), (0.26, 0.24, z + 0.16), 0.08, 0.08, 8))
+    b.part("hearth", cylinder((0.26, 0.24, z + 0.16), (0.26, 0.24, z + 0.22), 0.08, 0.03, 8))
+    b.part("wood", cylinder((0.26, 0.24, z + 0.22), (0.26, 0.24, z + 0.26), 0.035, 0.035, 6))
+    return b
+
+
+def build_forge():
+    """A stone hearth open at the front with the fire inside it, under a tapering hood and a chimney."""
+    b = MeshBuilder()
+    half = 0.46
+    b.part("stone", box((0, 0, 0.07), (half * 2, half * 2, 0.14)))  # Floor.
+    for sx in (-1, 1):
+        b.part("stone", box((sx * (half - 0.08), 0, 0.38), (0.16, half * 2, 0.48)))
+    b.part("stone", box((0, half - 0.07, 0.38), (half * 2 - 0.3, 0.14, 0.48)))  # Back wall.
+    b.part("stone", box((0, 0, 0.67), (half * 2, half * 2, 0.1)))  # Roof.
+    b.part("iron", box((0, -half - 0.005, 0.6), (half * 2 + 0.01, 0.03, 0.05)))  # Lintel over the opening.
+    # The hood is square, so its radius is a corner's distance. It leans back to meet the chimney.
+    b.part("stone", cylinder((0, 0, 0.72), (0, 0.08, 1.0), 0.6, 0.27, 4, phase=math.pi / 4))
+    b.part("stone", cylinder((0, 0.08, 1.0), (0, 0.08, 1.38), 0.24, 0.21, 4, phase=math.pi / 4))
+    b.part("iron", cylinder((0, 0.08, 1.33), (0, 0.08, 1.38), 0.25, 0.25, 4, phase=math.pi / 4))
+    # Coals and the fire.
+    b.part("wood_dark", box((0, -0.04, 0.16), (0.52, 0.56, 0.04)), grain=Vector((1, 0, 0)))
+    b.part("flame", box((0, -0.04, 0.19), (0.46, 0.5, 0.025)))
+    flame(b, (0, 0.0, 0.18), 0.34, 0.15)
+    flame(b, (-0.14, -0.14, 0.18), 0.22, 0.09)
+    flame(b, (0.14, -0.1, 0.18), 0.25, 0.1)
+    # Tongs resting on the floor's lip.
+    for dx in (-0.02, 0.02):
+        b.part("iron", cylinder((0.3 + dx, -half, 0.16), (0.24 + dx * 2, -0.18, 0.2), 0.012, 0.012, 5), grain=Vector((0, 1, 0)))
+    return b
+
+
+def build_anvil():
+    """A black iron anvil with its horn to +X and a bright steel face, bolted to a stump, and a hammer left on it."""
+    b = MeshBuilder()
+    b.part("wood", cylinder((0, 0, 0.0), (0, 0, 0.42), 0.38, 0.33, 10, phase=math.pi / 10))
+    b.part("iron", cylinder((0, 0, 0.3), (0, 0, 0.35), 0.355, 0.35, 10, phase=math.pi / 10))
+    b.part("iron", box((0, 0, 0.46), (0.5, 0.36, 0.08)))  # Foot.
+    b.part("iron", cylinder((0, 0, 0.5), (0, 0, 0.66), 0.24, 0.16, 4, phase=math.pi / 4))  # Waist.
+    b.part("iron", box((-0.03, 0, 0.72), (0.5, 0.3, 0.12)))  # Body.
+    b.part("steel", box((-0.03, 0, 0.79), (0.5, 0.27, 0.02)), grain=Vector((1, 0, 0)))  # Face.
+    b.part("iron", cylinder((0.22, 0, 0.72), (0.49, 0, 0.75), 0.11, 0.015, 8), grain=Vector((1, 0, 0)))  # Horn.
+    b.part("iron", box((-0.32, 0, 0.73), (0.1, 0.2, 0.08)))  # Heel.
+    # The hammer: handle over the edge, head on the face.
+    turn = Matrix.Rotation(math.radians(-35), 3, "Z")
+    b.part("wood", box(Vector((-0.02, -0.08, 0.82)), (0.36, 0.03, 0.03), turn), grain=turn @ Vector((1, 0, 0)))
+    b.part("steel", box(Vector((-0.02, -0.08, 0.83)) + turn @ Vector((0.17, 0, 0)), (0.07, 0.15, 0.07), turn))
+    return b
+
+
+def build_tanning_rack():
+    """A hide laced into an upright wooden frame, with a little tub of tanning water at its foot."""
+    b = MeshBuilder()
+    span = 0.38
+    for sx in (-1, 1):
+        b.part("wood_dark", box((sx * span, 0, 0.05), (0.12, 0.84, 0.1)), grain=Vector((0, 1, 0)))  # Feet.
+        b.part("wood", box((sx * span, 0, 0.56), (0.09, 0.09, 1.12)))  # Posts.
+    for z in (0.2, 1.04):
+        b.part("wood", box((0, 0, z), (span * 2 + 0.16, 0.08, 0.08)), grain=Vector((1, 0, 0)))
+    # The hide: a broad body with a leg reaching out to each corner of the frame.
+    middle = Vector((0, 0.01, 0.62))
+    across, up = Vector((1, 0, 0)), Vector((0, 0, 1))
+    thin = lambda i: 0.025
+    body = [(-0.2, -0.28), (0.0, -0.33), (0.2, -0.28), (0.26, 0.0), (0.2, 0.28), (0.0, 0.33), (-0.2, 0.28), (-0.26, 0.0)]
+    b.part("leather", slab(body, middle, across, up, thin), grain=up)
+    corners = []
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            tip = (sx * 0.29, sz * 0.31)
+            b.part("leather", slab([(sx * 0.12, sz * 0.24), (sx * 0.22, sz * 0.14), tip], middle, across, up, thin), grain=up)
+            corners.append((tip, sx, sz))
+    # Lacing from each leg to the frame.
+    for (x, z), sx, sz in corners:
+        at = middle + across * x + up * z
+        b.part("rope", cylinder(at, (sx * span, 0.0, at.z), 0.012, 0.012, 5), grain=Vector((1, 0, 0)))
+        b.part("rope", cylinder(at, (at.x, 0.0, 1.04 if sz > 0 else 0.2), 0.012, 0.012, 5))
+    # The tub.
+    b.part("planks", cylinder((0.2, -0.3, 0.0), (0.2, -0.3, 0.16), 0.11, 0.13, 10))
+    b.part("iron", cylinder((0.2, -0.3, 0.11), (0.2, -0.3, 0.135), 0.13, 0.13, 10))
+    b.part("wood_dark", cylinder((0.2, -0.3, 0.16), (0.2, -0.3, 0.165), 0.11, 0.11, 10))
+    return b
+
+
 # The Rune Hammer (4.6): the Runeforged Paladin's thrown hammer, flown by the game as glowing light (an AbilityLook
 # core mesh), tumbling end over end. Its origin is its middle so it tumbles about its centre; the handle runs along +Z
 # and the head's long side along Y (Unity Z, the way it flies). Chunky on purpose: only the silhouette shows.
@@ -993,6 +1105,10 @@ MODELS = {
     "StoneSpear": build_stone_spear,
     "TotemWellspring": build_totem_wellspring,
     "TotemThunderhead": build_totem_thunderhead,
+    "AlchemyTable": build_alchemy_table,
+    "Forge": build_forge,
+    "Anvil": build_anvil,
+    "TanningRack": build_tanning_rack,
 }
 
 

@@ -63,6 +63,38 @@ namespace Voxelforge.Gameplay
         /// <summary>The one Legendary for now: a storm-forged maul from the high mesas.</summary>
         public const ushort Skyrender = 1230;
 
+        // Crafted gear (Roadmap 5.8): 1240-1299, made at the Anvil and the Tanning Rack. CraftingBuilder sets their stats.
+        public const ushort CopperHelm = 1240;
+        public const ushort CopperBreastplate = 1241;
+        public const ushort CopperLegplates = 1242;
+        public const ushort CopperSabatons = 1243;
+        public const ushort CopperMace = 1244;
+        public const ushort CopperKiteShield = 1245;
+        public const ushort IronHelm = 1246;
+        public const ushort IronBreastplate = 1247;
+        public const ushort IronLegplates = 1248;
+        public const ushort IronSabatons = 1249;
+        public const ushort IronLongsword = 1250;
+        public const ushort IronKiteShield = 1251;
+        public const ushort ManaforgedHelm = 1252;
+        public const ushort ManaforgedBreastplate = 1253;
+        public const ushort ManaforgedLegplates = 1254;
+        public const ushort ManaforgedSabatons = 1255;
+        public const ushort ManaforgedGreatblade = 1256;
+        public const ushort ManaforgedKiteShield = 1257;
+        public const ushort CuredCap = 1260;
+        public const ushort CuredVest = 1261;
+        public const ushort CuredBreeches = 1262;
+        public const ushort CuredBoots = 1263;
+        public const ushort WolfhideHood = 1264;
+        public const ushort WolfhideJerkin = 1265;
+        public const ushort WolfhideTrousers = 1266;
+        public const ushort WolfhideBoots = 1267;
+        public const ushort StormhideCowl = 1268;
+        public const ushort StormhideHarness = 1269;
+        public const ushort StormhideLegguards = 1270;
+        public const ushort StormhideStriders = 1271;
+
         // Ore (Roadmap 5.7): what the ore blocks drop.
         public const ushort CopperOre = 1300;
         public const ushort IronOre = 1301;
@@ -76,6 +108,15 @@ namespace Voxelforge.Gameplay
         public const ushort Frostbloom = 1311;
         /// <summary>Thorny stems with glowing ember buds, from the Red Crags and the Desert (Herbalism 50).</summary>
         public const ushort Emberthorn = 1312;
+
+        // Worked materials (Roadmap 5.8): smelted at the Forge and cured at the Tanning Rack.
+        public const ushort CopperBar = 1320;
+        public const ushort IronBar = 1321;
+        /// <summary>Iron Bars fused with a Mana Crystal.</summary>
+        public const ushort ManaforgedBar = 1322;
+        public const ushort CuredLeather = 1330;
+        public const ushort WolfhideLeather = 1331;
+        public const ushort StormhideLeather = 1332;
 
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;
