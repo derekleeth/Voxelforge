@@ -42,6 +42,8 @@ namespace Voxelforge.Gameplay
         readonly HashSet<int3> _hidden = new HashSet<int3>();
         readonly HashSet<int3> _listed = new HashSet<int3>();
         readonly List<int3> _grown = new List<int3>();
+        // Apart from _grown: removing from _picked runs SyncHidden at once on the host, which fills _grown for itself.
+        readonly List<int3> _expired = new List<int3>();
         IReadOnlyDictionary<int3, float> _pendingRestore;
         DecorationLayer _layer; // The layer the hidden herbs were last given to; the world may make it after this spawns.
         float _nextCheck;
@@ -134,11 +136,11 @@ namespace Voxelforge.Gameplay
             if (!IsServer || !IsSpawned || Time.time < _nextCheck)
                 return;
             _nextCheck = Time.time + regrowCheck;
-            _grown.Clear();
-            _regrowAt.CollectExpired(Time.time, _grown);
-            if (_grown.Count == 0)
+            _expired.Clear();
+            _regrowAt.CollectExpired(Time.time, _expired);
+            if (_expired.Count == 0)
                 return;
-            foreach (int3 cell in _grown)
+            foreach (int3 cell in _expired)
             {
                 _regrowAt.Remove(cell);
                 _picked.Remove(new PickedHerb(cell));

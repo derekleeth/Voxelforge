@@ -28,7 +28,7 @@
 
 ### What's next
 - **5.8 step E:** Alchemy, with potions on action bar slots 7 and 8.
-- Found while testing: when a picked herb regrows, the game logs an error. Herbs still come back, but it needs fixing.
+- Found while testing, and fixed: when a picked herb regrew, the game logged an error, because the regrow loop's list got emptied halfway through by the code it called.
 
 ---
 
