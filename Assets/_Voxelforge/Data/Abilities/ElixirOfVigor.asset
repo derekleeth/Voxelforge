@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 932fac5680c989645b848805131d9727, type: 3}
+  m_Name: ElixirOfVigor
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.AbilityDefinition
+  id: 25
+  displayName: Elixir of Vigor
+  description: Cold, clean strength, like mountain air.
+  element: 5
+  manaCost: 0
+  cooldown: 1
+  cooldownGroup: 0
+  castTime: 0
+  castWhileMoving: 0
+  range: 0
+  aoeRadius: 0
+  craterFalloff: 0.25
+  craterFlatten: 1
+  delivery: 10
+  projectileSpeed: 0
+  blockDamage: 0
+  creatureDamage: 0
+  healAmount: 0
+  shieldAmount: 0
+  duration: 300
+  pulseInterval: 1
+  aimCone: 12
+  manaRegenBonus: 0
+  manaAmount: 0
+  buff:
+    armor: 0
+    stamina: 20
+    power: 0
+  earthHeight: 0
+  earthWidth: 0
+  earthStep: 0.08
+  threatScale: 1

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 515e2e85cef25524883dbd65b9619d29, type: 3}
+  m_Name: ElixirOfIronhide
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeDefinition
+  inputs:
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: 09224a4267b925d48b53acb37cba1452, type: 2}
+    count: 2
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: b36835e81691757488bed382c8c9b43c, type: 2}
+    count: 1
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: 64560fb4c635522489b14f7d017cf776, type: 2}
+    count: 1
+  output:
+    block: {fileID: 0}
+    item: {fileID: 11400000, guid: 65d7182b2d1a95947b3191fc4b854ca9, type: 2}
+    count: 1
+  station: 2
+  requiredSkill: 35

@@ -46,9 +46,9 @@ namespace Voxelforge.Gameplay
         /// <summary>Sets the mana left, between 0 and <see cref="MaxMana"/>.</summary>
         public void SetMana(float mana) => Mana = Mathf.Clamp(mana, 0f, MaxMana);
 
-        /// <summary>Seconds until <paramref name="abilityId"/> can be cast again; 0 if it's ready.</summary>
-        public float CooldownRemaining(ushort abilityId, float now) =>
-            _readyAt.TryGetValue(abilityId, out float readyAt) ? Mathf.Max(0f, readyAt - now) : 0f;
+        /// <summary>Seconds until the cooldown kept under <paramref name="cooldownKey"/> is over; 0 if it's ready.</summary>
+        public float CooldownRemaining(ushort cooldownKey, float now) =>
+            _readyAt.TryGetValue(cooldownKey, out float readyAt) ? Mathf.Max(0f, readyAt - now) : 0f;
 
         /// <summary>Whether <paramref name="ability"/> could start now.</summary>
         public CastCheck Check(AbilityDefinition ability, float now)
@@ -57,7 +57,7 @@ namespace Voxelforge.Gameplay
                 return CastCheck.UnknownAbility;
             if (IsCasting)
                 return CastCheck.Busy;
-            if (CooldownRemaining(ability.Id, now) > 0f)
+            if (CooldownRemaining(ability.CooldownKey, now) > 0f)
                 return CastCheck.OnCooldown;
             if (Mana < ability.ManaCost)
                 return CastCheck.NotEnoughMana;
@@ -123,7 +123,7 @@ namespace Voxelforge.Gameplay
         {
             Mana -= ability.ManaCost;
             if (ability.Cooldown > 0f)
-                _readyAt[ability.Id] = now + ability.Cooldown;
+                _readyAt[ability.CooldownKey] = now + ability.Cooldown;
             finished?.Add(ability);
         }
     }

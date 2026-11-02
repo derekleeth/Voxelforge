@@ -28,6 +28,7 @@ namespace Voxelforge.Gameplay
         readonly RacePickerView _raceView;
         readonly ActionBarView _actionBar;
         readonly CastBarView _castBar;
+        readonly BuffChipView _buffChip;
         readonly CombatTextView _textView;
         readonly TargetBarsView _targetBars;
         readonly ThreatMarksView _threatMarks;
@@ -57,6 +58,7 @@ namespace Voxelforge.Gameplay
         PlayerWorldMap _worldMap;
         PlayerKnockout _knockout;
         PlayerTargeting _targeting;
+        PlayerConsumables _consumables;
         string _scheme;
 
         public PlayerHudPanel(RectTransform canvas, HudSkin skin, byte slot, Func<ushort, string> itemName,
@@ -68,6 +70,7 @@ namespace Voxelforge.Gameplay
             HudWidgets.Place(_barGroup, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f),
                 new Vector2(_actionBar.Width, _actionBar.Height));
             _castBar = new CastBarView(_actionBar.Root, skin, itemName, itemIcon);
+            _buffChip = new BuffChipView(_actionBar.Root, skin);
 
             // Combat text gets its own area and canvas: it clips to the player's view, which in a merged view is wider
             // than the half their bar sits in.
@@ -165,6 +168,7 @@ namespace Voxelforge.Gameplay
             _worldMap = player != null ? player.GetComponent<PlayerWorldMap>() : null;
             _knockout = player != null ? player.GetComponent<PlayerKnockout>() : null;
             _targeting = player != null ? player.GetComponent<PlayerTargeting>() : null;
+            _consumables = player != null ? player.GetComponent<PlayerConsumables>() : null;
             if (_worldMap != null)
                 _worldMap.Scheme = controlScheme;
             if (_cues != null)
@@ -224,8 +228,9 @@ namespace Voxelforge.Gameplay
                 _barGroup.localScale = new Vector3(shrink, shrink, 1f);
 
             PlayerButtons buttons = _player != null ? _player.OwnerInput.Buttons : PlayerButtons.None;
-            _actionBar.Tick(_bar, _caster, _health, _level, buttons, now);
+            _actionBar.Tick(_bar, _caster, _health, _level, _consumables, buttons, now);
             _castBar.Tick(_caster, _gatherer, now);
+            _buffChip.Tick(_consumables);
             if (_player != null)
                 _targetBars.Tick(targets, creatures, view, textArea, scale, _player.transform.position, now);
             _threatMarks.Tick(_player, _targeting, creatures, view, textArea, scale, now);

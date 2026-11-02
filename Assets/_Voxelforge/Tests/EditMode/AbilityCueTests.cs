@@ -148,6 +148,8 @@ namespace Voxelforge.Tests
         [TestCase(typeof(PlayerStaff))]
         [TestCase(typeof(PlayerAbilityCues))]
         [TestCase(typeof(PlayerActionBar))]
+        [TestCase(typeof(PlayerConsumables))]
+        [TestCase(typeof(ConsumableRules))]
         [TestCase(typeof(ActionBarLoadout))]
         [TestCase(typeof(HeroHealth))]
         [TestCase(typeof(PlayerHealth))]

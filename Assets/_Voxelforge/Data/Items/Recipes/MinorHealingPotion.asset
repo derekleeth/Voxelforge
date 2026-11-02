@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 515e2e85cef25524883dbd65b9619d29, type: 3}
+  m_Name: MinorHealingPotion
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.RecipeDefinition
+  inputs:
+  - block: {fileID: 0}
+    item: {fileID: 11400000, guid: f7d6ef017df265746a87abf426ef7b5a, type: 2}
+    count: 2
+  output:
+    block: {fileID: 0}
+    item: {fileID: 11400000, guid: 0b66f59cd2eda9f45852b2cf1a3670c5, type: 2}
+    count: 1
+  station: 2
+  requiredSkill: 1

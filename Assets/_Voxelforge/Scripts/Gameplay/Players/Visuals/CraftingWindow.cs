@@ -314,6 +314,8 @@ namespace Voxelforge.Gameplay
             int bagSlots = rules.BagSlotsOf(itemId);
             if (bagSlots > 0)
                 return $"Bag: {bagSlots} slots";
+            if (rules is ItemRegistry items && items.TryGetDrink(itemId, out AbilityDefinition drink))
+                return GearText.Drink(drink);
             EquipSlot slot = rules.EquipSlotOf(itemId);
             if (slot == EquipSlot.None)
                 return null;

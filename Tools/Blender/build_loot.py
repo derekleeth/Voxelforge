@@ -38,6 +38,9 @@ ORE_GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_OreGlow.png")
 # Crafted gear and materials (Roadmap 5.8) have their own atlas too, so the older loot's stays pixel-identical.
 CRAFT_ATLAS_PATH = os.path.join(ART, "Textures", "Loot", "Loot_CraftAtlas.png")
 CRAFT_GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_CraftGlow.png")
+# Potions and elixirs (Roadmap 5.8) too, for the same reason.
+POTION_ATLAS_PATH = os.path.join(ART, "Textures", "Loot", "Loot_PotionAtlas.png")
+POTION_GLOW_PATH = os.path.join(ART, "Textures", "Loot", "Loot_PotionGlow.png")
 MODEL_DIR = os.path.join(ART, "Models", "Loot")
 
 SIZE, CELL = P.SIZE, P.CELL
@@ -61,6 +64,17 @@ CRAFT_GRID = {
 
 def region(name):
     col, row = GRID[name]
+    return col * 0.25, 1.0 - (row + 1) * 0.25, (col + 1) * 0.25, 1.0 - row * 0.25
+
+
+POTION_GRID = {
+    "healing": (0, 0), "mana": (1, 0), "armor": (2, 0), "stamina": (3, 0),
+    "power": (0, 1), "glass": (1, 1), "cork": (2, 1), "gold": (3, 1),
+}
+
+
+def potion_region(name):
+    col, row = POTION_GRID[name]
     return col * 0.25, 1.0 - (row + 1) * 0.25, (col + 1) * 0.25, 1.0 - row * 0.25
 
 
@@ -227,6 +241,32 @@ def paint_craft_atlas(seed=58):
     for name, paint in painters.items():
         colour, light = paint()
         u0, v0, _, _ = craft_region(name)
+        r0, c0 = int(round(v0 * SIZE)), int(round(u0 * SIZE))
+        albedo[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(colour, 0, 1)
+        glow[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(light, 0, 1)
+    return albedo, glow
+
+
+def paint_potion_atlas(seed=59):
+    """Potions' atlas (Roadmap 5.8): five softly glowing liquids, pale glass, cork and gold."""
+    rng = np.random.default_rng(seed)
+    painters = {
+        "healing": lambda: paint_glow(rng, rgb(255, 120, 90), rgb(190, 20, 30), glow=0.55),
+        "mana": lambda: paint_glow(rng, rgb(120, 200, 255), rgb(30, 60, 220), glow=0.55),
+        "armor": lambda: paint_glow(rng, rgb(255, 205, 110), rgb(170, 95, 30), glow=0.55),
+        "stamina": lambda: paint_glow(rng, rgb(170, 255, 150), rgb(30, 150, 70), glow=0.55),
+        "power": lambda: paint_glow(rng, rgb(255, 150, 215), rgb(140, 30, 190), glow=0.55),
+        "glass": lambda: P.paint_metal(rng, rgb(205, 228, 232), 0.12),
+        "cork": lambda: P.paint_wood(rng, rgb(190, 145, 95), rgb(130, 92, 56)),
+        "gold": lambda: P.paint_metal(rng, rgb(235, 182, 70), 0.3),
+    }
+    albedo = np.zeros((SIZE, SIZE, 4), np.float32)
+    glow = np.zeros((SIZE, SIZE, 4), np.float32)
+    albedo[..., 3] = 1.0
+    glow[..., 3] = 1.0
+    for name, paint in painters.items():
+        colour, light = paint()
+        u0, v0, _, _ = potion_region(name)
         r0, c0 = int(round(v0 * SIZE)), int(round(u0 * SIZE))
         albedo[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(colour, 0, 1)
         glow[r0:r0 + CELL, c0:c0 + CELL, :3] = np.clip(light, 0, 1)
@@ -801,6 +841,49 @@ def build_leather_feet_worn(leather, trim):
     return b
 
 
+# ---- Potions and elixirs (Roadmap 5.8): origin at the bottom centre, on the potion atlas. Each tier is bigger and fancier. ----
+
+def build_flask(liquid, size, gold):
+    """A chunky round flask, full of glowing liquid, with a glass neck and a cork; the top tier has gold bands."""
+    b = P.MeshBuilder(potion_region)
+    r, h = 0.12 * size, 0.2 * size
+    b.part(liquid, P.cylinder((0, 0, 0), (0, 0, h * 0.28), r * 0.72, r, 12))
+    b.part(liquid, P.cylinder((0, 0, h * 0.28), (0, 0, h * 0.72), r, r, 12))
+    b.part(liquid, P.cylinder((0, 0, h * 0.72), (0, 0, h), r, r * 0.42, 12))
+    b.part("glass", P.cylinder((0, 0, h), (0, 0, h * 1.32), r * 0.36, r * 0.36, 10))
+    b.part("glass", P.cylinder((0, 0, h * 1.32), (0, 0, h * 1.4), r * 0.5, r * 0.5, 10))
+    b.part("cork", P.cylinder((0, 0, h * 1.4), (0, 0, h * 1.62), r * 0.34, r * 0.4, 8))
+    if gold:
+        b.part("gold", P.cylinder((0, 0, h * 0.44), (0, 0, h * 0.56), r * 1.05, r * 1.05, 12))
+        b.part("gold", P.cylinder((0, 0, h * 1.16), (0, 0, h * 1.24), r * 0.46, r * 0.46, 10))
+    return b
+
+
+def build_elixir(liquid):
+    """A tall square-shouldered vial with a gold collar and foot, and a gem-like stopper."""
+    b = P.MeshBuilder(potion_region)
+    b.part("gold", P.cylinder((0, 0, 0), (0, 0, 0.03), 0.095, 0.08, 6))
+    b.part(liquid, P.cylinder((0, 0, 0.03), (0, 0, 0.27), 0.065, 0.095, 6))
+    b.part(liquid, P.cylinder((0, 0, 0.27), (0, 0, 0.33), 0.095, 0.05, 6))
+    b.part("gold", P.cylinder((0, 0, 0.33), (0, 0, 0.36), 0.055, 0.055, 6))
+    b.part("glass", P.cylinder((0, 0, 0.36), (0, 0, 0.42), 0.038, 0.05, 6))
+    b.part(liquid, P.gem((0, 0, 0.47), (0.045, 0.045, 0.06)))
+    return b
+
+
+POTION_MODELS = {
+    "PotionHealth1": lambda: build_flask("healing", 0.8, False),
+    "PotionHealth2": lambda: build_flask("healing", 1.0, False),
+    "PotionHealth3": lambda: build_flask("healing", 1.25, True),
+    "PotionMana1": lambda: build_flask("mana", 0.8, False),
+    "PotionMana2": lambda: build_flask("mana", 1.0, False),
+    "PotionMana3": lambda: build_flask("mana", 1.25, True),
+    "ElixirArmor": lambda: build_elixir("armor"),
+    "ElixirStamina": lambda: build_elixir("stamina"),
+    "ElixirPower": lambda: build_elixir("power"),
+}
+
+
 def crafted_models():
     """Each tier's name -> its builders. CraftingBuilder.cs finds them by name; worn pieces by "<model>Worn"."""
     models = {
@@ -915,6 +998,21 @@ def build_crafted(export=True):
     build_models(material, models, first_row=7)
     if export:
         export_models(list(models))
+
+
+def build_potions(export=True):
+    """Only the potions and elixirs (Roadmap 5.8) and their atlas, leaving the rest of the loot alone."""
+    albedo, glow = paint_potion_atlas()
+    atlas_image = P.save_image("Loot_PotionAtlas", albedo, POTION_ATLAS_PATH)
+    glow_image = P.save_image("Loot_PotionGlow", glow, POTION_GLOW_PATH)
+    old = bpy.data.materials.get("Loot_PotionPreview")
+    if old is not None:
+        bpy.data.materials.remove(old)
+    material = P.preview_material(atlas_image, glow_image)
+    material.name = "Loot_PotionPreview"
+    build_models(material, POTION_MODELS, first_row=12)
+    if export:
+        export_models(list(POTION_MODELS))
 
 
 if __name__ == "__main__":

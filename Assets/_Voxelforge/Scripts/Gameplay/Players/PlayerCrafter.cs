@@ -63,6 +63,9 @@ namespace Voxelforge.Gameplay
 
         public RecipeBook Recipes => recipes;
 
+        /// <summary>Every PC: this hero made something at a station, for its sound (Roadmap 5.8).</summary>
+        public event System.Action<CraftStation> Crafted;
+
         /// <summary>Owner only: the recipe list is showing, so Select and Place drive it instead of building.</summary>
         public bool IsMenuOpen => _menuOpen;
 
@@ -209,8 +212,12 @@ namespace Voxelforge.Gameplay
                 if (_professions != null && CraftStations.TryGetProfession(recipe.Station, out ProfessionId profession))
                     _professions.ServerPractised(profession, recipe.RequiredSkill);
                 CraftedRpc(recipeIndex);
+                CraftedAtRpc(recipe.Station);
             }
         }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        void CraftedAtRpc(CraftStation station) => Crafted?.Invoke(station);
 
         [Rpc(SendTo.Owner)]
         void CraftedRpc(byte recipeIndex)

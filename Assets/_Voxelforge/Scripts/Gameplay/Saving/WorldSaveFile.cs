@@ -69,9 +69,9 @@ namespace Voxelforge.Gameplay
         /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). 8:
         /// each player's level and XP, after that (5.6). 9: each player's gathering skills, after that (5.7). 10: the
         /// picked herbs and the seconds until each grows back, after that (5.7). 11: each player's crafting skills, after
-        /// that (5.8). Older saves still load.
+        /// that (5.8). 12: each player's elixir and its seconds left, after that (5.8). Older saves still load.
         /// </summary>
-        public const int FormatVersion = 11;
+        public const int FormatVersion = 12;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -212,6 +212,16 @@ namespace Voxelforge.Gameplay
                     writer.Write(profile.Uuid.Low);
                     for (int i = ProfessionSkills.GatheringCount; i < ProfessionSkills.Count; i++)
                         writer.Write((byte)profile.Professions.Get((ProfessionId)i));
+                }
+
+                // Elixirs (v12).
+                writer.Write(save.Profiles.Count);
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    writer.Write(profile.Uuid.High);
+                    writer.Write(profile.Uuid.Low);
+                    writer.Write(profile.ElixirAbility);
+                    writer.Write(profile.ElixirSecondsLeft);
                 }
                 writer.Write(EndMarker);
             }
@@ -443,6 +453,24 @@ namespace Voxelforge.Gameplay
                             byte skill = reader.ReadByte();
                             if (profile != null)
                                 profile.Professions = profile.Professions.With((ProfessionId)i, skill);
+                        }
+                    }
+                }
+
+                if (format >= 12)
+                {
+                    int drinkers = reader.ReadInt32();
+                    if (drinkers < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int p = 0; p < drinkers; p++)
+                    {
+                        var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
+                        ushort elixir = reader.ReadUInt16();
+                        float secondsLeft = reader.ReadSingle();
+                        if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
+                        {
+                            profile.ElixirAbility = elixir;
+                            profile.ElixirSecondsLeft = secondsLeft;
                         }
                     }
                 }

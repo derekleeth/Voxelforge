@@ -152,7 +152,7 @@ namespace Voxelforge.Gameplay
 
         // The caster's worn Power (Roadmap 5.5), read each pulse so gear swapped mid-zone counts. 1 once they've left.
         float CasterPower() =>
-            _casterHero != null && _casterHero.TryGetComponent(out PlayerBlockBag bag) ? GearRules.PowerScale(bag.GearStats.power) : 1f;
+            _casterHero != null && _casterHero.TryGetComponent(out PlayerBlockBag bag) ? GearRules.PowerScale(bag.CombatStats.power) : 1f;
 
         /// <summary>Host: the nearest target within the zone's radius takes its damage, in the caster's name.</summary>
         bool Strike(float3 from, out Vector3 point)

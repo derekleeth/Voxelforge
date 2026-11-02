@@ -68,6 +68,13 @@ namespace Voxelforge.Gameplay
                 errors.Add($"'{name}' is a stomp, so it needs a radius above 0.");
             if (ability.Delivery == AbilityDelivery.SelfHeal && !(ability.HealAmount > 0f && ability.HealAmount <= 1f))
                 errors.Add($"'{name}' heals a share of max health, so its heal amount must be above 0 and at most 1.");
+            if (ability.Delivery == AbilityDelivery.Drink)
+            {
+                if (ConsumableRules.KindOf(ability) == DrinkKind.None)
+                    errors.Add($"'{name}' is a drink that gives no health, mana or stats.");
+                if (ConsumableRules.KindOf(ability) == DrinkKind.Elixir && ability.Duration <= 0f)
+                    errors.Add($"'{name}' is an elixir, so it needs a duration above 0.");
+            }
             return errors;
         }
 

@@ -30,6 +30,41 @@ namespace Voxelforge.Gameplay
             return stats.Length > 0 ? $"{prefix}{SlotName(slot)}: {stats}" : prefix + SlotName(slot);
         }
 
+        /// <summary>"+20 Armor, +5 Power", leaving out the zeros: what an elixir adds.</summary>
+        public static string Bonus(GearStats stats)
+        {
+            var text = new StringBuilder();
+            AppendBonus(text, "Armor", stats.armor);
+            AppendBonus(text, "Stamina", stats.stamina);
+            AppendBonus(text, "Power", stats.power);
+            return text.ToString();
+        }
+
+        static void AppendBonus(StringBuilder text, string name, int value)
+        {
+            if (value == 0)
+                return;
+            if (text.Length > 0)
+                text.Append(", ");
+            text.Append('+').Append(value).Append(' ').Append(name);
+        }
+
+        /// <summary>What drinking <paramref name="ability"/> does (Roadmap 5.8): "Heals 60 health", "+20 Armor for 5 min".</summary>
+        public static string Drink(AbilityDefinition ability)
+        {
+            switch (ConsumableRules.KindOf(ability))
+            {
+                case DrinkKind.HealthPotion:
+                    return $"Heals {ability.HealAmount:0} health";
+                case DrinkKind.ManaPotion:
+                    return $"Restores {ability.ManaAmount:0} mana";
+                case DrinkKind.Elixir:
+                    return $"{Bonus(ability.Buff)} for {ability.Duration / 60f:0.#} min";
+                default:
+                    return "";
+            }
+        }
+
         /// <summary>"Armor 14, Stamina 6, Power 3", leaving out the zeros; "" when all are zero.</summary>
         public static string Stats(GearStats stats)
         {

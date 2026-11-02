@@ -191,7 +191,7 @@ namespace Voxelforge.Gameplay
             _blowPending = true;
             _blowAt = now + Mathf.Min(impactDelay, seconds * 0.5f);
             _blowFoe = foe;
-            _blowDamage = weapon.Weapon.damage * GearRules.PowerScale(_bag.GearStats.power);
+            _blowDamage = weapon.Weapon.damage * GearRules.PowerScale(_bag.CombatStats.power);
             SwungRpc(Mathf.Min(0.6f, seconds * 0.9f));
         }
 

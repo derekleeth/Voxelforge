@@ -38,6 +38,7 @@ namespace Voxelforge.Gameplay
         const float DropForward = 2.5f;
         const float DropUp = 3f;
         PlayerController _player;
+        PlayerConsumables _consumables;
 
         /// <summary>Owner only: the host put a picked-up stack in this bag (item, count), for the combat text (4.4).</summary>
         public event Action<ushort, int> PickedUp;
@@ -68,6 +69,15 @@ namespace Voxelforge.Gameplay
         /// <summary>Everything the worn gear gives, added up.</summary>
         public GearStats GearStats => GearStats.Sum(_gear.Value, Rules);
 
+        /// <summary>
+        /// What the rules use: the worn gear plus any elixir on top of it (Roadmap 5.8). Comparing gear uses
+        /// <see cref="GearStats"/>, which never changes with what the hero drank.
+        /// </summary>
+        public GearStats CombatStats => _consumables != null ? GearStats + _consumables.ElixirStats : GearStats;
+
+        /// <summary>Host only: something in the bag changed, so the potion slots may need to (Roadmap 5.8).</summary>
+        public event Action ServerContentsChanged;
+
         /// <summary>Every PC: the worn gear changed (Roadmap 5.5). The host uses it to update max health.</summary>
         public event Action<EquippedGear> GearChanged;
 
@@ -90,6 +100,7 @@ namespace Voxelforge.Gameplay
         {
             _server = new ItemStacks(BaseSlots, Rules);
             _player = GetComponent<PlayerController>();
+            _consumables = GetComponent<PlayerConsumables>();
         }
 
         public override void OnNetworkSpawn()
@@ -590,6 +601,7 @@ namespace Voxelforge.Gameplay
                     _synced[index] = _server.Stacks[index];
             }
             ResizeSynced();
+            ServerContentsChanged?.Invoke();
         }
 
         void SyncAll()
@@ -597,6 +609,7 @@ namespace Voxelforge.Gameplay
             _synced.Clear();
             foreach (ItemStack stack in _server.Stacks)
                 _synced.Add(stack);
+            ServerContentsChanged?.Invoke();
         }
     }
 

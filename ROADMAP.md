@@ -122,9 +122,56 @@ Voxelforge takes place in an original high-fantasy world inspired by the spirit 
   - [x] **B. Station blocks:** Blocks 22-25 (Alchemy Table, Forge, Anvil, Tanning Rack): blast-proof solid props with stand-in models from `build_props.py`, their items and Workbench recipes, and the Forge's warm light. `PropsBuilder` adds to the `RecipeBook` instead of replacing it.
   - [x] **C. Crafting window:** A tested `CraftingList` with tabs General / Alchemy / Blacksmithing / Leatherworking, opening on the nearest station's tab and switched with left/right on the move controls. The hero stands still while it's open. Required skill, greyed-out recipes and skill-up text.
   - [x] **D. Blacksmithing & Leatherworking data:** `CraftingBuilder` (Voxelforge > Build Crafting): bars and cured leather, plate and weapons in Copper, Iron and Manaforged, leather armor in 3 tiers, and bag upgrades (Satchel → Pack → Rucksack) from hides. Stand-in models in `build_loot.py`. Tests.
-  - [ ] **E. Alchemy & potion slots:** Health and mana potions in 3 tiers through the 4.1 ability framework (`AbilityDelivery.Drink`), with one shared 30 s cooldown. Action bar slot 7 drinks the best health potion owned and slot 8 the best mana potion, with count badges; Use in the bag works too. `PlayerConsumables` on the host. Tests.
-  - [ ] **F. Elixirs & feedback:** 3 elixirs (Armor, Stamina, Power): one at a time for 5 minutes, added on top of worn gear's stats, with a buff chip in the owner's HUD. Crafting and drinking sounds.
-  - [ ] **G. Play-test, tune & wrap-up:** A split-screen play-test (a smith, and a tanner who brews), tune `CraftingBuilder`, 120+ FPS with both windows open, DECISIONS.md D-039 + DEVLOG.md, then tick 5.8.
+  - [x] **E. Alchemy & potion slots:** Health and mana potions in 3 tiers through the 4.1 ability framework (`AbilityDelivery.Drink`), with one shared 30 s cooldown. Action bar slot 7 drinks the best health potion owned and slot 8 the best mana potion, with count badges; Use in the bag works too. `PlayerConsumables` on the host. Tests.
+  - [x] **F. Elixirs & feedback:** 3 elixirs (Armor, Stamina, Power): one at a time for 5 minutes, added on top of worn gear's stats, with a buff chip in the owner's HUD. Crafting and drinking sounds.
+  - [ ] **G. Play-test, tune & wrap-up:** A split-screen play-test (a smith, and a tanner who brews), tune `CraftingBuilder`, 120+ FPS with both windows open, DECISIONS.md D-039 + DEVLOG.md, then tick 5.8. Nothing in 5.8 has been play-tested by hand yet, so this list covers steps A to F. **Handy keys:** **Ctrl+F1** gives every hero +25 in each profession (Ctrl+Shift+F1: back to 1). **F2** gives a kit: one of every piece of gear, 5 of each material, potion and elixir. **Interact** opens the crafting window, **B** the bag.
+    - **Set-up & stations (steps A, B)**
+      - [ ] An old save (format 11 or earlier) loads, with crafting skills at 1 and no elixir running.
+      - [ ] At a Workbench: Alchemy Table (4 Logs, 2 Stone, 2 Sunpetal), Forge (12 Stone, 4 Logs), Tanning Rack (6 Logs, 2 Boar Hides) and Anvil (6 Copper Bars, 2 Logs, so the Forge comes first) all craft and place.
+      - [ ] Each station looks right up close; the Forge has its fire and warm light. Spells and craters can't break them. Forge and Anvil need a pick, Alchemy Table and Tanning Rack an axe.
+      - [ ] A recipe only works within 4 blocks of its station, and needs the skill it names.
+      - [ ] The bag's Professions panel shows six skills on two rows, and they go up as you craft.
+    - **Crafting window (step C)**
+      - [ ] It opens on the nearest station's tab, and stays on the last tab with no station near.
+      - [ ] Left/right changes tab, one tab per push even when held. Up/down moves through recipes and repeats when held. Works on keyboard, right-hand keys and gamepad.
+      - [ ] The hero stands still while it's open. Opening the bag or map, or being knocked out, closes it.
+      - [ ] Recipes too hard for you are greyed out and say what they need. The dot goes orange, yellow, green, then grey as a recipe gets easier.
+      - [ ] Gear shows its stats and potions say what they do before you make them. "Blacksmithing 2!" appears when a skill goes up.
+      - [ ] Each player's window stays in their own half of the screen, in both Classic and Dynamic split.
+    - **Blacksmithing & Leatherworking (step D)**
+      - [ ] Forge: Copper Bar (Copper Ore), Iron Bar (Iron Ore), Manaforged Bar (Iron Bars + Mana Crystal).
+      - [ ] Anvil: helm, breastplate, legplates, sabatons, weapon and kite shield in Copper, Iron and Manaforged. Plate is mostly Armor.
+      - [ ] Tanning Rack: Cured, Wolfhide and Stormhide Leather, then cap, vest, breeches and boots in each tier. Leather is mostly Stamina and Power.
+      - [ ] Bags upgrade in order: Woven Satchel, then Satchel + leather makes a Traveler's Pack, then Pack + leather + Mana Crystals makes a Delver's Rucksack.
+      - [ ] All 30 crafted pieces can be worn and show on the hero (both races): Copper and Cured white, Iron and Wolfhide blue, Manaforged and Stormhide purple. Crafted weapons swing with Mine.
+      - [ ] Ore blocks now sound like stone when walked on and mined.
+    - **Potions (step E)**
+      - [ ] Alchemy Table: Minor Healing (skill 1), Minor Mana (8), Healing (25), Mana (30), Greater Healing (50), Greater Mana (55). Potions stack to 20.
+      - [ ] Slots **7** and **8** (right keyboard N7/N8; gamepad hold B + down / left) show the best health and mana potion you own, with a count badge. With none: the Minor potion, dark, with a 0.
+      - [ ] Drinking works from the slot and with Use in the bag (Use picks that exact potion, even a weaker one).
+      - [ ] Healing heals 60 / 120 / 220 and shows the green number. Mana gives 50 / 90 / 150 and shows "+90 mana".
+      - [ ] Drinking any potion starts the 30 s cooldown on both slots, including the other kind.
+      - [ ] Refusals in the drinker's own view, keeping the potion: HEALTH IS FULL!, MANA IS FULL!, NONE LEFT!, NOT READY!, ALREADY CASTING!
+      - [ ] When the best tier runs out, the slot drops to the next tier by itself. Changing class or race keeps the potions in their slots.
+      - [ ] Can't drink while knocked out. Sending a potion to your partner or storing it in a chest changes the slots straight away.
+      - [ ] A potion's burst and gulp are seen and heard by the partner nearby. Bottles look right in the bag, in the hand and dropped.
+    - **Elixirs (step F)**
+      - [ ] Alchemy Table: Elixir of Ironhide (skill 35, +25 Armor), Vigor (42, +20 Stamina), Embers (65, +20 Power).
+      - [ ] Use in the bag drinks one, and a chip above the right end of your action bar shows its icon, bonus and time from 5:00, turning red for the last 30 s. Only in your own view, and clear of the cast bar.
+      - [ ] Ironhide: mobs hit softer. Vigor: max health goes up 40 and comes back down when it ends. Embers: spell, wand and weapon damage, heals and shields are 20% stronger.
+      - [ ] The bag's stat totals include the elixir, but gear comparisons don't.
+      - [ ] Only one at a time: a second elixir replaces the first, and the same one restarts its 5:00.
+      - [ ] Save and quit with an elixir running: it comes back with the time it had left (save format 12).
+      - [ ] Knocked out with an elixir running: it keeps going.
+    - **Sounds (step F)**
+      - [ ] Each station sounds different when crafting: Workbench saw and mallet, Alchemy bubbles and glass, Forge bellows and hiss, Anvil three hammer strikes, Tanning Rack creak and needle. The partner hears it nearby.
+      - [ ] Potion: cork, three gulps, a glint. Elixir: the same with a rising shimmer. None too loud when spammed?
+    - **Tuning & wrap-up (talk it over)**
+      - [ ] Is climbing each skill from 1 to 100 fun, or a grind? Are the costs fair given how fast herbs regrow (300 s)?
+      - [ ] Are potion amounts and the 30 s cooldown right for a fight? Would you actually drink an elixir?
+      - [ ] Mana Crystal and Iron can be found in reasonable time (Derek's copper-only run, also in 5.7 step F).
+      - [ ] F4: 120+ FPS with both players' crafting windows open.
+      - [ ] Write DECISIONS.md D-039 and DEVLOG.md, then tick 5.8.
 - [ ] **5.9 Gathering, Crafting & Gear Art (Creative):** Create 3+ herb models, 3 ore tiers, crafting-station props, potion bottles, and one craftable armor set + weapon per class.
 - [ ] **5.10 Multi-Phase Dungeon Boss (Creative):** Model, animate, and script 1 multi-phase Dungeon Boss inside the 5.4 stamped boss arena with telegraph attacks, phase transitions, 5.3 threat-table targeting, and boss loot drops (5.5).
 

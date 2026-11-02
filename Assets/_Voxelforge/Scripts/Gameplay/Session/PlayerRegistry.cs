@@ -155,6 +155,9 @@ namespace Voxelforge.Gameplay
             player.TryGetComponent(out PlayerHearth hearth);
             if (profile != null && hearth != null)
                 hearth.ServerRestore(profile.HasHome, profile.HomeBlock);
+            // The elixir before the class too (Roadmap 5.8), for its Stamina.
+            if (profile != null && player.TryGetComponent(out PlayerConsumables consumables))
+                consumables.ServerRestoreElixir(profile.ElixirAbility, profile.ElixirSecondsLeft);
             // The level before the class (Roadmap 5.6), so the pools the class sets include it.
             if (player.TryGetComponent(out PlayerLevel heroLevel))
                 heroLevel.ServerRestore(profile != null ? profile.Level : LevelState.Start);

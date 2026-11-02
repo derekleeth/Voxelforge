@@ -65,6 +65,12 @@ namespace Voxelforge.Gameplay
         /// <summary>Their gathering skills (Roadmap 5.7). Saves from before 5.7 load at 1 in everything.</summary>
         public ProfessionSkills Professions = ProfessionSkills.Start;
 
+        /// <summary>The elixir they're under (Roadmap 5.8), as an ability ID; none in saves from before it.</summary>
+        public ushort ElixirAbility;
+
+        /// <summary>How long <see cref="ElixirAbility"/> has left, in seconds.</summary>
+        public float ElixirSecondsLeft;
+
         public PlayerProfile Clone() => new PlayerProfile
         {
             Uuid = Uuid,
@@ -83,6 +89,8 @@ namespace Voxelforge.Gameplay
             LootedCaches = new HashSet<int3>(LootedCaches),
             Level = Level,
             Professions = Professions,
+            ElixirAbility = ElixirAbility,
+            ElixirSecondsLeft = ElixirSecondsLeft,
         };
     }
 }

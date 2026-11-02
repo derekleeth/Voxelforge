@@ -29,6 +29,7 @@ namespace Voxelforge.Gameplay
         PlayerRace _race;
         PlayerBlockBag _bag;
         PlayerLevel _level;
+        PlayerConsumables _consumables;
         float _lastRequestTime = float.NegativeInfinity;
 
         public ClassBook Book => classes;
@@ -52,6 +53,7 @@ namespace Voxelforge.Gameplay
             _race = GetComponent<PlayerRace>();
             _bag = GetComponent<PlayerBlockBag>();
             _level = GetComponent<PlayerLevel>();
+            _consumables = GetComponent<PlayerConsumables>();
         }
 
         public override void OnNetworkSpawn()
@@ -62,6 +64,8 @@ namespace Voxelforge.Gameplay
                 _bag.GearChanged += OnGearChanged;
             if (IsServer && _level != null)
                 _level.Changed += OnLevelChanged;
+            if (IsServer && _consumables != null)
+                _consumables.ElixirChanged += RefreshPools;
         }
 
         public override void OnNetworkDespawn()
@@ -71,10 +75,12 @@ namespace Voxelforge.Gameplay
                 _bag.GearChanged -= OnGearChanged;
             if (_level != null)
                 _level.Changed -= OnLevelChanged;
+            if (_consumables != null)
+                _consumables.ElixirChanged -= RefreshPools;
             base.OnNetworkDespawn();
         }
 
-        // Stamina on worn gear (Roadmap 5.5) and the hero's level (5.6) add to the pools. Only the pools: the action bar
+        // Stamina on worn gear (Roadmap 5.5) or from an elixir (5.8) and the hero's level (5.6) add to the pools. Only the pools: the action bar
         // and a cast in progress stay as they are.
         void OnGearChanged(EquippedGear gear) => RefreshPools();
 
@@ -94,7 +100,7 @@ namespace Voxelforge.Gameplay
         {
             float health = RaceRules.Pools(definition, _race != null ? _race.Definition : null).MaxHealth;
             if (_bag != null)
-                health += GearRules.BonusHealth(_bag.GearStats.stamina);
+                health += GearRules.BonusHealth(_bag.CombatStats.stamina);
             if (_level != null)
                 health += LevelRules.BonusHealth(_level.Level, _level.Book);
             return health;

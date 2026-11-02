@@ -174,7 +174,7 @@ namespace Voxelforge.Tests
                         recipes++;
                 }
             }
-            Assert.AreEqual(5, recipes, "The Pick of Destiny, M.G.R.S., Home Totem, Delver's Rucksack and Manaforged Bar.");
+            Assert.AreEqual(6, recipes, "The Pick of Destiny, M.G.R.S., Home Totem, Delver's Rucksack, Manaforged Bar and Greater Mana Potion.");
         }
 
         // ---- Helpers ----

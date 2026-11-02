@@ -340,3 +340,9 @@ GPU occlusion culling is off in the 15:30+ build (it can wrongly hide a whole ch
 - [ ] A skill-up: two small bells (quiet, only for you).
 
 ### Notes
+
+---
+
+## Roadmap 5.8: Crafting Professions
+
+The whole 5.8 checklist (steps A-F) is under **step G of 5.8 in `ROADMAP.md`**. Tick the boxes there.

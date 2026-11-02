@@ -8,8 +8,8 @@ namespace Voxelforge.Gameplay
     /// One player's action bar (Roadmap 4.4): nine slots on a parchment strip with the mana bar above it, and the health
     /// bar above that with the shield in gold behind it (4.6). Each slot shows
     /// the spell's icon, the key that casts it for this player's controls, a cooldown sweep with the seconds left, a cold
-    /// grey when there isn't enough mana, a squash when pressed and a flash when the spell goes off. It only reads what
-    /// the host shared (<see cref="PlayerActionBar"/>, <see cref="PlayerCaster"/>).
+    /// grey when there isn't enough mana, a squash when pressed and a flash when the spell goes off. A potion's slot
+    /// (Roadmap 5.8) also shows how many are left, and goes dark with none. It only reads what the host shared (<see cref="PlayerActionBar"/>, <see cref="PlayerCaster"/>).
     /// </summary>
     sealed class ActionBarView
     {
@@ -18,6 +18,7 @@ namespace Voxelforge.Gameplay
         const float FlashSeconds = 0.35f;
         static readonly Color NoMana = new Color(0.42f, 0.48f, 0.78f);
         static readonly Color Empty = new Color(1f, 1f, 1f, 0f);
+        static readonly Color NoneLeft = new Color(0.34f, 0.34f, 0.36f);
 
         sealed class Slot
         {
@@ -27,6 +28,8 @@ namespace Voxelforge.Gameplay
             public Image Flash;
             public TextMeshProUGUI Key;
             public TextMeshProUGUI Timer;
+            public TextMeshProUGUI Count;
+            public int CountShown = -1;
             public AbilityDefinition Ability;
             public int TimerShown = -1;
             public float BounceUntil;
@@ -88,6 +91,8 @@ namespace Voxelforge.Gameplay
                 s.Key = HudWidgets.SmallLabel("Key", s.Root, skin, slot * 0.3f, new Color(1f, 0.95f, 0.8f),
                     TextAlignmentOptions.TopLeft);
                 HudWidgets.Stretch(s.Key.rectTransform, 5f);
+                s.Count = HudWidgets.SmallLabel("Count", s.Root, skin, slot * 0.34f, Color.white, TextAlignmentOptions.BottomRight);
+                HudWidgets.Stretch(s.Count.rectTransform, 5f);
                 _slots[i] = s;
             }
 
@@ -221,8 +226,8 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        public void Tick(PlayerActionBar bar, PlayerCaster caster, PlayerHealth health, PlayerLevel level, PlayerButtons buttons,
-            float now)
+        public void Tick(PlayerActionBar bar, PlayerCaster caster, PlayerHealth health, PlayerLevel level, PlayerConsumables consumables,
+            PlayerButtons buttons, float now)
         {
             TickLevel(level, now);
             PlayerButtons pressed = buttons & ~_previousButtons;
@@ -253,9 +258,13 @@ namespace Voxelforge.Gameplay
                     HudWidgets.SetColor(s.Icon, Empty);
                     SetCooldown(s, 1f, 0f);
                     HudWidgets.SetColor(s.Flash, Empty);
+                    SetCount(s, -1);
                     continue;
                 }
-                HudWidgets.SetColor(s.Icon, mana + 0.01f < ability.ManaCost ? NoMana : Color.white);
+                // Only potions count: the badge says how many are in the bag.
+                int count = ability.Delivery == AbilityDelivery.Drink && consumables != null ? consumables.CountOf(ability) : -1;
+                SetCount(s, count);
+                HudWidgets.SetColor(s.Icon, count == 0 ? NoneLeft : mana + 0.01f < ability.ManaCost ? NoMana : Color.white);
                 float ready = caster != null ? caster.CooldownReady(ability) : 1f;
                 SetCooldown(s, ready, (1f - ready) * ability.Cooldown);
                 float flash = Mathf.Clamp01((s.FlashUntil - now) / FlashSeconds);
@@ -301,6 +310,14 @@ namespace Voxelforge.Gameplay
                 _healthText.SetText("{0} / {1}  +{2}", (float)shown, (float)maxShown, (float)shieldShown);
             else
                 _healthText.SetText("{0} / {1}", (float)shown, (float)maxShown);
+        }
+
+        static void SetCount(Slot s, int count)
+        {
+            if (count == s.CountShown)
+                return;
+            s.CountShown = count;
+            s.Count.text = count >= 0 ? count.ToString() : string.Empty;
         }
 
         static void SetCooldown(Slot s, float ready, float secondsLeft)

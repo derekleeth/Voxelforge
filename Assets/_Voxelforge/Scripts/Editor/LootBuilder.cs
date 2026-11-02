@@ -42,10 +42,13 @@ namespace Voxelforge.Editor
             public readonly WeaponStats Weapon;
             /// <summary>The ability a ranged weapon shoots (the wand), as its asset path; null for everything else.</summary>
             public readonly string Shoots;
+            /// <summary>The ability a potion or elixir drinks (Roadmap 5.8), as its asset path; null for everything else.</summary>
+            public readonly string Drinks;
 
             public Item(ushort id, string model, string name, ItemCategory category, ItemRarity rarity, EquipSlot slot = EquipSlot.None,
-                GearStats stats = default, Hold hold = Hold.Upright, WeaponStats weapon = default, string shoots = null)
+                GearStats stats = default, Hold hold = Hold.Upright, WeaponStats weapon = default, string shoots = null, string drinks = null)
             {
+                Drinks = drinks;
                 Weapon = weapon;
                 Shoots = shoots;
                 Id = id;
@@ -61,6 +64,9 @@ namespace Voxelforge.Editor
 
         internal static Item Ingredient(ushort id, string model, string name, ItemRarity rarity = ItemRarity.Common) =>
             new Item(id, model, name, ItemCategory.Materials, rarity);
+
+        internal static Item Drink(ushort id, string model, string name, ItemRarity rarity, string ability) =>
+            new Item(id, model, name, ItemCategory.Consumables, rarity, drinks: ability);
 
         internal static Item Gear(ushort id, string model, string name, ItemRarity rarity, EquipSlot slot, int armor, int stamina, int power,
             Hold hold = Hold.Upright) =>
@@ -257,7 +263,7 @@ namespace Voxelforge.Editor
             serialized.FindProperty("id").intValue = item.Id;
             serialized.FindProperty("displayName").stringValue = item.Name;
             serialized.FindProperty("category").enumValueIndex = (int)item.Category;
-            serialized.FindProperty("maxStack").intValue = 0; // The category's usual: 999 materials, 1 gear.
+            serialized.FindProperty("maxStack").intValue = 0; // The category's usual: 999 materials, 20 consumables, 1 gear.
             serialized.FindProperty("bagSlots").intValue = 0;
             serialized.FindProperty("rarity").enumValueIndex = (int)item.Rarity;
             serialized.FindProperty("equipSlot").enumValueIndex = (int)item.Slot;
@@ -272,6 +278,8 @@ namespace Voxelforge.Editor
             weapon.FindPropertyRelative("flatBlade").boolValue = item.Weapon.flatBlade;
             serialized.FindProperty("ability").objectReferenceValue =
                 item.Shoots != null ? AssetDatabase.LoadAssetAtPath<AbilityDefinition>(item.Shoots) : null;
+            serialized.FindProperty("drink").objectReferenceValue =
+                item.Drinks != null ? AssetDatabase.LoadAssetAtPath<AbilityDefinition>(item.Drinks) : null;
             serialized.FindProperty("mesh").objectReferenceValue = mesh;
             // Legs and feet are worn as one piece per leg (step E): build_loot.py makes "<model>Worn".
             serialized.FindProperty("wornMesh").objectReferenceValue =

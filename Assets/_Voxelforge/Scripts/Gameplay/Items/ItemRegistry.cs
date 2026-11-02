@@ -14,6 +14,8 @@ namespace Voxelforge.Gameplay
         [SerializeField] List<ItemDefinition> items = new List<ItemDefinition>();
 
         Dictionary<ushort, ItemDefinition> _byId;
+        Dictionary<ushort, ItemDefinition> _byDrink;
+        List<ItemDefinition> _drinks;
 
         public IReadOnlyList<ItemDefinition> Items => items;
 
@@ -39,6 +41,45 @@ namespace Voxelforge.Gameplay
         {
             ability = TryGet(id, out ItemDefinition item) ? item.Ability : null;
             return ability != null;
+        }
+
+        /// <summary>What drinking the item casts, if it's a potion or elixir (Roadmap 5.8).</summary>
+        public bool TryGetDrink(ushort id, out AbilityDefinition ability)
+        {
+            ability = TryGet(id, out ItemDefinition item) ? item.Drink : null;
+            return ability != null;
+        }
+
+        /// <summary>Which item the Drink ability <paramref name="abilityId"/> uses up.</summary>
+        public bool TryGetDrinkItem(ushort abilityId, out ItemDefinition item)
+        {
+            if (_byDrink == null)
+                BuildDrinks();
+            return _byDrink.TryGetValue(abilityId, out item);
+        }
+
+        /// <summary>Every potion and elixir.</summary>
+        public IReadOnlyList<ItemDefinition> Drinks
+        {
+            get
+            {
+                if (_drinks == null)
+                    BuildDrinks();
+                return _drinks;
+            }
+        }
+
+        void BuildDrinks()
+        {
+            _byDrink = new Dictionary<ushort, ItemDefinition>();
+            _drinks = new List<ItemDefinition>();
+            foreach (ItemDefinition definition in items)
+            {
+                if (definition == null || definition.Drink == null)
+                    continue;
+                _drinks.Add(definition);
+                _byDrink.TryAdd(definition.Drink.Id, definition);
+            }
         }
 
         public ItemCategory CategoryOf(ushort id) => TryGet(id, out ItemDefinition item) ? item.Category : ItemRules.DefaultCategory(id);
@@ -98,6 +139,15 @@ namespace Voxelforge.Gameplay
                     if (item.Stats.IsZero)
                         errors.Add($"'{item.DisplayName}' is worn gear with no stats.");
                 }
+                if (item.Drink != null)
+                {
+                    if (item.Category != ItemCategory.Consumables)
+                        errors.Add($"'{item.DisplayName}' is drunk, so it must be in the Consumables category.");
+                    if (item.Drink.Delivery != AbilityDelivery.Drink)
+                        errors.Add($"'{item.DisplayName}' is drunk, but its ability '{item.Drink.DisplayName}' isn't a Drink.");
+                    foreach (string problem in AbilityBook.Check(item.Drink))
+                        errors.Add($"'{item.DisplayName}' is drunk: {problem}");
+                }
                 if (item.Ability != null)
                 {
                     foreach (string problem in AbilityBook.Check(item.Ability))
@@ -116,7 +166,12 @@ namespace Voxelforge.Gameplay
             return errors;
         }
 
-        void OnValidate() => _byId = null;
+        void OnValidate()
+        {
+            _byId = null;
+            _byDrink = null;
+            _drinks = null;
+        }
 
         /// <summary>Builds a registry in code, for tests and tools.</summary>
         internal static ItemRegistry Create(IEnumerable<ItemDefinition> definitions)

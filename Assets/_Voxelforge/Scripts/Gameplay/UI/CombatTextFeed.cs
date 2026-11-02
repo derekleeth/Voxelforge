@@ -64,6 +64,8 @@ namespace Voxelforge.Gameplay
                 case CombatTextKind.Shielded:
                 case CombatTextKind.XpGained:
                 case CombatTextKind.SkillUp:
+                case CombatTextKind.ManaRestored:
+                case CombatTextKind.ElixirDrunk:
                     return 1.4f;
                 default:
                     return 1f;

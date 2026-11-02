@@ -209,7 +209,7 @@ namespace Voxelforge.Gameplay
         {
             // Worn Power strengthens the spell (Roadmap 5.5).
             if (TryGetComponent(out PlayerBlockBag bag))
-                amount *= GearRules.PowerScale(bag.GearStats.power);
+                amount *= GearRules.PowerScale(bag.CombatStats.power);
             TargetDamage result = targets.ServerDamage(target, amount, _player.PlayerId, ability.ThreatScale);
             if (result.Dealt > 0f)
                 _cues.ServerSend(AbilityCue.HitTarget(ability.Id, target, result));

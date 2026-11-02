@@ -18,6 +18,7 @@ MonoBehaviour:
   element: 7
   manaCost: 20
   cooldown: 12
+  cooldownGroup: 0
   castTime: 0
   castWhileMoving: 0
   range: 20
@@ -34,6 +35,11 @@ MonoBehaviour:
   pulseInterval: 1
   aimCone: 12
   manaRegenBonus: 0
+  manaAmount: 0
+  buff:
+    armor: 0
+    stamina: 0
+    power: 0
   earthHeight: 0
   earthWidth: 0
   earthStep: 0.08

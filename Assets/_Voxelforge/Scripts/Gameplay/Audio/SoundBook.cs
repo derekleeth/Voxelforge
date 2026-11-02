@@ -85,6 +85,13 @@ namespace Voxelforge.Gameplay
         [Tooltip("Roadmap 5.7: a profession going up a point, for the gatherer.")]
         [SerializeField] AudioClip skillUp;
 
+        [Header("Crafting (Roadmap 5.8), on every PC")]
+        [SerializeField] AudioClip craftWorkbench;
+        [SerializeField] AudioClip craftAlchemy;
+        [SerializeField] AudioClip craftForge;
+        [SerializeField] AudioClip craftAnvil;
+        [SerializeField] AudioClip craftTanning;
+
         [Header("Loops")]
         [SerializeField] AmbientLoop[] loops = Array.Empty<AmbientLoop>();
 
@@ -106,6 +113,16 @@ namespace Voxelforge.Gameplay
         public AudioClip HerbPick => herbPick;
         public AudioClip SkinSlice => skinSlice;
         public AudioClip SkillUp => skillUp;
+
+        /// <summary>The sound of something being made at <paramref name="station"/> (Roadmap 5.8).</summary>
+        public AudioClip CraftSound(CraftStation station) => station switch
+        {
+            CraftStation.AlchemyTable => craftAlchemy,
+            CraftStation.Forge => craftForge,
+            CraftStation.Anvil => craftAnvil,
+            CraftStation.TanningRack => craftTanning,
+            _ => craftWorkbench,
+        };
 
         /// <summary>The sound of loot of <paramref name="rarity"/> going into a bag (Roadmap 5.5): the plain pop for Common.</summary>
         public AudioClip LootPickup(ItemRarity rarity)

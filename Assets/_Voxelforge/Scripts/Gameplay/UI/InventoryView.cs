@@ -399,7 +399,7 @@ namespace Voxelforge.Gameplay
                     c.Count.SetText(empty);
                 HudWidgets.SetColor(c.Glow, model.CursorGear == i ? new Color(teamColor.r, teamColor.g, teamColor.b, pulse) : Clear);
             }
-            GearStats totals = bag.GearStats;
+            GearStats totals = bag.CombatStats;
             if (!totals.Equals(_totalsShown))
             {
                 _totalsShown = totals;
@@ -546,6 +546,9 @@ namespace Voxelforge.Gameplay
                 int bagSlots = rules.BagSlotsOf(stack.ItemId);
                 string kind = bagSlots > 0 ? $"Bag, +{bagSlots} slots" : GearText.Kind(rules, stack.ItemId);
                 text = model.CursorSocket >= 0 || model.CursorGear >= 0 ? $"{name}  ({kind}) - Use to take off" : $"{name}  ({kind})";
+                // A potion or elixir: what it does (Roadmap 5.8).
+                if (inventory.Bag.Items != null && inventory.Bag.Items.TryGetDrink(stack.ItemId, out AbilityDefinition drink))
+                    text = $"{name}  ({GearText.Drink(drink)})";
                 // Gear in the bag or a chest: how it compares with what's worn in that slot (Roadmap 5.5).
                 if (model.CursorGear < 0 && model.CursorSocket < 0)
                 {

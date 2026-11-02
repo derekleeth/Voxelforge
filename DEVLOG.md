@@ -5,6 +5,36 @@
 
 ---
 
+## 2026-11-02 - Session 2: Bottoms Up! 🧪 Roadmap 5.8 steps E and F
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- **Six potions at the Alchemy Table:** Minor, normal and Greater, in Healing (60 / 120 / 220 health) and Mana (50 / 90 / 150 mana).
+  - **Slot 7** always holds your best health potion and **slot 8** your best mana potion, with a number showing how many are left. With none, the slot shows a dark bottle and a 0, so you remember what goes there.
+  - You can also press **Use** on a bottle in the bag, which drinks exactly that one.
+  - All potions share one **30 second cooldown**, so you can't chug your way out of every fight.
+  - The game won't let you waste one: it says HEALTH IS FULL! and keeps the bottle.
+- **Three elixirs:** Ironhide (+25 Armor), Vigor (+20 Stamina) and Embers (+20 Power). They last 5 minutes, only one at a time, and add on top of your gear. A little chip over your action bar shows the time left, and it turns red near the end.
+- If you quit with an elixir running, it comes back with the time it had left (save format 12).
+- **New sounds:** drinking has a cork pop and three gulps. Each station has its own crafting sound: saw and mallet, bubbles, bellows, hammer on anvil, and a creak with a needle.
+- Stand-in bottle models, and comic-style icons for the action bar. F2's kit now includes potions and elixirs.
+- Step G now has the whole 5.8 test list, ready for a play-test.
+
+### How we checked it
+- All 728 automated tests pass, including ones that load saves from every older format.
+- We also ran the real game in the editor, with one hero and commands sent in by Claude: a potion was refused at full health, then healed and used up one bottle. Slot 7 dropped to the next-best potion, the cooldown was shared, an elixir raised max health and wore off, and an elixir came back after a save and reload. The save from before that test was put back afterwards.
+- **Not tried yet:** pressing the real keys and gamepad, hearing the sounds, and split-screen. Those are on the step G list.
+
+### What we learned
+- Potions fit neatly into the spell system: a "Drink" is just an instant ability. That gave us the cooldown sweep, icons and refusal messages for free.
+- Elixir stats go in one new total, `CombatStats`. The gear comparison in the bag still uses worn gear only, so drinking an elixir doesn't make a helmet look better or worse.
+- Old-save tests build old files by cutting the newest parts off a new one, so every new save section needs a matching cut in the tests.
+
+### What's next
+- **5.8 step G:** the split-screen play-test, tuning, then D-039 and ticking 5.8.
+
+---
+
 ## 2026-11-01 - Session 1 (part 39): Smelt It, Hammer It, Wear It ⚒️🧵 Roadmap 5.8 steps C and D
 **Phase:** 5 - Monsters, Dungeons & Bosses
 

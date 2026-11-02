@@ -118,6 +118,17 @@ namespace Voxelforge.Gameplay
         public const ushort WolfhideLeather = 1331;
         public const ushort StormhideLeather = 1332;
 
+        // Potions and elixirs (Roadmap 5.8): brewed at the Alchemy Table. AbilityBuilder sets what they do.
+        public const ushort MinorHealingPotion = 1340;
+        public const ushort HealingPotion = 1341;
+        public const ushort GreaterHealingPotion = 1342;
+        public const ushort MinorManaPotion = 1343;
+        public const ushort ManaPotion = 1344;
+        public const ushort GreaterManaPotion = 1345;
+        public const ushort ElixirOfIronhide = 1350;
+        public const ushort ElixirOfVigor = 1351;
+        public const ushort ElixirOfEmbers = 1352;
+
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;
     }

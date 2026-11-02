@@ -82,7 +82,7 @@ namespace Voxelforge.Gameplay
                 return default;
             // Worn Armor cuts every hit (Roadmap 5.5).
             if (_bag != null)
-                amount = GearRules.AfterArmor(amount, _bag.GearStats.armor);
+                amount = GearRules.AfterArmor(amount, _bag.CombatStats.armor);
             DamageResult result = _rules.Damage(amount, Time.time, _rules.Max * Mathf.Clamp01(floorShare));
             if (result.Taken > 0f)
                 Tell(HealthEventKind.Damaged, result.Taken, source, abilityId, sourcePosition);

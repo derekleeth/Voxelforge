@@ -50,6 +50,7 @@ GameObject:
   - component: {fileID: 3004604667586978743}
   - component: {fileID: 6260979436986370049}
   - component: {fileID: 6210970179694210606}
+  - component: {fileID: 8563384181470579965}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -278,7 +279,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerCrafter
   ShowTopMostFoldoutHeaderGroup: 1
   recipes: {fileID: 11400000, guid: 3f319bbb947b42a40adc0df57dbff09f, type: 2}
-  workbenchReach: 4
+  stationReach: 4
   minCraftInterval: 0.2
   messageSeconds: 2
 --- !u!114 &7809432373712665520
@@ -796,6 +797,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerGatherer
   ShowTopMostFoldoutHeaderGroup: 1
   herbSearch: 1
+  bodyAimAngle: 30
+  bodyReachBonus: 1
+--- !u!114 &8563384181470579965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8490d323df48edb42b54bb0a74384ddf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerConsumables
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

@@ -62,5 +62,24 @@ namespace Voxelforge.Gameplay
 
         /// <summary>What the Shardglass Wand shoots (Roadmap 5.5 step G): a quick crystal bolt, for foes only.</summary>
         public const ushort ShardBolt = 17;
+
+        // Potions (Roadmap 5.8): drunk from action bar slots 7 and 8, or with Use in the bag.
+        public const ushort MinorHealingPotion = 18;
+        public const ushort HealingPotion = 19;
+        public const ushort GreaterHealingPotion = 20;
+        public const ushort MinorManaPotion = 21;
+        public const ushort ManaPotion = 22;
+        public const ushort GreaterManaPotion = 23;
+
+        // Elixirs (Roadmap 5.8): one at a time, for 5 minutes.
+        public const ushort ElixirOfIronhide = 24;
+        public const ushort ElixirOfVigor = 25;
+        public const ushort ElixirOfEmbers = 26;
+
+        /// <summary>
+        /// The cooldown every potion shares (Roadmap 5.8, <see cref="AbilityDefinition.CooldownKey"/>). Not an ability
+        /// itself, so it's well above their IDs.
+        /// </summary>
+        public const ushort PotionCooldown = 1000;
     }
 }

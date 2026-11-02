@@ -484,6 +484,66 @@ def second_wind():
     return (0.4, 0.85, 0.5)
 
 
+# ---- Roadmap 5.8: potions and elixirs ----
+
+def flask_icon(prefix, shadow, mid, light, backdrop_colour, tier):
+    """A round bottle of liquid: bigger for each tier, with a gold band on the top one."""
+    liquid = toon(f"{prefix}_Liquid", shadow, mid, light)
+    glass = toon("Flask_Glass", (0.45, 0.6, 0.65), (0.75, 0.88, 0.9), (1.0, 1.0, 1.0))
+    cork = toon("Flask_Cork", (0.35, 0.22, 0.1), (0.62, 0.42, 0.22), (0.82, 0.62, 0.38))
+    gold = toon("Flask_Gold", (0.55, 0.32, 0.05), (0.92, 0.66, 0.15), (1.0, 0.92, 0.5))
+    size = (0.72, 0.85, 1.0)[tier - 1]
+    dress(place(sphere(f"{prefix}Body", 0.66 * size), (0, 0, -0.25)), liquid, smooth=True)
+    dress(cylinder(f"{prefix}Neck", 0.22 * size, 0.6 * size, (0, 0, -0.25 + 0.8 * size)), glass, 0.03, smooth=True)
+    dress(cylinder(f"{prefix}Lip", 0.3 * size, 0.1 * size, (0, 0, -0.25 + 1.08 * size)), glass, 0.03, smooth=True)
+    dress(cylinder(f"{prefix}Cork", 0.2 * size, 0.3 * size, (0, 0, -0.25 + 1.26 * size)), cork, 0.03, smooth=True)
+    # A highlight on the glass, and sparkles for each tier above the first.
+    dress(place(sphere(f"{prefix}Shine", 0.13 * size), (-0.26 * size, -0.55 * size, -0.02)), glass, 0.02, smooth=True)
+    if tier == 3:
+        dress(cylinder(f"{prefix}Band", 0.67 * size, 0.14, (0, 0, -0.25)), gold, 0.03, smooth=True)
+    for i, (x, z) in enumerate(((0.8, 0.55), (-0.82, 0.3))[:tier - 1]):
+        spark = primitive(bpy.ops.mesh.primitive_ico_sphere_add, f"{prefix}Spark{i}", subdivisions=1, radius=0.11)
+        dress(place(spark, (x, -0.3, z), (30, 45, 0)), gold, 0.025)
+    return backdrop_colour
+
+
+HEAL_TONES = ((0.5, 0.04, 0.05), (0.88, 0.14, 0.12), (1.0, 0.5, 0.4), (0.95, 0.25, 0.2))
+MANA_TONES = ((0.05, 0.1, 0.5), (0.15, 0.38, 0.95), (0.55, 0.8, 1.0), (0.25, 0.5, 1.0))
+
+
+def elixir_icon(prefix, shadow, mid, light, backdrop_colour, emblem):
+    """A tall gold-footed vial, with a little picture of what it does beside it."""
+    liquid = toon(f"{prefix}_Liquid", shadow, mid, light)
+    gold = toon("Flask_Gold", (0.55, 0.32, 0.05), (0.92, 0.66, 0.15), (1.0, 0.92, 0.5))
+    glass = toon("Flask_Glass", (0.45, 0.6, 0.65), (0.75, 0.88, 0.9), (1.0, 1.0, 1.0))
+    x = -0.2
+    dress(cylinder(f"{prefix}Foot", 0.42, 0.12, (x, 0, -0.95), vertices=6), gold, 0.03)
+    dress(cylinder(f"{prefix}Body", 0.4, 1.05, (x, 0, -0.35), vertices=6), liquid, 0.035)
+    dress(cylinder(f"{prefix}Collar", 0.3, 0.12, (x, 0, 0.24), vertices=6), gold, 0.03)
+    dress(cylinder(f"{prefix}Neck", 0.17, 0.32, (x, 0, 0.44)), glass, 0.03, smooth=True)
+    dress(place(sphere(f"{prefix}Stopper", 0.2), (x, 0, 0.74)), liquid, smooth=True)
+    emblem(prefix, liquid, gold)
+    return backdrop_colour
+
+
+def emblem_shield(prefix, liquid, gold):
+    badge = prism(f"{prefix}Shield", [(-0.3, 0.3), (0.3, 0.3), (0.3, -0.05), (0, -0.4), (-0.3, -0.05)])
+    dress(place(badge, (0.62, -0.3, 0.42)), gold, 0.03)
+
+
+def emblem_heart(prefix, liquid, gold):
+    for i, x in enumerate((-0.14, 0.14)):
+        dress(place(sphere(f"{prefix}Lobe{i}", 0.18), (0.62 + x, -0.3, 0.5)), liquid, smooth=True)
+    tip = prism(f"{prefix}Tip", [(-0.31, 0.06), (0.31, 0.06), (0, -0.42)])
+    dress(place(tip, (0.62, -0.28, 0.44)), liquid, 0.03)
+
+
+def emblem_flame(prefix, liquid, gold):
+    flame = toon(f"{prefix}_Flame", (0.8, 0.25, 0.05), (1.0, 0.55, 0.1), (1.0, 0.92, 0.45))
+    outer = prism(f"{prefix}Flame", [(0, 0.5), (0.28, 0.05), (0.2, -0.3), (-0.2, -0.3), (-0.28, 0.05)])
+    dress(place(outer, (0.62, -0.3, 0.42)), flame, 0.03)
+
+
 def crest_wayfarer():
     wood = toon("Way_Wood", (0.25, 0.12, 0.05), (0.45, 0.25, 0.12), (0.65, 0.42, 0.22))
     brass = toon("Way_Brass", (0.6, 0.38, 0.05), (0.95, 0.72, 0.2), (1.0, 0.95, 0.6))
@@ -555,6 +615,16 @@ SPELLS = {
     "SecondWind": second_wind,
     "RaceWayfarer": crest_wayfarer,
     "RaceThunderhoof": crest_thunderhoof,
+    # Roadmap 5.8
+    "MinorHealingPotion": lambda: flask_icon("Heal1", *HEAL_TONES, 1),
+    "HealingPotion": lambda: flask_icon("Heal2", *HEAL_TONES, 2),
+    "GreaterHealingPotion": lambda: flask_icon("Heal3", *HEAL_TONES, 3),
+    "MinorManaPotion": lambda: flask_icon("Mana1", *MANA_TONES, 1),
+    "ManaPotion": lambda: flask_icon("Mana2", *MANA_TONES, 2),
+    "GreaterManaPotion": lambda: flask_icon("Mana3", *MANA_TONES, 3),
+    "ElixirOfIronhide": lambda: elixir_icon("Iron", (0.5, 0.28, 0.06), (0.92, 0.6, 0.2), (1.0, 0.85, 0.5), (0.95, 0.7, 0.3), emblem_shield),
+    "ElixirOfVigor": lambda: elixir_icon("Vigor", (0.05, 0.4, 0.15), (0.2, 0.8, 0.35), (0.7, 1.0, 0.65), (0.4, 1.0, 0.5), emblem_heart),
+    "ElixirOfEmbers": lambda: elixir_icon("Embers", (0.35, 0.05, 0.5), (0.8, 0.2, 0.75), (1.0, 0.65, 0.9), (1.0, 0.4, 0.75), emblem_flame),
 }
 
 

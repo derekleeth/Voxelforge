@@ -313,6 +313,12 @@ namespace Voxelforge.Gameplay
                 Say("Equipped!");
                 return;
             }
+            // A potion or elixir (Roadmap 5.8): the host decides, and says why not in the combat text.
+            if (_bag.Items != null && _bag.Items.TryGetDrink(itemId, out _) && TryGetComponent(out PlayerConsumables consumables))
+            {
+                consumables.RequestDrink(slot);
+                return;
+            }
             if (_hands != null)
             {
                 _hands.OwnerSelect(itemId);

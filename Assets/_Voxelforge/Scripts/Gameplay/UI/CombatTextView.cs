@@ -234,6 +234,16 @@ namespace Voxelforge.Gameplay
                     colour = _skin.shield;
                     size *= 0.75f;
                     break;
+                case CombatTextKind.ManaRestored:
+                    words = $"+{e.Amount} mana";
+                    colour = _skin.mana;
+                    size *= 0.85f;
+                    break;
+                case CombatTextKind.ElixirDrunk:
+                    words = $"{e.Label}!";
+                    colour = _skin.pickup;
+                    size *= 0.85f;
+                    break;
                 default:
                     words = string.Empty;
                     break;
@@ -281,6 +291,12 @@ namespace Voxelforge.Gameplay
                     return "INTERRUPTED!";
                 case CastCheck.NoTarget:
                     return "NOTHING IN RANGE!";
+                case CastCheck.NoPotion:
+                    return "NONE LEFT!";
+                case CastCheck.FullHealth:
+                    return "HEALTH IS FULL!";
+                case CastCheck.FullMana:
+                    return "MANA IS FULL!";
                 default:
                     return "CAN'T CAST THAT!";
             }

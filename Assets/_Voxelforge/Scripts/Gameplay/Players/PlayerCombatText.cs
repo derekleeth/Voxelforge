@@ -143,6 +143,13 @@ namespace Voxelforge.Gameplay
                         AbilityId = ability.Id, Element = ability.Element, Position = cue.Position,
                     });
                     break;
+                // A health potion's number comes from PlayerHealth, like any heal (Roadmap 5.8).
+                case AbilityCueKind.Released when ability.Delivery == AbilityDelivery.Drink:
+                    if (ConsumableRules.KindOf(ability) == DrinkKind.ManaPotion)
+                        Raise(new CombatTextEvent { Kind = CombatTextKind.ManaRestored, Amount = Mathf.RoundToInt(ability.ManaAmount), Position = Head });
+                    else if (ConsumableRules.KindOf(ability) == DrinkKind.Elixir)
+                        Raise(new CombatTextEvent { Kind = CombatTextKind.ElixirDrunk, Label = ability.DisplayName, Position = Head });
+                    break;
                 case AbilityCueKind.Released when ability.ManaCost > 0f && ability.ManaCost >= minManaShown:
                     Raise(new CombatTextEvent
                     {

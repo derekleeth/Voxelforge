@@ -119,8 +119,9 @@ namespace Voxelforge.Gameplay
 
         void OnCue(AbilityCue cue, AbilityDefinition ability)
         {
-            // Only spells with a cast time; an instant one's muzzle flash says enough.
-            if (ability.IsInstant)
+            // Only spells with a cast time; an instant one's muzzle flash says enough. A drink (Roadmap 5.8) has no muzzle
+            // flash, so its colour bursts from the hands.
+            if (ability.IsInstant && ability.Delivery != AbilityDelivery.Drink)
                 return;
             AbilityLook look = LookFor(ability);
             if (look == null)

@@ -76,6 +76,10 @@ namespace Voxelforge.Gameplay
         [Tooltip("Where its bolts leave the model, in the model's own space (the top of the barrel). Looks only.")]
         [SerializeField] Vector3 muzzle;
 
+        [Header("Consumable (Roadmap 5.8)")]
+        [Tooltip("The Drink ability a potion or elixir casts when it's used. None = you can't drink it.")]
+        [SerializeField] AbilityDefinition drink;
+
         public ushort Id => id;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
         public Mesh Mesh => mesh;
@@ -122,11 +126,14 @@ namespace Voxelforge.Gameplay
 
         public Vector3 Muzzle => muzzle;
 
+        /// <summary>What drinking it casts (a potion or elixir, Roadmap 5.8), or null.</summary>
+        public AbilityDefinition Drink => drink;
+
         /// <summary>Builds a definition in code, for tests and tools.</summary>
         internal static ItemDefinition Create(ushort id, string displayName, ToolPower toolPower = default,
             AbilityDefinition ability = null, ItemCategory category = ItemCategory.Auto, int maxStack = 0, int bagSlots = 0,
             ItemRarity rarity = ItemRarity.Common, EquipSlot equipSlot = EquipSlot.None, GearStats stats = default,
-            WeaponStats weapon = default)
+            WeaponStats weapon = default, AbilityDefinition drink = null)
         {
             var definition = CreateInstance<ItemDefinition>();
             definition.name = displayName;
@@ -141,6 +148,7 @@ namespace Voxelforge.Gameplay
             definition.equipSlot = equipSlot;
             definition.stats = stats;
             definition.weapon = weapon;
+            definition.drink = drink;
             return definition;
         }
     }

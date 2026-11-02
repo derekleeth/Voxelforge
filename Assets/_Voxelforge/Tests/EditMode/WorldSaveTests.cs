@@ -154,6 +154,8 @@ namespace Voxelforge.Tests
             p1.Gear = new EquippedGear { Head = ItemIds.FrostfangHood, MainHand = ItemIds.Skyrender };
             p1.LootedCaches = new HashSet<int3> { new int3(230, 71, 51), new int3(-127, 64, 524) };
             p1.Level = new LevelState(7, 55);
+            p1.ElixirAbility = AbilityIds.ElixirOfVigor;
+            p1.ElixirSecondsLeft = 123.5f;
             p1.Professions = ProfessionSkills.Start.With(ProfessionId.Mining, 42).With(ProfessionId.Skinning, 100)
                 .With(ProfessionId.Alchemy, 17).With(ProfessionId.Leatherworking, 63);
             var p2 = new PlayerProfile { Uuid = PlayerUuid.NewUuid(), Name = "Player 2", Feet = new float3(-3f, 40f, 9f), Yaw = 0f };
@@ -220,6 +222,23 @@ namespace Voxelforge.Tests
                 Assert.IsTrue(loaded.Chests.TryGetValue(chest.Key, out List<ItemStack> slots), $"Chest at {chest.Key}.");
                 CollectionAssert.AreEqual(chest.Value, slots);
             }
+        }
+
+        [Test]
+        public void WorldSave_RoundTrips_TheElixirAndItsTimeLeft()
+        {
+            WorldSave save = SampleSave();
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(WriteBytes(save), out WorldSave loaded));
+            int elixirs = 0;
+            foreach (PlayerProfile profile in loaded.Profiles.Values)
+            {
+                if (profile.ElixirAbility == AbilityIds.None)
+                    continue;
+                elixirs++;
+                Assert.AreEqual(AbilityIds.ElixirOfVigor, profile.ElixirAbility);
+                Assert.AreEqual(123.5f, profile.ElixirSecondsLeft);
+            }
+            Assert.AreEqual(1, elixirs);
         }
 
         [Test]
@@ -342,6 +361,20 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Version11Save_StillLoads_WithNoElixir_AndKeepsCraftingSkills()
+        {
+            WorldSave save = SampleSave();
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 11), out WorldSave loaded));
+            foreach (PlayerProfile want in save.Profiles.Values)
+            {
+                PlayerProfile got = loaded.Profiles[want.Uuid];
+                Assert.AreEqual(AbilityIds.None, got.ElixirAbility, "Before 5.8 step F nobody had drunk an elixir.");
+                Assert.AreEqual(0f, got.ElixirSecondsLeft);
+                Assert.AreEqual(want.Professions, got.Professions);
+            }
+        }
+
+        [Test]
         public void Version10Save_StillLoads_WithCraftingSkillsAtOne()
         {
             WorldSave save = SampleSave();
@@ -446,6 +479,8 @@ namespace Voxelforge.Tests
             {
                 profile.Level = LevelState.Start;
                 profile.Professions = ProfessionSkills.Start;
+                profile.ElixirAbility = AbilityIds.None;
+                profile.ElixirSecondsLeft = 0f;
                 if (keepV7)
                     continue;
                 profile.Gear = default;
@@ -481,6 +516,10 @@ namespace Voxelforge.Tests
         static byte[] OlderFile(WorldSave save, int version)
         {
             var body = new List<byte>(WorldSaveFile.EncodeBody(save));
+            int elixirBlock = 4 + save.Profiles.Count * (16 + 2 + 4);
+            body.RemoveRange(body.Count - 4 - elixirBlock, elixirBlock); // Elixirs (v12).
+            if (version >= 11)
+                return SaveFileBytes(body, version);
             int craftBlock = 4 + save.Profiles.Count * (16 + ProfessionSkills.Count - ProfessionSkills.GatheringCount);
             body.RemoveRange(body.Count - 4 - craftBlock, craftBlock); // Crafting skills (v11).
             if (version >= 10)
@@ -541,9 +580,9 @@ namespace Voxelforge.Tests
         {
             byte[] full = WorldSaveFile.EncodeBody(save);
             var empty = new WorldSave { Seed = save.Seed, GeneratorVersion = save.GeneratorVersion, SavedUtc = save.SavedUtc, Deltas = save.Deltas };
-            // The same body with no profiles, chests, earth, explored cells, gear, levels, skills, herbs or crafting
-            // skills is: header + deltas + 9 zero counts + end marker.
-            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4;
+            // The same body with no profiles, chests, earth, explored cells, gear, levels, skills, herbs, crafting
+            // skills or elixirs is: header + deltas + 10 zero counts + end marker.
+            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4;
             int profiles = 0;
             foreach (PlayerProfile profile in save.Profiles.Values)
                 profiles += FullProfileBytes(profile);

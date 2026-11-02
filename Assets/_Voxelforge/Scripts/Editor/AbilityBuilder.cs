@@ -29,6 +29,8 @@ namespace Voxelforge.Editor
     /// <para>The Shaman's (Roadmap 4.6): <b>Earthen Wall</b> (a 5 x 3 wall of Earthen Rock where you aim, crumbling after
     /// 30 s), <b>Wellspring Totem</b> (heals heroes within 8 m and quickens their mana) and <b>Thunderhead Totem</b>
     /// (lightning on the nearest foe within 12 m every 2 s). Totems last 20 s, one of each per Shaman.</para>
+    /// <para>The potions and elixirs (Roadmap 5.8): three tiers of health and mana potion sharing one 30 s cooldown, and
+    /// three elixirs lasting 5 minutes. <c>CraftingBuilder</c> makes the items that drink them.</para>
     /// <para>And the classes (Roadmap 4.6) in <c>Data/Classes/</c>: each <see cref="ClassDefinition"/>, its action bar
     /// loadout and the <see cref="ClassBook"/>, in the order the class window shows them.</para>
     /// <para>The races (Roadmap 4.7) in <c>Data/Races/</c>, with their racials: <b>Hoofquake</b> (the Thunderhoof's stomp,
@@ -41,6 +43,18 @@ namespace Voxelforge.Editor
         // Roadmap 5.5 step G: weapons. The strike is never cast; it's how a melee hit looks and sounds.
         public const string WeaponStrikePath = AbilityDir + "/WeaponStrike.asset";
         public const string ShardBoltPath = AbilityDir + "/ShardBolt.asset";
+        // Roadmap 5.8: what each potion and elixir does. The file names are also their icons' names.
+        public const string MinorHealingPotionPath = AbilityDir + "/MinorHealingPotion.asset";
+        public const string HealingPotionPath = AbilityDir + "/HealingPotion.asset";
+        public const string GreaterHealingPotionPath = AbilityDir + "/GreaterHealingPotion.asset";
+        public const string MinorManaPotionPath = AbilityDir + "/MinorManaPotion.asset";
+        public const string ManaPotionPath = AbilityDir + "/ManaPotion.asset";
+        public const string GreaterManaPotionPath = AbilityDir + "/GreaterManaPotion.asset";
+        public const string ElixirOfIronhidePath = AbilityDir + "/ElixirOfIronhide.asset";
+        public const string ElixirOfVigorPath = AbilityDir + "/ElixirOfVigor.asset";
+        public const string ElixirOfEmbersPath = AbilityDir + "/ElixirOfEmbers.asset";
+        const float PotionCooldownSeconds = 30f;
+        const float ElixirSeconds = 300f;
         public const string ArcaneOrbPath = AbilityDir + "/ArcaneOrb.asset";
         public const string PyroblastPath = AbilityDir + "/Pyroblast.asset";
         public const string EarthShatterPath = AbilityDir + "/EarthShatter.asset";
@@ -176,6 +190,22 @@ namespace Voxelforge.Editor
                 AbilityElement.Arcane, manaCost: 0f, cooldown: 0.7f, castTime: 0f, range: 22f, aoeRadius: 0f,
                 speed: 34f, blockDamage: 0f, creatureDamage: 9f);
 
+            // Potions (Roadmap 5.8). A hero has about 100 health and mana at level 1, and about 300 health and 200 mana at
+            // level 20 in good gear.
+            AbilityDefinition minorHealing = MakePotion(MinorHealingPotionPath, AbilityIds.MinorHealingPotion, "Minor Healing Potion", health: 60f);
+            AbilityDefinition healing = MakePotion(HealingPotionPath, AbilityIds.HealingPotion, "Healing Potion", health: 120f);
+            AbilityDefinition greaterHealing = MakePotion(GreaterHealingPotionPath, AbilityIds.GreaterHealingPotion, "Greater Healing Potion", health: 220f);
+            AbilityDefinition minorMana = MakePotion(MinorManaPotionPath, AbilityIds.MinorManaPotion, "Minor Mana Potion", mana: 50f);
+            AbilityDefinition manaPotion = MakePotion(ManaPotionPath, AbilityIds.ManaPotion, "Mana Potion", mana: 90f);
+            AbilityDefinition greaterMana = MakePotion(GreaterManaPotionPath, AbilityIds.GreaterManaPotion, "Greater Mana Potion", mana: 150f);
+            // Elixirs: about what one good piece of gear gives. 20 Stamina is 40 health, and 20 Power is 20% stronger spells.
+            AbilityDefinition ironhide = MakeElixir(ElixirOfIronhidePath, AbilityIds.ElixirOfIronhide, "Elixir of Ironhide",
+                "Your skin turns tough as boiled leather.", new GearStats(25, 0, 0));
+            AbilityDefinition vigor = MakeElixir(ElixirOfVigorPath, AbilityIds.ElixirOfVigor, "Elixir of Vigor",
+                "Cold, clean strength, like mountain air.", new GearStats(0, 20, 0));
+            AbilityDefinition embers = MakeElixir(ElixirOfEmbersPath, AbilityIds.ElixirOfEmbers, "Elixir of Embers",
+                "It burns going down, and your spells burn with it.", new GearStats(0, 0, 20));
+
             var book = LoadOrCreate<AbilityBook>(BookPath);
             var serialized = new SerializedObject(book);
             SerializedProperty list = serialized.FindProperty("abilities");
@@ -183,6 +213,7 @@ namespace Voxelforge.Editor
             {
                 manaBolt, arcaneOrb, pyroblast, earthShatter, runeHammer, bulwarkRune, hallowedForge, stoneSpear, risingPillar,
                 earthenWall, wellspring, thunderhead, hoofquake, secondWind, oathbrand, weaponStrike, shardBolt,
+                minorHealing, healing, greaterHealing, minorMana, manaPotion, greaterMana, ironhide, vigor, embers,
             };
             list.arraySize = all.Length;
             for (int i = 0; i < all.Length; i++)
@@ -302,6 +333,19 @@ namespace Voxelforge.Editor
                 castLoop: null, release: "BoltFire", impact: "BoltImpact", releaseVolume: 0.5f, impactVolume: 0.6f,
                 debrisChunks: 0, shake: 0f, blastLight: 0f, maxDistance: 35f);
 
+            // Drinks: a burst from the hands in the liquid's colour, with a cork pop and a gulp; elixirs shimmer too.
+            var healRed = new Color(1f, 0.25f, 0.2f);
+            var manaBlue = new Color(0.25f, 0.55f, 1f);
+            AbilityLook minorHealingLook = MakeDrinkLook("MinorHealingPotionLook", minorHealing, healRed, "PotionDrink");
+            AbilityLook healingLook = MakeDrinkLook("HealingPotionLook", healing, healRed, "PotionDrink");
+            AbilityLook greaterHealingLook = MakeDrinkLook("GreaterHealingPotionLook", greaterHealing, healRed, "PotionDrink");
+            AbilityLook minorManaLook = MakeDrinkLook("MinorManaPotionLook", minorMana, manaBlue, "PotionDrink");
+            AbilityLook manaPotionLook = MakeDrinkLook("ManaPotionLook", manaPotion, manaBlue, "PotionDrink");
+            AbilityLook greaterManaLook = MakeDrinkLook("GreaterManaPotionLook", greaterMana, manaBlue, "PotionDrink");
+            AbilityLook ironhideLook = MakeDrinkLook("ElixirOfIronhideLook", ironhide, new Color(0.95f, 0.7f, 0.3f), "ElixirDrink");
+            AbilityLook vigorLook = MakeDrinkLook("ElixirOfVigorLook", vigor, new Color(0.4f, 1f, 0.5f), "ElixirDrink");
+            AbilityLook embersLook = MakeDrinkLook("ElixirOfEmbersLook", embers, new Color(1f, 0.4f, 0.75f), "ElixirDrink");
+
             var lookBook = LoadOrCreate<AbilityLookBook>(LookBookPath);
             serialized = new SerializedObject(lookBook);
             serialized.FindProperty("defaultLook").objectReferenceValue = manaBoltLook;
@@ -311,6 +355,8 @@ namespace Voxelforge.Editor
                 manaBoltLook, arcaneOrbLook, pyroblastLook, earthShatterLook, runeHammerLook, bulwarkLook, hallowedLook,
                 stoneSpearLook, risingPillarLook, earthenWallLook, wellspringLook, thunderheadLook, hoofquakeLook,
                 secondWindLook, oathbrandLook, weaponStrikeLook, shardBoltLook,
+                minorHealingLook, healingLook, greaterHealingLook, minorManaLook, manaPotionLook, greaterManaLook,
+                ironhideLook, vigorLook, embersLook,
             };
             list.arraySize = allLooks.Length;
             for (int i = 0; i < allLooks.Length; i++)
@@ -592,7 +638,8 @@ namespace Voxelforge.Editor
             float blockDamage, float creatureDamage, float craterFalloff = 0.25f, float craterFlatten = 1f,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float healAmount = 0f, float shieldAmount = 0f,
             float duration = 0f, float pulseInterval = 1f, float aimCone = 12f, int earthHeight = 0, int earthWidth = 0,
-            float earthStep = 0.08f, float manaRegenBonus = 0f, float threatScale = 1f)
+            float earthStep = 0.08f, float manaRegenBonus = 0f, float threatScale = 1f, float manaAmount = 0f, GearStats buff = default,
+            ushort cooldownGroup = AbilityIds.None)
         {
             var ability = LoadOrCreate<AbilityDefinition>(path);
             var serialized = new SerializedObject(ability);
@@ -622,10 +669,34 @@ namespace Voxelforge.Editor
             serialized.FindProperty("earthStep").floatValue = earthStep;
             serialized.FindProperty("manaRegenBonus").floatValue = manaRegenBonus;
             serialized.FindProperty("threatScale").floatValue = threatScale;
+            serialized.FindProperty("manaAmount").floatValue = manaAmount;
+            SerializedProperty buffStats = serialized.FindProperty("buff");
+            buffStats.FindPropertyRelative("armor").intValue = buff.armor;
+            buffStats.FindPropertyRelative("stamina").intValue = buff.stamina;
+            buffStats.FindPropertyRelative("power").intValue = buff.power;
+            serialized.FindProperty("cooldownGroup").intValue = cooldownGroup;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
             return ability;
         }
+
+        static AbilityDefinition MakePotion(string path, ushort id, string displayName, float health = 0f, float mana = 0f) =>
+            MakeAbility(path, id, displayName, health > 0f ? "Drink it to heal at once." : "Drink it to get mana back at once.",
+                health > 0f ? AbilityElement.Nature : AbilityElement.Arcane, manaCost: 0f, cooldown: PotionCooldownSeconds, castTime: 0f,
+                range: 0f, aoeRadius: 0f, speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Drink,
+                healAmount: health, manaAmount: mana, cooldownGroup: AbilityIds.PotionCooldown);
+
+        // A second of cooldown, so a double press can't waste one.
+        static AbilityDefinition MakeElixir(string path, ushort id, string displayName, string description, GearStats buff) =>
+            MakeAbility(path, id, displayName, description, AbilityElement.Nature, manaCost: 0f, cooldown: 1f, castTime: 0f,
+                range: 0f, aoeRadius: 0f, speed: 0f, blockDamage: 0f, creatureDamage: 0f, delivery: AbilityDelivery.Drink,
+                duration: ElixirSeconds, buff: buff);
+
+        static AbilityLook MakeDrinkLook(string name, AbilityDefinition drink, Color glow, string release) =>
+            MakeLook($"{LookDir}/{name}.asset", drink, glow, AbilityCoreShape.Gem, coreSize: 0.2f, trailTime: 0.2f, light: 2f,
+                lightRange: 5f, muzzleSparks: 0, impactSparks: 0, impactSpeed: 3f, castMotes: 0f, castLight: 2.5f,
+                castLoop: null, release: release, impact: null, releaseVolume: 0.8f, impactVolume: 0.8f,
+                debrisChunks: 0, shake: 0f, blastLight: 0f, maxDistance: 20f);
 
         /// <summary>
         /// The picture <c>&lt;folder&gt;/&lt;name&gt;.png</c> (by default <c>Art/Textures/UI/Icons</c>, from

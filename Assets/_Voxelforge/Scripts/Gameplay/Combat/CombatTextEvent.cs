@@ -52,6 +52,10 @@ namespace Voxelforge.Gameplay
         /// (<see cref="CombatTextEvent.Label"/>) (Roadmap 5.7).
         /// </summary>
         NeedsSkill,
+        /// <summary>A mana potion gave back <see cref="CombatTextEvent.Amount"/> mana (Roadmap 5.8).</summary>
+        ManaRestored,
+        /// <summary>The hero drank <see cref="CombatTextEvent.Label"/>, an elixir (Roadmap 5.8).</summary>
+        ElixirDrunk,
     }
 
     /// <summary>

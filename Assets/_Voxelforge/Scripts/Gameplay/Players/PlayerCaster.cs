@@ -55,11 +55,14 @@ namespace Voxelforge.Gameplay
         PlayerAbilityCues _cues;
         PlayerActionBar _actionBar;
         PlayerSupport _support;
+        PlayerConsumables _consumables;
 
         // Host state.
         AbilityCaster _caster;
         readonly List<AbilityDefinition> _finished = new List<AbilityDefinition>();
         PlayerButtons _previousButtons;
+        // A potion or elixir chosen in the bag (Roadmap 5.8), drunk on the next tick.
+        AbilityDefinition _queuedDrink;
         float3 _castFeet;
         bool _toldNoMana;
         // The class's regeneration, and a short boost on top of it from a Wellspring Totem (Roadmap 4.6).
@@ -100,6 +103,7 @@ namespace Voxelforge.Gameplay
             _actionBar = GetComponent<PlayerActionBar>();
             _support = GetComponent<PlayerSupport>();
             _targeting = GetComponent<PlayerTargeting>();
+            _consumables = GetComponent<PlayerConsumables>();
         }
 
         void OnEnable() => _cues.Received += OnCue;
@@ -171,6 +175,22 @@ namespace Voxelforge.Gameplay
             _mana.Value = _caster.Mana;
         }
 
+        /// <summary>Host only: gives back <paramref name="amount"/> mana at once, up to the most (a mana potion, Roadmap 5.8).</summary>
+        public void ServerAddMana(float amount)
+        {
+            if (!IsServer || _caster == null)
+                return;
+            _caster.SetMana(_caster.Mana + amount);
+            _mana.Value = _caster.Mana;
+        }
+
+        /// <summary>Host only: drinks <paramref name="drink"/> on the next tick (Use in the bag, Roadmap 5.8).</summary>
+        public void ServerQueueDrink(AbilityDefinition drink)
+        {
+            if (IsServer)
+                _queuedDrink = drink;
+        }
+
         /// <summary>
         /// Host only: mana comes back <paramref name="bonus"/> faster again (0.5 = half as fast again) for
         /// <paramref name="seconds"/>, e.g. while standing by a Wellspring Totem, which renews it every pulse (Roadmap 4.6).
@@ -192,7 +212,7 @@ namespace Voxelforge.Gameplay
         /// </summary>
         public float CooldownReady(AbilityDefinition ability)
         {
-            if (ability == null || ability.Cooldown <= 0f || !_readyAtLocal.TryGetValue(ability.Id, out float readyAt))
+            if (ability == null || ability.Cooldown <= 0f || !_readyAtLocal.TryGetValue(ability.CooldownKey, out float readyAt))
                 return 1f;
             return Mathf.Clamp01(1f - (readyAt - Time.time) / ability.Cooldown);
         }
@@ -244,7 +264,14 @@ namespace Voxelforge.Gameplay
                     if (check != CastCheck.Ok)
                         RefusedRpc(check);
                 }
+                if (_queuedDrink != null)
+                {
+                    CastCheck check = TryCast(_queuedDrink, now, input);
+                    if (check != CastCheck.Ok)
+                        RefusedRpc(check);
+                }
             }
+            _queuedDrink = null;
 
             foreach (AbilityDefinition ability in _finished)
             {
@@ -267,6 +294,13 @@ namespace Voxelforge.Gameplay
             // So does a taunt, with a foe in range (Roadmap 5.3).
             if (ability.Delivery == AbilityDelivery.Taunt && !TryPickFoe(ability, input, out _))
                 return CastCheck.NoTarget;
+            // And a drink needs one in the bag, and a reason to drink it (Roadmap 5.8).
+            if (ability.Delivery == AbilityDelivery.Drink)
+            {
+                CastCheck drinkCheck = _consumables != null ? _consumables.ServerCheck(ability) : CastCheck.UnknownAbility;
+                if (drinkCheck != CastCheck.Ok)
+                    return drinkCheck;
+            }
             CastCheck check = _caster.TryBegin(ability, now, _finished);
             if (check == CastCheck.Ok && _caster.IsCasting)
             {
@@ -332,6 +366,10 @@ namespace Voxelforge.Gameplay
                 case AbilityDelivery.Taunt:
                     if (TryPickFoe(ability, input, out CombatTarget foe))
                         _staff.ServerTaunt(ability, foe);
+                    break;
+                case AbilityDelivery.Drink:
+                    if (_consumables != null)
+                        _consumables.ServerDrink(ability);
                     break;
             }
         }
@@ -405,7 +443,7 @@ namespace Voxelforge.Gameplay
                     if (_castingLocal == ability)
                         _castingLocal = null;
                     if (ability.Cooldown > 0f)
-                        _readyAtLocal[ability.Id] = Time.time + ability.Cooldown;
+                        _readyAtLocal[ability.CooldownKey] = Time.time + ability.Cooldown;
                     break;
             }
         }

@@ -85,6 +85,9 @@ namespace Voxelforge.Gameplay
             public Action<GatherNodeKind, ushort> OnGathered;
             public PlayerProfessions Professions;
             public Action<ProfessionId, int> OnSkill;
+            /// <summary>Roadmap 5.8: hammering, bubbling or stitching when they make something.</summary>
+            public PlayerCrafter Crafter;
+            public Action<CraftStation> OnCrafted;
             public float SpawnedAt;
         }
 
@@ -155,6 +158,12 @@ namespace Voxelforge.Gameplay
                 hero.OnSkill = (_, _) => OnSkillUp(hero);
                 hero.Professions.SkilledUp += hero.OnSkill;
             }
+            hero.Crafter = player.GetComponent<PlayerCrafter>();
+            if (hero.Crafter != null)
+            {
+                hero.OnCrafted = station => OnCrafted(hero, station);
+                hero.Crafter.Crafted += hero.OnCrafted;
+            }
             _heroes.Add(hero);
         }
 
@@ -180,6 +189,8 @@ namespace Voxelforge.Gameplay
                 hero.Gatherer.Gathered -= hero.OnGathered;
             if (hero.Professions != null)
                 hero.Professions.SkilledUp -= hero.OnSkill;
+            if (hero.Crafter != null)
+                hero.Crafter.Crafted -= hero.OnCrafted;
             StopCastLoop(hero);
             StopWind(hero);
             _heroes.RemoveAt(index);
@@ -208,6 +219,15 @@ namespace Voxelforge.Gameplay
                 return;
             router.Play(clip, (float3)hero.Player.transform.position + new float3(0f, 0.6f, 0f), 0.7f,
                 UnityEngine.Random.Range(0.94f, 1.06f), 16f);
+        }
+
+        void OnCrafted(Hero hero, CraftStation station)
+        {
+            AudioClip clip = sounds != null ? sounds.CraftSound(station) : null;
+            if (router == null || clip == null || hero.Player == null)
+                return;
+            router.Play(clip, (float3)hero.Player.transform.position + new float3(0f, 1f, 0f), 0.75f,
+                UnityEngine.Random.Range(0.96f, 1.04f), 18f);
         }
 
         // Only the gatherer's PC hears about a skill-up (it's for their own view), so it's quiet and close.

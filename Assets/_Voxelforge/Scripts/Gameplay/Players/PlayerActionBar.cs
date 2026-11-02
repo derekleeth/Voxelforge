@@ -7,7 +7,8 @@ namespace Voxelforge.Gameplay
     /// This hero's nine action bar slots (Roadmap 4.4). <b>The host</b> fills them from the loadout and shares them with
     /// every PC, so the action bar in this player's view shows what the host will really cast. Pressing a slot's button
     /// sends nothing new: the host's <see cref="PlayerCaster"/> reads the press from the input frame and casts the slot
-    /// it agrees on (CLAUDE.md Law #2).
+    /// it agrees on (CLAUDE.md Law #2). Slots 7 and 8 always hold the best potions owned (Roadmap 5.8,
+    /// <see cref="PlayerConsumables"/>), over whatever the loadout says.
     /// </summary>
     [RequireComponent(typeof(PlayerCaster))]
     public sealed class PlayerActionBar : NetworkBehaviour
@@ -20,6 +21,10 @@ namespace Voxelforge.Gameplay
         readonly NetworkVariable<ActionBarSlots> _slots = new NetworkVariable<ActionBarSlots>();
 
         PlayerCaster _caster;
+        // Host: the bar without its potions, and the potions.
+        ActionBarSlots _loadout;
+        ushort _healthPotion;
+        ushort _manaPotion;
 
         void Awake() => _caster = GetComponent<PlayerCaster>();
 
@@ -27,7 +32,23 @@ namespace Voxelforge.Gameplay
         {
             base.OnNetworkSpawn();
             if (IsServer && defaultLoadout != null)
-                _slots.Value = defaultLoadout.ToSlots();
+                SetSlots(defaultLoadout.ToSlots());
+        }
+
+        void SetSlots(ActionBarSlots loadout)
+        {
+            _loadout = loadout;
+            _slots.Value = ConsumableRules.WithPotions(loadout, _healthPotion, _manaPotion);
+        }
+
+        /// <summary>Host only: which potions slots 7 and 8 drink (Roadmap 5.8).</summary>
+        public void ServerSetPotions(ushort healthPotion, ushort manaPotion)
+        {
+            if (!IsServer)
+                return;
+            _healthPotion = healthPotion;
+            _manaPotion = manaPotion;
+            SetSlots(_loadout);
         }
 
         /// <summary>
@@ -37,7 +58,7 @@ namespace Voxelforge.Gameplay
         public void ServerSetLoadout(ActionBarLoadout loadout, RaceDefinition race = null)
         {
             if (IsServer && loadout != null)
-                _slots.Value = RaceRules.Bar(loadout, race);
+                SetSlots(RaceRules.Bar(loadout, race));
         }
 
         /// <summary>Every PC: the ability in slot <paramref name="slot"/> (0-8), as the host shared it.</summary>

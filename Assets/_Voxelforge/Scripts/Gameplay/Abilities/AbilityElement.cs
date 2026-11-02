@@ -66,6 +66,11 @@ namespace Voxelforge.Gameplay
         /// <see cref="PlayerStaff.ServerTaunt"/>). With no target in range it costs nothing and says "No target".
         /// </summary>
         Taunt,
+        /// <summary>
+        /// A potion or elixir from the bag (Roadmap 5.8): one item is used up, then Heal Amount gives health, Mana Amount
+        /// gives mana, or Buff adds to the hero's stats for Duration (<see cref="PlayerConsumables.ServerDrink"/>).
+        /// </summary>
+        Drink,
     }
 
     /// <summary>Why an ability can't be cast right now, or why a cast stopped before it went off.</summary>
@@ -81,5 +86,11 @@ namespace Voxelforge.Gameplay
         Interrupted,
         /// <summary>A <see cref="AbilityDelivery.GroundSlam"/> with no block in range to slam, or a taunt with no foe.</summary>
         NoTarget,
+        /// <summary>A <see cref="AbilityDelivery.Drink"/> with none in the bag.</summary>
+        NoPotion,
+        /// <summary>A health potion would be wasted.</summary>
+        FullHealth,
+        /// <summary>A mana potion would be wasted.</summary>
+        FullMana,
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// A play-test key for loot (Roadmap 5.5), host only. <b>F2</b> gives every hero one of each piece of gear and 5 of
+    /// A play-test key for loot (Roadmap 5.5), host only. <b>F2</b> gives every hero one of each piece of gear and 5 of each potion and elixir and
     /// each crafting material, straight into their bag, so the bag, the rarity colours and (from step C) equipping can be
     /// tried without hunting. Whatever doesn't fit stays out.
     /// </summary>
@@ -43,7 +43,9 @@ namespace Voxelforge.Gameplay
             {
                 if (item == null)
                     continue;
-                int amount = item.IsWornGear ? 1 : item.Category == ItemCategory.Materials && !ItemIds.IsBlock(item.Id) ? materialCount : 0;
+                int amount = item.IsWornGear ? 1
+                    : (item.Category == ItemCategory.Materials || item.Category == ItemCategory.Consumables) && !ItemIds.IsBlock(item.Id) ? materialCount
+                    : 0;
                 if (amount == 0)
                     continue;
                 int added = bag.ServerAdd(item.Id, amount);

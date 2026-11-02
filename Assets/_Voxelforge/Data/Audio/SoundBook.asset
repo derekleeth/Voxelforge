@@ -82,6 +82,11 @@ MonoBehaviour:
   herbPick: {fileID: 8300000, guid: d2f3fb65bf258f04fa14db1a055c2110, type: 3}
   skinSlice: {fileID: 8300000, guid: e84850da65011d345beba376e9028154, type: 3}
   skillUp: {fileID: 8300000, guid: a19aab413f7e2514281d8bbfd81a188a, type: 3}
+  craftWorkbench: {fileID: 8300000, guid: c56c9d9116654e34299ab4a92424331b, type: 3}
+  craftAlchemy: {fileID: 8300000, guid: dd937a9420c625e49bb5beede01573e3, type: 3}
+  craftForge: {fileID: 8300000, guid: 434c055f74cde4c4ca62ccbffa3408fe, type: 3}
+  craftAnvil: {fileID: 8300000, guid: 2f453ecc7e362204fb645b1dab4475fc, type: 3}
+  craftTanning: {fileID: 8300000, guid: 50755d085025c134da0db714d3f91ef9, type: 3}
   loops:
   - decoration: {fileID: 11400000, guid: a6e88c1d67d36444481add0b0458f1e6, type: 2}
     clip: {fileID: 8300000, guid: 1c22145e70ef6d04ea3bc34d0a9a1fb3, type: 3}

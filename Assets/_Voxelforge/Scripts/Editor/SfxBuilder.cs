@@ -173,6 +173,14 @@ namespace Voxelforge.Editor
             written.Add(Write("HerbPick", HerbPick(new Random(373))));
             written.Add(Write("SkinSlice", SkinSlice(new Random(379))));
             written.Add(Write("SkillUp", SkillUp(new Random(383))));
+            // Roadmap 5.8: making things and drinking them.
+            written.Add(Write("CraftWorkbench", CraftWorkbench(new Random(389))));
+            written.Add(Write("CraftAlchemy", CraftAlchemy(new Random(397))));
+            written.Add(Write("CraftForge", CraftForge(new Random(401))));
+            written.Add(Write("CraftAnvil", CraftAnvil(new Random(409))));
+            written.Add(Write("CraftTanning", CraftTanning(new Random(419))));
+            written.Add(Write("PotionDrink", PotionDrink(new Random(421))));
+            written.Add(Write("ElixirDrink", ElixirDrink(new Random(431))));
 
             AssetDatabase.Refresh();
             foreach (string path in written)
@@ -432,6 +440,110 @@ namespace Voxelforge.Editor
             AddBell(buffer, 0.09f, 1319f, 0.45f, 0.3f);
             AddNoise(buffer, rng, 0.09f, 0.05f, 0.04f, 6000f, 14000f);
             return Finish(buffer, 0.45f);
+        }
+
+        /// <summary>Making something at a Workbench (Roadmap 5.8): a few saw strokes, then two taps of a mallet.</summary>
+        static float[] CraftWorkbench(Random rng)
+        {
+            float[] buffer = New(0.75f);
+            for (int i = 0; i < 3; i++)
+                AddGrains(buffer, rng, i * 0.13f, 0.09f, 16, 0.012f, 0.3f, 1400f, 5200f);
+            foreach (float at in new[] { 0.45f, 0.58f })
+            {
+                AddTone(buffer, at, 300f, 170f, 0.05f, 0.5f);
+                AddNoise(buffer, rng, at, 0.02f, 0.3f, 500f, 2400f);
+            }
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>Brewing at the Alchemy Table (Roadmap 5.8): bubbles rising through liquid, ending on the clink of glass.</summary>
+        static float[] CraftAlchemy(Random rng)
+        {
+            float[] buffer = New(0.95f);
+            for (int i = 0; i < 11; i++)
+            {
+                float pitch = Range(rng, 260f, 520f) + i * 40f;
+                AddTone(buffer, i * 0.055f + Range(rng, 0f, 0.02f), pitch, pitch * 1.7f, 0.035f, Range(rng, 0.2f, 0.4f));
+            }
+            AddBell(buffer, 0.66f, 2093f, 0.22f, 0.22f);
+            AddBell(buffer, 0.72f, 2637f, 0.18f, 0.14f);
+            return Finish(buffer, 0.55f);
+        }
+
+        /// <summary>Smelting at the Forge (Roadmap 5.8): a puff of the bellows, flames answering, and a hiss of hot metal.</summary>
+        static float[] CraftForge(Random rng)
+        {
+            float[] buffer = New(1.0f);
+            AddNoise(buffer, rng, 0f, 0.22f, 0.45f, 120f, 900f);
+            AddTone(buffer, 0.04f, 70f, 110f, 0.22f, 0.3f, sweepTime: 0.15f);
+            AddGrains(buffer, rng, 0.14f, 0.45f, 26, 0.02f, 0.3f, 900f, 4200f);
+            AddNoise(buffer, rng, 0.42f, 0.32f, 0.26f, 4500f, 13000f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>Hammering at the Anvil (Roadmap 5.8): three strikes on hot metal, the last one ringing out.</summary>
+        static float[] CraftAnvil(Random rng)
+        {
+            float[] buffer = New(1.1f);
+            (float at, float decay, float amp)[] strikes = { (0f, 0.12f, 0.4f), (0.2f, 0.12f, 0.45f), (0.4f, 0.5f, 0.6f) };
+            foreach ((float at, float decay, float amp) in strikes)
+            {
+                AddNoise(buffer, rng, at, 0.012f, amp, 2500f, 11000f);
+                AddBell(buffer, at, 1180f, decay, amp);
+                AddBell(buffer, at, 1712f, decay * 0.8f, amp * 0.5f);
+                AddTone(buffer, at, 190f, 120f, 0.04f, amp * 0.6f);
+            }
+            return Finish(buffer, 0.7f);
+        }
+
+        /// <summary>Working leather at the Tanning Rack (Roadmap 5.8): hide creaking on the frame and a needle pulled through twice.</summary>
+        static float[] CraftTanning(Random rng)
+        {
+            float[] buffer = New(0.8f);
+            AddGrains(buffer, rng, 0f, 0.32f, 24, 0.022f, 0.32f, 220f, 1500f);
+            foreach (float at in new[] { 0.36f, 0.56f })
+            {
+                AddNoise(buffer, rng, at, 0.07f, 0.34f, 2400f, 8000f);
+                AddTone(buffer, at + 0.07f, 170f, 110f, 0.04f, 0.26f);
+            }
+            return Finish(buffer, 0.55f);
+        }
+
+        // Three swallows, each a little lower than the last.
+        static void AddGulps(float[] buffer, Random rng, float start)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                float at = start + i * 0.17f;
+                float pitch = 300f - i * 30f;
+                AddTone(buffer, at, pitch, pitch * 0.55f, 0.075f, 0.55f, sweepTime: 0.07f);
+                AddNoise(buffer, rng, at, 0.04f, 0.12f, 300f, 1300f);
+            }
+        }
+
+        /// <summary>Drinking a potion (Roadmap 5.8): a cork pops, three gulps and a little glint.</summary>
+        static float[] PotionDrink(Random rng)
+        {
+            float[] buffer = New(0.95f);
+            AddTone(buffer, 0f, 720f, 1250f, 0.035f, 0.55f, sweepTime: 0.03f);
+            AddNoise(buffer, rng, 0f, 0.018f, 0.3f, 1400f, 6000f);
+            AddGulps(buffer, rng, 0.12f);
+            AddBell(buffer, 0.66f, 1568f, 0.22f, 0.16f);
+            return Finish(buffer, 0.6f);
+        }
+
+        /// <summary>Drinking an elixir (Roadmap 5.8): a cork, three gulps, then a rising shimmer as it takes hold.</summary>
+        static float[] ElixirDrink(Random rng)
+        {
+            float[] buffer = New(1.4f);
+            AddTone(buffer, 0f, 720f, 1250f, 0.035f, 0.55f, sweepTime: 0.03f);
+            AddNoise(buffer, rng, 0f, 0.018f, 0.3f, 1400f, 6000f);
+            AddGulps(buffer, rng, 0.12f);
+            float[] rise = { 784f, 988f, 1175f, 1568f, 1976f };
+            for (int i = 0; i < rise.Length; i++)
+                AddBell(buffer, 0.64f + i * 0.07f, rise[i], 0.42f, 0.2f);
+            AddNoise(buffer, rng, 0.64f, 0.5f, 0.05f, 6000f, 14000f);
+            return Finish(buffer, 0.65f);
         }
 
         /// <summary>Putting gear on (Roadmap 5.5): a quick leather creak and buckle, then a small metal clink.</summary>
@@ -1331,6 +1443,11 @@ namespace Voxelforge.Editor
             serialized.FindProperty("herbPick").objectReferenceValue = Clip("HerbPick");
             serialized.FindProperty("skinSlice").objectReferenceValue = Clip("SkinSlice");
             serialized.FindProperty("skillUp").objectReferenceValue = Clip("SkillUp");
+            serialized.FindProperty("craftWorkbench").objectReferenceValue = Clip("CraftWorkbench");
+            serialized.FindProperty("craftAlchemy").objectReferenceValue = Clip("CraftAlchemy");
+            serialized.FindProperty("craftForge").objectReferenceValue = Clip("CraftForge");
+            serialized.FindProperty("craftAnvil").objectReferenceValue = Clip("CraftAnvil");
+            serialized.FindProperty("craftTanning").objectReferenceValue = Clip("CraftTanning");
 
             SerializedProperty loops = serialized.FindProperty("loops");
             loops.arraySize = 0;

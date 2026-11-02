@@ -8,16 +8,18 @@ using static Voxelforge.Editor.LootBuilder;
 namespace Voxelforge.Editor
 {
     /// <summary>
-    /// <i>Voxelforge → Build Crafting</i> (Roadmap 5.8, D-039): makes the bars, cured leather and crafted gear, and the
-    /// Blacksmithing and Leatherworking recipes, from the numbers below. This is the one place crafted stats, skills and
+    /// <i>Voxelforge → Build Crafting</i> (Roadmap 5.8, D-039): makes the bars, cured leather, crafted gear, potions and
+    /// elixirs, and the Blacksmithing, Leatherworking and Alchemy recipes, from the numbers below. This is the one place crafted stats, skills and
     /// costs live; re-running it updates the same assets in place. The stand-in models come from
-    /// <c>build_crafted()</c> in <c>Tools/Blender/build_loot.py</c> (5.9 replaces the gear art). Run Build Loot, Build
-    /// Professions and Build Props &amp; Items first.
+    /// <c>build_crafted()</c> and <c>build_potions()</c> in <c>Tools/Blender/build_loot.py</c> (5.9 replaces the gear art).
+    /// Run Build Loot, Build Professions, Build Props &amp; Items and Build Abilities first.
     /// </summary>
     public static class CraftingBuilder
     {
         const string AtlasPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_CraftAtlas.png";
         const string GlowPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_CraftGlow.png";
+        const string PotionAtlasPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_PotionAtlas.png";
+        const string PotionGlowPath = "Assets/_Voxelforge/Art/Textures/Loot/Loot_PotionGlow.png";
         const string CraftedDir = "Assets/_Voxelforge/Data/Items/Crafted";
         const string RecipeDir = "Assets/_Voxelforge/Data/Items/Recipes";
         const string BookPath = "Assets/_Voxelforge/Data/Items/RecipeBook.asset";
@@ -76,6 +78,20 @@ namespace Voxelforge.Editor
             Gear(ItemIds.StormhideStriders, "CraftStormhideFeet", "Stormhide Striders", Epic, EquipSlot.Feet, 5, 8, 7),
         };
 
+        // What each one does lives in AbilityBuilder; these are on the potion atlas.
+        static readonly Item[] Drinks =
+        {
+            Drink(ItemIds.MinorHealingPotion, "PotionHealth1", "Minor Healing Potion", Common, AbilityBuilder.MinorHealingPotionPath),
+            Drink(ItemIds.HealingPotion, "PotionHealth2", "Healing Potion", Common, AbilityBuilder.HealingPotionPath),
+            Drink(ItemIds.GreaterHealingPotion, "PotionHealth3", "Greater Healing Potion", Rare, AbilityBuilder.GreaterHealingPotionPath),
+            Drink(ItemIds.MinorManaPotion, "PotionMana1", "Minor Mana Potion", Common, AbilityBuilder.MinorManaPotionPath),
+            Drink(ItemIds.ManaPotion, "PotionMana2", "Mana Potion", Common, AbilityBuilder.ManaPotionPath),
+            Drink(ItemIds.GreaterManaPotion, "PotionMana3", "Greater Mana Potion", Rare, AbilityBuilder.GreaterManaPotionPath),
+            Drink(ItemIds.ElixirOfIronhide, "ElixirArmor", "Elixir of Ironhide", Rare, AbilityBuilder.ElixirOfIronhidePath),
+            Drink(ItemIds.ElixirOfVigor, "ElixirStamina", "Elixir of Vigor", Rare, AbilityBuilder.ElixirOfVigorPath),
+            Drink(ItemIds.ElixirOfEmbers, "ElixirPower", "Elixir of Embers", Rare, AbilityBuilder.ElixirOfEmbersPath),
+        };
+
         readonly struct Recipe
         {
             public readonly string Name;
@@ -98,6 +114,7 @@ namespace Voxelforge.Editor
         const CraftStation Forge = CraftStation.Forge;
         const CraftStation Anvil = CraftStation.Anvil;
         const CraftStation Rack = CraftStation.TanningRack;
+        const CraftStation Table = CraftStation.AlchemyTable;
         const ushort Log = BlockIds.Log;
 
         static readonly Recipe[] OlderPlaces =
@@ -158,6 +175,17 @@ namespace Voxelforge.Editor
             new Recipe("StormhideCowl", ItemIds.StormhideCowl, Rack, 60, (ItemIds.StormhideLeather, 4), (ItemIds.ThunderHorn, 1)),
             new Recipe("StormhideLegguards", ItemIds.StormhideLegguards, Rack, 68, (ItemIds.StormhideLeather, 5)),
             new Recipe("StormhideHarness", ItemIds.StormhideHarness, Rack, 75, (ItemIds.StormhideLeather, 7), (ItemIds.StormEssence, 1)),
+
+            // Brewed at the Alchemy Table (steps E and F). Each herb tier is gated as Herbalism gates picking it.
+            new Recipe("MinorHealingPotion", ItemIds.MinorHealingPotion, Table, 1, (ItemIds.Sunpetal, 2)),
+            new Recipe("MinorManaPotion", ItemIds.MinorManaPotion, Table, 8, (ItemIds.Sunpetal, 2), (ItemIds.CrystalShard, 1)),
+            new Recipe("HealingPotion", ItemIds.HealingPotion, Table, 25, (ItemIds.Frostbloom, 2), (ItemIds.Sunpetal, 1)),
+            new Recipe("ManaPotion", ItemIds.ManaPotion, Table, 30, (ItemIds.Frostbloom, 2), (ItemIds.CrystalShard, 1)),
+            new Recipe("ElixirOfIronhide", ItemIds.ElixirOfIronhide, Table, 35, (ItemIds.Frostbloom, 2), (ItemIds.BoarTusk, 1), (ItemIds.EarthEssence, 1)),
+            new Recipe("ElixirOfVigor", ItemIds.ElixirOfVigor, Table, 42, (ItemIds.Frostbloom, 3), (ItemIds.FrostEssence, 1)),
+            new Recipe("GreaterHealingPotion", ItemIds.GreaterHealingPotion, Table, 50, (ItemIds.Emberthorn, 2), (ItemIds.Frostbloom, 1)),
+            new Recipe("GreaterManaPotion", ItemIds.GreaterManaPotion, Table, 55, (ItemIds.Emberthorn, 2), (ItemIds.ManaCrystal, 1)),
+            new Recipe("ElixirOfEmbers", ItemIds.ElixirOfEmbers, Table, 65, (ItemIds.Emberthorn, 3), (ItemIds.ArcaneEssence, 1)),
         };
 
         [MenuItem("Voxelforge/Build Crafting")]
@@ -185,6 +213,21 @@ namespace Voxelforge.Editor
                     return;
                 made.Add(definition);
             }
+            var potionAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(PotionAtlasPath);
+            var potionGlow = AssetDatabase.LoadAssetAtPath<Texture2D>(PotionGlowPath);
+            if (potionAtlas == null || potionGlow == null)
+            {
+                Debug.LogError($"[Voxelforge] Missing {PotionAtlasPath}. Run build_potions() in Tools/Blender/build_loot.py first.");
+                return;
+            }
+            Material potionHeld = MakeHeldMaterial(potionAtlas, potionGlow, "Loot_PotionHeld");
+            foreach (Item item in Drinks)
+            {
+                ItemDefinition definition = MakeItem(item, potionHeld, CraftedDir);
+                if (definition == null)
+                    return;
+                made.Add(definition);
+            }
             AddToList(registry, "items", made);
 
             var problems = new List<string>();
@@ -201,7 +244,7 @@ namespace Voxelforge.Editor
             if (problems.Count > 0)
                 Debug.LogError("[Voxelforge] Build Crafting made assets with problems:\n" + string.Join("\n", problems));
             else
-                Debug.Log($"[Voxelforge] Built {Items.Length} crafted items and {OlderPlaces.Length + Recipes.Length} recipes.", book);
+                Debug.Log($"[Voxelforge] Built {Items.Length + Drinks.Length} crafted items and {OlderPlaces.Length + Recipes.Length} recipes.", book);
         }
 
         static RecipeDefinition MakeRecipe(in Recipe recipe, ItemRegistry items, BlockRegistry blocks, List<string> problems)

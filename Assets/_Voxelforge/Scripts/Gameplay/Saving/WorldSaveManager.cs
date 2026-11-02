@@ -374,6 +374,11 @@ namespace Voxelforge.Gameplay
                     profile.Level = level.State;
                 if (player.TryGetComponent(out PlayerProfessions professions))
                     profile.Professions = professions.Skills;
+                if (player.TryGetComponent(out PlayerConsumables consumables))
+                {
+                    profile.ElixirAbility = consumables.Elixir != null ? consumables.Elixir.Id : AbilityIds.None;
+                    profile.ElixirSecondsLeft = consumables.ElixirSecondsLeft;
+                }
                 if (player.TryGetComponent(out PlayerRace race))
                 {
                     profile.Race = race.Race;

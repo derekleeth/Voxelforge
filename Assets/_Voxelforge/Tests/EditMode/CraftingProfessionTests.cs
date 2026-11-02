@@ -328,6 +328,7 @@ namespace Voxelforge.Tests
 
         // ---- The crafting content in the project (step D) ----
 
+        [TestCase(ProfessionId.Alchemy)]
         [TestCase(ProfessionId.Blacksmithing)]
         [TestCase(ProfessionId.Leatherworking)]
         public void EverySkill_HasARecipeThatCanStillRaiseIt_AllTheWayToTheMax(ProfessionId profession)

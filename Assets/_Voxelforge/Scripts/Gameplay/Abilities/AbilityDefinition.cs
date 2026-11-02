@@ -27,6 +27,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Seconds before it can be cast again, counted from when the cast finishes.")]
         [SerializeField, Min(0f)] float cooldown;
 
+        [Tooltip("Abilities with the same number here share one cooldown (AbilityIds.PotionCooldown). 0 = its own.")]
+        [SerializeField] ushort cooldownGroup;
+
         [Tooltip("Seconds of casting before it goes off. 0 = instant.")]
         [SerializeField, Min(0f)] float castTime;
 
@@ -61,13 +64,14 @@ namespace Voxelforge.Gameplay
         [SerializeField, Min(0f)] float creatureDamage;
 
         [Header("Support (4.6)")]
-        [Tooltip("Health a Zone gives each hero in it every pulse. For a Self Heal, the share of max health (0.25 = a quarter).")]
+        [Tooltip("Health a Zone gives each hero in it every pulse. For a Self Heal, the share of max health (0.25 = a " +
+                 "quarter). For a Drink, the health it gives back.")]
         [SerializeField, Min(0f)] float healAmount;
 
         [Tooltip("Damage a Shield soaks up.")]
         [SerializeField, Min(0f)] float shieldAmount;
 
-        [Tooltip("Seconds a Shield or Zone lasts, or how long a Quake stuns.")]
+        [Tooltip("Seconds a Shield, Zone or elixir lasts, or how long a Quake stuns.")]
         [SerializeField, Min(0f)] float duration;
 
         [Tooltip("Seconds between a Zone's pulses.")]
@@ -78,6 +82,13 @@ namespace Voxelforge.Gameplay
 
         [Tooltip("Extra mana regeneration a Zone or Totem gives heroes in it (0.5 = half as fast again).")]
         [SerializeField, Range(0f, 3f)] float manaRegenBonus;
+
+        [Header("Drinks (5.8)")]
+        [Tooltip("The mana a Drink gives back.")]
+        [SerializeField, Min(0f)] float manaAmount;
+
+        [Tooltip("What an elixir adds to worn gear's stats for its Duration. All 0 = a potion.")]
+        [SerializeField] GearStats buff;
 
         [Header("Terrain (4.6)")]
         [Tooltip("How many blocks of Earthen Rock a Pillar raises, or how tall a Wall is. They crumble after Duration.")]
@@ -100,6 +111,9 @@ namespace Voxelforge.Gameplay
         public AbilityElement Element => element;
         public float ManaCost => manaCost;
         public float Cooldown => cooldown;
+
+        /// <summary>What its cooldown is kept under: its group's number if it shares one, else its own ID.</summary>
+        public ushort CooldownKey => cooldownGroup != 0 ? cooldownGroup : id;
         public float CastTime => castTime;
         public bool IsInstant => castTime <= 0f;
         public bool CastWhileMoving => castWhileMoving;
@@ -117,6 +131,8 @@ namespace Voxelforge.Gameplay
         public float PulseInterval => pulseInterval;
         public float AimCone => aimCone;
         public float ManaRegenBonus => manaRegenBonus;
+        public float ManaAmount => manaAmount;
+        public GearStats Buff => buff;
 
         /// <summary>Whether it goes off on the block the caster aims at, so it needs one in range before any mana is spent.</summary>
         public bool NeedsAimedBlock => delivery == AbilityDelivery.GroundSlam || delivery == AbilityDelivery.Wall ||
@@ -132,7 +148,8 @@ namespace Voxelforge.Gameplay
             bool castWhileMoving = false, AbilityElement element = AbilityElement.Arcane,
             AbilityDelivery delivery = AbilityDelivery.Projectile, float craterFalloff = 0.25f, float craterFlatten = 1f,
             float healAmount = 0f, float shieldAmount = 0f, float duration = 0f, float pulseInterval = 1f, float aimCone = 12f,
-            int earthHeight = 0, int earthWidth = 0, float earthStep = 0.08f, float manaRegenBonus = 0f, float threatScale = 1f)
+            int earthHeight = 0, int earthWidth = 0, float earthStep = 0.08f, float manaRegenBonus = 0f, float threatScale = 1f,
+            float manaAmount = 0f, GearStats buff = default, ushort cooldownGroup = 0)
         {
             var definition = CreateInstance<AbilityDefinition>();
             definition.name = displayName;
@@ -160,6 +177,9 @@ namespace Voxelforge.Gameplay
             definition.earthStep = earthStep;
             definition.manaRegenBonus = manaRegenBonus;
             definition.threatScale = threatScale;
+            definition.manaAmount = manaAmount;
+            definition.buff = buff;
+            definition.cooldownGroup = cooldownGroup;
             return definition;
         }
     }
