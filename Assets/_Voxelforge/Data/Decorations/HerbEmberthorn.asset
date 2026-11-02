@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: HerbEmberthorn
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 3
+  mesh: {fileID: -7237157997217371012, guid: c76ac8796a75fa3439bd80eaa436f85b, type: 3}
+  lodMesh: {fileID: -762056874188279274, guid: c76ac8796a75fa3439bd80eaa436f85b, type: 3}
+  material: {fileID: 2100000, guid: 39582d6d753d0864ea97f4079c696662, type: 2}
+  tint: 0
+  castShadows: 0
+  lodDistance: 40
+  maxDistance: 90
+  propBlock: {fileID: 0}
+  attach: 0
+  surfaces:
+  - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+  - {fileID: 11400000, guid: ebe0a5b9d8b7441bb0aa25c966d5390f, type: 2}
+  - {fileID: 11400000, guid: 9538f14b5fd04a9a8230698957ea7107, type: 2}
+  density: 0.3
+  biomes:
+  - biome: Red Crags (Redridge style)
+    weight: 1
+  - biome: Desert (Tanaris style)
+    weight: 0.8
+  minScale: 1
+  maxScale: 1.2
+  modelTrunkHeight: 5
+  light:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
+  herbItem: 1312

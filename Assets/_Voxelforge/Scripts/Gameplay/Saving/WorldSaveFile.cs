@@ -31,6 +31,12 @@ namespace Voxelforge.Gameplay
         /// so a wall saved mid-way still crumbles on time after loading.
         /// </summary>
         public Dictionary<int3, float> Earth = new Dictionary<int3, float>();
+
+        /// <summary>
+        /// Picked herbs (Roadmap 5.7): each herb's block and the seconds until it grows back, so a picked patch stays
+        /// picked after loading. Older saves have none, so every herb has grown back.
+        /// </summary>
+        public Dictionary<int3, float> Herbs = new Dictionary<int3, float>();
     }
 
     public enum WorldLoadResult
@@ -61,10 +67,10 @@ namespace Voxelforge.Gameplay
         /// Chests after the profiles (4.5). 4: each profile's class, and the Earthen Rock after the chests (4.6). 5: each
         /// profile's race and whether they've chosen it (4.7). 6: each player's explored map cells, after the earth
         /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). 8:
-        /// each player's level and XP, after that (5.6). 9: each player's gathering skills, after that (5.7). Older saves
-        /// still load.
+        /// each player's level and XP, after that (5.6). 9: each player's gathering skills, after that (5.7). 10: the
+        /// picked herbs and the seconds until each grows back, after that (5.7). Older saves still load.
         /// </summary>
-        public const int FormatVersion = 9;
+        public const int FormatVersion = 10;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -184,6 +190,17 @@ namespace Voxelforge.Gameplay
                     writer.Write(profile.Uuid.Low);
                     for (int i = 0; i < ProfessionSkills.Count; i++)
                         writer.Write((byte)profile.Professions.Get((ProfessionId)i));
+                }
+
+                // Picked herbs (v10).
+                Dictionary<int3, float> herbs = save.Herbs ?? new Dictionary<int3, float>();
+                writer.Write(herbs.Count);
+                foreach (KeyValuePair<int3, float> herb in herbs)
+                {
+                    writer.Write(herb.Key.x);
+                    writer.Write(herb.Key.y);
+                    writer.Write(herb.Key.z);
+                    writer.Write(herb.Value);
                 }
                 writer.Write(EndMarker);
             }
@@ -386,6 +403,18 @@ namespace Voxelforge.Gameplay
                             skills = skills.With((ProfessionId)i, reader.ReadByte());
                         if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
                             profile.Professions = skills;
+                    }
+                }
+
+                if (format >= 10)
+                {
+                    int herbCount = reader.ReadInt32();
+                    if (herbCount < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int h = 0; h < herbCount; h++)
+                    {
+                        var cell = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
+                        result.Herbs[cell] = reader.ReadSingle();
                     }
                 }
 

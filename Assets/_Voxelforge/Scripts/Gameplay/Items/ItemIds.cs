@@ -69,6 +69,14 @@ namespace Voxelforge.Gameplay
         /// <summary>Mined from Mana Crystal Ore (Mining 50). The M.G.R.S., Home Totem and Delver's Rucksack take it.</summary>
         public const ushort ManaCrystal = 1302;
 
+        // Herbs (Roadmap 5.7): picked from the foliage layer with Herbalism.
+        /// <summary>A golden flower of the Meadows and Thunderhoof Plains (Herbalism 1).</summary>
+        public const ushort Sunpetal = 1310;
+        /// <summary>An icy blue flower of the Snowy Peaks (Herbalism 25).</summary>
+        public const ushort Frostbloom = 1311;
+        /// <summary>Thorny stems with glowing ember buds, from the Red Crags and the Desert (Herbalism 50).</summary>
+        public const ushort Emberthorn = 1312;
+
         /// <summary>True if <paramref name="itemId"/> is a block, so it can be placed.</summary>
         public static bool IsBlock(ushort itemId) => itemId < FirstNonBlock;
     }

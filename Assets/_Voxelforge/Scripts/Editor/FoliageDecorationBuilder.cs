@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using Voxelforge.Gameplay;
 using Voxelforge.Voxels;
 
 namespace Voxelforge.Editor
@@ -8,7 +9,8 @@ namespace Voxelforge.Editor
     /// <summary>
     /// <i>Voxelforge → Build Foliage Decorations</i> (Roadmap 2.6 part B): makes the foliage materials, one
     /// decoration asset per plant and the <see cref="DecorationSet"/> from the Blender art that
-    /// <c>Tools/Blender/build_foliage.py</c> exports. Re-running it updates the same assets in place.
+    /// <c>Tools/Blender/build_foliage.py</c> exports. Re-running it updates the same assets in place. The herbs (Roadmap
+    /// 5.7) come from build_herbs() there, on their own atlas with a glow map.
     /// <para>
     /// Mesh contract (see build_foliage.py): origin at the bottom centre, UV0 = the shared atlas, vertex colour
     /// RGB = painted shading, vertex colour A = sway (0 at the root, 1 at the tips). Trees are modelled for a
@@ -19,6 +21,8 @@ namespace Voxelforge.Editor
     {
         const string ModelDir = "Assets/_Voxelforge/Art/Models/Foliage";
         const string AtlasPath = "Assets/_Voxelforge/Art/Textures/Foliage/Foliage_Atlas.png";
+        internal const string HerbAtlasPath = "Assets/_Voxelforge/Art/Textures/Foliage/Herb_Atlas.png";
+        internal const string HerbGlowPath = "Assets/_Voxelforge/Art/Textures/Foliage/Herb_Glow.png";
         const string MaterialDir = "Assets/_Voxelforge/Art/Materials/Foliage";
         const string DataDir = "Assets/_Voxelforge/Data/Decorations";
         const string RegistryPath = "Assets/_Voxelforge/Data/Blocks/BlockRegistry.asset";
@@ -40,9 +44,12 @@ namespace Voxelforge.Editor
         public static void Build()
         {
             var atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(AtlasPath);
-            if (atlas == null)
+            var herbAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(HerbAtlasPath);
+            var herbGlow = AssetDatabase.LoadAssetAtPath<Texture2D>(HerbGlowPath);
+            if (atlas == null || herbAtlas == null || herbGlow == null)
             {
-                Debug.LogError($"[Voxelforge] Missing {AtlasPath}. Run build_all() in Tools/Blender/build_foliage.py first.");
+                Debug.LogError($"[Voxelforge] Missing {AtlasPath}, {HerbAtlasPath} or {HerbGlowPath}. Run build_all() in " +
+                               "Tools/Blender/build_foliage.py first.");
                 return;
             }
             EnsureFolder(MaterialDir);
@@ -57,10 +64,16 @@ namespace Voxelforge.Editor
             Material shrubMat = MakeMaterial("Foliage_Shrub", atlas, new MaterialLook { NormalUp = 0.5f, BackFaceFlip = 1f, WindScale = 0.7f, Smoothness = 0.05f });
             Material bushMat = MakeMaterial("Foliage_Bush", atlas, new MaterialLook { NormalUp = 0.15f, BackFaceFlip = 0f, WindScale = 1f, Smoothness = 0.05f });
             Material treeMat = MakeMaterial("Foliage_Tree", atlas, crowns);
+            // Roadmap 5.7: herbs glow a little where their flowers are, so gatherers can spot them.
+            Material herbMat = MakeMaterial("Foliage_Herbs", herbAtlas, flowers);
+            herbMat.SetTexture("_EmissionMap", herbGlow);
+            herbMat.SetColor("_EmissionColor", HerbGlow);
 
             var registry = AssetDatabase.LoadAssetAtPath<BlockRegistry>(RegistryPath);
             registry.TryGet(BlockIds.Grass, out BlockDefinition grassBlock);
             registry.TryGet(BlockIds.Sand, out BlockDefinition sandBlock);
+            registry.TryGet(BlockIds.Snow, out BlockDefinition snowBlock);
+            registry.TryGet(BlockIds.RedRock, out BlockDefinition redRockBlock);
             var onGrass = new[] { grassBlock };
             var onSand = new[] { sandBlock };
             var none = new BlockDefinition[0];
@@ -91,6 +104,16 @@ namespace Voxelforge.Editor
                     new[] { Weight(Snowy, 1f), Weight(Crags, 0.5f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
                 MakeDecoration("ScrubTree", "ScrubTree", DecorationKind.Tree, treeMat, none, 0f,
                     new[] { Weight(Desert, 1f), Weight(Crags, 0.6f), Weight(Plains, 1f) }, 1f, 1f, 90f, 240f, true, BiomeTint.Foliage),
+                // Roadmap 5.7: herbs. Density is the chance that a herb spot (one per 12x12 blocks, HerbPlacement) grows
+                // one, so about one herb every 20 blocks where the weight is 1. Untinted: they keep their own colours.
+                MakeDecoration("HerbSunpetal", "HerbSunpetal", DecorationKind.Herb, herbMat, onGrass, 0.35f,
+                    new[] { Weight(Meadows, 1f), Weight(Plains, 0.8f) }, 1f, 1.2f, 40f, 90f, false, BiomeTint.None,
+                    ItemIds.Sunpetal),
+                MakeDecoration("HerbFrostbloom", "HerbFrostbloom", DecorationKind.Herb, herbMat, new[] { snowBlock, grassBlock },
+                    0.35f, new[] { Weight(Snowy, 1f) }, 1f, 1.2f, 40f, 90f, false, BiomeTint.None, ItemIds.Frostbloom),
+                MakeDecoration("HerbEmberthorn", "HerbEmberthorn", DecorationKind.Herb, herbMat,
+                    new[] { grassBlock, sandBlock, redRockBlock }, 0.3f, new[] { Weight(Crags, 1f), Weight(Desert, 0.8f) }, 1f, 1.2f,
+                    40f, 90f, false, BiomeTint.None, ItemIds.Emberthorn),
             };
             if (decorations.Contains(null))
                 return;
@@ -124,6 +147,9 @@ namespace Voxelforge.Editor
         }
 
         static BiomeWeight Weight(string biome, float weight) => new BiomeWeight { biome = biome, weight = weight };
+
+        // How brightly the herbs' flowers glow (times Herb_Glow.png): a hint, not a lamp.
+        static readonly Color HerbGlow = new Color(0.9f, 0.9f, 0.9f);
 
         static Material MakeMaterial(string name, Texture2D atlas, MaterialLook look)
         {
@@ -165,7 +191,7 @@ namespace Voxelforge.Editor
 
         static DecorationDefinition MakeDecoration(string name, string model, DecorationKind kind, Material material,
             BlockDefinition[] surfaces, float density, BiomeWeight[] biomes, float minScale, float maxScale,
-            float lodDistance, float maxDistance, bool castShadows, BiomeTint tint)
+            float lodDistance, float maxDistance, bool castShadows, BiomeTint tint, ushort herbItem = 0)
         {
             if (!TryLoadMeshes(model, out Mesh mesh, out Mesh lodMesh))
                 return null;
@@ -202,6 +228,7 @@ namespace Voxelforge.Editor
             serialized.FindProperty("minScale").floatValue = minScale;
             serialized.FindProperty("maxScale").floatValue = maxScale;
             serialized.FindProperty("modelTrunkHeight").floatValue = 5f;
+            serialized.FindProperty("herbItem").intValue = herbItem;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return decoration;
         }

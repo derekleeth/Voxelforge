@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effb3ad817f82d247b967dc816db6a8b, type: 3}
+  m_Name: HerbSunpetal
+  m_EditorClassIdentifier: Voxelforge.Voxels::Voxelforge.Voxels.DecorationDefinition
+  kind: 3
+  mesh: {fileID: -4155257079541155788, guid: 9d104db7073381e45bfef3b2037a8018, type: 3}
+  lodMesh: {fileID: -2313614685877516787, guid: 9d104db7073381e45bfef3b2037a8018, type: 3}
+  material: {fileID: 2100000, guid: 39582d6d753d0864ea97f4079c696662, type: 2}
+  tint: 0
+  castShadows: 0
+  lodDistance: 40
+  maxDistance: 90
+  propBlock: {fileID: 0}
+  attach: 0
+  surfaces:
+  - {fileID: 11400000, guid: 6dae048c3eb694c48b638509b3ee539b, type: 2}
+  density: 0.35
+  biomes:
+  - biome: Meadows (Elwynn style)
+    weight: 1
+  - biome: Thunderhoof Plains
+    weight: 0.8
+  minScale: 1
+  maxScale: 1.2
+  modelTrunkHeight: 5
+  light:
+    enabled: 0
+    color: {r: 0, g: 0, b: 0, a: 0}
+    intensity: 0
+    range: 0
+    offset: {x: 0, y: 0, z: 0}
+    flicker: 0
+  herbItem: 1310

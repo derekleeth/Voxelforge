@@ -19,6 +19,8 @@ namespace Voxelforge.Voxels
     /// <item><b>Props</b> (Roadmap 3.5): every prop block (torch, workbench) gets its model, stood on the floor or hung
     /// on a wall by <see cref="VoxelSupport"/>'s rules. Props are blocks players placed, so they come back from the
     /// delta log like any other block.</item>
+    /// <item><b>Herbs</b> (Roadmap 5.7): an open block top on a <see cref="HerbPlacement"/> spot may grow a herb instead
+    /// of grass or flowers. Picked herbs are hidden afterwards by <see cref="DecorationLayer.SetHerbHidden"/>.</item>
     /// </list>
     /// A decoration belongs to the chunk holding the block it stands on, so it disappears when that block changes.
     /// Each one is tinted with its biome's grass or foliage colour where it stands (Roadmap 2.6).
@@ -36,7 +38,11 @@ namespace Voxelforge.Voxels
 
             uint seedHash = seed.Hash(DecorationSalt);
             uint treeHash = TreePlacement.SeedHash(seed);
+            uint herbHash = HerbPlacement.SeedHash(seed);
             int biomeCount = sampler.BiomeCount;
+            bool hasHerbs = false;
+            for (int type = 0; type < decorations.Length; type++)
+                hasHerbs |= decorations[type].Kind == DecorationKind.Herb;
 
             for (int z = 0; z < ChunkSize; z++)
             for (int x = 0; x < ChunkSize; x++)
@@ -71,6 +77,15 @@ namespace Voxelforge.Voxels
                         continue; // Only block tops open to the sky (or a cave) grow plants.
                     if (biome < 0)
                         biome = sampler.SurfaceBiome(wx, wz);
+                    if (hasHerbs && HerbPlacement.IsSpot(herbHash, wx, wz))
+                    {
+                        int herb = HerbPlacement.Choose(herbHash, wx, wz, block, biome, biomeCount, decorations, biomeWeights);
+                        if (herb >= 0)
+                        {
+                            AddHerb(new int3(wx, wy, wz), herb, herbHash, sampler, decorations, output);
+                            continue;
+                        }
+                    }
                     AddGround(new int3(wx, wy, wz), block, biome, biomeCount, seedHash, sampler, decorations, biomeWeights, output);
                 }
             }
@@ -107,6 +122,25 @@ namespace Voxelforge.Voxels
                 });
                 return;
             }
+        }
+
+        /// <summary>A herb (Roadmap 5.7) standing on block <paramref name="w"/>, in the block above it.</summary>
+        static void AddHerb(int3 w, int type, uint herbHash, in TerrainSampler sampler, NativeArray<DecorationInfo> decorations,
+            NativeList<DecorationInstance> output)
+        {
+            DecorationInfo info = decorations[type];
+            uint v = HerbPlacement.Variant(herbHash, w.x, w.z);
+            // Near the middle of its block, so the host's check of which block it's in always agrees.
+            var position = new float3(w.x + 0.3f + 0.4f * Unit(v), w.y + 1f, w.z + 0.3f + 0.4f * Unit(v >> 12));
+            output.Add(new DecorationInstance
+            {
+                Position = position,
+                Yaw = Unit(math.hash(new uint2(v, 1))) * 2f * math.PI,
+                Scale = math.lerp(info.MinScale, info.MaxScale, Unit(math.hash(new uint2(v, 2)))),
+                Type = (uint)type,
+                Tint = TintAt(sampler, position, info.Tint),
+                Random = math.hash(new uint2(v, 3)),
+            });
         }
 
         static void AddTree(int3 w, int biome, int biomeCount, uint treeHash, in TerrainSampler sampler, in TerrainParams terrain,
@@ -233,6 +267,11 @@ namespace Voxelforge.Voxels
         public void Execute()
         {
             Output.Clear();
+            // Roadmap 5.7: this line also made the editor's Burst cache rebuild this job; it had kept running a build from
+            // before herbs, with no error. HerbTests.TheDecorationJob_UnderBurst_PlacesTheSameAsWithoutIt now catches that;
+            // if a job ignores a code change, change the job itself.
+            if (!Padded.IsCreated)
+                return;
             var sampler = new TerrainSampler(Seed, Terrain, Biomes, Allocator.Temp);
             Decorator.Build(Padded, Blocks, Origin, Seed, sampler, Terrain, Decorations, BiomeWeights, Output);
             sampler.Dispose();

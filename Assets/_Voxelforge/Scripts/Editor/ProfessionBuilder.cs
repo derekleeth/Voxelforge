@@ -9,15 +9,21 @@ namespace Voxelforge.Editor
     /// <summary>
     /// <i>Voxelforge → Build Professions</i> (Roadmap 5.7, D-038): writes the <see cref="ProfessionBook"/> from the
     /// numbers below, the one place the skill cap, how skills rise, a skilled gatherer's bonus and every gatherable node
-    /// live. It also makes the ore blocks and writes the ore veins into the terrain settings (step B). Re-running it
-    /// updates the same assets in place. The ore items themselves come from <see cref="LootBuilder"/>, and the Mana
-    /// Crystal recipes from <see cref="PropsBuilder"/>.
+    /// live. It also makes the ore blocks and writes the ore veins into the terrain settings (step B), and makes the herb
+    /// items and what each herb gives (step C). Re-running it updates the same assets in place. The ore items themselves
+    /// come from <see cref="LootBuilder"/>, the Mana Crystal recipes from <see cref="PropsBuilder"/>, and where herbs grow
+    /// from <see cref="FoliageDecorationBuilder"/> (run it first, after build_herbs() in build_foliage.py).
     /// </summary>
     public static class ProfessionBuilder
     {
         internal const string BookPath = "Assets/_Voxelforge/Data/Professions/ProfessionBook.asset";
         const string BlockDir = "Assets/_Voxelforge/Data/Blocks";
         const string TerrainPath = "Assets/_Voxelforge/Data/Terrain/TerrainSettings.asset";
+        const string YieldDir = "Assets/_Voxelforge/Data/Professions/Yields";
+        const string HerbItemDir = "Assets/_Voxelforge/Data/Items/Herbs";
+        const string ItemRegistryPath = "Assets/_Voxelforge/Data/Items/ItemRegistry.asset";
+        const string FoliageModelDir = "Assets/_Voxelforge/Art/Models/Foliage";
+        const string HerbMaterialPath = "Assets/_Voxelforge/Art/Materials/Foliage/Herb_Held.mat";
 
         // Biome names, as in the terrain settings.
         const string Desert = "Desert (Tanaris style)";
@@ -41,6 +47,42 @@ namespace Voxelforge.Editor
 
         // The skill that shows a profession's heat map on the World Map.
         const int HeatMapSkill = 10;
+
+        // ---- Herbs (step C) ----
+        // A picked herb grows back after this long (kept by the host, saved with the world).
+        const float HerbRegrowSeconds = 300f;
+        // The gather cast: moving, jumping or mining cancels it.
+        const float HerbGatherSeconds = 1.5f;
+
+        readonly struct Herb
+        {
+            public readonly ushort Item;
+            public readonly string Model;
+            public readonly string Name;
+            public readonly ItemRarity Rarity;
+            public readonly int Skill;
+            public readonly LootDrop[] Yield;
+
+            public Herb(ushort item, string model, string name, ItemRarity rarity, int skill, params LootDrop[] yield)
+            {
+                Item = item;
+                Model = model;
+                Name = name;
+                Rarity = rarity;
+                Skill = skill;
+                Yield = yield;
+            }
+        }
+
+        // Each pick gives 1-2 of the herb; the rarer ones sometimes a little of their biome's essence too.
+        static readonly Herb[] Herbs =
+        {
+            new Herb(ItemIds.Sunpetal, "HerbSunpetal", "Sunpetal", ItemRarity.Common, 1, new LootDrop(ItemIds.Sunpetal, 1f, 1, 2)),
+            new Herb(ItemIds.Frostbloom, "HerbFrostbloom", "Frostbloom", ItemRarity.Common, 25,
+                new LootDrop(ItemIds.Frostbloom, 1f, 1, 2), new LootDrop(ItemIds.FrostEssence, 0.05f)),
+            new Herb(ItemIds.Emberthorn, "HerbEmberthorn", "Emberthorn", ItemRarity.Rare, 50,
+                new LootDrop(ItemIds.Emberthorn, 1f, 1, 2), new LootDrop(ItemIds.EarthEssence, 0.08f)),
+        };
 
         // ---- Ore (step B). Tougher tiers take longer to mine (Stone is 60) and need more skill. ----
         const int CopperDurability = 80;
@@ -66,8 +108,8 @@ namespace Voxelforge.Editor
                 new OreBiomeRichness(RedCrags, 0.85f), new OreBiomeRichness(SnowyPeaks, 0.85f)),
         };
 
-        // Steps C and D add the herbs and mobs.
-        static readonly GatherNode[] Nodes =
+        // Step D adds the mobs.
+        static readonly GatherNode[] OreNodes =
         {
             new GatherNode(ProfessionId.Mining, GatherNodeKind.Ore, BlockIds.CopperOre, 1),
             new GatherNode(ProfessionId.Mining, GatherNodeKind.Ore, BlockIds.IronOre, 25),
@@ -78,6 +120,9 @@ namespace Voxelforge.Editor
         public static void Build()
         {
             BuildOres();
+            var nodes = new List<GatherNode>(OreNodes);
+            if (!BuildHerbs(nodes))
+                return;
 
             var book = AssetDatabase.LoadAssetAtPath<ProfessionBook>(BookPath);
             if (book == null)
@@ -98,7 +143,8 @@ namespace Voxelforge.Editor
             serialized.FindProperty("bonusYieldRange").intValue = BonusYieldRange;
             serialized.FindProperty("maxBonusYieldChance").floatValue = MaxBonusYieldChance;
             serialized.FindProperty("heatMapSkill").intValue = HeatMapSkill;
-            WriteNodes(serialized.FindProperty("nodes"), Nodes);
+            serialized.FindProperty("herbRegrowSeconds").floatValue = HerbRegrowSeconds;
+            WriteNodes(serialized.FindProperty("nodes"), nodes);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(book);
             AssetDatabase.SaveAssets();
@@ -107,7 +153,7 @@ namespace Voxelforge.Editor
             if (problems.Count > 0)
                 Debug.LogError("[Voxelforge] Build Professions made a book with problems:\n" + string.Join("\n", problems));
             else
-                Debug.Log($"[Voxelforge] Built the Profession Book: skills 1-{MaxSkill}, {Nodes.Length} gatherable nodes, " +
+                Debug.Log($"[Voxelforge] Built the Profession Book: skills 1-{MaxSkill}, {nodes.Count} gatherable nodes, " +
                           $"heat maps at {HeatMapSkill}.");
         }
 
@@ -157,6 +203,151 @@ namespace Voxelforge.Editor
             List<string> problems = terrain.Validate(registry);
             if (problems.Count > 0)
                 Debug.LogError("[Voxelforge] The terrain settings have problems after adding the ore:\n" + string.Join("\n", problems));
+        }
+
+        /// <summary>
+        /// The herbs (step C): an item for each (its decoration's model, held and dropped with a cut-out lit material),
+        /// a yield table, and a gather node in <paramref name="nodes"/>. False if the art is missing.
+        /// </summary>
+        static bool BuildHerbs(List<GatherNode> nodes)
+        {
+            var atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(FoliageDecorationBuilder.HerbAtlasPath);
+            var glow = AssetDatabase.LoadAssetAtPath<Texture2D>(FoliageDecorationBuilder.HerbGlowPath);
+            var registry = AssetDatabase.LoadAssetAtPath<ItemRegistry>(ItemRegistryPath);
+            if (atlas == null || glow == null || registry == null)
+            {
+                Debug.LogError("[Voxelforge] Build Professions needs the herb art (build_herbs() in build_foliage.py) and the item registry.");
+                return false;
+            }
+            EnsureFolder(YieldDir);
+            EnsureFolder(HerbItemDir);
+            Material held = MakeHerbMaterial(atlas, glow);
+
+            var serialized = new SerializedObject(registry);
+            SerializedProperty list = serialized.FindProperty("items");
+            foreach (Herb herb in Herbs)
+            {
+                ItemDefinition item = MakeHerbItem(herb, held);
+                if (item == null)
+                    return false;
+                bool listed = false;
+                for (int i = 0; i < list.arraySize; i++)
+                    listed |= list.GetArrayElementAtIndex(i).objectReferenceValue == item;
+                if (!listed)
+                {
+                    list.arraySize++;
+                    list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = item;
+                }
+                LootTable yield = MakeYield(herb.Model, herb.Yield);
+                nodes.Add(new GatherNode(ProfessionId.Herbalism, GatherNodeKind.Herb, herb.Item, herb.Skill, yield, HerbGatherSeconds));
+            }
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(registry);
+            AssetDatabase.SaveAssets();
+            return true;
+        }
+
+        static ItemDefinition MakeHerbItem(Herb herb, Material material)
+        {
+            Mesh mesh = null;
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath($"{FoliageModelDir}/{herb.Model}.fbx"))
+            {
+                if (asset is Mesh m && m.name == herb.Model + "_LOD0")
+                    mesh = m;
+            }
+            if (mesh == null)
+            {
+                Debug.LogError($"[Voxelforge] {FoliageModelDir}/{herb.Model}.fbx needs a mesh '{herb.Model}_LOD0'.");
+                return null;
+            }
+            string path = $"{HerbItemDir}/{herb.Model}.asset";
+            var item = AssetDatabase.LoadAssetAtPath<ItemDefinition>(path);
+            if (item == null)
+            {
+                item = ScriptableObject.CreateInstance<ItemDefinition>();
+                AssetDatabase.CreateAsset(item, path);
+            }
+            var serialized = new SerializedObject(item);
+            serialized.FindProperty("id").intValue = herb.Item;
+            serialized.FindProperty("displayName").stringValue = herb.Name;
+            serialized.FindProperty("category").enumValueIndex = (int)ItemCategory.Materials;
+            serialized.FindProperty("maxStack").intValue = 0; // Materials stack to 999.
+            serialized.FindProperty("rarity").enumValueIndex = (int)herb.Rarity;
+            serialized.FindProperty("mesh").objectReferenceValue = mesh;
+            serialized.FindProperty("material").objectReferenceValue = material;
+            serialized.FindProperty("heldPosition").vector3Value = PropsBuilder.Grip;
+            serialized.FindProperty("heldRotation").vector3Value = PropsBuilder.UprightPose;
+            serialized.FindProperty("heldScale").floatValue = 0.6f;
+            serialized.FindProperty("dropSize").floatValue = 1.4f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(item);
+            return item;
+        }
+
+        /// <summary>The herbs' look in a hand or lying on the ground: their atlas, cut out, both sides, glowing a little.</summary>
+        static Material MakeHerbMaterial(Texture2D atlas, Texture2D glow)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            var material = AssetDatabase.LoadAssetAtPath<Material>(HerbMaterialPath);
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, HerbMaterialPath);
+            }
+            material.shader = shader;
+            material.SetTexture("_BaseMap", atlas);
+            material.SetColor("_BaseColor", Color.white);
+            material.SetFloat("_AlphaClip", 1f);
+            material.SetFloat("_Cutoff", 0.5f);
+            material.EnableKeyword("_ALPHATEST_ON");
+            material.SetFloat("_Cull", 0f);
+            material.SetFloat("_Smoothness", 0.1f);
+            material.SetTexture("_EmissionMap", glow);
+            material.SetColor("_EmissionColor", new Color(0.9f, 0.9f, 0.9f));
+            material.EnableKeyword("_EMISSION");
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        static LootTable MakeYield(string name, LootDrop[] drops)
+        {
+            string path = $"{YieldDir}/{name}.asset";
+            var table = AssetDatabase.LoadAssetAtPath<LootTable>(path);
+            if (table == null)
+            {
+                table = ScriptableObject.CreateInstance<LootTable>();
+                AssetDatabase.CreateAsset(table, path);
+            }
+            var serialized = new SerializedObject(table);
+            serialized.FindProperty("source").enumValueIndex = (int)LootSource.Gathering;
+            serialized.FindProperty("mob").intValue = (int)MobId.None;
+            SerializedProperty list = serialized.FindProperty("drops");
+            list.arraySize = drops.Length;
+            for (int i = 0; i < drops.Length; i++)
+            {
+                SerializedProperty d = list.GetArrayElementAtIndex(i);
+                d.FindPropertyRelative("Item").intValue = drops[i].Item;
+                d.FindPropertyRelative("Chance").floatValue = drops[i].Chance;
+                d.FindPropertyRelative("Min").intValue = drops[i].Min;
+                d.FindPropertyRelative("Max").intValue = drops[i].Max;
+            }
+            serialized.FindProperty("rolls").intValue = 0;
+            serialized.FindProperty("pool").arraySize = 0;
+            serialized.FindProperty("nothingWeight").floatValue = 0f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(table);
+            return table;
+        }
+
+        static void EnsureFolder(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path))
+                return;
+            int slash = path.LastIndexOf('/');
+            EnsureFolder(path.Substring(0, slash));
+            AssetDatabase.CreateFolder(path.Substring(0, slash), path.Substring(slash + 1));
         }
 
         static void SetOreDrop(BlockDefinition block, ushort item, int durability)

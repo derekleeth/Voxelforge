@@ -23,6 +23,8 @@ namespace Voxelforge.Voxels
         /// <summary>Props: the block this model is drawn on.</summary>
         public ushort PropBlock;
         public PropAttach Attach;
+        /// <summary>Herbs (Roadmap 5.7): the item picking one gives. 0 for everything else.</summary>
+        public ushort HerbItem;
 
         public bool GrowsOn(ushort blockId) => blockId < MaxSurfaceId && (SurfaceMask & (1ul << blockId)) != 0;
     }

@@ -49,6 +49,7 @@ GameObject:
   - component: {fileID: 4835254897710712830}
   - component: {fileID: 3004604667586978743}
   - component: {fileID: 6260979436986370049}
+  - component: {fileID: 6210970179694210606}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -780,6 +781,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerProfessions
   ShowTopMostFoldoutHeaderGroup: 1
   book: {fileID: 11400000, guid: 2c31382eee81b8d4abd7ddb7085a4f11, type: 2}
+  needsSkillRepeat: 1.5
+--- !u!114 &6210970179694210606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082564369629222163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc292ac26c4f4c147884849bc852035b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.PlayerGatherer
+  ShowTopMostFoldoutHeaderGroup: 1
+  herbSearch: 1
 --- !u!1 &5120874411902635000
 GameObject:
   m_ObjectHideFlags: 0

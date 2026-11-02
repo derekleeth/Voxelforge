@@ -1601,6 +1601,7 @@ MonoBehaviour:
   networkManager: {fileID: 2147055199}
   chests: {fileID: 1043139414}
   earth: {fileID: 1393770365}
+  herbs: {fileID: 2145343290}
   worldName: World1
   startNewWorld: 0
   autosaveMinutes: 2
@@ -1845,6 +1846,7 @@ GameObject:
   - component: {fileID: 2145343288}
   - component: {fileID: 2145343287}
   - component: {fileID: 2145343289}
+  - component: {fileID: 2145343290}
   m_Layer: 0
   m_Name: Session Network
   m_TagString: Untagged
@@ -1915,6 +1917,22 @@ MonoBehaviour:
   spawnColumn: {x: 256, y: 256}
   spawnSpacing: 3
   spawnSearchTopY: 255
+--- !u!114 &2145343290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2145343286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5eed457af89ee349ad82a730c6d341f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Voxelforge.Gameplay::Voxelforge.Gameplay.HerbField
+  ShowTopMostFoldoutHeaderGroup: 1
+  world: {fileID: 1325734895}
+  book: {fileID: 11400000, guid: 2c31382eee81b8d4abd7ddb7085a4f11, type: 2}
+  regrowCheck: 1
 --- !u!1 &2147055194
 GameObject:
   m_ObjectHideFlags: 0
@@ -1997,6 +2015,7 @@ MonoBehaviour:
   chests: {fileID: 1043139414}
   targets: {fileID: 224526125}
   earth: {fileID: 1393770365}
+  herbs: {fileID: 2145343290}
 --- !u!114 &2147055198
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -57,6 +57,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Earth raised by spells (Roadmap 4.6): Rising Pillar, Earthen Wall.")]
         [SerializeField] EarthWorks earth;
 
+        [Tooltip("The picked herbs (Roadmap 5.7), on the Session Network object.")]
+        [SerializeField] HerbField herbs;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -77,6 +80,8 @@ namespace Voxelforge.Gameplay
 
         /// <summary>Host only: earth raised by spells (Roadmap 4.6).</summary>
         public EarthWorks Earth => earth;
+
+        public HerbField Herbs => herbs;
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 

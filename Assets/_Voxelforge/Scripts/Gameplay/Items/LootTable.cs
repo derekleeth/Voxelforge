@@ -11,6 +11,11 @@ namespace Voxelforge.Gameplay
         Mob = 0,
         /// <summary>A ruin's Storage Chest (5.4), once for each hero, the first time they open it.</summary>
         RuinCache = 1,
+        /// <summary>
+        /// What a gathering node gives each time (Roadmap 5.7): a herb, or a skinned body. Named by its node in the
+        /// Profession Book, not in the Loot Book.
+        /// </summary>
+        Gathering = 2,
     }
 
     /// <summary>An item that drops on its own chance, whatever else drops: the hides and fangs (Roadmap 5.5).</summary>

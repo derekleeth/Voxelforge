@@ -57,6 +57,11 @@ namespace Voxelforge.Voxels
         readonly Stack<int2[]> _rangePool = new Stack<int2[]>();
         readonly Stack<NativeList<DecorationInstance>> _listPool = new Stack<NativeList<DecorationInstance>>();
         readonly int[] _typeCounts;
+        // Herbs (Roadmap 5.7): which types are herbs, and the picked ones to keep hidden (with the size to give back).
+        readonly bool[] _isHerb;
+        readonly uint _herbHash;
+        readonly HashSet<int3> _hiddenHerbs = new HashSet<int3>();
+        readonly Dictionary<int3, float> _hiddenScales = new Dictionary<int3, float>();
         bool _isDisposed;
 
         /// <param name="biomes">Read, not owned: the generator's biome list, which must outlive this layer.</param>
@@ -81,7 +86,72 @@ namespace Voxelforge.Voxels
                 };
             }
             _typeCounts = new int[_types.Length];
+            _isHerb = new bool[_types.Length];
+            for (int i = 0; i < _types.Length; i++)
+                _isHerb[i] = _infos[i].Kind == DecorationKind.Herb;
+            _herbHash = HerbPlacement.SeedHash(seed);
         }
+
+        /// <summary>
+        /// The herb (its item ID) that grows in block <paramref name="cell"/>, if one does (Roadmap 5.7): the block must be
+        /// <paramref name="blockInCell"/> = air on a herb spot, over <paramref name="blockBelow"/>. Worked out from the seed
+        /// like the drawn herbs, so the host can check a gatherer's request anywhere. Whether it was picked is
+        /// <c>HerbField</c>'s business. Builds a terrain sampler, so call it per request, not per frame.
+        /// </summary>
+        public bool TryGetHerb(int3 cell, ushort blockInCell, ushort blockBelow, out ushort herbItem)
+        {
+            herbItem = 0;
+            if (blockInCell != BlockIds.Air || !HerbPlacement.IsSpot(_herbHash, cell.x, cell.z) || Array.IndexOf(_isHerb, true) < 0)
+                return false;
+            var sampler = new TerrainSampler(_seed, _terrain, _biomes, Allocator.Temp);
+            int biome = sampler.SurfaceBiome(cell.x, cell.z);
+            int type = HerbPlacement.Choose(_herbHash, cell.x, cell.z, blockBelow, biome, sampler.BiomeCount, _infos, _biomeWeights);
+            sampler.Dispose();
+            if (type < 0)
+                return false;
+            herbItem = _infos[type].HerbItem;
+            return true;
+        }
+
+        /// <summary>
+        /// Hides the herb in block <paramref name="cell"/> (it was picked), or shows it again (it grew back), on this PC
+        /// (Roadmap 5.7). Remembered, so a chunk that's rebuilt or streams back in keeps it hidden.
+        /// </summary>
+        public void SetHerbHidden(int3 cell, bool hidden)
+        {
+            if (hidden ? !_hiddenHerbs.Add(cell) : !_hiddenHerbs.Remove(cell))
+                return;
+            var coord = new ChunkCoord((cell - new int3(0, 1, 0)) >> VoxelConstants.ChunkShift);
+            if (!_chunks.TryGetValue(coord, out int2[] ranges))
+                return; // Not loaded: AddChunk hides it when it is.
+            for (int type = 0; type < _types.Length; type++)
+            {
+                if (!_isHerb[type])
+                    continue;
+                TypeData data = _types[type];
+                for (int i = ranges[type].x; i < ranges[type].x + ranges[type].y; i++)
+                {
+                    DecorationInstance instance = data.Instances[i];
+                    if (!math.all(HerbPlacement.CellOf(instance.Position) == cell))
+                        continue;
+                    if (hidden)
+                    {
+                        _hiddenScales[cell] = instance.Scale;
+                        instance.Scale = 0f;
+                    }
+                    else if (_hiddenScales.Remove(cell, out float scale))
+                    {
+                        instance.Scale = scale;
+                    }
+                    data.Instances[i] = instance;
+                    data.MarkDirty(i, 1);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>True if the herb in <paramref name="cell"/> is hidden on this PC (picked). For tests.</summary>
+        public bool IsHerbHidden(int3 cell) => _hiddenHerbs.Contains(cell);
 
         public IReadOnlyList<TypeData> Types => _types;
 
@@ -180,6 +250,15 @@ namespace Voxelforge.Voxels
             {
                 DecorationInstance instance = instances[i];
                 int type = (int)instance.Type;
+                if (_isHerb[type] && _hiddenHerbs.Count > 0)
+                {
+                    int3 cell = HerbPlacement.CellOf(instance.Position);
+                    if (_hiddenHerbs.Contains(cell))
+                    {
+                        _hiddenScales[cell] = instance.Scale;
+                        instance.Scale = 0f; // Picked (Roadmap 5.7).
+                    }
+                }
                 _types[type].Instances[ranges[type].x + _typeCounts[type]++] = instance;
             }
 

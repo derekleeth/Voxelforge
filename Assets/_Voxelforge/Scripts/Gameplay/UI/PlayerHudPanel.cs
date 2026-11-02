@@ -42,6 +42,7 @@ namespace Voxelforge.Gameplay
 
         PlayerController _player;
         PlayerCaster _caster;
+        PlayerGatherer _gatherer;
         PlayerHealth _health;
         PlayerLevel _level;
         PlayerActionBar _bar;
@@ -64,7 +65,7 @@ namespace Voxelforge.Gameplay
             _actionBar = new ActionBarView(_barGroup, skin);
             HudWidgets.Place(_barGroup, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f),
                 new Vector2(_actionBar.Width, _actionBar.Height));
-            _castBar = new CastBarView(_actionBar.Root, skin);
+            _castBar = new CastBarView(_actionBar.Root, skin, itemName, itemIcon);
 
             // Combat text gets its own area and canvas: it clips to the player's view, which in a merged view is wider
             // than the half their bar sits in.
@@ -135,10 +136,13 @@ namespace Voxelforge.Gameplay
                 _cues.Received -= OnCue;
             if (_combatText != null)
                 _combatText.Raised -= OnCombatText;
+            if (_gatherer != null)
+                _gatherer.Gathered -= OnGathered;
             _feed.Clear();
 
             _player = player;
             _caster = player != null ? player.GetComponent<PlayerCaster>() : null;
+            _gatherer = player != null ? player.GetComponent<PlayerGatherer>() : null;
             _health = player != null ? player.GetComponent<PlayerHealth>() : null;
             _level = player != null ? player.GetComponent<PlayerLevel>() : null;
             _bar = player != null ? player.GetComponent<PlayerActionBar>() : null;
@@ -163,7 +167,11 @@ namespace Voxelforge.Gameplay
                 _cues.Received += OnCue;
             if (_combatText != null)
                 _combatText.Raised += OnCombatText;
+            if (_gatherer != null)
+                _gatherer.Gathered += OnGathered;
         }
+
+        void OnGathered(ushort item) => _castBar.Gathered(item, Time.time);
 
         public void SetVisible(bool visible)
         {
@@ -210,7 +218,7 @@ namespace Voxelforge.Gameplay
 
             PlayerButtons buttons = _player != null ? _player.OwnerInput.Buttons : PlayerButtons.None;
             _actionBar.Tick(_bar, _caster, _health, _level, buttons, now);
-            _castBar.Tick(_caster, now);
+            _castBar.Tick(_caster, _gatherer, now);
             if (_player != null)
                 _targetBars.Tick(targets, creatures, view, textArea, scale, _player.transform.position, now);
             _threatMarks.Tick(_player, _targeting, creatures, view, textArea, scale, now);

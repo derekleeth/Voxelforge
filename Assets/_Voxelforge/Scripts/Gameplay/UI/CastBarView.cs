@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,7 @@ namespace Voxelforge.Gameplay
     /// One player's cast bar (Roadmap 4.4): a wood-and-ink frame above their action bar, the spell's icon and name in the
     /// medieval lettering, and a fill as the cast goes on. When the spell goes off the bar fills, flashes white and fades;
     /// when it's stopped it turns red and fades. Timed on this PC from the host's cues (<see cref="PlayerCaster"/>).
+    /// Gathering a herb (Roadmap 5.7, <see cref="PlayerGatherer"/>) shows on it the same way, with the herb's name and icon.
     /// </summary>
     sealed class CastBarView
     {
@@ -19,15 +21,22 @@ namespace Voxelforge.Gameplay
         readonly Image _icon;
         readonly TextMeshProUGUI _name;
         readonly TextMeshProUGUI _time;
+        readonly RawImage _itemIcon;
+        readonly Func<ushort, string> _itemName;
+        readonly Func<ushort, Texture> _itemIconOf;
         AbilityDefinition _shown;
+        ushort _gatherShown;
         int _tenthsShown = -1;
         float _fadeStart = float.NegativeInfinity;
         bool _fading;
 
         /// <param name="parent">The action bar strip; the cast bar floats above it and its mana bar.</param>
-        public CastBarView(RectTransform parent, HudSkin skin)
+        public CastBarView(RectTransform parent, HudSkin skin, Func<ushort, string> itemName = null,
+            Func<ushort, Texture> itemIcon = null)
         {
             _skin = skin;
+            _itemName = itemName;
+            _itemIconOf = itemIcon;
             float height = skin.castBarHeight;
             Root = HudWidgets.Place(HudWidgets.Rect("Cast Bar", parent), new Vector2(0.5f, 1f), new Vector2(0.5f, 0f),
                 new Vector2(height * 0.5f, skin.manaBarHeight + 30f), new Vector2(skin.castBarWidth, height));
@@ -50,6 +59,12 @@ namespace Voxelforge.Gameplay
             HudWidgets.Stretch(HudWidgets.Image("Back", iconRoot, skin.slotBack, Color.white).rectTransform, 3f);
             _icon = HudWidgets.Image("Picture", iconRoot, null, Color.white);
             HudWidgets.Stretch(_icon.rectTransform, 4f);
+            // An item's picture (a herb being gathered) instead of a spell's.
+            _itemIcon = new GameObject("Item Picture", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+            _itemIcon.transform.SetParent(iconRoot, false);
+            _itemIcon.raycastTarget = false;
+            _itemIcon.enabled = false;
+            HudWidgets.Stretch(_itemIcon.rectTransform, 4f);
             HudWidgets.Stretch(HudWidgets.Image("Frame", iconRoot, skin.slotFrame, Color.white).rectTransform);
 
             _name = HudWidgets.Label("Name", Root, skin.titleFont, height * 1.15f, new Color(1f, 0.93f, 0.75f),
@@ -72,7 +87,17 @@ namespace Voxelforge.Gameplay
             StartFade(now);
         }
 
-        public void Tick(PlayerCaster caster, float now)
+        /// <summary>Gathering went through: show the bar full and flash it, as a spell going off.</summary>
+        public void Gathered(ushort item, float now)
+        {
+            if (_gatherShown != item)
+                return;
+            _fill.fillAmount = 1f;
+            _fill.color = Color.white;
+            StartFade(now);
+        }
+
+        public void Tick(PlayerCaster caster, PlayerGatherer gatherer, float now)
         {
             AbilityDefinition casting = caster != null ? caster.Casting : null;
             if (casting != null)
@@ -80,9 +105,12 @@ namespace Voxelforge.Gameplay
                 if (_shown != casting || _fading)
                 {
                     _shown = casting;
+                    _gatherShown = 0;
                     _fading = false;
                     _name.text = casting.DisplayName;
                     _icon.sprite = _skin.IconFor(casting);
+                    _icon.enabled = true;
+                    _itemIcon.enabled = false;
                     _fill.color = _skin.cast;
                     _tenthsShown = -1;
                 }
@@ -99,8 +127,36 @@ namespace Voxelforge.Gameplay
                 return;
             }
 
+            if (gatherer != null && gatherer.IsGathering)
+            {
+                ushort item = gatherer.GatheringItem;
+                if (_gatherShown != item || _shown != null || _fading)
+                {
+                    _shown = null;
+                    _gatherShown = item;
+                    _fading = false;
+                    _name.text = _itemName != null ? _itemName(item) : string.Empty;
+                    _itemIcon.texture = _itemIconOf?.Invoke(item);
+                    _itemIcon.enabled = _itemIcon.texture != null;
+                    _icon.enabled = false;
+                    _fill.color = _skin.cast;
+                    _tenthsShown = -1;
+                }
+                _group.alpha = 1f;
+                float progress = gatherer.Progress;
+                if (!Mathf.Approximately(_fill.fillAmount, progress))
+                    _fill.fillAmount = progress;
+                int tenths = Mathf.CeilToInt((1f - progress) * gatherer.GatherSeconds * 10f);
+                if (tenths != _tenthsShown)
+                {
+                    _tenthsShown = tenths;
+                    _time.SetText("{0:1}", tenths / 10f);
+                }
+                return;
+            }
+
             // The cast ended without going off: stopped.
-            if (_shown != null && !_fading)
+            if ((_shown != null || _gatherShown != 0) && !_fading)
             {
                 _fill.color = _skin.refusal;
                 StartFade(now);
@@ -113,6 +169,7 @@ namespace Voxelforge.Gameplay
                 {
                     _fading = false;
                     _shown = null;
+                    _gatherShown = 0;
                 }
             }
         }

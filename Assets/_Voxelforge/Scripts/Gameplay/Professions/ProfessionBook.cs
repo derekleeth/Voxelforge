@@ -72,6 +72,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("The skill that unlocks the profession's heat map on the World Map.")]
         [SerializeField, Min(1)] int heatMapSkill = 10;
 
+        [Tooltip("How long a picked herb takes to grow back, in seconds.")]
+        [SerializeField, Min(1f)] float herbRegrowSeconds = 300f;
+
         [SerializeField] List<GatherNode> nodes = new List<GatherNode>();
 
         public int MaxSkill => maxSkill;
@@ -83,6 +86,7 @@ namespace Voxelforge.Gameplay
         public int BonusYieldRange => bonusYieldRange;
         public float MaxBonusYieldChance => maxBonusYieldChance;
         public int HeatMapSkill => heatMapSkill;
+        public float HerbRegrowSeconds => herbRegrowSeconds;
         public IReadOnlyList<GatherNode> Nodes => nodes;
 
         /// <summary>The node for the ore block, herb or mob <paramref name="id"/>, if it's gatherable.</summary>
@@ -133,7 +137,7 @@ namespace Voxelforge.Gameplay
         /// <summary>Builds a book in code, for tests and tools.</summary>
         internal static ProfessionBook Create(int maxSkill = 100, IEnumerable<GatherNode> nodes = null, int orangeRange = 10,
             int yellowRange = 25, int greenRange = 40, float yellowChance = 0.6f, float greenChance = 0.25f,
-            int bonusYieldRange = 50, float maxBonusYieldChance = 0.5f, int heatMapSkill = 10)
+            int bonusYieldRange = 50, float maxBonusYieldChance = 0.5f, int heatMapSkill = 10, float herbRegrowSeconds = 300f)
         {
             var book = CreateInstance<ProfessionBook>();
             book.maxSkill = maxSkill;
@@ -145,6 +149,7 @@ namespace Voxelforge.Gameplay
             book.bonusYieldRange = bonusYieldRange;
             book.maxBonusYieldChance = maxBonusYieldChance;
             book.heatMapSkill = heatMapSkill;
+            book.herbRegrowSeconds = herbRegrowSeconds;
             book.nodes = new List<GatherNode>(nodes ?? Array.Empty<GatherNode>());
             return book;
         }

@@ -33,6 +33,7 @@ namespace Voxelforge.Gameplay
         PlayerController _player;
         PlayerBlockBag _bag;
         PlayerChest _chest;
+        PlayerGatherer _gatherer;
         readonly List<ItemStack> _stacks = new List<ItemStack>();
 
         // Owner state.
@@ -61,6 +62,7 @@ namespace Voxelforge.Gameplay
             _player = GetComponent<PlayerController>();
             _bag = GetComponent<PlayerBlockBag>();
             _chest = GetComponent<PlayerChest>();
+            _gatherer = GetComponent<PlayerGatherer>();
         }
 
         void Update()
@@ -72,9 +74,14 @@ namespace Voxelforge.Gameplay
             PlayerButtons pressed = buttons & ~_previousButtons;
             _previousButtons = buttons;
 
-            // Aiming at a Storage Chest (Roadmap 4.5), Interact opens that instead.
-            if ((pressed & PlayerButtons.Interact) != 0 && (_menuOpen || _chest == null || !_chest.OwnerTryOpenAimed()))
-                _menuOpen = !_menuOpen;
+            // Aiming at a herb (Roadmap 5.7), Interact gathers it; at a Storage Chest (Roadmap 4.5), it opens that.
+            if ((pressed & PlayerButtons.Interact) != 0)
+            {
+                if (_menuOpen)
+                    _menuOpen = false;
+                else if ((_gatherer == null || !_gatherer.OwnerTryGatherAimed()) && (_chest == null || !_chest.OwnerTryOpenAimed()))
+                    _menuOpen = true;
+            }
             if (!_menuOpen || !_player.HasLanded)
                 return;
 

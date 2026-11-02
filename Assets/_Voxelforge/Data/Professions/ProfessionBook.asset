@@ -21,6 +21,7 @@ MonoBehaviour:
   bonusYieldRange: 50
   maxBonusYieldChance: 0.5
   heatMapSkill: 10
+  herbRegrowSeconds: 300
   nodes:
   - Profession: 0
     Kind: 0
@@ -40,3 +41,21 @@ MonoBehaviour:
     RequiredSkill: 50
     Yield: {fileID: 0}
     GatherSeconds: 0
+  - Profession: 1
+    Kind: 1
+    Id: 1310
+    RequiredSkill: 1
+    Yield: {fileID: 11400000, guid: 3d332481ebe2d1848861df0565ef0d02, type: 2}
+    GatherSeconds: 1.5
+  - Profession: 1
+    Kind: 1
+    Id: 1311
+    RequiredSkill: 25
+    Yield: {fileID: 11400000, guid: 54017ade1dc7d654c9e43d18e68fdb5d, type: 2}
+    GatherSeconds: 1.5
+  - Profession: 1
+    Kind: 1
+    Id: 1312
+    RequiredSkill: 50
+    Yield: {fileID: 11400000, guid: e2a3e7f78007e464eb3788a7a3fa63f6, type: 2}
+    GatherSeconds: 1.5

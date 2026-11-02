@@ -162,6 +162,8 @@ namespace Voxelforge.Tests
             save.Chests[new int3(-200, 12, 7)] = new List<ItemStack>();
             save.Earth[new int3(5, 70, -9)] = 21.5f;
             save.Earth[new int3(5, 71, -9)] = 0.25f;
+            save.Herbs[new int3(250, 72, 260)] = 120.5f;
+            save.Herbs[new int3(-30, 140, 7)] = 0f;
             return save;
         }
 
@@ -209,6 +211,7 @@ namespace Voxelforge.Tests
                 Assert.AreEqual(want.Professions, got.Professions, "Gathering skills (v9).");
             }
             CollectionAssert.AreEquivalent(save.Earth, loaded.Earth, "Earthen Rock and its time left (v4).");
+            CollectionAssert.AreEquivalent(save.Herbs, loaded.Herbs, "Picked herbs and their time to grow back (v10).");
 
             Assert.AreEqual(save.Chests.Count, loaded.Chests.Count);
             foreach (KeyValuePair<int3, List<ItemStack>> chest in save.Chests)
@@ -338,6 +341,17 @@ namespace Voxelforge.Tests
         }
 
         [Test]
+        public void Version9Save_StillLoads_WithEveryHerbGrown()
+        {
+            WorldSave save = SampleSave();
+            Assert.AreEqual(WorldLoadResult.Loaded, ReadBytes(OlderFile(save, 9), out WorldSave loaded));
+            Assert.IsNotNull(loaded.Herbs);
+            Assert.AreEqual(0, loaded.Herbs.Count, "Before 5.7 step C nobody had picked a herb.");
+            foreach (PlayerProfile want in save.Profiles.Values)
+                Assert.AreEqual(want.Professions, loaded.Profiles[want.Uuid].Professions, "The skills survive.");
+        }
+
+        [Test]
         public void Version8Save_StillLoads_WithEveryProfessionAtOne()
         {
             WorldSave save = SampleSave();
@@ -444,6 +458,10 @@ namespace Voxelforge.Tests
         static byte[] OlderFile(WorldSave save, int version)
         {
             var body = new List<byte>(WorldSaveFile.EncodeBody(save));
+            int herbBlock = 4 + save.Herbs.Count * (12 + 4);
+            body.RemoveRange(body.Count - 4 - herbBlock, herbBlock); // Picked herbs (v10).
+            if (version >= 9)
+                return SaveFileBytes(body, version);
             int skillBlock = 4 + save.Profiles.Count * (16 + ProfessionSkills.Count);
             body.RemoveRange(body.Count - 4 - skillBlock, skillBlock); // Gathering skills (v9).
             if (version >= 8)
@@ -496,9 +514,9 @@ namespace Voxelforge.Tests
         {
             byte[] full = WorldSaveFile.EncodeBody(save);
             var empty = new WorldSave { Seed = save.Seed, GeneratorVersion = save.GeneratorVersion, SavedUtc = save.SavedUtc, Deltas = save.Deltas };
-            // The same body with no profiles, chests, earth, explored cells, gear, levels or skills is: header + deltas +
-            // 7 zero counts + end marker.
-            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4;
+            // The same body with no profiles, chests, earth, explored cells, gear, levels, skills or herbs is: header +
+            // deltas + 8 zero counts + end marker.
+            int header = WorldSaveFile.EncodeBody(empty).Length - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4;
             int profiles = 0;
             foreach (PlayerProfile profile in save.Profiles.Values)
                 profiles += FullProfileBytes(profile);

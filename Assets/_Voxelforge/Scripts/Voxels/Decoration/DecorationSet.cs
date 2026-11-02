@@ -38,8 +38,10 @@ namespace Voxelforge.Voxels
 
                 if (decoration.Mesh == null || decoration.Material == null)
                     errors.Add($"'{decoration.name}' needs a mesh and a material.");
-                if (decoration.Kind == DecorationKind.Ground && decoration.Surfaces.Count == 0)
+                if ((decoration.Kind == DecorationKind.Ground || decoration.Kind == DecorationKind.Herb) && decoration.Surfaces.Count == 0)
                     errors.Add($"'{decoration.name}' has no surface blocks to grow on.");
+                if (decoration.Kind == DecorationKind.Herb && decoration.HerbItem < BlockIds.FirstItem)
+                    errors.Add($"'{decoration.name}' is a herb, so it needs a Herb Item (an item ID, {BlockIds.FirstItem} or more).");
                 if (decoration.Kind == DecorationKind.Prop)
                 {
                     if (decoration.PropBlock == null || !decoration.PropBlock.IsProp)

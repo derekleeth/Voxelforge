@@ -44,6 +44,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Earthen Rock raised by spells (Roadmap 4.6): its crumble timers are saved with the world.")]
         [SerializeField] EarthWorks earth;
 
+        [Tooltip("Picked herbs (Roadmap 5.7): when each grows back is saved with the world.")]
+        [SerializeField] HerbField herbs;
+
         [Tooltip("The save's folder name. -world <name> on the command line overrides it.")]
         [SerializeField] string worldName = "World1";
 
@@ -65,6 +68,8 @@ namespace Voxelforge.Gameplay
         Dictionary<int3, List<ItemStack>> _chests = new Dictionary<int3, List<ItemStack>>();
         // Earthen Rock timers (Roadmap 4.6) as loaded, carried through unchanged in a scene without EarthWorks.
         Dictionary<int3, float> _earth = new Dictionary<int3, float>();
+        // Picked herbs (Roadmap 5.7) as loaded, carried through unchanged in a scene without a HerbField.
+        Dictionary<int3, float> _herbs = new Dictionary<int3, float>();
         string _path;
         string _blockedReason;
         Task<(long bytes, double ms)> _writeTask;
@@ -196,6 +201,9 @@ namespace Voxelforge.Gameplay
             _earth = save.Earth;
             if (earth != null)
                 earth.ServerRestore(save.Earth);
+            _herbs = save.Herbs;
+            if (herbs != null)
+                herbs.ServerRestore(save.Herbs);
             if (chests != null)
                 chests.ServerRestore(save.Chests);
             LoadedFromSave = true;
@@ -290,6 +298,7 @@ namespace Voxelforge.Gameplay
                 Profiles = _profiles,
                 Chests = chests != null ? chests.ServerSnapshot() : _chests,
                 Earth = earth != null ? earth.ServerSnapshot() : _earth,
+                Herbs = herbs != null ? herbs.ServerSnapshot() : _herbs,
             });
             _encodeMs = timer.Elapsed.TotalMilliseconds;
 

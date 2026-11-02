@@ -1,4 +1,5 @@
-"""Builds Voxelforge's foliage: grass, flowers, bushes and trees (Roadmap 2.6 part B).
+"""Builds Voxelforge's foliage: grass, flowers, bushes and trees (Roadmap 2.6 part B), and the herbs gatherers pick
+(Roadmap 5.7: build_herbs(), on their own small atlas with a glow map, so the foliage atlas keeps its layout).
 
 Run inside Blender (Text Editor, or exec over MCP). build_all() rebuilds everything in the current file:
   - paints one shared 2048 x 2048 texture atlas into Art/Textures/Foliage/Foliage_Atlas.png
@@ -26,6 +27,9 @@ from mathutils import Euler, Matrix, Vector, noise
 REPO = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath or __file__), "..", ".."))
 ART = os.path.join(REPO, "Assets", "_Voxelforge", "Art")
 ATLAS_PATH = os.path.join(ART, "Textures", "Foliage", "Foliage_Atlas.png")
+HERB_ATLAS_PATH = os.path.join(ART, "Textures", "Foliage", "Herb_Atlas.png")
+HERB_GLOW_PATH = os.path.join(ART, "Textures", "Foliage", "Herb_Glow.png")
+HERB_ATLAS_SIZE = 1024
 MODEL_DIR = os.path.join(ART, "Models", "Foliage")
 
 ATLAS_SIZE = 2048
@@ -47,6 +51,10 @@ REGIONS = {
     "pine_mass": (0.25, 0.0, 0.5, 0.25),
     "dry_mass": (0.5, 0.0, 0.75, 0.25),
     "bark": (0.75, 0.0, 1.0, 0.25),
+    # Roadmap 5.7: these four are areas of the herb atlas (Herb_Atlas.png), not of the foliage atlas.
+    "herb_sunpetal": (0.0, 0.5, 0.5, 1.0),
+    "herb_frostbloom": (0.5, 0.5, 1.0, 1.0),
+    "herb_emberthorn": (0.0, 0.0, 0.5, 0.5),
 }
 
 
@@ -265,6 +273,97 @@ def cornflower(layer, x, y, size, rng):
 
 def poppy(layer, x, y, size, rng):
     petals(layer, x, y, 4, 34 * size, 24 * size, rgb(185, 28, 24), rgb(245, 85, 55), rng, rgb(35, 22, 22), 9 * size)
+
+
+def paint_herb(layer, glow, rng, leaf_dark, leaf_light, heads, bloom, leaves=8, stem_width=5.0):
+    """A herb (Roadmap 5.7): leaves at the base, stems, and a head on each; bloom(layer, glow, x, y, size, rng) paints
+    one head on the albedo and its glowing part on the glow map."""
+    for _ in range(leaves):
+        bx = layer.w / 2 + rng.normal(0, 40)
+        a = rng.uniform(-1.1, 1.1)
+        ln = rng.uniform(110, 190)
+        tip = (bx + math.sin(a) * ln, math.cos(a) * ln * 0.8)
+        mid = (bx + math.sin(a) * ln * 0.4, math.cos(a) * ln * 0.55)
+        layer.stroke(bezier((bx, -3), mid, tip, 14), leaf_widths(rng.uniform(16, 24), 14), leaf_dark, leaf_light, rib=0.3)
+    spots = []
+    for _ in range(heads):
+        x = layer.w / 2 + rng.uniform(-0.28, 0.28) * layer.w
+        y = layer.h * rng.uniform(0.55, 0.84)
+        spots.append((y, x))
+    for y, x in sorted(spots):
+        bx = layer.w / 2 + rng.normal(0, 22)
+        stem = bezier((bx, -3), ((bx + x) / 2 + rng.normal(0, 20), y * 0.5), (x, y), 16)
+        layer.stroke(stem, np.linspace(stem_width, stem_width * 0.6, 16), leaf_dark, leaf_light, rib=0.0)
+        bloom(layer, glow, x, y, rng.uniform(0.85, 1.15), rng)
+
+
+def sunpetal(layer, glow, x, y, size, rng):
+    """Big golden petals round a glowing orange heart."""
+    petals(layer, x, y, 11, 44 * size, 15 * size, rgb(235, 150, 20), rgb(255, 230, 90), rng, rgb(205, 95, 20), 15 * size)
+    glow.dot(x, y, 17 * size, rgb(255, 170, 50), highlight=0.0)
+
+
+def frostbloom(layer, glow, x, y, size, rng):
+    """Six long icy petals, pale blue to white, glowing faintly all over."""
+    seed = int(rng.integers(1 << 30))  # The same random turn for both, so the glow sits on the petals.
+    petals(layer, x, y, 6, 50 * size, 10 * size, rgb(110, 175, 250), rgb(235, 250, 255), np.random.default_rng(seed),
+           rgb(250, 255, 255), 10 * size)
+    petals(glow, x, y, 6, 50 * size, 10 * size, rgb(40, 80, 130), rgb(110, 170, 220), np.random.default_rng(seed),
+           rgb(200, 235, 255), 12 * size)
+
+
+def emberthorn(layer, glow, x, y, size, rng):
+    """A cluster of glowing ember-red buds on a thorny head."""
+    for k in range(4):
+        a = rng.uniform(0, math.tau)
+        thorn = (x + math.cos(a) * 30 * size, y + math.sin(a) * 26 * size)
+        layer.stroke(bezier((x, y), ((x + thorn[0]) / 2, (y + thorn[1]) / 2), thorn, 8), leaf_widths(5 * size, 8),
+                     rgb(45, 20, 18), rgb(95, 40, 30), rib=0.0)
+    for k in range(5):
+        bx, by = x + rng.normal(0, 13) * size, y + rng.normal(0, 11) * size
+        r = rng.uniform(8, 12) * size
+        layer.dot(bx, by, r, rgb(235, 70, 25))
+        layer.dot(bx - r * 0.25, by + r * 0.3, r * 0.45, rgb(255, 190, 80), highlight=0.0)
+        glow.dot(bx, by, r * 1.1, rgb(255, 90, 25), highlight=0.0)
+
+
+def paint_herb_atlas(seed=57):
+    """The herb atlas and its glow map (Roadmap 5.7), the same pixels-per-block as the foliage atlas."""
+    size = HERB_ATLAS_SIZE
+    pixels = np.zeros((size, size, 4), np.float32)
+    glow = np.zeros((size, size, 4), np.float32)
+    glow[..., 3] = 1.0
+
+    def layers(name):
+        u0, v0, u1, v1 = REGIONS[name]
+        rows = slice(round((1 - v1) * size), round((1 - v0) * size))
+        cols = slice(round(u0 * size), round(u1 * size))
+        return Layer(pixels[rows, cols]), Layer(glow[rows, cols])
+
+    rng = np.random.default_rng(seed)
+    albedo, light = layers("herb_sunpetal")
+    paint_herb(albedo, light, rng, rgb(40, 100, 30), rgb(120, 185, 60), 3, sunpetal)
+    albedo, light = layers("herb_frostbloom")
+    paint_herb(albedo, light, rng, rgb(35, 85, 95), rgb(120, 180, 185), 3, frostbloom, stem_width=4.0)
+    albedo, light = layers("herb_emberthorn")
+    paint_herb(albedo, light, rng, rgb(55, 25, 22), rgb(120, 55, 40), 3, emberthorn, leaves=6, stem_width=6.0)
+    glow[..., 3] = 1.0
+    return pixels, glow
+
+
+def save_image(name, pixels, path, size):
+    image = bpy.data.images.get(name)
+    if image is None or tuple(image.size) != (size, size):
+        if image is not None:
+            bpy.data.images.remove(image)
+        image = bpy.data.images.new(name, size, size, alpha=True)
+    image.pixels.foreach_set(np.flipud(pixels).ravel())  # Blender stores rows bottom-up.
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    image.filepath_raw = path
+    image.file_format = "PNG"
+    image.save()
+    print(f"Saved {path}")
+    return image
 
 
 def paint_clump(layer, rng, count, length, width, dark, light, radius=0.42, flat=1.0):
@@ -635,6 +734,15 @@ def flower_builder(region):
     return build
 
 
+def herb_builder(region):
+    """A herb (Roadmap 5.7): like a flower but bigger, so gatherers spot it, with one more card when close."""
+    def build(lod, rng):
+        b = MeshBuilder()
+        crossed_cards(b, region, 0.62, 0.62, 3 if lod == 0 else 2, 2 if lod == 0 else 1, tuft_colour(0.75), rng)
+        return b
+    return build
+
+
 def build_dry_shrub(lod, rng):
     b = MeshBuilder()
     crossed_cards(b, "twigs", 0.95, 0.95, 3 if lod == 0 else 2, 2 if lod == 0 else 1, tuft_colour(0.7), rng, sink=0.06)
@@ -786,6 +894,13 @@ MODELS = {
     "PrairieGrass": (build_prairie_grass, 11),
 }
 
+# Roadmap 5.7: on the herb atlas, built and exported by build_herbs().
+HERB_MODELS = {
+    "HerbSunpetal": (herb_builder("herb_sunpetal"), 21),
+    "HerbFrostbloom": (herb_builder("herb_frostbloom"), 22),
+    "HerbEmberthorn": (herb_builder("herb_emberthorn"), 23),
+}
+
 
 # ----------------------------------------------------------------------------------------------------------------
 # Blender scene, preview material and export
@@ -820,24 +935,24 @@ def preview_material(image):
     return mat
 
 
-def build_models(material):
+def build_models(material, models=None, row=0.0):
     collection = bpy.data.collections.get("Foliage")
     if collection is None:
         collection = bpy.data.collections.new("Foliage")
         bpy.context.scene.collection.children.link(collection)
     x = 0.0
-    for name, (builder, seed) in MODELS.items():
+    for name, (builder, seed) in (models or MODELS).items():
         for lod in (0, 1):
             b = builder(lod, random.Random(seed * 10 + lod))
             obj = b.build(f"{name}_LOD{lod}", material, collection)
-            obj.location = (x, 0.0 if lod == 0 else 9.0, 0.0)
+            obj.location = (x, row + (0.0 if lod == 0 else 9.0), 0.0)
             print(f"{obj.name}: {b.triangle_count()} triangles")
         x += 6.0 if "Tree" in name else 2.0
 
 
-def export_models():
+def export_models(models=None):
     os.makedirs(MODEL_DIR, exist_ok=True)
-    for name in MODELS:
+    for name in (models or MODELS):
         objects = [bpy.data.objects[f"{name}_LOD0"], bpy.data.objects[f"{name}_LOD1"]]
         saved = [o.location.copy() for o in objects]
         for o in objects:
@@ -862,6 +977,28 @@ def build_all(export=True):
     build_models(preview_material(image))
     if export:
         export_models()
+    build_herbs(export)
+
+
+def build_herbs(export=True):
+    """Only the herbs (Roadmap 5.7) and their atlas and glow map, leaving the rest of the foliage alone."""
+    pixels, glow = paint_herb_atlas()
+    image = save_image("Herb_Atlas", pixels, HERB_ATLAS_PATH, HERB_ATLAS_SIZE)
+    save_image("Herb_Glow", glow, HERB_GLOW_PATH, HERB_ATLAS_SIZE)
+    old = bpy.data.materials.get("Herb_Preview")
+    if old is not None:
+        bpy.data.materials.remove(old)
+    # preview_material() rewires "Foliage_Preview": step the foliage one out of its way, so it keeps its atlas.
+    foliage = bpy.data.materials.get("Foliage_Preview")
+    if foliage is not None:
+        foliage.name = "Foliage_Preview_Keep"
+    material = preview_material(image)
+    material.name = "Herb_Preview"
+    if foliage is not None:
+        foliage.name = "Foliage_Preview"
+    build_models(material, HERB_MODELS, row=20.0)
+    if export:
+        export_models(HERB_MODELS)
 
 
 if __name__ == "__main__":

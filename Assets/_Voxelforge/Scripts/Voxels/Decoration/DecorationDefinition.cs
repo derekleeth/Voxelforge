@@ -15,6 +15,11 @@ namespace Voxelforge.Voxels
         /// block of that type. Placed players' blocks, so they come from the delta log, not the seed.
         /// </summary>
         Prop,
+        /// <summary>
+        /// A herb gatherers pick (Roadmap 5.7): one per <see cref="HerbPlacement"/> spot at most, on its surface blocks,
+        /// by <see cref="DecorationDefinition.Density"/> (the chance per spot) times its biome weight.
+        /// </summary>
+        Herb,
     }
 
     /// <summary>How a prop decoration sits in its block (Roadmap 3.5).</summary>
@@ -113,6 +118,9 @@ namespace Voxelforge.Voxels
         [Tooltip("A real point light on every instance near a player (torches). Lights are pooled, see PropLights.")]
         [SerializeField] DecorationLight light;
 
+        [Tooltip("Herbs (Roadmap 5.7): the item ID picking one gives, and its gather node in the Profession Book.")]
+        [SerializeField] ushort herbItem;
+
         public DecorationKind Kind => kind;
         public Mesh Mesh => mesh;
         public Mesh LodMesh => lodMesh != null ? lodMesh : mesh;
@@ -125,6 +133,8 @@ namespace Voxelforge.Voxels
         public BlockDefinition PropBlock => propBlock;
         public PropAttach Attach => attach;
         public DecorationLight Light => light;
+        public ushort HerbItem => herbItem;
+        public float Density => density;
 
         /// <summary>This definition's weight in the biome called <paramref name="biomeName"/>, or 0 if it isn't listed.</summary>
         public float WeightIn(string biomeName)
@@ -157,6 +167,7 @@ namespace Voxelforge.Voxels
                 ModelTrunkHeight = modelTrunkHeight,
                 PropBlock = propBlock != null ? propBlock.Id : BlockIds.Air,
                 Attach = attach,
+                HerbItem = kind == DecorationKind.Herb ? herbItem : (ushort)0,
             };
         }
 
@@ -171,6 +182,15 @@ namespace Voxelforge.Voxels
             definition.biomes = new List<BiomeWeight>(biomes);
             definition.minScale = minScale;
             definition.maxScale = maxScale;
+            return definition;
+        }
+
+        /// <summary>Builds a herb in code, for tests and tools.</summary>
+        internal static DecorationDefinition CreateHerb(ushort herbItem, float density, IEnumerable<BlockDefinition> surfaces,
+            IEnumerable<BiomeWeight> biomes)
+        {
+            DecorationDefinition definition = Create(DecorationKind.Herb, density, surfaces, biomes);
+            definition.herbItem = herbItem;
             return definition;
         }
 
