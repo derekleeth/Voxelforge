@@ -54,6 +54,7 @@ MonoBehaviour:
   hopPause: 0.35
   splitInto: {fileID: 11400000, guid: 837d81209674fe0418345bd6a4349fd9, type: 2}
   splitCount: 2
+  salvaged: 1
   spawn:
     Place: 0
     Biomes: []

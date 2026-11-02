@@ -60,6 +60,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("The picked herbs (Roadmap 5.7), on the Session Network object.")]
         [SerializeField] HerbField herbs;
 
+        [Tooltip("Data/Professions/ProfessionBook.asset (Roadmap 5.7).")]
+        [SerializeField] ProfessionBook professions;
+
         readonly Dictionary<PlayerId, PlayerRecord> _records = new Dictionary<PlayerId, PlayerRecord>();
         readonly List<PlayerController> _players = new List<PlayerController>();
         byte _nextId = 1;
@@ -82,6 +85,9 @@ namespace Voxelforge.Gameplay
         public EarthWorks Earth => earth;
 
         public HerbField Herbs => herbs;
+
+        /// <summary>The gathering professions' numbers (Roadmap 5.7), e.g. which mobs' bodies can be skinned.</summary>
+        public ProfessionBook Professions => professions;
 
         public bool TryGet(PlayerId playerId, out PlayerRecord record) => _records.TryGetValue(playerId, out record);
 

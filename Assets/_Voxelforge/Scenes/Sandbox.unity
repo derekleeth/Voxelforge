@@ -2016,6 +2016,7 @@ MonoBehaviour:
   targets: {fileID: 224526125}
   earth: {fileID: 1393770365}
   herbs: {fileID: 2145343290}
+  professions: {fileID: 11400000, guid: 2c31382eee81b8d4abd7ddb7085a4f11, type: 2}
 --- !u!114 &2147055198
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -46,6 +46,11 @@ namespace Voxelforge.Gameplay
     /// (<see cref="Cued"/>), and every PC sees it vanish after its defeat (<see cref="Vanishing"/>), for
     /// <see cref="MobFoley"/>'s sounds and <see cref="MobEffects"/>.
     /// </para>
+    /// <para>
+    /// Roadmap 5.7: if the Profession Book says its kind can be skinned (or salvaged), its body lies there longer, and
+    /// every hero who fought it may skin it once (<see cref="PlayerGatherer"/>). Who still may is synced, so each player's
+    /// view can show the hint. Once everyone has, it goes as usual.
+    /// </para>
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
     public sealed class Mob : NetworkBehaviour, ICombatCreature
@@ -56,6 +61,9 @@ namespace Voxelforge.Gameplay
         [Tooltip("Seconds it lies there after being defeated, before it leaves the world.")]
         [SerializeField, Min(0f)] float defeatedSeconds = 2f;
 
+        [Tooltip("Seconds its body lies there if it can be skinned or salvaged (Roadmap 5.7), for its fighters to get to it.")]
+        [SerializeField, Min(0f)] float skinnableSeconds = 20f;
+
         [Tooltip("How hard the mobs it splits into burst out sideways and up, in metres per second.")]
         [SerializeField] Vector2 splitPop = new Vector2(3f, 5f);
 
@@ -64,6 +72,9 @@ namespace Voxelforge.Gameplay
         readonly NetworkVariable<byte> _attack = new NetworkVariable<byte>();
         // Who it's fighting and how close others are to pulling it (Roadmap 5.3), for each player's own view.
         readonly NetworkVariable<MobThreatView> _threat = new NetworkVariable<MobThreatView>();
+        // The heroes (PlayerId values) who may still skin its body (Roadmap 5.7).
+        readonly NetworkList<byte> _skinners = new NetworkList<byte>();
+        readonly List<PlayerId> _fighters = new List<PlayerId>();
 
         /// <summary>Seconds between threat view updates, at most; and a share must move this much (of 255) to be sent.</summary>
         const float ThreatViewEvery = 0.2f;
@@ -125,6 +136,46 @@ namespace Voxelforge.Gameplay
 
         public float3 HalfExtents => definition.Motor.HalfExtents;
 
+        /// <summary>Every PC: its body can still be skinned by <paramref name="hero"/> (they fought it and haven't yet).</summary>
+        public bool CanBeSkinnedBy(PlayerId hero)
+        {
+            if (!IsSpawned || State != MobState.Defeated || !hero.IsValid)
+                return false;
+            foreach (byte skinner in _skinners)
+            {
+                if (skinner == hero.Value)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Host only: <paramref name="hero"/> skinned its body (Roadmap 5.7). False if they may not (any more). When nobody
+        /// is left to skin it, it goes soon after.
+        /// </summary>
+        internal bool ServerTakeSkin(PlayerId hero)
+        {
+            if (!IsServer || !CanBeSkinnedBy(hero))
+                return false;
+            _skinners.Remove(hero.Value);
+            if (_skinners.Count == 0)
+                _despawnAt = math.min(_despawnAt, Time.time + defeatedSeconds);
+            return true;
+        }
+
+        // Roadmap 5.7: everyone who fought it may skin it, if its kind can be; then its body waits for them.
+        void ServerOfferSkinning(PlayerId killer)
+        {
+            ProfessionBook book = _players != null ? _players.Professions : null;
+            if (book == null || _rules == null || !book.TryGetNode(GatherNodeKind.Mob, (ushort)definition.Id, out _))
+                return;
+            LootShares.Fighters(_rules.Threat.Entries, killer, hero => _players.TryGet(hero, out _), _fighters);
+            foreach (PlayerId fighter in _fighters)
+                _skinners.Add(fighter.Value);
+            if (_skinners.Count > 0)
+                _despawnAt = Time.time + math.max(defeatedSeconds, skinnableSeconds);
+        }
+
         /// <summary>
         /// Host only, before spawning: it stands at <paramref name="feet"/>, which becomes its home.
         /// <paramref name="seed"/> picks where it wanders, so two mobs side by side don't move as one.
@@ -170,6 +221,7 @@ namespace Voxelforge.Gameplay
             {
                 _despawnAt = Time.time + defeatedSeconds;
                 _state.Value = (byte)MobState.Defeated;
+                ServerOfferSkinning(instigator);
                 ServerDefeated?.Invoke(this, instigator);
                 ServerSplit();
             }

@@ -26,6 +26,7 @@ namespace Voxelforge.Gameplay
         readonly Func<ushort, Texture> _itemIconOf;
         AbilityDefinition _shown;
         ushort _gatherShown;
+        float _gatherSince;
         int _tenthsShown = -1;
         float _fadeStart = float.NegativeInfinity;
         bool _fading;
@@ -130,12 +131,13 @@ namespace Voxelforge.Gameplay
             if (gatherer != null && gatherer.IsGathering)
             {
                 ushort item = gatherer.GatheringItem;
-                if (_gatherShown != item || _shown != null || _fading)
+                if (_gatherShown != item || _shown != null || _fading || _gatherSince != gatherer.GatherStarted)
                 {
                     _shown = null;
                     _gatherShown = item;
+                    _gatherSince = gatherer.GatherStarted;
                     _fading = false;
-                    _name.text = _itemName != null ? _itemName(item) : string.Empty;
+                    _name.text = gatherer.DescribeGather(_itemName);
                     _itemIcon.texture = _itemIconOf?.Invoke(item);
                     _itemIcon.enabled = _itemIcon.texture != null;
                     _icon.enabled = false;

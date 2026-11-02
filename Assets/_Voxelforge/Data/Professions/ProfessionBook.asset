@@ -59,3 +59,27 @@ MonoBehaviour:
     RequiredSkill: 50
     Yield: {fileID: 11400000, guid: e2a3e7f78007e464eb3788a7a3fa63f6, type: 2}
     GatherSeconds: 1.5
+  - Profession: 2
+    Kind: 2
+    Id: 1
+    RequiredSkill: 1
+    Yield: {fileID: 11400000, guid: 4804c556ab3db534fb26df24fa611807, type: 2}
+    GatherSeconds: 1.5
+  - Profession: 2
+    Kind: 2
+    Id: 2
+    RequiredSkill: 15
+    Yield: {fileID: 11400000, guid: 844703c3b4d8866489389c4c022e4954, type: 2}
+    GatherSeconds: 1.5
+  - Profession: 2
+    Kind: 2
+    Id: 6
+    RequiredSkill: 25
+    Yield: {fileID: 11400000, guid: 3df80cd2bdc7e6a499ded55fbe5fb859, type: 2}
+    GatherSeconds: 1.5
+  - Profession: 2
+    Kind: 2
+    Id: 4
+    RequiredSkill: 40
+    Yield: {fileID: 11400000, guid: 020db07a5da3ef84e8c1a9ded591d668, type: 2}
+    GatherSeconds: 1.5

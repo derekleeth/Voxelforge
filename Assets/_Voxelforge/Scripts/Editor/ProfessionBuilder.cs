@@ -9,8 +9,8 @@ namespace Voxelforge.Editor
     /// <summary>
     /// <i>Voxelforge → Build Professions</i> (Roadmap 5.7, D-038): writes the <see cref="ProfessionBook"/> from the
     /// numbers below, the one place the skill cap, how skills rise, a skilled gatherer's bonus and every gatherable node
-    /// live. It also makes the ore blocks and writes the ore veins into the terrain settings (step B), and makes the herb
-    /// items and what each herb gives (step C). Re-running it updates the same assets in place. The ore items themselves
+    /// live. It also makes the ore blocks and writes the ore veins into the terrain settings (step B), makes the herb
+    /// items and what each herb gives (step C), and what skinning or salvaging each mob's body gives (step D). Re-running it updates the same assets in place. The ore items themselves
     /// come from <see cref="LootBuilder"/>, the Mana Crystal recipes from <see cref="PropsBuilder"/>, and where herbs grow
     /// from <see cref="FoliageDecorationBuilder"/> (run it first, after build_herbs() in build_foliage.py).
     /// </summary>
@@ -24,6 +24,7 @@ namespace Voxelforge.Editor
         const string ItemRegistryPath = "Assets/_Voxelforge/Data/Items/ItemRegistry.asset";
         const string FoliageModelDir = "Assets/_Voxelforge/Art/Models/Foliage";
         const string HerbMaterialPath = "Assets/_Voxelforge/Art/Materials/Foliage/Herb_Held.mat";
+        const string MobBookPath = "Assets/_Voxelforge/Data/Mobs/MobBook.asset";
 
         // Biome names, as in the terrain settings.
         const string Desert = "Desert (Tanaris style)";
@@ -108,7 +109,39 @@ namespace Voxelforge.Editor
                 new OreBiomeRichness(RedCrags, 0.85f), new OreBiomeRichness(SnowyPeaks, 0.85f)),
         };
 
-        // Step D adds the mobs.
+        // ---- Skinning and salvaging (step D) ----
+        const float SkinSeconds = 1.5f;
+
+        readonly struct Body
+        {
+            public readonly MobId Mob;
+            public readonly string Name;
+            public readonly int Skill;
+            public readonly bool Salvaged;
+            public readonly LootDrop[] Yield;
+
+            public Body(MobId mob, string name, int skill, bool salvaged, params LootDrop[] yield)
+            {
+                Mob = mob;
+                Name = name;
+                Skill = skill;
+                Salvaged = salvaged;
+                Yield = yield;
+            }
+        }
+
+        // Each hero who fought the mob skins it once, on top of their loot sack: more of its hide (the first drop is what
+        // the cast bar shows), sometimes a little extra. A slime only gives anything once it's down to its smallest pieces.
+        static readonly Body[] Bodies =
+        {
+            new Body(MobId.BristlebackBoar, "SkinBoar", 1, false, new LootDrop(ItemIds.BoarHide, 1f, 1, 2), new LootDrop(ItemIds.BoarTusk, 0.25f)),
+            new Body(MobId.FrostfangWolf, "SkinWolf", 15, false, new LootDrop(ItemIds.WolfPelt, 1f, 1, 2), new LootDrop(ItemIds.Frostfang, 0.25f)),
+            new Body(MobId.CrystalSlimeSmall, "SalvageSlime", 25, true, new LootDrop(ItemIds.CrystalShard, 1f),
+                new LootDrop(ItemIds.ArcaneEssence, 0.05f)),
+            new Body(MobId.ThunderRhino, "SkinRhino", 40, false, new LootDrop(ItemIds.RhinoHide, 1f, 1, 2),
+                new LootDrop(ItemIds.ThunderHorn, 0.2f), new LootDrop(ItemIds.StormEssence, 0.05f)),
+        };
+
         static readonly GatherNode[] OreNodes =
         {
             new GatherNode(ProfessionId.Mining, GatherNodeKind.Ore, BlockIds.CopperOre, 1),
@@ -121,7 +154,7 @@ namespace Voxelforge.Editor
         {
             BuildOres();
             var nodes = new List<GatherNode>(OreNodes);
-            if (!BuildHerbs(nodes))
+            if (!BuildHerbs(nodes) || !BuildSkinning(nodes))
                 return;
 
             var book = AssetDatabase.LoadAssetAtPath<ProfessionBook>(BookPath);
@@ -245,6 +278,52 @@ namespace Voxelforge.Editor
             EditorUtility.SetDirty(registry);
             AssetDatabase.SaveAssets();
             return true;
+        }
+
+        /// <summary>
+        /// Skinning and salvaging (step D): a yield table and a gather node per mob, and the mob's "salvaged" word. False
+        /// if the mob book is missing.
+        /// </summary>
+        static bool BuildSkinning(List<GatherNode> nodes)
+        {
+            var mobs = AssetDatabase.LoadAssetAtPath<MobBook>(MobBookPath);
+            if (mobs == null)
+            {
+                Debug.LogError($"[Voxelforge] Build Professions needs {MobBookPath}.");
+                return false;
+            }
+            foreach (MobDefinition mob in mobs.Mobs)
+            {
+                if (mob == null)
+                    continue;
+                // Every slime size is salvaged, even the ones that only split, so the word is right everywhere.
+                bool salvaged = IsSalvaged(mob);
+                var serialized = new SerializedObject(mob);
+                serialized.FindProperty("salvaged").boolValue = salvaged;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(mob);
+            }
+            foreach (Body body in Bodies)
+            {
+                LootTable yield = MakeYield(body.Name, body.Yield);
+                nodes.Add(new GatherNode(ProfessionId.Skinning, GatherNodeKind.Mob, (ushort)body.Mob, body.Skill, yield, SkinSeconds));
+            }
+            AssetDatabase.SaveAssets();
+            return true;
+        }
+
+        /// <summary>True if <paramref name="mob"/>, or what it splits into, is salvaged rather than skinned.</summary>
+        static bool IsSalvaged(MobDefinition mob)
+        {
+            for (MobDefinition piece = mob; piece != null; piece = piece.SplitInto)
+            {
+                foreach (Body body in Bodies)
+                {
+                    if (body.Mob == piece.Id && body.Salvaged)
+                        return true;
+                }
+            }
+            return false;
         }
 
         static ItemDefinition MakeHerbItem(Herb herb, Material material)

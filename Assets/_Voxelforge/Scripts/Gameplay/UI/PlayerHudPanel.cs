@@ -31,6 +31,7 @@ namespace Voxelforge.Gameplay
         readonly CombatTextView _textView;
         readonly TargetBarsView _targetBars;
         readonly ThreatMarksView _threatMarks;
+        readonly SkinMarksView _skinMarks;
         readonly TargetMarkerView _targetMarker;
         readonly RectTransform _mapArea;
         readonly MinimapView _minimap;
@@ -43,6 +44,7 @@ namespace Voxelforge.Gameplay
         PlayerController _player;
         PlayerCaster _caster;
         PlayerGatherer _gatherer;
+        PlayerProfessions _professions;
         PlayerHealth _health;
         PlayerLevel _level;
         PlayerActionBar _bar;
@@ -74,6 +76,7 @@ namespace Voxelforge.Gameplay
             // Target health bars (Roadmap 4.6) first, so combat text draws over them.
             _targetBars = new TargetBarsView(_textArea, skin);
             _threatMarks = new ThreatMarksView(_textArea, skin);
+            _skinMarks = new SkinMarksView(_textArea, skin);
             _targetMarker = new TargetMarkerView(_textArea, skin);
             _textView = new CombatTextView(_textArea, skin, TextCapacity, itemName, itemRules);
 
@@ -143,6 +146,7 @@ namespace Voxelforge.Gameplay
             _player = player;
             _caster = player != null ? player.GetComponent<PlayerCaster>() : null;
             _gatherer = player != null ? player.GetComponent<PlayerGatherer>() : null;
+            _professions = player != null ? player.GetComponent<PlayerProfessions>() : null;
             _health = player != null ? player.GetComponent<PlayerHealth>() : null;
             _level = player != null ? player.GetComponent<PlayerLevel>() : null;
             _bar = player != null ? player.GetComponent<PlayerActionBar>() : null;
@@ -222,6 +226,7 @@ namespace Voxelforge.Gameplay
             if (_player != null)
                 _targetBars.Tick(targets, creatures, view, textArea, scale, _player.transform.position, now);
             _threatMarks.Tick(_player, _targeting, creatures, view, textArea, scale, now);
+            _skinMarks.Tick(_player, _professions, creatures, view, textArea, scale);
             _targetMarker.Tick(_targeting, creatures, view, textArea, scale, _player != null ? _player.TeamColor : Color.white, now);
             _feed.Expire(now);
             _textView.Tick(_feed, view, textArea, scale, now);

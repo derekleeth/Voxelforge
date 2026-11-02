@@ -192,6 +192,9 @@ namespace Voxelforge.Gameplay
 
         [SerializeField, Min(0)] int splitCount = 2;
 
+        [Tooltip("Its body is salvaged (shards, cores) rather than skinned (Roadmap 5.7): only the word changes.")]
+        [SerializeField] bool salvaged;
+
         [Header("Spawning")]
         [Tooltip("Where the biome spawner puts it, and how many at a time.")]
         [SerializeField] MobSpawnRule spawn = new MobSpawnRule { GroupMin = 1, GroupMax = 1, Weight = 1f };
@@ -219,6 +222,7 @@ namespace Voxelforge.Gameplay
         public float FleeBelowShare => fleeBelowShare;
         public float CalmSeconds => calmSeconds;
         public bool Hops => hops;
+        public bool Salvaged => salvaged;
         public float HopPause => hopPause;
         public MobDefinition SplitInto => splitInto;
         public int SplitCount => splitInto != null ? splitCount : 0;
