@@ -57,6 +57,14 @@ namespace Voxelforge.Voxels
         public const ushort CopperOre = 20;
         /// <summary>Stone with rusty iron nuggets (Roadmap 5.7): the second ore tier, Mining 25. Drops Iron Ore.</summary>
         public const ushort IronOre = 21;
+        /// <summary>Where potions and elixirs are brewed (Roadmap 5.8, Alchemy). A blast-proof solid prop, like the chest.</summary>
+        public const ushort AlchemyTable = 22;
+        /// <summary>Smelts ore into bars (Roadmap 5.8, Blacksmithing). A blast-proof solid prop that glows.</summary>
+        public const ushort Forge = 23;
+        /// <summary>Hammers bars into plate and weapons (Roadmap 5.8, Blacksmithing). A blast-proof solid prop.</summary>
+        public const ushort Anvil = 24;
+        /// <summary>Cures hides and makes leather gear and bags (Roadmap 5.8, Leatherworking). A blast-proof solid prop.</summary>
+        public const ushort TanningRack = 25;
 
         /// <summary>
         /// IDs from here up are items, not blocks (<c>ItemIds.FirstNonBlock</c>). A block can drop one (ore, Roadmap 5.7);

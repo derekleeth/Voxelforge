@@ -205,8 +205,8 @@ namespace Voxelforge.Tests
             BlockDefinition stone = BlockDefinition.Create(BlockIds.Stone, "Stone");
             BlockDefinition bench = BlockDefinition.Create(BlockIds.Workbench, "Workbench");
             ItemDefinition pickaxe = ItemDefinition.Create(ItemIds.StonePickaxe, "Stone Pickaxe");
-            RecipeDefinition makeBench = RecipeDefinition.Create(new ItemAmount(bench, 1), false, new ItemAmount(log, 4));
-            RecipeDefinition makePickaxe = RecipeDefinition.Create(new ItemAmount(pickaxe, 1), true,
+            RecipeDefinition makeBench = RecipeDefinition.Create(new ItemAmount(bench, 1), CraftStation.Anywhere, new ItemAmount(log, 4));
+            RecipeDefinition makePickaxe = RecipeDefinition.Create(new ItemAmount(pickaxe, 1), CraftStation.Workbench,
                 new ItemAmount(log, 2), new ItemAmount(stone, 3));
             RecipeBook book = RecipeBook.Create(new[] { makeBench, makePickaxe });
             try
@@ -214,12 +214,13 @@ namespace Voxelforge.Tests
                 CollectionAssert.IsEmpty(book.Validate());
                 var bag = new List<ItemStack> { new ItemStack(BlockIds.Log, 4), new ItemStack(BlockIds.Stone, 3) };
 
-                Assert.AreEqual(CraftCheck.Ok, book.Check(0, bag, nearWorkbench: false), "A workbench is made anywhere.");
-                Assert.AreEqual(CraftCheck.NeedsWorkbench, book.Check(1, bag, nearWorkbench: false));
-                Assert.AreEqual(CraftCheck.Ok, book.Check(1, bag, nearWorkbench: true));
+                ProfessionSkills skills = ProfessionSkills.Start;
+                Assert.AreEqual(CraftCheck.Ok, book.Check(0, bag, CraftStationMask.None, skills), "A workbench is made anywhere.");
+                Assert.AreEqual(CraftCheck.NeedsStation, book.Check(1, bag, CraftStationMask.None, skills));
+                Assert.AreEqual(CraftCheck.Ok, book.Check(1, bag, CraftStationMask.Workbench, skills));
                 bag[1] = new ItemStack(BlockIds.Stone, 2);
-                Assert.AreEqual(CraftCheck.MissingInputs, book.Check(1, bag, nearWorkbench: true));
-                Assert.AreEqual(CraftCheck.UnknownRecipe, book.Check(7, bag, nearWorkbench: true));
+                Assert.AreEqual(CraftCheck.MissingInputs, book.Check(1, bag, CraftStationMask.Workbench, skills));
+                Assert.AreEqual(CraftCheck.UnknownRecipe, book.Check(7, bag, CraftStationMask.Workbench, skills));
             }
             finally
             {
@@ -238,9 +239,9 @@ namespace Voxelforge.Tests
         {
             _editor.RequestModifyVoxel(new int3(8, 32, 4), BlockIds.Workbench, P1);
 
-            Assert.IsTrue(RecipeBook.IsNearBlock(_world, new float3(4.5f, 32.9f, 4.5f), BlockIds.Workbench, 4));
-            Assert.IsFalse(RecipeBook.IsNearBlock(_world, new float3(4.5f, 32.9f, 4.5f), BlockIds.Workbench, 3));
-            Assert.IsFalse(RecipeBook.IsNearBlock(null, float3.zero, BlockIds.Workbench, 4));
+            Assert.AreEqual(CraftStationMask.Workbench, CraftStations.ScanNear(_world, new float3(4.5f, 32.9f, 4.5f), 4));
+            Assert.AreEqual(CraftStationMask.None, CraftStations.ScanNear(_world, new float3(4.5f, 32.9f, 4.5f), 3));
+            Assert.AreEqual(CraftStationMask.None, CraftStations.ScanNear(null, float3.zero, 4));
         }
     }
 }

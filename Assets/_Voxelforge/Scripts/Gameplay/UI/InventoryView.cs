@@ -38,9 +38,13 @@ namespace Voxelforge.Gameplay
         static readonly Color Clear = new Color(1f, 1f, 1f, 0f);
         static readonly Color InkBrown = new Color(0.25f, 0.13f, 0.06f);
         static readonly Color TabIdle = new Color(0.55f, 0.42f, 0.3f);
-        // Mining, Herbalism, Skinning: copper, leaf green, tanned hide.
+        // Mining, Herbalism, Skinning: copper, leaf green, tanned hide. Alchemy, Blacksmithing, Leatherworking: potion
+        // purple, steel blue, saddle brown.
         static readonly Color[] SkillColors =
-            { new Color(0.85f, 0.45f, 0.18f), new Color(0.35f, 0.65f, 0.2f), new Color(0.65f, 0.45f, 0.28f) };
+        {
+            new Color(0.85f, 0.45f, 0.18f), new Color(0.35f, 0.65f, 0.2f), new Color(0.65f, 0.45f, 0.28f),
+            new Color(0.6f, 0.35f, 0.75f), new Color(0.4f, 0.55f, 0.7f), new Color(0.5f, 0.3f, 0.15f),
+        };
 
         sealed class Cell
         {
@@ -102,7 +106,7 @@ namespace Voxelforge.Gameplay
             float gridHeight = InventoryModel.VisibleRows * Slot + (InventoryModel.VisibleRows - 1) * Gap;
             Width = gridWidth + Pad * 2f;
             Height = Pad + TitleHeight + SectionGap * 0.5f + TabHeight + SectionGap + gridHeight + SectionGap + SocketSize +
-                     SectionGap + SocketSize + SectionGap + ProfessionHeight + SectionGap + InfoHeight + SectionGap * 0.5f +
+                     SectionGap + SocketSize + SectionGap + ProfessionHeight * 2f + SectionGap + InfoHeight + SectionGap * 0.5f +
                      HintHeight + Pad;
 
             Root = HudWidgets.Place(HudWidgets.Rect("Inventory", parent), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -174,20 +178,22 @@ namespace Voxelforge.Gameplay
             }
             y -= SocketSize + SectionGap;
 
-            // The gathering professions (Roadmap 5.7): each skill as a number and a bar towards the cap.
+            // The professions: gathering (Roadmap 5.7) above crafting (5.8), each skill as a number and a bar towards the cap.
             TextMeshProUGUI professionsLabel = HudWidgets.Label("Professions", Root, skin.titleFont, 26f, InkBrown,
                 TextAlignmentOptions.Left);
             Row(professionsLabel.rectTransform, Pad, y, 150f, ProfessionHeight);
             professionsLabel.text = "Professions";
-            float skillWidth = (gridWidth - 160f - Gap * (ProfessionSkills.Count - 1)) / ProfessionSkills.Count;
+            const int skillColumns = ProfessionSkills.GatheringCount;
+            float skillWidth = (gridWidth - 160f - Gap * (skillColumns - 1)) / skillColumns;
             for (int i = 0; i < ProfessionSkills.Count; i++)
             {
-                float x = Pad + 160f + i * (skillWidth + Gap);
+                float x = Pad + 160f + i % skillColumns * (skillWidth + Gap);
+                float skillY = y - i / skillColumns * ProfessionHeight;
                 TextMeshProUGUI label = HudWidgets.Label($"Skill {i}", Root, skin.titleFont, 20f, InkBrown, TextAlignmentOptions.Left);
                 FitInside(label, 13f, 20f);
                 label.textWrappingMode = TextWrappingModes.NoWrap;
-                Row(label.rectTransform, x, y, skillWidth, ProfessionHeight - SkillBarHeight - 2f);
-                RectTransform bar = Row(HudWidgets.Rect($"Skill Bar {i}", Root), x, y - ProfessionHeight + SkillBarHeight,
+                Row(label.rectTransform, x, skillY, skillWidth, ProfessionHeight - SkillBarHeight - 2f);
+                RectTransform bar = Row(HudWidgets.Rect($"Skill Bar {i}", Root), x, skillY - ProfessionHeight + SkillBarHeight,
                     skillWidth, SkillBarHeight);
                 HudWidgets.Stretch(HudWidgets.Image("Back", bar, skin.barBack, Color.white).rectTransform, 1f);
                 Image fill = HudWidgets.Image("Fill", bar, skin.barFill, SkillColors[i]);
@@ -198,7 +204,7 @@ namespace Voxelforge.Gameplay
                 _skillLabels[i] = label;
                 _skillFills[i] = fill;
             }
-            y -= ProfessionHeight + SectionGap;
+            y -= ProfessionHeight * 2f + SectionGap;
 
             _info = HudWidgets.Label("Info", Root, skin.titleFont, 26f, InkBrown, TextAlignmentOptions.Left);
             FitInside(_info, 16f, 26f);

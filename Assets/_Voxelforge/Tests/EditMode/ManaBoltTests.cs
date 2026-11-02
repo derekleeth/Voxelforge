@@ -165,7 +165,7 @@ namespace Voxelforge.Tests
             BlockDefinition log = BlockDefinition.Create(BlockIds.Log, "Log");
             BlockDefinition stone = BlockDefinition.Create(BlockIds.Stone, "Stone");
             BlockDefinition ore = BlockDefinition.Create(BlockIds.ManaCrystalOre, "Mana Crystal Ore");
-            RecipeDefinition recipe = RecipeDefinition.Create(new ItemAmount(mgrs, 1), true,
+            RecipeDefinition recipe = RecipeDefinition.Create(new ItemAmount(mgrs, 1), CraftStation.Workbench,
                 new ItemAmount(log, 3), new ItemAmount(stone, 2), new ItemAmount(ore, 5));
             RecipeBook book = RecipeBook.Create(new[] { recipe });
             try
@@ -181,14 +181,14 @@ namespace Voxelforge.Tests
                 {
                     new ItemStack(BlockIds.Log, 3), new ItemStack(BlockIds.Stone, 2), new ItemStack(BlockIds.ManaCrystalOre, 5),
                 };
-                Assert.AreEqual(CraftCheck.NeedsWorkbench, book.Check(0, bag, nearWorkbench: false));
-                Assert.AreEqual(CraftCheck.Ok, book.Check(0, bag, nearWorkbench: true));
+                Assert.AreEqual(CraftCheck.NeedsStation, book.Check(0, bag, CraftStationMask.None, ProfessionSkills.Start));
+                Assert.AreEqual(CraftCheck.Ok, book.Check(0, bag, CraftStationMask.Workbench, ProfessionSkills.Start));
                 var stacks = new ItemStacks(0);
                 stacks.Restore(bag, bag.Count);
                 Assert.IsTrue(stacks.TryExchange(recipe.InputStacks(), recipe.Output.ToStack(), new List<int>()));
                 Assert.AreEqual(1, stacks.CountOf(ItemIds.Mgrs));
                 Assert.AreEqual(0, stacks.CountOf(BlockIds.ManaCrystalOre));
-                Assert.AreEqual(CraftCheck.MissingInputs, book.Check(0, stacks.Stacks, nearWorkbench: true), "Everything was used.");
+                Assert.AreEqual(CraftCheck.MissingInputs, book.Check(0, stacks.Stacks, CraftStationMask.Workbench, ProfessionSkills.Start), "Everything was used.");
             }
             finally
             {

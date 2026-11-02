@@ -71,7 +71,7 @@ namespace Voxelforge.Gameplay
             Box(window, Back, Frame, 3f * s, 16f * s);
 
             // Header: title, and whether a workbench is in reach.
-            bool atBench = crafter.IsNearWorkbench();
+            bool atBench = CraftStations.IsNear(crafter.NearbyStations(), CraftStation.Workbench);
             Label(new Rect(window.x + Pad * s, window.y + 10f * s, 300f * s, 36f * s), "CRAFTING", Title, 28, s, FontStyle.Bold);
             Chip(new Rect(window.xMax - (Pad + 250f) * s, window.y + 13f * s, 250f * s, 28f * s),
                 atBench ? "Workbench nearby" : "No Workbench nearby", atBench ? Good : Warn, s);
@@ -127,7 +127,7 @@ namespace Voxelforge.Gameplay
                 float textX = icon.xMax + 10f * s;
                 Label(new Rect(textX, row.y + 5f * s, row.xMax - textX - 6f * s, 26f * s), _itemName(recipe.Output.ItemId),
                     check == CraftCheck.Ok || chosen ? Text : Dim, 18, s, FontStyle.Bold);
-                Label(new Rect(textX, row.y + 28f * s, row.xMax - textX - 6f * s, 20f * s), StatusShort(check), StatusColour(check), 13, s);
+                Label(new Rect(textX, row.y + 28f * s, row.xMax - textX - 6f * s, 20f * s), StatusShort(check, recipe), StatusColour(check), 13, s);
                 y += (RowHeight + RowGap) * s;
             }
 
@@ -154,7 +154,7 @@ namespace Voxelforge.Gameplay
             Label(new Rect(textX, big.y + 46f * s, area.xMax - textX - 12f * s, 24f * s),
                 output.count > 1 ? $"Makes {output.count}" : "Makes 1", Text, 16, s);
             Label(new Rect(textX, big.y + 72f * s, area.xMax - textX - 12f * s, 24f * s),
-                recipe.NeedsWorkbench ? "Made at a Workbench" : "Made anywhere", Dim, 15, s);
+                recipe.Station == CraftStation.Anywhere ? "Made anywhere" : $"Made at {CraftStations.WithArticle(recipe.Station)}", Dim, 15, s);
 
             float y = big.yMax + 16f * s;
             Label(new Rect(area.x + 16f * s, y, 200f * s, 22f * s), "NEEDS", Frame, 14, s, FontStyle.Bold);
@@ -176,7 +176,7 @@ namespace Voxelforge.Gameplay
             var status = new Rect(area.x + 12f * s, area.yMax - 50f * s, area.width - 24f * s, 38f * s);
             Color colour = StatusColour(check);
             Box(status, new Color(colour.r * 0.25f, colour.g * 0.25f, colour.b * 0.25f, 0.95f), colour, 2f * s, 8f * s);
-            Label(status, StatusLong(check), colour, 17, s, FontStyle.Bold, TextAnchor.MiddleCenter);
+            Label(status, StatusLong(check, recipe), colour, 17, s, FontStyle.Bold, TextAnchor.MiddleCenter);
         }
 
         void DrawFooter(Rect area, float s)
@@ -253,14 +253,16 @@ namespace Voxelforge.Gameplay
         static void Bar(Rect rect, Color colour) =>
             GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, colour, 0f, 0f);
 
-        static string StatusShort(CraftCheck check)
+        static string StatusShort(CraftCheck check, RecipeDefinition recipe)
         {
             switch (check)
             {
                 case CraftCheck.Ok:
                     return "Ready to craft";
-                case CraftCheck.NeedsWorkbench:
-                    return "Needs a Workbench";
+                case CraftCheck.NeedsStation:
+                    return $"Needs {CraftStations.WithArticle(recipe.Station)}";
+                case CraftCheck.NeedsSkill:
+                    return NeedsSkillText(recipe);
                 case CraftCheck.BagFull:
                     return "Bag full";
                 default:
@@ -268,14 +270,21 @@ namespace Voxelforge.Gameplay
             }
         }
 
-        static string StatusLong(CraftCheck check)
+        static string NeedsSkillText(RecipeDefinition recipe) =>
+            CraftStations.TryGetProfession(recipe.Station, out ProfessionId profession)
+                ? $"Requires {profession} {recipe.RequiredSkill}"
+                : "Needs more skill";
+
+        static string StatusLong(CraftCheck check, RecipeDefinition recipe)
         {
             switch (check)
             {
                 case CraftCheck.Ok:
                     return "Press Place to craft!";
-                case CraftCheck.NeedsWorkbench:
-                    return "Stand near a Workbench";
+                case CraftCheck.NeedsStation:
+                    return $"Stand near {CraftStations.WithArticle(recipe.Station)}";
+                case CraftCheck.NeedsSkill:
+                    return NeedsSkillText(recipe);
                 case CraftCheck.BagFull:
                     return "Your bag is full";
                 default:
@@ -289,7 +298,8 @@ namespace Voxelforge.Gameplay
             {
                 case CraftCheck.Ok:
                     return Good;
-                case CraftCheck.NeedsWorkbench:
+                case CraftCheck.NeedsStation:
+                case CraftCheck.NeedsSkill:
                 case CraftCheck.BagFull:
                     return Warn;
                 default:

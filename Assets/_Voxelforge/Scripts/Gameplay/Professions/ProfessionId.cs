@@ -1,14 +1,17 @@
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// The gathering professions (Roadmap 5.7, D-038). Saved and sent as a byte, so never renumber one. Salvaging is
-    /// Skinning done to slimes and constructs: the mob says which word to show.
+    /// The professions: gathering (Roadmap 5.7, D-038), then crafting (5.8). Saved and sent as a byte, so never renumber
+    /// one. Salvaging is Skinning done to slimes and constructs: the mob says which word to show.
     /// </summary>
     public enum ProfessionId : byte
     {
         Mining = 0,
         Herbalism = 1,
         Skinning = 2,
+        Alchemy = 3,
+        Blacksmithing = 4,
+        Leatherworking = 5,
     }
 
     /// <summary>What a <see cref="GatherNode"/> is gathered from (Roadmap 5.7).</summary>

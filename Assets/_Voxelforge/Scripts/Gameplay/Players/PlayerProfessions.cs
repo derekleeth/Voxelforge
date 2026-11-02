@@ -5,8 +5,8 @@ using UnityEngine;
 namespace Voxelforge.Gameplay
 {
     /// <summary>
-    /// A hero's gathering skills (Roadmap 5.7, D-038). <b>The host</b> raises them when the hero gathers (<see
-    /// cref="ServerGathered"/>, with <see cref="ProfessionRules"/>) and saves them in the profile. <b>Every PC</b> sees the
+    /// A hero's profession skills (Roadmap 5.7, D-038; crafting 5.8). <b>The host</b> raises them when the hero gathers or
+    /// crafts (<see cref="ServerPractised"/>, with <see cref="ProfessionRules"/>) and saves them in the profile. <b>Every PC</b> sees the
     /// synced skills (the bag window's professions panel, which tiers show on the heat map), and the owner hears about
     /// skill-ups for "Mining 12" text in their own view.
     /// </summary>
@@ -72,15 +72,21 @@ namespace Voxelforge.Gameplay
         /// <summary>
         /// Host only: the hero just gathered <paramref name="node"/>, which may raise the skill. True if it went up.
         /// </summary>
-        public bool ServerGathered(in GatherNode node)
+        public bool ServerGathered(in GatherNode node) => ServerPractised(node.Profession, node.RequiredSkill);
+
+        /// <summary>
+        /// Host only: the hero just used <paramref name="profession"/> on something needing <paramref name="requiredSkill"/>
+        /// (a node, or a recipe, Roadmap 5.8), which may raise the skill. True if it went up.
+        /// </summary>
+        public bool ServerPractised(ProfessionId profession, int requiredSkill)
         {
             if (!IsServer || book == null)
                 return false;
-            if (!ProfessionRules.TryGain(_skills.Value, node.Profession, node.RequiredSkill, book, _random.NextDouble(),
+            if (!ProfessionRules.TryGain(_skills.Value, profession, requiredSkill, book, _random.NextDouble(),
                     out ProfessionSkills after))
                 return false;
             _skills.Value = after;
-            SkilledUpRpc((byte)node.Profession, (byte)after.Get(node.Profession));
+            SkilledUpRpc((byte)profession, (byte)after.Get(profession));
             return true;
         }
 

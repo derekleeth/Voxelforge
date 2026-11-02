@@ -23,4 +23,5 @@ MonoBehaviour:
     block: {fileID: 0}
     item: {fileID: 11400000, guid: 98c6578c47b5d364db660b00a8d2b24e, type: 2}
     count: 1
-  needsWorkbench: 1
+  station: 1
+  requiredSkill: 1

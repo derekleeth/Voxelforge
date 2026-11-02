@@ -5,6 +5,31 @@
 
 ---
 
+## 2026-11-01 - Session 1 (part 37): The First Sparks of Crafting 🔨⚗️ Roadmap 5.8 step A
+**Phase:** 5 - Monsters, Dungeons & Bosses
+
+### What we did
+- While the 0.5.7 build is being play-tested, we **planned all of 5.8** and started it. The decisions we made together:
+  - Every hero can learn **all three** crafting professions, just like gathering.
+  - Potions get their own **action bar slots**: slot 7 is your best health potion and slot 8 your best mana potion. Slot 9 stays your racial.
+  - The **Forge smelts** ore into bars and the **Anvil hammers** bars into plate and weapons.
+  - Each crafted item has a **fixed rarity**, and Legendary stays for bosses.
+- **Step A is the rules underneath** (nothing new to see in the world yet):
+  - Three new skills: **Alchemy**, **Blacksmithing** and **Leatherworking**, on a second row of the bag's Professions panel. Ctrl+F1 raises them too.
+  - A recipe now names its **station** and the **skill** it needs. Crafting raises the skill just like gathering does: often at first, then never once the recipe is too easy.
+  - Worlds save the new skills (save format 11). Saves from the 0.5.7 build still load, with crafting skills at 1.
+
+### What we learned
+- A new save section beats making an old one longer: old files stay exactly as they were, and the loader just reads one more block from new ones.
+- The crafting window used to look at 729 blocks around the hero for every row it drew. Now it looks once a frame, and spots every kind of station in that one look.
+- Unity doesn't rewrite an asset file if nothing changed in memory, so a renamed field can stay old on disk. `PropsBuilder` now always marks its recipes as changed.
+
+### What's next
+- **5.8 step B:** the Alchemy Table, Forge, Anvil and Tanning Rack as real blocks you can place.
+- 5.7's play-test is still open, including whether iron and Mana Crystal are findable, which 5.8's higher tiers depend on.
+
+---
+
 ## 2026-11-01 - Session 1 (part 36): Tanks, Treasure, Legendary Loot & Level Ups! 🛡️🏛️⚔️⭐ Roadmap 5.3, 5.4, 5.5 & 5.6
 **Phase:** 5 - Monsters, Dungeons & Bosses
 

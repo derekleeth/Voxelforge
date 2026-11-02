@@ -412,12 +412,14 @@ namespace Voxelforge.Editor
             var recipe = LoadOrCreate<RecipeDefinition>($"{RecipeDir}/{name}.asset");
             var serialized = new SerializedObject(recipe);
             WriteAmount(serialized.FindProperty("output"), output);
-            serialized.FindProperty("needsWorkbench").boolValue = needsWorkbench;
+            serialized.FindProperty("station").enumValueIndex = (int)(needsWorkbench ? CraftStation.Workbench : CraftStation.Anywhere);
             SerializedProperty list = serialized.FindProperty("inputs");
             list.arraySize = inputs.Length;
             for (int i = 0; i < inputs.Length; i++)
                 WriteAmount(list.GetArrayElementAtIndex(i), inputs[i]);
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            // Even when nothing changed in memory: an older file on disk still gets the current fields.
+            EditorUtility.SetDirty(recipe);
             return recipe;
         }
 

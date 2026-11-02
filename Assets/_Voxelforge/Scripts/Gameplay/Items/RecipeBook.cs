@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 using Voxelforge.Voxels;
 
@@ -13,8 +12,10 @@ namespace Voxelforge.Gameplay
         UnknownRecipe,
         /// <summary>The bag is short of an input.</summary>
         MissingInputs,
-        /// <summary>The recipe needs a workbench and none is in reach.</summary>
-        NeedsWorkbench,
+        /// <summary>The recipe needs a station (Workbench, Forge...) and none is in reach.</summary>
+        NeedsStation,
+        /// <summary>The hero's skill in the station's profession is too low (Roadmap 5.8).</summary>
+        NeedsSkill,
         /// <summary>The output wouldn't fit in the bag.</summary>
         BagFull,
     }
@@ -42,13 +43,19 @@ namespace Voxelforge.Gameplay
         readonly List<int> _trialChanged = new List<int>();
 
         /// <summary>Can <paramref name="bag"/> (its slots) craft recipe <paramref name="index"/>? Doesn't change anything.</summary>
+        /// <param name="nearby">The stations in reach, from <see cref="CraftStations.ScanNear"/>.</param>
+        /// <param name="skills">The crafter's skills, for a recipe of a profession's station.</param>
         /// <param name="rules">Stack sizes; null for the defaults.</param>
-        public CraftCheck Check(int index, IReadOnlyList<ItemStack> bag, bool nearWorkbench, IItemRules rules = null)
+        public CraftCheck Check(int index, IReadOnlyList<ItemStack> bag, CraftStationMask nearby, ProfessionSkills skills,
+            IItemRules rules = null)
         {
             if (!TryGet(index, out RecipeDefinition recipe))
                 return CraftCheck.UnknownRecipe;
-            if (recipe.NeedsWorkbench && !nearWorkbench)
-                return CraftCheck.NeedsWorkbench;
+            if (CraftStations.TryGetProfession(recipe.Station, out ProfessionId profession) &&
+                skills.Get(profession) < recipe.RequiredSkill)
+                return CraftCheck.NeedsSkill;
+            if (!CraftStations.IsNear(nearby, recipe.Station))
+                return CraftCheck.NeedsStation;
 
             IReadOnlyList<ItemStack> inputs = recipe.InputStacks();
             for (int i = 0; i < inputs.Count; i++)
@@ -61,26 +68,6 @@ namespace Voxelforge.Gameplay
                 _trial = new ItemStacks(0, rules);
             _trial.CopyFrom(bag);
             return _trial.TryExchange(inputs, recipe.Output.ToStack(), _trialChanged) ? CraftCheck.Ok : CraftCheck.BagFull;
-        }
-
-        /// <summary>
-        /// True if a <paramref name="blockId"/> block is within <paramref name="radius"/> blocks of
-        /// <paramref name="center"/> (a box, measured block to block), e.g. a workbench to craft at.
-        /// </summary>
-        public static bool IsNearBlock(VoxelWorld world, float3 center, ushort blockId, int radius)
-        {
-            if (world == null)
-                return false;
-            var middle = (int3)math.floor(center);
-            for (int y = -radius; y <= radius; y++)
-            for (int z = -radius; z <= radius; z++)
-            for (int x = -radius; x <= radius; x++)
-            {
-                int3 cell = middle + new int3(x, y, z);
-                if (world.TryGetChunk(VoxelMath.WorldToChunk(cell), out _) && world.GetVoxel(cell).BlockId == blockId)
-                    return true;
-            }
-            return false;
         }
 
         /// <summary>Returns every problem with the book. An empty list means it's valid.</summary>
@@ -99,6 +86,8 @@ namespace Voxelforge.Gameplay
                     errors.Add($"'{recipe.name}' has no output.");
                 if (recipe.Inputs.Count == 0)
                     errors.Add($"'{recipe.name}' has no inputs.");
+                if (recipe.RequiredSkill > 1 && !CraftStations.TryGetProfession(recipe.Station, out _))
+                    errors.Add($"'{recipe.name}' needs skill {recipe.RequiredSkill}, but {recipe.Station} belongs to no profession.");
                 foreach (ItemAmount input in recipe.Inputs)
                 {
                     if (input.ItemId == BlockIds.Air || input.count <= 0)

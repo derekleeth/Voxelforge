@@ -68,9 +68,10 @@ namespace Voxelforge.Gameplay
         /// profile's race and whether they've chosen it (4.7). 6: each player's explored map cells, after the earth
         /// (4.8). 7: each player's worn gear and the ruin chests that gave them loot, after the explored cells (5.5). 8:
         /// each player's level and XP, after that (5.6). 9: each player's gathering skills, after that (5.7). 10: the
-        /// picked herbs and the seconds until each grows back, after that (5.7). Older saves still load.
+        /// picked herbs and the seconds until each grows back, after that (5.7). 11: each player's crafting skills, after
+        /// that (5.8). Older saves still load.
         /// </summary>
-        public const int FormatVersion = 10;
+        public const int FormatVersion = 11;
 
         static readonly byte[] Magic = { (byte)'V', (byte)'F', (byte)'S', (byte)'V' };
         const uint EndMarker = 0x21444E45; // "END!"
@@ -188,7 +189,7 @@ namespace Voxelforge.Gameplay
                 {
                     writer.Write(profile.Uuid.High);
                     writer.Write(profile.Uuid.Low);
-                    for (int i = 0; i < ProfessionSkills.Count; i++)
+                    for (int i = 0; i < ProfessionSkills.GatheringCount; i++)
                         writer.Write((byte)profile.Professions.Get((ProfessionId)i));
                 }
 
@@ -201,6 +202,16 @@ namespace Voxelforge.Gameplay
                     writer.Write(herb.Key.y);
                     writer.Write(herb.Key.z);
                     writer.Write(herb.Value);
+                }
+
+                // Crafting skills (v11).
+                writer.Write(save.Profiles.Count);
+                foreach (PlayerProfile profile in save.Profiles.Values)
+                {
+                    writer.Write(profile.Uuid.High);
+                    writer.Write(profile.Uuid.Low);
+                    for (int i = ProfessionSkills.GatheringCount; i < ProfessionSkills.Count; i++)
+                        writer.Write((byte)profile.Professions.Get((ProfessionId)i));
                 }
                 writer.Write(EndMarker);
             }
@@ -399,7 +410,7 @@ namespace Voxelforge.Gameplay
                     {
                         var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
                         ProfessionSkills skills = ProfessionSkills.Start;
-                        for (int i = 0; i < ProfessionSkills.Count; i++)
+                        for (int i = 0; i < ProfessionSkills.GatheringCount; i++)
                             skills = skills.With((ProfessionId)i, reader.ReadByte());
                         if (result.Profiles.TryGetValue(uuid, out PlayerProfile profile))
                             profile.Professions = skills;
@@ -415,6 +426,24 @@ namespace Voxelforge.Gameplay
                     {
                         var cell = new int3(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32());
                         result.Herbs[cell] = reader.ReadSingle();
+                    }
+                }
+
+                if (format >= 11)
+                {
+                    int crafters = reader.ReadInt32();
+                    if (crafters < 0)
+                        return WorldLoadResult.Corrupt;
+                    for (int p = 0; p < crafters; p++)
+                    {
+                        var uuid = new PlayerUuid(reader.ReadUInt64(), reader.ReadUInt64());
+                        result.Profiles.TryGetValue(uuid, out PlayerProfile profile);
+                        for (int i = ProfessionSkills.GatheringCount; i < ProfessionSkills.Count; i++)
+                        {
+                            byte skill = reader.ReadByte();
+                            if (profile != null)
+                                profile.Professions = profile.Professions.With((ProfessionId)i, skill);
+                        }
                     }
                 }
 
